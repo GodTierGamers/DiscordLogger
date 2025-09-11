@@ -5,19 +5,24 @@
 ## Type of change
 <!-- Tick all that apply; labels should match these. -->
 - [ ] ✨ Feature (`feat`)
-- [ ] 🐛 Fix (`fix`)
+- [ ] 🐛 Fix (`bug`)
 - [ ] 🛠 Refactor (`refactor`)
-- [ ] 🧰 Maintenance (`chore`, `dependencies`)
+- [ ] 🧰 Maintenance (`chore`)
 - [ ] 🧪 Tests (`test`)
 - [ ] 📝 Docs (`docs`)
 - [ ] ⚙️ CI/CD (`ci`, `build`)
 - [ ] Skip changelog (`skip-changelog`)
 
-## Screenshots / Logs (optional)
-<!-- Paste console output or images if helpful. -->
+## Release notes (optional)
+Add any human-written notes **between** the markers below.  
+These lines will be inserted **above** the auto-generated changelog in the GitHub Release.
+
+<!-- RELEASE-NOTES:START -->
+- Brief highlights users should see first.
+- Breaking change? Call it out here.
+<!-- RELEASE-NOTES:END -->
 
 ## Checklist
 - [ ] Code compiles locally
-- [ ] CI is green
 - [ ] Appropriate labels added (matches “Type of change”)
-- [ ] PR title follows Conventional Commits style (e.g. `feat(events): add ServerStartAnnouncer`)
+- [ ] Edited version number inside pom.xml
