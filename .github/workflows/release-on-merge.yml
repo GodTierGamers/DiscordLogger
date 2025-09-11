@@ -137,17 +137,25 @@ jobs:
             const m = body.match(/<!--\s*RELEASE-NOTES:START\s*-->([\s\S]*?)<!--\s*RELEASE-NOTES:END\s*-->/i);
             const notes = (m ? m[1] : '').trim();
             const skip = process.env.SKIP === 'true';
-            const changelog = skip ? '' : (process.env.CHANGELOG || '').trim();
+            const changelogRaw = skip ? '' : (process.env.CHANGELOG || '').trim();
 
-            let content = '';
-            if (notes) content = notes;
-            if (changelog) content = content ? `${content}\n\n---\n\n${changelog}\n` : `${changelog}\n`;
-            if (!content) content = '_No user-facing changes in this release_\\n';
+            let out = '';
+            if (notes) {
+              out += notes.trim();
+            }
+            if (changelogRaw) {
+              // add a blank line + header, then the changelog body
+              out += (out ? '\n\n' : '') + '# Changelog\n\n' + changelogRaw + '\n';
+            }
+            if (!out) {
+              out = '_No user-facing changes in this release_\\n';
+            }
 
-            fs.writeFileSync('RELEASE_BODY.md', content);
+            fs.writeFileSync('RELEASE_BODY.md', out);
         env:
           SKIP: ${{ steps.skip.outputs.skip }}
           CHANGELOG: ${{ steps.changelog.outputs.changelog }}
+
 
 
       - name: Create GitHub Release
