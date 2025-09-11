@@ -27,7 +27,9 @@ webhook:
 
 format:
   # Usage (case-sensitive): HH=hours, mm=minutes, ss=seconds, dd=day, MM=month, yyyy=year
-  time: "[HH:mm:ss dd:MM:yyyy]"
+
+  time: "[HH:mm:ss, dd:MM:yyyy]"
+
 
 ####################################################################################
 #                                                                                  #
@@ -42,7 +44,7 @@ format:
 log:
   player:
     join: true              # Player Join
-    quit: true              # Player Exit
+    quit: true              # Player Quit
     chat: true              # Player Chat
     command: true           # Commands executed by a player in-game
 

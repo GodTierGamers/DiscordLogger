@@ -29,9 +29,8 @@ public final class Log {
         return LocalDateTime.now().format(timeFmt);
     }
 
-    /** Plain-text to console + Discord webhook (async). */
-    public static void plain(String message) {
-        String line = ts() + " " + message;
+    public static void event(String category, String message) {
+        String line = "`" + ts() + "` - **" + category + "**: " + message;
         plugin.getLogger().info(line);
         DiscordWebhook.sendAsync(plugin, webhookUrl, line);
     }
