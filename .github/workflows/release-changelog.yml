@@ -1,16 +1,30 @@
-{
-  "categories": [
-    { "title": "✨ Features",      "labels": ["feat", "feature"] },
-    { "title": "🐛 Fixes",         "labels": ["fix", "bug"] },
-    { "title": "🧰 Maintenance",   "labels": ["chore", "dependencies"] },
-    { "title": "🧪 Tests",         "labels": ["test", "tests"] },
-    { "title": "🛠 Refactors",     "labels": ["refactor"] },
-    { "title": "📝 Docs",          "labels": ["docs"] },
-    { "title": "⚙️ CI/CD",        "labels": ["ci", "build"] }
-  ],
-  "ignore_labels": ["skip-changelog"],
-  "sort": "mergedAt",
-  "pr_template": "- ${{TITLE}} (#${{NUMBER}}) by @${{AUTHOR}}",
-  "empty_template": "_No user-facing changes in this release_",
-  "max_pull_requests": 200
-}
+name: Release Changelog
+
+on:
+  release:
+    types: [created, edited]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: .github/release-changelog-builder-config.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update GitHub Release body
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          body: ${{ steps.changelog.outputs.changelog }}

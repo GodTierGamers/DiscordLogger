@@ -6,78 +6,55 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # needed to create tags & releases
+  contents: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Java 21
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
           cache: maven
 
-      - name: Build
-        run: mvn -U -ntp clean package
+      - name: Build with Maven (skip tests for speed)
+        run: mvn -B -ntp -DskipTests clean package
 
-      - name: Read version from pom.xml
-        id: ver
-        run: |
-          VER=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive org.codehaus.mojo:exec-maven-plugin:3.5.0:exec)
-          VER="${VER%-SNAPSHOT}"                              # strip -SNAPSHOT if present
-          echo "version=$VER" >> "$GITHUB_OUTPUT"
-
-      - name: Locate JAR
+      - name: Find built jar
         id: jar
         run: |
-          FILE=$(ls -1 target/*.jar | grep -viE 'sources|javadoc' | head -n1)
-          echo "file=$FILE" >> "$GITHUB_OUTPUT"
-          echo "Found: $FILE"
+          file=$(ls -1 target/*.jar | grep -v -E 'sources|javadoc' | head -n1)
+          echo "file=$file" >> "$GITHUB_OUTPUT"
 
-      - name: Compute tag & name
+      - name: Compute tag and name
         id: meta
         run: |
-          SHORTSHA=$(git rev-parse --short HEAD)
-          TAG="v${{ steps.ver.outputs.version }}-test.${SHORTSHA}"
-          NAME="DiscordLogger v${{ steps.ver.outputs.version }} (test ${SHORTSHA})"
-          echo "tag=$TAG"   >> "$GITHUB_OUTPUT"
-          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          sha="${GITHUB_SHA::7}"
+          ts="$(date -u +'%Y.%m.%d')"
+          echo "tag=v0.0.0-test-$ts-$sha" >> "$GITHUB_OUTPUT"
+          echo "name=Test Build $ts ($sha)" >> "$GITHUB_OUTPUT"
 
-      - name: Find previous tag (if any)
-        id: prev
-        run: |
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          echo "tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
-
-      - name: Build human-friendly changelog
+      - name: Build changelog
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v4
         with:
-          configuration: ".github/release-changelog-config.json"
-          # If there is no previous tag, action will consider all history
-          fromTag: ${{ steps.prev.outputs.tag }}
-          toTag: ${{ github.sha }}
+          configuration: .github/release-changelog-builder-config.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configure Git identity
+      - name: Create and push tag
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Create Git tag
-        run: |
-          git tag -a "${{ steps.meta.outputs.tag }}" -m "Test release ${{ steps.meta.outputs.name }}"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.meta.outputs.tag }}" -m "Test release ${ { steps.meta.outputs.name } }"
           git push origin "${{ steps.meta.outputs.tag }}"
-
 
       - name: Create GitHub pre-release
         uses: softprops/action-gh-release@v2
@@ -85,7 +62,5 @@ jobs:
           tag_name: ${{ steps.meta.outputs.tag }}
           name: ${{ steps.meta.outputs.name }}
           body: ${{ steps.changelog.outputs.changelog }}
-          draft: false
           prerelease: true
           files: ${{ steps.jar.outputs.file }}
-
