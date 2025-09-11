@@ -6,8 +6,9 @@ on:
     branches: [main]
 
 permissions:
-  contents: write   # create tags & releases
-  actions: read
+  contents: write           # create tags & releases
+  pull-requests: write      # <-- allow labeling the PR
+  issues: write             # <-- required by labels API
 
 jobs:
   release:
@@ -44,12 +45,35 @@ jobs:
           echo "tag=v${v}" >> "$GITHUB_OUTPUT"
           echo "name=DiscordLogger v${v}" >> "$GITHUB_OUTPUT"
 
-      - name: Build changelog for this tag
+      # --- NEW: auto-label the integration PR so it's ignored by the changelog
+      - name: Label integration PR as skip-changelog
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: ['skip-changelog']
+            });
+      # --- /NEW
+
+      # (optional but robust) get previous main release tag to avoid noise
+      - name: Determine previous main release tag
+        id: prev
+        run: |
+          git fetch --tags --force
+          prev=$(git tag --list 'v*' --merged origin/main | sort -V | tail -n 1)
+          echo "prev=$prev" >> "$GITHUB_OUTPUT"
+
+      - name: Build changelog for this release
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v4
         with:
           configuration: .github/release-changelog-builder-config.json
-          toTag: ${{ steps.ver.outputs.tag }}
+          fromTag: ${{ steps.prev.outputs.prev }}
+          toTag:   ${{ steps.ver.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -58,7 +82,6 @@ jobs:
         run: |
           TAG="${{ steps.ver.outputs.tag }}"
           if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-            # Fallback: unique run-suffixed tag to avoid collision
             TAG="${TAG}-r${GITHUB_RUN_NUMBER}"
             echo "Existing tag found, using fallback: $TAG"
           fi
