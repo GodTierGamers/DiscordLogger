@@ -22,6 +22,9 @@ These lines will be inserted **above** the auto-generated changelog in the GitHu
 - Breaking change? Call it out here.
 <!-- RELEASE-NOTES:END -->
 
+## Release Options
+- [ ] No changelog for this release
+
 ## Checklist
 - [ ] Code compiles locally
 - [ ] Appropriate labels added (matches “Type of change”)
