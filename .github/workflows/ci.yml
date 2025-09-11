@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build with Maven (tests on)
+        run: mvn -B -ntp clean package
+
+      - name: Upload PR artifact (jar)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: discordlogger-pr-build
+          path: |
+            target/*.jar
+            !target/*-sources.jar
+            !target/*-javadoc.jar

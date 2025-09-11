@@ -1,0 +1,16 @@
+{
+  "categories": [
+    { "title": "✨ Features",      "labels": ["feat", "feature"] },
+    { "title": "🐛 Fixes",         "labels": ["fix", "bug"] },
+    { "title": "🧰 Maintenance",   "labels": ["chore", "dependencies"] },
+    { "title": "🧪 Tests",         "labels": ["test", "tests"] },
+    { "title": "🛠 Refactors",     "labels": ["refactor"] },
+    { "title": "📝 Docs",          "labels": ["docs"] },
+    { "title": "⚙️ CI/CD",        "labels": ["ci", "build"] }
+  ],
+  "ignore_labels": ["skip-changelog"],
+  "sort": "mergedAt",
+  "pr_template": "- ${{TITLE}} (#${{NUMBER}}) by @${{AUTHOR}}",
+  "empty_template": "_No user-facing changes in this release_",
+  "max_pull_requests": 200
+}
