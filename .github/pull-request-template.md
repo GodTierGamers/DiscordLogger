@@ -28,4 +28,4 @@ These lines will be inserted **above** the auto-generated changelog in the GitHu
 ## Checklist
 - [ ] Code compiles locally
 - [ ] Appropriate labels added (matches “Type of change”)
-- [ ] Edited version number inside pom.xml
+- [ ] Edited version number inside pom.xml (or removed previous release tag)
