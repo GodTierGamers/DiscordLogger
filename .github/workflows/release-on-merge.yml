@@ -105,7 +105,18 @@ jobs:
           git tag -a "$TAG" -m "${{ steps.ver.outputs.name }}"
           git push origin "$TAG"
 
+      - name: Detect "No changelog" checkbox
+        id: skip
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request?.body || '';
+            const checked = /\[\s*x\s*\]\s*No changelog for this release/i.test(body);
+            core.setOutput('skip', checked ? 'true' : 'false');
+
+
       - name: Build changelog for this release
+        if: ${{ steps.skip.outputs.skip != 'true' }}   # <— only run if not skipping
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v5
         with:
@@ -116,20 +127,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ✅ NEW: compose release body = PR notes (if any) + changelog
-      - name: Compose release body (PR notes + changelog)
+
+      - name: Compose release body (PR notes + optional changelog)
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const body = context.payload.pull_request?.body || '';
             const m = body.match(/<!--\s*RELEASE-NOTES:START\s*-->([\s\S]*?)<!--\s*RELEASE-NOTES:END\s*-->/i);
-            const notes = m ? m[1].trim() : '';
-            const changelog = process.env.CHANGELOG || '';
-            const content = notes ? `${notes}\n\n---\n\n${changelog}\n` : `${changelog}\n`;
+            const notes = (m ? m[1] : '').trim();
+            const skip = process.env.SKIP === 'true';
+            const changelog = skip ? '' : (process.env.CHANGELOG || '').trim();
+
+            let content = '';
+            if (notes) content = notes;
+            if (changelog) content = content ? `${content}\n\n---\n\n${changelog}\n` : `${changelog}\n`;
+            if (!content) content = '_No user-facing changes in this release_\\n';
+
             fs.writeFileSync('RELEASE_BODY.md', content);
         env:
+          SKIP: ${{ steps.skip.outputs.skip }}
           CHANGELOG: ${{ steps.changelog.outputs.changelog }}
+
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
