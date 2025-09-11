@@ -57,12 +57,10 @@ jobs:
         id: jar_named
         run: |
           ver="${{ steps.ver.outputs.version }}"
-          # strip a trailing -SNAPSHOT if someone forgot to bump
           ver="${ver%-SNAPSHOT}"
           new="DiscordLogger-v${ver}.jar"
           cp "${{ steps.jar.outputs.file }}" "target/${new}"
           echo "file=target/${new}" >> "$GITHUB_OUTPUT"
-
 
       - name: Label integration PR as skip-changelog
         uses: actions/github-script@v7
@@ -81,13 +79,11 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --tags --force
-          # Pick last strict semver tag reachable from main (vMAJOR.MINOR.PATCH)
           prevTag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --merged origin/main | sort -V | tail -n 1 || true)
           if [ -n "$prevTag" ]; then
             prevRef="$prevTag"
             prevSha=$(git rev-list -n 1 "$prevTag")
           else
-            # First commit on main if no previous release tag exists
             prevSha=$(git rev-list --max-parents=0 origin/main)
             prevRef="$prevSha"
           fi
@@ -95,7 +91,6 @@ jobs:
           echo "sha=$prevSha" >> "$GITHUB_OUTPUT"
           echo "ref=$prevRef" >> "$GITHUB_OUTPUT"
 
-      # ⬇️ moved before changelog so the new tag exists for comparison
       - name: Create tag (or fallback if tag exists)
         id: tag
         run: |
@@ -110,7 +105,6 @@ jobs:
           git tag -a "$TAG" -m "${{ steps.ver.outputs.name }}"
           git push origin "$TAG"
 
-      # ⬇️ now compare tags; also keep fetchViaCommits for squash/dev flows
       - name: Build changelog for this release
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v5
@@ -122,10 +116,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # ✅ NEW: compose release body = PR notes (if any) + changelog
+      - name: Compose release body (PR notes + changelog)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = context.payload.pull_request?.body || '';
+            const m = body.match(/<!--\s*RELEASE-NOTES:START\s*-->([\s\S]*?)<!--\s*RELEASE-NOTES:END\s*-->/i);
+            const notes = m ? m[1].trim() : '';
+            const changelog = process.env.CHANGELOG || '';
+            const content = notes ? `${notes}\n\n---\n\n${changelog}\n` : `${changelog}\n`;
+            fs.writeFileSync('RELEASE_BODY.md', content);
+        env:
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: ${{ steps.ver.outputs.name }}
-          body: ${{ steps.changelog.outputs.changelog }}
+          body_path: RELEASE_BODY.md
           files: ${{ steps.jar_named.outputs.file }}
