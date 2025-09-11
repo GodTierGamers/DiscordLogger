@@ -72,17 +72,38 @@ jobs:
           # Only pick strict semver tags on main: vMAJOR.MINOR.PATCH
           prev=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --merged origin/main | sort -V | tail -n 1)
           echo "prev=$prev" >> "$GITHUB_OUTPUT" 
+          
+      - name: Determine previous main release baseline
+        id: prev
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          # Pick last strict semver tag reachable from main (vMAJOR.MINOR.PATCH)
+          prevTag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --merged origin/main | sort -V | tail -n 1 || true)
+          if [ -n "$prevTag" ]; then
+            prevRef="$prevTag"
+            prevSha=$(git rev-list -n 1 "$prevTag")
+          else
+            # First commit on main if no previous release tag exists
+            prevSha=$(git rev-list --max-parents=0 origin/main)
+            prevRef="$prevSha"
+          fi
+          echo "tag=$prevTag" >> "$GITHUB_OUTPUT"
+          echo "sha=$prevSha" >> "$GITHUB_OUTPUT"
+          echo "ref=$prevRef" >> "$GITHUB_OUTPUT"
+      
 
       - name: Build changelog for this release
         id: changelog
-        uses: mikepenz/release-changelog-builder-action@v4
+        uses: mikepenz/release-changelog-builder-action@v5
         with:
           configuration: .github/release-changelog-builder-config.json
-          fromTag: ${{ steps.prev.outputs.prev }}
-          toTag:   ${{ steps.ver.outputs.tag }}
+          fromRef: ${{ steps.prev.outputs.ref }}
+          toRef: ${{ github.sha }}
           fetchViaCommits: "true"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: Create tag (or fallback if tag exists)
         id: tag
