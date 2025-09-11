@@ -83,20 +83,8 @@ jobs:
           echo "tag=$prevTag" >> "$GITHUB_OUTPUT"
           echo "sha=$prevSha" >> "$GITHUB_OUTPUT"
           echo "ref=$prevRef" >> "$GITHUB_OUTPUT"
-      
 
-      - name: Build changelog for this release
-        id: changelog
-        uses: mikepenz/release-changelog-builder-action@v5
-        with:
-          configuration: .github/release-changelog-builder-config.json
-          fromRef: ${{ steps.prev.outputs.ref }}
-          toRef: ${{ github.sha }}
-          fetchViaCommits: "true"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
+      # ⬇️ moved before changelog so the new tag exists for comparison
       - name: Create tag (or fallback if tag exists)
         id: tag
         run: |
@@ -110,6 +98,18 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "${{ steps.ver.outputs.name }}"
           git push origin "$TAG"
+
+      # ⬇️ now compare tags; also keep fetchViaCommits for squash/dev flows
+      - name: Build changelog for this release
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v5
+        with:
+          configuration: .github/release-changelog-builder-config.json
+          fromTag: ${{ steps.prev.outputs.tag }}
+          toTag:   ${{ steps.tag.outputs.tag }}
+          fetchViaCommits: "true"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
