@@ -65,14 +65,6 @@ jobs:
               labels: ['skip-changelog']
             });
 
-      - name: Determine previous main release tag
-        id: prev
-        run: |
-          git fetch --tags --force
-          # Only pick strict semver tags on main: vMAJOR.MINOR.PATCH
-          prev=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --merged origin/main | sort -V | tail -n 1)
-          echo "prev=$prev" >> "$GITHUB_OUTPUT" 
-          
       - name: Determine previous main release baseline
         id: prev
         run: |
