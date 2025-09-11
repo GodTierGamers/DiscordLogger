@@ -8,5 +8,6 @@ public final class ServerStop {
 
     public static void handle(Plugin plugin) {
         Log.event("Server", "Server Stopped");
+
     }
 }

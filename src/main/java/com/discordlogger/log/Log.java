@@ -34,5 +34,4 @@ public final class Log {
         plugin.getLogger().info(line);
         DiscordWebhook.sendAsync(plugin, webhookUrl, line);
     }
-
 }

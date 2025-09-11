@@ -8,5 +8,6 @@ public final class ServerStart {
 
     public static void handle(Plugin plugin) {
         Log.event("Server", "Server Started");
+
     }
 }

@@ -1,5 +1,6 @@
 package com.discordlogger.event;
 
+
 import com.discordlogger.listener.PlayerJoin;
 import com.discordlogger.listener.PlayerQuit;
 import org.bukkit.plugin.Plugin;
@@ -18,6 +19,7 @@ public final class EventRegistry {
         // Player events (kept under com.discordlogger.listener)
         pm.registerEvents(new PlayerJoin(plugin), plugin);
         pm.registerEvents(new PlayerQuit(plugin), plugin);
+
     }
 
     /** Server start routed through its own class, honoring config. */
