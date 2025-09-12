@@ -53,14 +53,58 @@ jobs:
           echo "tag=v${v}" >> "$GITHUB_OUTPUT"
           echo "name=DiscordLogger v${v}" >> "$GITHUB_OUTPUT"
 
+      - name: Parse release options (pre-release, custom tag, title)
+        id: relopts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request?.body || '';
+            const pre = /\[\s*x\s*\]\s*Pre-release/i.test(body);
+            const tagMatch   = body.match(/<!--\s*RELEASE-TAG:START\s*-->\s*([\s\S]*?)\s*<!--\s*RELEASE-TAG:END\s*-->/i);
+            const titleMatch = body.match(/<!--\s*RELEASE-TITLE:START\s*-->\s*([\s\S]*?)\s*<!--\s*RELEASE-TITLE:END\s*-->/i);
+            const jarMatch   = body.match(/<!--\s*CUSTOM-JAR-NAME:START\s*-->\s*([\s\S]*?)\s*<!--\s*CUSTOM-JAR-NAME:END\s*-->/i);
+
+            function clean(s) { return (s || '').trim(); }
+
+            core.setOutput('pre',   pre ? 'true' : 'false');
+            core.setOutput('tag',   clean(tagMatch && tagMatch[1]));
+            core.setOutput('title', clean(titleMatch && titleMatch[1]));
+            core.setOutput('jar',   clean(jarMatch && jarMatch[1]));
+
+
+
       - name: Rename jar for release
         id: jar_named
         run: |
           ver="${{ steps.ver.outputs.version }}"
           ver="${ver%-SNAPSHOT}"
-          new="DiscordLogger-v${ver}.jar"
-          cp "${{ steps.jar.outputs.file }}" "target/${new}"
-          echo "file=target/${new}" >> "$GITHUB_OUTPUT"
+
+          # Default filename if no custom name provided
+          default_name="DiscordLogger-v${ver}.jar"
+
+          # Use custom jar base name if provided (no '.jar' needed), else default
+          base="${{ steps.relopts.outputs.jar }}"
+          if [ -n "$base" ]; then
+            # strip any accidental .jar and sanitize a bit
+            base="${base%.jar}"
+            # allow letters, numbers, space, dot, dash, underscore
+            safe_base="$(printf '%s' "$base" | tr -cd '[:alnum:]._ -')"
+            [ -z "$safe_base" ] && safe_base="DiscordLogger-v${ver}"
+            new="${safe_base}.jar"
+          else
+            new="$default_name"
+          fi
+
+          src="${{ steps.jar.outputs.file }}"
+          dest="target/${new}"
+
+          echo "Renaming artifact:"
+          echo "  src : $src"
+          echo "  dest: $dest"
+
+          cp "$src" "$dest"
+          echo "file=$dest" >> "$GITHUB_OUTPUT"
+
 
       - name: Label integration PR as skip-changelog
         uses: actions/github-script@v7
@@ -94,16 +138,22 @@ jobs:
       - name: Create tag (or fallback if tag exists)
         id: tag
         run: |
-          TAG="${{ steps.ver.outputs.tag }}"
+          TAG="${{ steps.relopts.outputs.tag }}"
+          if [ -z "$TAG" ]; then
+            TAG="${{ steps.ver.outputs.tag }}"
+          fi
+
           if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
             TAG="${TAG}-r${GITHUB_RUN_NUMBER}"
             echo "Existing tag found, using fallback: $TAG"
           fi
+
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "${{ steps.ver.outputs.name }}"
           git push origin "$TAG"
+
 
       - name: Detect "No changelog" checkbox
         id: skip
@@ -162,6 +212,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: ${{ steps.ver.outputs.name }}
-          body_path: RELEASE_BODY.md
+          name: ${{ steps.relopts.outputs.title != '' && steps.relopts.outputs.title || steps.ver.outputs.name }}
+          prerelease: ${{ steps.relopts.outputs.pre == 'true' }}
+          body_path: RELEASE_BODY.md           # (if you’re composing notes+changelog)
           files: ${{ steps.jar_named.outputs.file }}
+
