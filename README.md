@@ -32,6 +32,7 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 - **Geyser-friendly death messages**: built from server-side damage context (not client-localized text).
 - **Automatic Config Updater**: Updates the confg.yml file with new features
 
+
 ---
 
 ## 📦 Installation
@@ -41,6 +42,7 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 3. Edit `config.yml` and set a valid **Discord webhook** URL at `webhook.url`.  
 4. (Optional) Adjust the timestamp format and per-event toggles under `log.*`, and set `embeds.enabled: true` to use embeds.  
 5. Restart the server (or run `/discordlogger reload` after editing config).
+
 
 > **Note:** If `webhook.url` is empty/invalid, the plugin will not functions until set.
 
