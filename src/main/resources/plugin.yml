@@ -4,3 +4,15 @@ version: ${project.version}
 api-version: 1.21
 author: LVCHLANN
 description: Plain-text Discord logging for core server/player events.
+
+commands:
+  discordlogger:
+    description: DiscordLogger reload command
+    usage: "/discordlogger reload"
+    permission: discordlogger.reload
+    aliases: [dlogger, dlog]
+
+permissions:
+  discordlogger.reload:
+    description: Allows reloading DiscordLogger config
+    default: op
