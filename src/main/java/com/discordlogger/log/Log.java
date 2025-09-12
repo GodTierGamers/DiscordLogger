@@ -16,6 +16,10 @@ public final class Log {
     private static JavaPlugin plugin;
     private static String webhookUrl;
     private static DateTimeFormatter timeFmt;
+    private static String plainServerName;
+
+    // readiness (only send to Discord when true)
+    private static boolean ready;
 
     // Embeds config
     private static boolean embedsEnabled;
@@ -31,12 +35,19 @@ public final class Log {
 
     public static void init(JavaPlugin pl, String url, String timePattern) {
         plugin = pl;
-        webhookUrl = url;
 
+        // determine readiness & store webhook
+        ready = isLikelyDiscordWebhook(url);
+        webhookUrl = ready ? url : null;
+
+        // plain-text prefix (proxy/server name)
+        plainServerName = plugin.getConfig().getString("format.name", "");
+
+        // timestamp format
         try {
             timeFmt = DateTimeFormatter.ofPattern(timePattern);
         } catch (IllegalArgumentException ex) {
-            plugin.getLogger().warning("[DiscordLogger] Invalid time format in config: " + timePattern + " — using [HH:mm:ss dd:MM:yyyy]");
+            plugin.getLogger().warning("Invalid time format in config: " + timePattern + " — using [HH:mm:ss dd:MM:yyyy]");
             timeFmt = DateTimeFormatter.ofPattern("[HH:mm:ss dd:MM:yyyy]");
         }
 
@@ -67,6 +78,17 @@ public final class Log {
         defaultColor = colorMap.getOrDefault("server", defaultColor);
     }
 
+    // expose readiness if needed elsewhere
+    public static boolean isReady() { return ready; }
+
+    private static boolean isLikelyDiscordWebhook(String url) {
+        if (url == null || url.isBlank()) return false;
+        return url.startsWith("https://discord.com/api/webhooks/")
+                || url.startsWith("https://discordapp.com/api/webhooks/")
+                || url.startsWith("https://ptb.discord.com/api/webhooks/")
+                || url.startsWith("https://canary.discord.com/api/webhooks/");
+    }
+
     private static int hex(String s) {
         if (s == null) return defaultColor;
         s = s.trim();
@@ -85,11 +107,19 @@ public final class Log {
 
     private static String ts() { return LocalDateTime.now().format(timeFmt); }
 
-    /** Legacy plain-text line to console + Discord. */
+    /** Server name segment for plain-text messages. */
+    private static String nameSegment() {
+        if (plainServerName == null || plainServerName.isBlank()) return "";
+        return " [" + mdEscape(plainServerName) + "]";
+    }
+
+    /** Plain one-off line (keeps prefix for consistency). */
     public static void plain(String message) {
-        String line = ts() + " " + message;
+        String line = "`" + ts() + "`" + nameSegment() + " " + message;
         plugin.getLogger().info(line);
-        DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+        if (ready) {
+            DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+        }
     }
 
     /** Minimal Markdown escape for names/messages. */
@@ -102,27 +132,33 @@ public final class Log {
                 .replace("~", "\\~");
     }
 
-    /** Event logger (no thumbnail). Sends embed if enabled, else legacy line. */
+    /** Event logger (no thumbnail). Sends EMBED if enabled, else plain line. */
     public static void event(String category, String message) {
         final String now = ts();
         if (embedsEnabled) {
+            // Console echo only (clean text); send EMBED to Discord if ready
             String consoleLine = "[" + now + "] " + category + ": " + message;
             plugin.getLogger().info(consoleLine);
 
-            DiscordWebhook.sendEmbed(
-                    plugin, webhookUrl,
-                    /*title*/ category,
-                    /*description*/ message,
-                    /*color*/ colorFor(category),
-                    /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                    /*author*/ embedAuthor,
-                    /*footer*/ EMBED_FOOTER,
-                    /*thumbnailUrl*/ null
-            );
+            if (ready) {
+                DiscordWebhook.sendEmbed(
+                        plugin, webhookUrl,
+                        /*title*/ category,
+                        /*description*/ message,
+                        /*color*/ colorFor(category),
+                        /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
+                        /*author*/ embedAuthor,
+                        /*footer*/ EMBED_FOOTER,
+                        /*thumbnailUrl*/ null
+                );
+            }
         } else {
-            String line = "`" + now + "` - **" + category + "**: " + message;
+            // Plain text path (includes optional server prefix)
+            String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
             plugin.getLogger().info(line);
-            DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+            if (ready) {
+                DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+            }
         }
     }
 
@@ -130,27 +166,33 @@ public final class Log {
     public static void eventWithThumb(String category, String message, String thumbnailUrl) {
         final String now = ts();
         if (embedsEnabled) {
+            // Console echo only; send EMBED to Discord if ready
             String consoleLine = "[" + now + "] " + category + ": " + message;
             plugin.getLogger().info(consoleLine);
 
-            DiscordWebhook.sendEmbed(
-                    plugin, webhookUrl,
-                    /*title*/ category,
-                    /*description*/ message,
-                    /*color*/ colorFor(category),
-                    /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                    /*author*/ embedAuthor,
-                    /*footer*/ EMBED_FOOTER,
-                    /*thumbnailUrl*/ thumbnailUrl
-            );
+            if (ready) {
+                DiscordWebhook.sendEmbed(
+                        plugin, webhookUrl,
+                        /*title*/ category,
+                        /*description*/ message,
+                        /*color*/ colorFor(category),
+                        /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
+                        /*author*/ embedAuthor,
+                        /*footer*/ EMBED_FOOTER,
+                        /*thumbnailUrl*/ thumbnailUrl
+                );
+            }
         } else {
-            String line = "`" + now + "` - **" + category + "**: " + message;
+            // Plain text path (includes optional server prefix)
+            String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
             plugin.getLogger().info(line);
-            DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+            if (ready) {
+                DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+            }
         }
     }
 
-    /** Build the hard-coded player avatar URL from UUID (Crafatar). */
+    /** Build the hard-coded player avatar URL from UUID (mc-heads). */
     public static String playerAvatarUrl(UUID uuid) {
         if (uuid == null) return null;
         String noDash = uuid.toString().replace("-", "");
