@@ -87,12 +87,13 @@ public final class Log {
 
     private static String ts() { return LocalDateTime.now().format(timeFmt); }
 
+    /** Server name segment for plain-text messages. */
     private static String nameSegment() {
         if (plainServerName == null || plainServerName.isBlank()) return "";
         return " [" + mdEscape(plainServerName) + "]";
     }
 
-
+    /** Plain one-off line (keeps prefix for consistency). */
     public static void plain(String message) {
         String line = "`" + ts() + "`" + nameSegment() + " " + message;
         plugin.getLogger().info(line);
@@ -109,13 +110,13 @@ public final class Log {
                 .replace("~", "\\~");
     }
 
-    /** Event logger (no thumbnail). Sends embed if enabled, else legacy line. */
+    /** Event logger (no thumbnail). Sends EMBED if enabled, else plain line. */
     public static void event(String category, String message) {
         final String now = ts();
         if (embedsEnabled) {
-            String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
-            plugin.getLogger().info(line);
-            DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+            // Console echo only (clean text); send EMBED to Discord
+            String consoleLine = "[" + now + "] " + category + ": " + message;
+            plugin.getLogger().info(consoleLine);
 
             DiscordWebhook.sendEmbed(
                     plugin, webhookUrl,
@@ -128,7 +129,8 @@ public final class Log {
                     /*thumbnailUrl*/ null
             );
         } else {
-            String line = "`" + now + "` - **" + category + "**: " + message;
+            // Plain text path (includes optional server prefix)
+            String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
             plugin.getLogger().info(line);
             DiscordWebhook.sendAsync(plugin, webhookUrl, line);
         }
@@ -138,9 +140,9 @@ public final class Log {
     public static void eventWithThumb(String category, String message, String thumbnailUrl) {
         final String now = ts();
         if (embedsEnabled) {
-            String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
-            plugin.getLogger().info(line);
-            DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+            // Console echo only; send EMBED to Discord
+            String consoleLine = "[" + now + "] " + category + ": " + message;
+            plugin.getLogger().info(consoleLine);
 
             DiscordWebhook.sendEmbed(
                     plugin, webhookUrl,
@@ -153,13 +155,14 @@ public final class Log {
                     /*thumbnailUrl*/ thumbnailUrl
             );
         } else {
-            String line = "`" + now + "` - **" + category + "**: " + message;
+            // Plain text path (includes optional server prefix)
+            String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
             plugin.getLogger().info(line);
             DiscordWebhook.sendAsync(plugin, webhookUrl, line);
         }
     }
 
-    /** Build the hard-coded player avatar URL from UUID (Crafatar). */
+    /** Build the hard-coded player avatar URL from UUID (mc-heads). */
     public static String playerAvatarUrl(UUID uuid) {
         if (uuid == null) return null;
         String noDash = uuid.toString().replace("-", "");
