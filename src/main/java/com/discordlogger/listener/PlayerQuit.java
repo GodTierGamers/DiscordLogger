@@ -15,7 +15,8 @@ public final class PlayerQuit implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.quit", true)) return;
-        final String name = e.getPlayer().getName();
-        Log.event("Player Quit", name + " left the server");
+        final String name = Log.mdEscape(e.getPlayer().getName());
+        final String thumb = Log.playerAvatarUrl(e.getPlayer().getUniqueId());
+        Log.eventWithThumb("Player Quit", name + " left the server", thumb);
     }
 }

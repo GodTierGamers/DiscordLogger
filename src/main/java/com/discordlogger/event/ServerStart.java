@@ -6,8 +6,9 @@ import org.bukkit.plugin.Plugin;
 public final class ServerStart {
     private ServerStart() {}
 
-    public static void handle(Plugin plugin) {
-        Log.event("Server", "Server Started");
+    private static final String THUMB_SERVER = "https://cdn-icons-png.flaticon.com/512/1411/1411887.png";
 
+    public static void handle(Plugin plugin) {
+        Log.eventWithThumb("Server", "Server Started", THUMB_SERVER);
     }
 }

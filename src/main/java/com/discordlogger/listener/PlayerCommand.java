@@ -15,8 +15,9 @@ public final class PlayerCommand implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.command", true)) return;
-        final String name = e.getPlayer().getName();
-        // e.getMessage() includes the leading slash
-        Log.event("Player Command", name + " ran: " + e.getMessage());
+        final String name = Log.mdEscape(e.getPlayer().getName());
+        final String cmd  = Log.mdEscape(e.getMessage()); // includes leading slash
+        final String thumb = Log.playerAvatarUrl(e.getPlayer().getUniqueId());
+        Log.eventWithThumb("Player Command", name + " ran: " + cmd, thumb);
     }
 }

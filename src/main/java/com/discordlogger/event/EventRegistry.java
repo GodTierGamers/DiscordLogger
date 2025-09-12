@@ -2,10 +2,10 @@ package com.discordlogger.event;
 
 import com.discordlogger.listener.PlayerChat;
 import com.discordlogger.listener.PlayerCommand;
+import com.discordlogger.listener.PlayerDeath;
 import com.discordlogger.listener.PlayerJoin;
 import com.discordlogger.listener.PlayerQuit;
 import com.discordlogger.listener.ServerCommand;
-import com.discordlogger.listener.PlayerDeath;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 

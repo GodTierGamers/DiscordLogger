@@ -25,46 +25,45 @@ public final class PlayerDeath implements Listener {
 
         final Player victim = e.getEntity();
         final String vName = Log.mdEscape(victim.getName());
+        final String thumb = Log.playerAvatarUrl(victim.getUniqueId());
 
-        // Prefer killer context
+        // Prefer killer context (player)
         final Player killer = victim.getKiller();
         if (killer != null) {
             String kName = Log.mdEscape(killer.getName());
             String weapon = weaponName(killer.getInventory().getItemInMainHand());
             String suffix = weapon.isEmpty() ? "" : " [" + weapon + "]";
-            Log.event("Player Death", vName + " was slain by " + kName + suffix);
+            Log.eventWithThumb("Player Death", vName + " was slain by " + kName + suffix, thumb);
             return;
         }
 
-        // Otherwise use last damage cause + attacker (mob/projectile/explosion/etc.)
+        // Last damage cause
         EntityDamageEvent last = victim.getLastDamageCause();
         if (last instanceof EntityDamageByEntityEvent byEntity) {
             Entity damager = byEntity.getDamager();
 
-            // Projectiles (arrow, trident, etc.) – include shooter when possible
             if (damager instanceof Projectile proj) {
                 Object shooter = proj.getShooter();
                 if (shooter instanceof Player pShooter) {
                     String kName = Log.mdEscape(pShooter.getName());
-                    Log.event("Player Death", vName + " was shot by " + kName);
+                    Log.eventWithThumb("Player Death", vName + " was shot by " + kName, thumb);
                     return;
                 } else if (shooter instanceof Entity eShooter) {
-                    Log.event("Player Death", vName + " was shot by " + mobName(eShooter));
+                    Log.eventWithThumb("Player Death", vName + " was shot by " + mobName(eShooter), thumb);
                     return;
                 } else {
-                    Log.event("Player Death", vName + " was shot");
+                    Log.eventWithThumb("Player Death", vName + " was shot", thumb);
                     return;
                 }
             }
 
-            // Generic mob/entity
-            Log.event("Player Death", vName + " was slain by " + mobName(damager));
+            Log.eventWithThumb("Player Death", vName + " was slain by " + mobName(damager), thumb);
             return;
         }
 
-        // Fallback to specific environmental causes
+        // Environmental causes
         String cause = causeText(last == null ? null : last.getCause());
-        Log.event("Player Death", vName + " " + cause);
+        Log.eventWithThumb("Player Death", vName + " " + cause, thumb);
     }
 
     private String weaponName(ItemStack item) {
@@ -72,7 +71,6 @@ public final class PlayerDeath implements Listener {
         if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
             return Log.mdEscape(item.getItemMeta().getDisplayName());
         }
-        // Friendly material name, e.g. "Iron Sword"
         String mat = item.getType().name().toLowerCase().replace('_', ' ');
         return Character.toUpperCase(mat.charAt(0)) + mat.substring(1);
     }
@@ -80,7 +78,7 @@ public final class PlayerDeath implements Listener {
     private String mobName(Entity e) {
         if (e == null) return "an unknown entity";
         String type = e.getType().name().toLowerCase().replace('_', ' ');
-        return "a " + type; // e.g., "a zombie", "a creeper"
+        return "a " + type;
     }
 
     private String causeText(EntityDamageEvent.DamageCause cause) {
