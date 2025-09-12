@@ -5,6 +5,9 @@ import com.discordlogger.command.Reload;
 import com.discordlogger.event.EventRegistry;
 import com.discordlogger.log.Log;
 import org.bukkit.plugin.java.JavaPlugin;
+import com.discordlogger.config.ConfigMigrator;
+
+import java.io.File;
 
 public final class DiscordLogger extends JavaPlugin {
 
@@ -13,28 +16,27 @@ public final class DiscordLogger extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        com.discordlogger.config.ConfigMigrator.migrateIfVersionChanged(this, "config.yml", new java.io.File(getDataFolder(), "config.yml"));
+        reloadConfig();
 
-        if (!applyRuntimeConfig()) {
-            getLogger().severe("No valid Discord webhook URL set inside of config.yml. Disabling plugin.");
-            getServer().getPluginManager().disablePlugin(this);
-            return;
+// Apply config (no hard-disable on missing webhook)
+        boolean ok = applyRuntimeConfig();
+        if (!ok) {
+            getLogger().warning("No valid Discord webhook URL in config.yml. Please add the webhook URL.");
+            getLogger().warning("Set webhook.url and run /discordlogger reload to enable Discord posting.");
         }
 
+// Register events/commands regardless, so reload works
         events = new EventRegistry(this);
         events.registerAll();
 
-        // Command router with subcommands (add more later)
         if (getCommand("discordlogger") != null) {
-            Commands router = new Commands(
-                    new Reload(this)
-                    // , new SomeOtherSubcommand(this)
-            );
+            com.discordlogger.command.Commands router = new com.discordlogger.command.Commands(new com.discordlogger.command.Reload(this));
             getCommand("discordlogger").setExecutor(router);
             getCommand("discordlogger").setTabCompleter(router);
-        } else {
-            getLogger().warning("Command 'discordlogger' not found in plugin.yml.");
         }
 
+// Server start log will go to console; to Discord only if webhook is valid
         events.fireServerStart();
         getLogger().info("Core loaded.");
     }
@@ -45,7 +47,6 @@ public final class DiscordLogger extends JavaPlugin {
         getLogger().info("Disabled.");
     }
 
-    /** Re-read config and (if valid) re-initialize logging settings. */
     public boolean applyRuntimeConfig() {
         final String url = getConfig().getString("webhook.url", "");
         if (!isLikelyDiscordWebhook(url)) {

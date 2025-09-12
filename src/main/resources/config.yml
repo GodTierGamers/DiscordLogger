@@ -19,7 +19,7 @@
 ###################
 
 webhook:
-  url: ""                   # Discord webhook URL goes here, plugin will be disabled if not present
+  url: "" # Discord webhook URL goes here, plugin will not function until present
 
 ##################
 # FORMAT OPTIONS #
@@ -64,15 +64,16 @@ embeds:
 
 log:
   player:
-    join: true              # Player Join
-    quit: true              # Player Quit
-    chat: true              # Player Chat
-    command: true           # Commands executed by a player in-game
-    death: true             # Player Death (with death message)
+    join: true # Player Join
+    quit: true # Player Quit
+    chat: true # Player Chat
+    command: true # Commands executed by a player in-game
+    death: true # Player Death (with death message)
 
   server:
-    command: true           # Commands executed via the server console/terminal
-    start: true             # Logged when the plugin/server starts
-    stop: true              # Logged on /stop / clean shutdown
+    command: true # Commands executed via the server console/terminal
+    start: true # Logged when the plugin/server starts
+    stop: true # Logged on /stop / clean shutdown
+
 
 # CONFIG VERSION V4, SHIPPED WITH V2.1.0
