@@ -14,21 +14,22 @@
 ![Paper](https://img.shields.io/badge/Paper-1.21%2B-blue)
 ![Discord Webhooks](https://img.shields.io/badge/Discord-Webhooks-5865F2)
 
-A minimal, reliable Minecraft server **logging plugin** that posts clean, Markdown-styled messages to a **Discord webhook**.  
+A minimal, reliable Minecraft server **logging plugin** that posts clean messages to a **Discord webhook** — in Markdown **or rich embeds**.  
 Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 
 ---
 
 ## ✨ Features
 
-- **Discord webhook logging** (plain text + Markdown)  
-  Format: `` `HH:mm:ss dd:MM:yyyy` - **<Category>**: <message> ``
+- **Discord webhook logging**
+  - Plain text + Markdown format: `` `HH:mm:ss dd:MM:yyyy` - **<Category>**: <message> ``
+  - **Embeds (optional)** with per-category colors, configurable author, hard-coded footer (**DiscordLogger**), player avatar thumbnails, server icon, and Discord-rendered timestamps.
 - **Config-toggleable events** (all on by default):
   - **Server**: Start, Stop, Server Command
   - **Player**: Join, Quit, Chat, Command, Death
-- **Fail-fast config**: plugin disables if `webhook.url` is missing/invalid to prevent silent misconfigurations.
-- **Geyser-friendly death messages**: built from server-side damage context (not client-localized strings).
-- **Async delivery** to Discord with safe shutdown handling (no scheduling after disable).
+- **Live reload command**: `/discordlogger reload` (perm: `discordlogger.reload`)
+- **Fail-fast config**: plugin disables if `webhook.url` is missing/invalid.
+- **Geyser-friendly death messages**: built from server-side damage context (not client-localized text).
 
 ---
 
@@ -37,8 +38,8 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 1. Download the latest **release** and place the JAR in your server’s `plugins/` folder.  
 2. Start the server once to generate `plugins/DiscordLogger/config.yml`.  
 3. Edit `config.yml` and set a valid **Discord webhook** URL at `webhook.url`.  
-4. (Optional) Adjust the timestamp format and per-event toggles under `log.*`.  
-5. Restart the server. You should see a “**Server Started**” line in your Discord channel.
+4. (Optional) Adjust the timestamp format and per-event toggles under `log.*`, and set `embeds.enabled: true` to use embeds.  
+5. Restart the server (or run `/discordlogger reload` after editing config).
 
 > **Note:** If `webhook.url` is empty/invalid, the plugin will log a SEVERE message and **disable itself** on startup.
 
@@ -50,6 +51,10 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
   - `webhook.url` — *REQUIRED* Discord webhook URL.
 - **Time format**
   - `format.time` — Java DateTimeFormatter (e.g., `[HH:mm:ss dd:MM:yyyy]`).
+- **Embeds**
+  - `embeds.enabled` — `true` to send embeds.
+  - `embeds.author` — text shown as the embed author.
+  - `embeds.colors.*` — per-category embed colors (e.g., `server`, `player_join`, `player_quit`, `player_chat`, `player_command`, `server_command`, `player_death`).
 - **Event toggles**
   - `log.server.start`, `log.server.stop`, `log.server.command`
   - `log.player.join`, `log.player.quit`, `log.player.chat`, `log.player.command`, `log.player.death`
@@ -68,6 +73,8 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 `12:40:00 01:09:2025` - **Server**: Server Stopped
 ```
 
+(When `embeds.enabled: true`, the same events are sent as embeds with colors, author/footer, thumbnails, and timestamp.)
+
 ---
 
 ## 🔌 Compatibility
@@ -85,6 +92,7 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
   git clone https://github.com/GodTierGamers/DiscordLogger.git
   mvn -B -DskipTests package
   ```
+
 ---
 
 ## 📄 License
