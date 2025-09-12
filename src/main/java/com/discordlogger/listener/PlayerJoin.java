@@ -15,7 +15,8 @@ public final class PlayerJoin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.join", true)) return;
-        final String name = e.getPlayer().getName();
-        Log.event("Player Join", name + " joined the server");
+        final String name = Log.mdEscape(e.getPlayer().getName());
+        final String thumb = Log.playerAvatarUrl(e.getPlayer().getUniqueId());
+        Log.eventWithThumb("Player Join", name + " joined the server", thumb);
     }
 }

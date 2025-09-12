@@ -26,9 +26,28 @@ webhook:
 ##################
 
 format:
+  #ONLY USED FOR PLAIN TEXT MESSAGES (EMBEDS DISABLED)
   # Usage (case-sensitive): HH=hours, mm=minutes, ss=seconds, dd=day, MM=month, yyyy=year
-
   time: "[HH:mm:ss, dd:MM:yyyy]"
+
+#################
+# EMBED OPTIONS #
+#################
+
+embeds:
+  enabled: true
+  author: "Server Logs"
+
+  # Per-category colors (hex). Keys are case-insensitive; spaces become underscores.
+  colors:
+    server: "#43B581"
+    player_join: "#57F287"
+    player_quit: "#ED4245"
+    player_chat: "#5865F2"
+    player_command: "#FEE75C"
+    server_command: "#EB459E"
+    player_death: "#ED4245"
+
 
 
 ####################################################################################
@@ -54,4 +73,4 @@ log:
     start: true             # Logged when the plugin/server starts
     stop: true              # Logged on /stop / clean shutdown
 
-# CONFIG VERSION V2, SHIPPED WITH V2.0.0-BETA
+# CONFIG VERSION V3, SHIPPED WITH V2.0.0
