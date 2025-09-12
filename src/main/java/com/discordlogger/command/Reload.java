@@ -3,6 +3,7 @@ package com.discordlogger.command;
 import com.discordlogger.DiscordLogger;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
+import com.discordlogger.config.ConfigMigrator;
 
 import java.util.Collections;
 import java.util.List;
@@ -20,8 +21,10 @@ public final class Reload implements Subcommand {
 
     @Override
     public boolean execute(CommandSender sender, String[] args) {
+
         long start = System.currentTimeMillis();
 
+        ConfigMigrator.migrateIfVersionChanged(plugin, "config.yml", new java.io.File(plugin.getDataFolder(), "config.yml"));
         plugin.reloadConfig();
         boolean ok = plugin.applyRuntimeConfig();
 
@@ -34,6 +37,7 @@ public final class Reload implements Subcommand {
         }
         return true;
     }
+
 
     @Override
     public List<String> tabComplete(CommandSender sender, String[] args) {

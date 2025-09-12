@@ -19,16 +19,18 @@
 ###################
 
 webhook:
-  url: ""                   # Discord webhook URL goes here, plugin will be disabled if not present
+  url: "" # Discord webhook URL goes here, plugin will not function until present
 
 ##################
 # FORMAT OPTIONS #
 ##################
 
 format:
-  #ONLY USED FOR PLAIN TEXT MESSAGES (EMBEDS DISABLED)
+  # ONLY USED FOR PLAIN TEXT MESSAGES (EMBEDS DISABLED)
   # Usage (case-sensitive): HH=hours, mm=minutes, ss=seconds, dd=day, MM=month, yyyy=year
   time: "[HH:mm:ss, dd:MM:yyyy]"
+  # Only used for plain text, for embeds edit author name
+  name: ""
 
 #################
 # EMBED OPTIONS #
@@ -36,7 +38,7 @@ format:
 
 embeds:
   enabled: true
-  author: "Server Logs"
+  author: "Server Logs" # Can be modified for proxy servers (e.g. Survival, Creative)
 
   # Per-category colors (hex). Keys are case-insensitive; spaces become underscores.
   colors:
@@ -62,15 +64,16 @@ embeds:
 
 log:
   player:
-    join: true              # Player Join
-    quit: true              # Player Quit
-    chat: true              # Player Chat
-    command: true           # Commands executed by a player in-game
-    death: true             # Player Death (with death message)
+    join: true # Player Join
+    quit: true # Player Quit
+    chat: true # Player Chat
+    command: true # Commands executed by a player in-game
+    death: true # Player Death (with death message)
 
   server:
-    command: true           # Commands executed via the server console/terminal
-    start: true             # Logged when the plugin/server starts
-    stop: true              # Logged on /stop / clean shutdown
+    command: true # Commands executed via the server console/terminal
+    start: true # Logged when the plugin/server starts
+    stop: true # Logged on /stop / clean shutdown
 
-# CONFIG VERSION V3, SHIPPED WITH V2.0.0
+
+# CONFIG VERSION V4, SHIPPED WITH V2.1.0
