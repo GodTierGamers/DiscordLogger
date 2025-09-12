@@ -52,4 +52,4 @@ Put a custom name here to override the default file name (e.g. DiscordLogger V2.
 ## Checklist
 - [ ] Code compiles locally
 - [ ] Appropriate labels added (matches “Type of change”)
-- [ ] Edited version number inside pom.xml (or removed previous release tag)
+- [ ] Edited version number inside pom.xml and end of config.yml (or removed previous release tag)
