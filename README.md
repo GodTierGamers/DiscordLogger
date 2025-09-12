@@ -2,7 +2,7 @@
 
 <!-- Badges (GodTierGamers/DiscordLogger) -->
 ![Build](https://img.shields.io/github/actions/workflow/status/GodTierGamers/DiscordLogger/ci.yml?branch=main&label=build)
-![Release](https://img.shields.io/github/v/release/GodTierGamers/DiscordLogger?include_prereleases)
+![Release](https://img.shields.io/github/v/release/GodTierGamers/DiscordLogger)
 ![Downloads](https://img.shields.io/github/downloads/GodTierGamers/DiscordLogger/total)
 ![Issues](https://img.shields.io/github/issues/GodTierGamers/DiscordLogger)
 ![PRs](https://img.shields.io/github/issues-pr/GodTierGamers/DiscordLogger)
