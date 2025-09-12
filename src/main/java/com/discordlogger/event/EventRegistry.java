@@ -5,6 +5,7 @@ import com.discordlogger.listener.PlayerCommand;
 import com.discordlogger.listener.PlayerJoin;
 import com.discordlogger.listener.PlayerQuit;
 import com.discordlogger.listener.ServerCommand;
+import com.discordlogger.listener.PlayerDeath;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 
@@ -21,6 +22,7 @@ public final class EventRegistry {
         pm.registerEvents(new PlayerQuit(plugin), plugin);
         pm.registerEvents(new PlayerChat(plugin), plugin);
         pm.registerEvents(new PlayerCommand(plugin), plugin);
+        pm.registerEvents(new PlayerDeath(plugin), plugin);
 
         // Server events
         pm.registerEvents(new ServerCommand(plugin), plugin);

@@ -34,4 +34,15 @@ public final class Log {
         plugin.getLogger().info(line);
         DiscordWebhook.sendAsync(plugin, webhookUrl, line);
     }
+
+    public static String mdEscape(String s) {
+        if (s == null) return "";
+        return s
+                .replace("\\", "\\\\")
+                .replace("`", "\\`")
+                .replace("*", "\\*")
+                .replace("_", "\\_")
+                .replace("~", "\\~");
+    }
+
 }
