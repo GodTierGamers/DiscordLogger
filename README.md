@@ -30,18 +30,19 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 - **Live reload command**: `/discordlogger reload` (perm: `discordlogger.reload`)
 - **Fail-fast config**: plugin disables if `webhook.url` is missing/invalid.
 - **Geyser-friendly death messages**: built from server-side damage context (not client-localized text).
+- **Automatic Config Updater**: Updates the confg.yml file with new features
 
 ---
 
 ## 📦 Installation
 
-1. Download the latest **release** and place the JAR in your server’s `plugins/` folder.  
+1. Download the latest [release](https://github.com/GodTierGamers/DiscordLogger/releases/latest) and place the JAR in your server’s `plugins/` folder.  
 2. Start the server once to generate `plugins/DiscordLogger/config.yml`.  
 3. Edit `config.yml` and set a valid **Discord webhook** URL at `webhook.url`.  
 4. (Optional) Adjust the timestamp format and per-event toggles under `log.*`, and set `embeds.enabled: true` to use embeds.  
 5. Restart the server (or run `/discordlogger reload` after editing config).
 
-> **Note:** If `webhook.url` is empty/invalid, the plugin will log a SEVERE message and **disable itself** on startup.
+> **Note:** If `webhook.url` is empty/invalid, the plugin will not functions until set.
 
 ---
 
