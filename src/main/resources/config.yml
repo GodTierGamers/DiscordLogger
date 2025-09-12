@@ -26,9 +26,11 @@ webhook:
 ##################
 
 format:
-  #ONLY USED FOR PLAIN TEXT MESSAGES (EMBEDS DISABLED)
+  # ONLY USED FOR PLAIN TEXT MESSAGES (EMBEDS DISABLED)
   # Usage (case-sensitive): HH=hours, mm=minutes, ss=seconds, dd=day, MM=month, yyyy=year
   time: "[HH:mm:ss, dd:MM:yyyy]"
+  # Only used for plain text, for embeds edit author name
+  name: ""
 
 #################
 # EMBED OPTIONS #
@@ -36,7 +38,7 @@ format:
 
 embeds:
   enabled: true
-  author: "Server Logs"
+  author: "Server Logs" # Can be modified for proxy servers (e.g. Survival, Creative)
 
   # Per-category colors (hex). Keys are case-insensitive; spaces become underscores.
   colors:
@@ -73,4 +75,4 @@ log:
     start: true             # Logged when the plugin/server starts
     stop: true              # Logged on /stop / clean shutdown
 
-# CONFIG VERSION V3, SHIPPED WITH V2.0.0
+# CONFIG VERSION V4, SHIPPED WITH V2.1.0

@@ -16,6 +16,7 @@ public final class Log {
     private static JavaPlugin plugin;
     private static String webhookUrl;
     private static DateTimeFormatter timeFmt;
+    private static String plainServerName;
 
     // Embeds config
     private static boolean embedsEnabled;
@@ -32,6 +33,7 @@ public final class Log {
     public static void init(JavaPlugin pl, String url, String timePattern) {
         plugin = pl;
         webhookUrl = url;
+        plainServerName = plugin.getConfig().getString("format.name", "");
 
         try {
             timeFmt = DateTimeFormatter.ofPattern(timePattern);
@@ -85,9 +87,14 @@ public final class Log {
 
     private static String ts() { return LocalDateTime.now().format(timeFmt); }
 
-    /** Legacy plain-text line to console + Discord. */
+    private static String nameSegment() {
+        if (plainServerName == null || plainServerName.isBlank()) return "";
+        return " [" + mdEscape(plainServerName) + "]";
+    }
+
+
     public static void plain(String message) {
-        String line = ts() + " " + message;
+        String line = "`" + ts() + "`" + nameSegment() + " " + message;
         plugin.getLogger().info(line);
         DiscordWebhook.sendAsync(plugin, webhookUrl, line);
     }
@@ -106,8 +113,9 @@ public final class Log {
     public static void event(String category, String message) {
         final String now = ts();
         if (embedsEnabled) {
-            String consoleLine = "[" + now + "] " + category + ": " + message;
-            plugin.getLogger().info(consoleLine);
+            String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
+            plugin.getLogger().info(line);
+            DiscordWebhook.sendAsync(plugin, webhookUrl, line);
 
             DiscordWebhook.sendEmbed(
                     plugin, webhookUrl,
@@ -130,8 +138,9 @@ public final class Log {
     public static void eventWithThumb(String category, String message, String thumbnailUrl) {
         final String now = ts();
         if (embedsEnabled) {
-            String consoleLine = "[" + now + "] " + category + ": " + message;
-            plugin.getLogger().info(consoleLine);
+            String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
+            plugin.getLogger().info(line);
+            DiscordWebhook.sendAsync(plugin, webhookUrl, line);
 
             DiscordWebhook.sendEmbed(
                     plugin, webhookUrl,
