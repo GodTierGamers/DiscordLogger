@@ -15,8 +15,9 @@ public final class PlayerChat implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.chat", true)) return;
-        final String name = e.getPlayer().getName();
-        final String msg  = e.getMessage();
-        Log.event("Player Chat", name + " — " + msg);
+        final String name = Log.mdEscape(e.getPlayer().getName());
+        final String msg  = Log.mdEscape(e.getMessage());
+        final String thumb = Log.playerAvatarUrl(e.getPlayer().getUniqueId());
+        Log.eventWithThumb("Player Chat", name + " — " + msg, thumb);
     }
 }
