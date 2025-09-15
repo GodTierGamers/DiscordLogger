@@ -28,9 +28,10 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
   - **Server**: Start, Stop, Server Command
   - **Player**: Join, Quit, Chat, Command, Death
 - **Live reload command**: `/discordlogger reload` (perm: `discordlogger.reload`)
-- **Fail-fast config**: plugin disables if `webhook.url` is missing/invalid.
 - **Geyser-friendly death messages**: built from server-side damage context (not client-localized text).
-- **Automatic Config Updater**: Updates the confg.yml file with new features
+- **Automatic Config Updater**: Updates the config.yml file with new features
+- **Automatic update prompts**: Plugin will prompt you when a new version is available
+- **Nickname support**: Nicknames are recognized in server logs
 
 
 ---
