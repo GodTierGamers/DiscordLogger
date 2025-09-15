@@ -45,7 +45,7 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 5. Restart the server (or run `/discordlogger reload` after editing config).
 
 
-> **Note:** If `webhook.url` is empty/invalid, the plugin will not functions until set.
+> **Note:** If `webhook.url` is empty/invalid, the plugin will not function until set.
 
 ---
 
