@@ -8,12 +8,11 @@ import com.discordlogger.listener.PlayerQuit;
 import com.discordlogger.listener.ServerCommand;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
 
 public final class EventRegistry {
-    private final JavaPlugin plugin;
+    private final Plugin plugin;
 
-    public EventRegistry(JavaPlugin plugin) { this.plugin = plugin; }
+    public EventRegistry(Plugin plugin) { this.plugin = plugin; }
 
     public void registerAll() {
         PluginManager pm = plugin.getServer().getPluginManager();
