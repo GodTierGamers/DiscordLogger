@@ -23,7 +23,7 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 
 - **Discord webhook logging**
   - Plain text + Markdown format: `` `HH:mm:ss dd:MM:yyyy` - **<Category>**: <message> ``
-  - **Embeds (optional)** with per-category colors, configurable author, hard-coded footer (**DiscordLogger**), player avatar thumbnails, server icon, and Discord-rendered timestamps.
+  - **Embeds (optional)** with per-category colors, configurable author, player avatar thumbnails, server icon, and timestamps.
 - **Config-toggleable events** (all on by default):
   - **Server**: Start, Stop, Server Command
   - **Player**: Join, Quit, Chat, Command, Death
