@@ -1,4 +1,4 @@
-# DiscordLogger v2
+![DiscordLogger](https://files.godtiergamers.xyz/DiscordLogger-Banner.png "DiscordLogger")
 
 <!-- Badges (GodTierGamers/DiscordLogger) -->
 ![Build](https://img.shields.io/github/actions/workflow/status/GodTierGamers/DiscordLogger/ci.yml?branch=main&label=build)
@@ -45,7 +45,7 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 5. Restart the server (or run `/discordlogger reload` after editing config).
 
 
-> **Note:** If `webhook.url` is empty/invalid, the plugin will not functions until set.
+> **Note:** If `webhook.url` is empty/invalid, the plugin will not function until set.
 
 ---
 
