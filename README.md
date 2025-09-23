@@ -1,4 +1,4 @@
-# DiscordLogger
+![DiscordLogger](https://files.godtiergamers.xyz/DiscordLogger-Banner.png "DiscordLogger")
 
 <!-- Badges (GodTierGamers/DiscordLogger) -->
 ![Build](https://img.shields.io/github/actions/workflow/status/GodTierGamers/DiscordLogger/ci.yml?branch=main&label=build)
