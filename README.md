@@ -67,7 +67,6 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 
 ## 🧪 Example Output
 
-```
 `12:34:56 01:09:2025` - **Server**: Server Started
 `12:35:10 01:09:2025` - **Player Join**: Steve joined the server
 `12:35:42 01:09:2025` - **Player Chat**: Steve — hello world
@@ -75,7 +74,6 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 `12:36:30 01:09:2025` - **Server Command**: Server ran: /save-all
 `12:37:12 01:09:2025` - **Player Death**: Steve was slain by a zombie
 `12:40:00 01:09:2025` - **Server**: Server Stopped
-```
 
 (When `embeds.enabled: true`, the same events are sent as embeds with colors, author/footer, thumbnails, and timestamp.)
 
@@ -90,6 +88,19 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 ---
 
 ## 🧰 Development
+
+### Branch Usage:
+
+- Main: Current latest version, not developed on, only updated via PR or for workflow updates
+- Dev: May have new features implemented compared to main, is updated frequently and is fairly stable, create branches off dev
+- All other branches (e.g. feat/banLogs): Active features in development, not expected to be functional yet, still in active development
+
+To add a new feature:
+- Create a branch based off dev
+- Name it approprietly (e.g. feat/banLogs)
+- Develop feature
+- PR into dev
+- When enough features are compiled, dev will be PRed into main
 
 - Build with Maven:
   ```bash
