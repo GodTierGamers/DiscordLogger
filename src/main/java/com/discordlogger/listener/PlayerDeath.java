@@ -1,7 +1,6 @@
 package com.discordlogger.listener;
 
 import com.discordlogger.log.Log;
-import com.discordlogger.util.Names;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -14,7 +13,6 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.java.JavaPlugin;
 
 public final class PlayerDeath implements Listener {
     private final Plugin plugin;
@@ -26,13 +24,13 @@ public final class PlayerDeath implements Listener {
         if (!plugin.getConfig().getBoolean("log.player.death", true)) return;
 
         final Player victim = e.getEntity();
-        final String vName = Names.display(victim, (JavaPlugin) plugin);
+        final String vName = Log.mdEscape(victim.getName());
         final String thumb = Log.playerAvatarUrl(victim.getUniqueId());
 
         // Prefer killer context (player)
         final Player killer = victim.getKiller();
         if (killer != null) {
-            String kName = Names.display(killer, (JavaPlugin) plugin);
+            String kName = Log.mdEscape(killer.getName());
             String weapon = weaponName(killer.getInventory().getItemInMainHand());
             String suffix = weapon.isEmpty() ? "" : " [" + weapon + "]";
             Log.eventWithThumb("Player Death", vName + " was slain by " + kName + suffix, thumb);
@@ -47,7 +45,7 @@ public final class PlayerDeath implements Listener {
             if (damager instanceof Projectile proj) {
                 Object shooter = proj.getShooter();
                 if (shooter instanceof Player pShooter) {
-                    String kName = Names.display(pShooter, (JavaPlugin) plugin);
+                    String kName = Log.mdEscape(pShooter.getName());
                     Log.eventWithThumb("Player Death", vName + " was shot by " + kName, thumb);
                     return;
                 } else if (shooter instanceof Entity eShooter) {
