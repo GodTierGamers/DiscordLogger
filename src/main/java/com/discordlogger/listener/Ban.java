@@ -83,7 +83,7 @@ public final class Ban implements Listener {
         fields.add(new Log.Field("Ban Duration:", emptyToNA(banDuration))); // “lifetime” if not specified
 
         // Title and Author exactly as in your example
-        final String title      = "Player Ban";
+        final String title      = "Player Banned";
         final String authorName = "Server Logs";
 
         // Send via your standard pipeline (color from embeds.colors.ban)
