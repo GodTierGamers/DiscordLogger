@@ -9,9 +9,6 @@ import com.discordlogger.config.ConfigMigrator;
 
 import java.io.File;
 
-// NEW: import the update checker
-import com.discordlogger.update.UpdateChecker;
-
 public final class DiscordLogger extends JavaPlugin {
 
     private EventRegistry events;
@@ -22,14 +19,14 @@ public final class DiscordLogger extends JavaPlugin {
         com.discordlogger.config.ConfigMigrator.migrateIfVersionChanged(this, "config.yml", new java.io.File(getDataFolder(), "config.yml"));
         reloadConfig();
 
-        // Apply config (no hard-disable on missing webhook)
+// Apply config (no hard-disable on missing webhook)
         boolean ok = applyRuntimeConfig();
         if (!ok) {
             getLogger().warning("No valid Discord webhook URL in config.yml. Please add the webhook URL.");
             getLogger().warning("Set webhook.url and run /discordlogger reload to enable Discord posting.");
         }
 
-        // Register events/commands regardless, so reload works
+// Register events/commands regardless, so reload works
         events = new EventRegistry(this);
         events.registerAll();
 
@@ -39,10 +36,7 @@ public final class DiscordLogger extends JavaPlugin {
             getCommand("discordlogger").setTabCompleter(router);
         }
 
-        // NEW: async update check (console + Discord notice if newer available)
-        UpdateChecker.checkAsync(this);
-
-        // Server start log will go to console; to Discord only if webhook is valid
+// Server start log will go to console; to Discord only if webhook is valid
         events.fireServerStart();
         getLogger().info("Core loaded.");
     }
@@ -55,17 +49,11 @@ public final class DiscordLogger extends JavaPlugin {
 
     public boolean applyRuntimeConfig() {
         final String url = getConfig().getString("webhook.url", "");
-        final String timePattern = getConfig().getString("format.time", "[HH:mm:ss dd:MM:yyyy]");
-
-        // NEW: always initialize Log first so degraded mode works (even if URL invalid)
-        Log.init(this, url, timePattern);
-
         if (!isLikelyDiscordWebhook(url)) {
             getLogger().severe("Invalid or missing webhook.url in config.yml.");
             return false;
         }
-
-        // (kept from your original code) re-init is harmless when valid
+        final String timePattern = getConfig().getString("format.time", "[HH:mm:ss dd:MM:yyyy]");
         Log.init(this, url, timePattern);
         return true;
     }

@@ -1,26 +1,23 @@
 package com.discordlogger.listener;
 
 import com.discordlogger.log.Log;
-import com.discordlogger.util.Names;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.Plugin;
 
 public final class PlayerChat implements Listener {
-    private final JavaPlugin plugin;
+    private final Plugin plugin;
 
-    public PlayerChat(JavaPlugin plugin) {
-        this.plugin = plugin;
-    }
+    public PlayerChat(Plugin plugin) { this.plugin = plugin; }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.chat", true)) return;
-
-        String who = Names.display(e.getPlayer(), plugin);
-        String text = Log.mdEscape(e.getMessage());
-        String msg = "**" + who + "**: " + text;
-        Log.eventWithThumb("Player Chat", msg, Log.playerAvatarUrl(e.getPlayer().getUniqueId()));
+        final String name = Log.mdEscape(e.getPlayer().getName());
+        final String msg  = Log.mdEscape(e.getMessage());
+        final String thumb = Log.playerAvatarUrl(e.getPlayer().getUniqueId());
+        Log.eventWithThumb("Player Chat", name + " — " + msg, thumb);
     }
 }
