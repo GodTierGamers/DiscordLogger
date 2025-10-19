@@ -19,12 +19,12 @@ public final class Log {
     private static DateTimeFormatter timeFmt;
     private static String plainServerName;
 
-    // Only send to Discord when true (valid webhook)
+    // readiness (only send to Discord when true)
     private static boolean ready;
 
-    // Embed config (single source of truth)
-    private static boolean embedsEnabledFlag;
-    private static String embedAuthorName;                      // configurable
+    // Embeds config
+    private static boolean embedsEnabled;
+    private static String embedAuthor;                          // configurable
     private static final String EMBED_FOOTER = "DiscordLogger"; // hard-coded
     private static final String PLAYER_THUMB_TEMPLATE =
             "https://mc-heads.net/avatar/{uuid}/256";
@@ -32,13 +32,12 @@ public final class Log {
     private static final Map<String, Integer> colorMap = new HashMap<>();
     private static int defaultColor = 0x5865F2;
 
-    private Log() {}
+    private Log(){}
 
-    /** Initialize runtime config. Safe to call even if url is invalid; we’ll run degraded. */
     public static void init(JavaPlugin pl, String url, String timePattern) {
         plugin = pl;
 
-        // determine readiness & store webhook (store null when not ready)
+        // determine readiness & store webhook
         ready = isLikelyDiscordWebhook(url);
         webhookUrl = ready ? url : null;
 
@@ -54,8 +53,8 @@ public final class Log {
         }
 
         // Embeds (author configurable; footer/thumbnail hard-coded)
-        embedsEnabledFlag = plugin.getConfig().getBoolean("embeds.enabled", false);
-        embedAuthorName   = plugin.getConfig().getString("embeds.author", "Server Logs");
+        embedsEnabled = plugin.getConfig().getBoolean("embeds.enabled", false);
+        embedAuthor   = plugin.getConfig().getString("embeds.author", "Server Logs");
 
         // Default colors
         colorMap.clear();
@@ -80,12 +79,9 @@ public final class Log {
         defaultColor = colorMap.getOrDefault("server", defaultColor);
     }
 
-    // ---- Public helpers (used by other components like UpdateChecker) ----
+    // expose readiness if needed elsewhere
     public static boolean isReady() { return ready; }
-    public static boolean embedsEnabled() { return embedsEnabledFlag; }
-    public static String embedAuthor() { return embedAuthorName; }
 
-    // ---- Internal utilities ----
     private static boolean isLikelyDiscordWebhook(String url) {
         if (url == null || url.isBlank()) return false;
         return url.startsWith("https://discord.com/api/webhooks/")
@@ -118,6 +114,15 @@ public final class Log {
         return " [" + mdEscape(plainServerName) + "]";
     }
 
+    /** Plain one-off line (keeps prefix for consistency). */
+    public static void plain(String message) {
+        String line = "`" + ts() + "`" + nameSegment() + " " + message;
+        plugin.getLogger().info(line);
+        if (ready) {
+            DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+        }
+    }
+
     /** Minimal Markdown escape for names/messages. */
     public static String mdEscape(String s) {
         if (s == null) return "";
@@ -128,21 +133,10 @@ public final class Log {
                 .replace("~", "\\~");
     }
 
-    // ---- Public logging API ----
-
-    /** Plain one-off line (keeps prefix for consistency). */
-    public static void plain(String message) {
-        String line = "`" + ts() + "`" + nameSegment() + " " + message;
-        plugin.getLogger().info(line);
-        if (ready) {
-            DiscordWebhook.sendAsync(plugin, webhookUrl, line);
-        }
-    }
-
     /** Event logger (no thumbnail). Sends EMBED if enabled, else plain line. */
     public static void event(String category, String message) {
         final String now = ts();
-        if (embedsEnabledFlag) {
+        if (embedsEnabled) {
             // Console echo only (clean text); send EMBED to Discord if ready
             String consoleLine = "[" + now + "] " + category + ": " + message;
             plugin.getLogger().info(consoleLine);
@@ -154,7 +148,7 @@ public final class Log {
                         /*description*/ message,
                         /*color*/ colorFor(category),
                         /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                        /*author*/ embedAuthorName,
+                        /*author*/ embedAuthor,
                         /*footer*/ EMBED_FOOTER,
                         /*thumbnailUrl*/ null
                 );
@@ -172,7 +166,7 @@ public final class Log {
     /** Event logger with player thumbnail (avatar). */
     public static void eventWithThumb(String category, String message, String thumbnailUrl) {
         final String now = ts();
-        if (embedsEnabledFlag) {
+        if (embedsEnabled) {
             // Console echo only; send EMBED to Discord if ready
             String consoleLine = "[" + now + "] " + category + ": " + message;
             plugin.getLogger().info(consoleLine);
@@ -184,7 +178,7 @@ public final class Log {
                         /*description*/ message,
                         /*color*/ colorFor(category),
                         /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                        /*author*/ embedAuthorName,
+                        /*author*/ embedAuthor,
                         /*footer*/ EMBED_FOOTER,
                         /*thumbnailUrl*/ thumbnailUrl
                 );
@@ -303,37 +297,5 @@ public final class Log {
         if (uuid == null) return null;
         String noDash = uuid.toString().replace("-", "");
         return PLAYER_THUMB_TEMPLATE.replace("{uuid}", noDash);
-    }
-
-    /** Send the "Plugin Updates" embed with fields (used by the update checker). */
-    public static void sendUpdateEmbed(String title,
-                                       String description,
-                                       int color,
-                                       String timestampIso,
-                                       String author,
-                                       String footer,
-                                       String currentVersion,
-                                       String newVersion) {
-        // Console visibility
-        String now = ts();
-        plugin.getLogger().info("[" + now + "] " + title + ": " + mdEscape(description));
-
-        if (!ready) return; // no webhook URL -> console only
-
-        DiscordWebhook.sendEmbedWithFields(
-                plugin,
-                webhookUrl,
-                title,
-                description,
-                color,
-                timestampIso,
-                author,
-                footer,
-                null, // no thumbnail for update notices
-                new String[][]{
-                        new String[]{"Current Version", currentVersion, "false"},
-                        new String[]{"New Version", newVersion, "false"}
-                }
-        );
     }
 }
