@@ -13,6 +13,10 @@ import java.time.Duration;
 public final class DiscordWebhook {
     private DiscordWebhook(){}
 
+    // Hardcoded footer icon for all embeds
+    private static final String FOOTER_ICON_URL =
+            "https://files.godtiergamers.xyz/DiscordLogger-Logo-removebg.jpg";
+
     /** Plain content message (legacy). */
     public static void sendAsync(JavaPlugin plugin, String url, String content) {
         if (url == null || url.isBlank()) return;
@@ -47,7 +51,10 @@ public final class DiscordWebhook {
             sb.append("\"author\":{\"name\":\"").append(escape(authorName)).append("\"},");
         }
         if (footerText != null && !footerText.isBlank()) {
-            sb.append("\"footer\":{\"text\":\"").append(escape(footerText)).append("\"},");
+            sb.append("\"footer\":{")
+                    .append("\"text\":\"").append(escape(footerText)).append("\",")
+                    .append("\"icon_url\":\"").append(escape(FOOTER_ICON_URL)).append("\"")
+                    .append("},");
         }
         if (thumbnailUrl != null && !thumbnailUrl.isBlank()) {
             sb.append("\"thumbnail\":{\"url\":\"").append(escape(thumbnailUrl)).append("\"},");
@@ -137,7 +144,8 @@ public final class DiscordWebhook {
         }
         if (footer != null) {
             sb.append("\"footer\":{")
-                    .append("\"text\":").append(qf(footer))
+                    .append("\"text\":").append(qf(footer)).append(',')
+                    .append("\"icon_url\":").append(qf(FOOTER_ICON_URL))
                     .append("},");
         }
         if (thumbnailUrl != null) {
@@ -175,7 +183,7 @@ public final class DiscordWebhook {
         postJsonAsyncFields(plugin, url, sb.toString());
     }
 
-// --- private helpers (named uniquely to avoid collisions) ---
+    // --- private helpers (named uniquely to avoid collisions) ---
 
     /** Minimal JSON string escaper + quotes. */
     private static String qf(String s) {
