@@ -122,17 +122,18 @@ jobs:
         id: prev
         run: |
           set -euo pipefail
-          git fetch origin main --force
           git fetch --tags --force
           prevTag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --merged origin/main | sort -V | tail -n 1 || true)
           if [ -n "$prevTag" ]; then
-              prevSha=$(git rev-list -n 1 "$prevTag")
+            prevRef="$prevTag"
+            prevSha=$(git rev-list -n 1 "$prevTag")
           else
-              prevSha=$(git rev-list --max-parents=0 origin/main)
+            prevSha=$(git rev-list --max-parents=0 origin/main)
+            prevRef="$prevSha"
           fi
           echo "tag=$prevTag" >> "$GITHUB_OUTPUT"
           echo "sha=$prevSha" >> "$GITHUB_OUTPUT"
-
+          echo "ref=$prevRef" >> "$GITHUB_OUTPUT"
 
       - name: Create tag (or fallback if tag exists)
         id: tag
@@ -163,26 +164,18 @@ jobs:
             const checked = /\[\s*x\s*\]\s*No changelog for this release/i.test(body);
             core.setOutput('skip', checked ? 'true' : 'false');
 
-      - name: Debug compare refs
-        run: |
-          echo "prev.tag=${{ steps.prev.outputs.tag }}"
-          echo "prev.sha=${{ steps.prev.outputs.sha }}"
-          echo "to.tag=${{ steps.tag.outputs.tag }}"
 
-
-
-      - name: Build changelog for this release (commit-based)
-        if: ${{ steps.skip.outputs.skip != 'true' }}
+      - name: Build changelog for this release
+        if: ${{ steps.skip.outputs.skip != 'true' }}   # <— only run if not skipping
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v5
         with:
           configuration: .github/release-changelog-builder-config.json
-          fromTag: ${{ steps.prev.outputs.sha }}   # <-- use SHA, not tag name
-          toTag:   ${{ steps.tag.outputs.tag }}    # new tag
+          fromTag: ${{ steps.prev.outputs.tag }}
+          toTag:   ${{ steps.tag.outputs.tag }}
           fetchViaCommits: "true"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 
 
       - name: Compose release body (PR notes + optional changelog)
