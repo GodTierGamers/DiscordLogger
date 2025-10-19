@@ -66,20 +66,6 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 
 ---
 
-## 🧪 Example Output
-
-`12:34:56 01:09:2025` - **Server**: Server Started
-`12:35:10 01:09:2025` - **Player Join**: Steve joined the server
-`12:35:42 01:09:2025` - **Player Chat**: Steve — hello world
-`12:36:05 01:09:2025` - **Player Command**: Steve ran: /spawn
-`12:36:30 01:09:2025` - **Server Command**: Server ran: /save-all
-`12:37:12 01:09:2025` - **Player Death**: Steve was slain by a zombie
-`12:40:00 01:09:2025` - **Server**: Server Stopped
-
-(When `embeds.enabled: true`, the same events are sent as embeds with colors, author/footer, thumbnails, and timestamp.)
-
----
-
 ## 🔌 Compatibility
 
 - **Server:** Paper/Spigot **1.21+** (Tested on 1.21.8 Paper)  
