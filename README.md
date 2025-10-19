@@ -27,6 +27,7 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 - **Config-toggleable events** (all on by default):
   - **Server**: Start, Stop, Server Command
   - **Player**: Join, Quit, Chat, Command, Death
+  - **Moderation**: Ban, Unban, Kick
 - **Live reload command**: `/discordlogger reload` (perm: `discordlogger.reload`)
 - **Geyser-friendly death messages**: built from server-side damage context (not client-localized text).
 - **Automatic Config Updater**: Updates the config.yml file with new features
