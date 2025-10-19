@@ -2,6 +2,7 @@ package com.discordlogger.listener;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -21,7 +22,7 @@ public final class Ban implements Listener {
     private final JavaPlugin plugin;
     public Ban(JavaPlugin plugin) { this.plugin = plugin; }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
         if (!plugin.getConfig().getBoolean("log.moderation.ban", true)) return;
         handle(e.getPlayer(), e.getMessage()); // includes leading "/"
@@ -30,7 +31,7 @@ public final class Ban implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onServerCommand(ServerCommandEvent e) {
         if (!plugin.getConfig().getBoolean("log.moderation.ban", true)) return;
-        final String raw = "/" + e.getCommand(); // ServerCommandEvent lacks leading "/"
+        final String raw = "/" + e.getCommand();
         handle(null, raw);
     }
 
@@ -38,19 +39,23 @@ public final class Ban implements Listener {
         final String raw = rawWithSlash.startsWith("/") ? rawWithSlash.substring(1) : rawWithSlash;
         if (raw.isBlank()) return;
 
-        // Parse: <cmd> <player> [<duration or reason> ...]
+        // <cmd> <player> [duration/reason...]
         final String[] parts = raw.split("\\s+", 3);
         final String cmd = parts[0].toLowerCase(Locale.ROOT);
-        final boolean isBan    = cmd.equals("ban");
-        final boolean isTemp   = cmd.equals("tempban");
+        final boolean isBan  = cmd.equals("ban");
+        final boolean isTemp = cmd.equals("tempban");
         if (!isBan && !isTemp) return;
+
+        // Permission gate (console always allowed)
+        if (actorPlayer != null && !hasAny(actorPlayer,
+                "minecraft.command.ban", "bukkit.command.ban", "essentials.ban",
+                "essentials.tempban")) {
+            return;
+        }
 
         final String targetName = parts.length > 1 ? parts[1] : "(unknown)";
         final String remainder  = parts.length > 2 ? parts[2] : null;
 
-        // Duration / Reason rules (kept simple & robust):
-        // - /ban <player> [reason...]          => duration = "lifetime", reason = remainder
-        // - /tempban <player> <duration> [reason...] => duration = first token of remainder, reason = the rest
         String banDuration = "lifetime";
         String banReason   = null;
         if (isTemp && remainder != null) {
@@ -65,43 +70,51 @@ public final class Ban implements Listener {
             banReason = remainder;
         }
 
-        // Resolve actor (nicknames respected) and console label
-        final String moderatorName = (actorPlayer != null)
-                ? Names.display(actorPlayer, plugin)
-                : "CONSOLE";
+        final BanList nameBans = Bukkit.getBanList(BanList.Type.NAME);
+        final boolean wasBanned = nameBans.isBanned(targetName);
 
-        // Try to show TARGET’s head as thumbnail
-        String thumb = null;
-        UUID targetUuid = resolveUuid(targetName);
-        if (targetUuid != null) thumb = Log.playerAvatarUrl(targetUuid);
+        // Snapshot mutable values for lambda
+        final String reasonSnap   = banReason;
+        final String durationSnap = banDuration;
 
-        // Build FIELDS to mirror your scaffold (no JSON; we use a helper in Log)
-        List<Log.Field> fields = new ArrayList<>();
-        fields.add(new Log.Field("Player Name:", targetName));
-        fields.add(new Log.Field("Ban Reason (if provided):", emptyToNA(banReason)));
-        fields.add(new Log.Field("Banned by:", moderatorName));
-        fields.add(new Log.Field("Ban Duration:", emptyToNA(banDuration))); // “lifetime” if not specified
+        // Verify ban took effect on the next tick
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            final boolean nowBanned = nameBans.isBanned(targetName);
+            if (!wasBanned && nowBanned) {
+                final String moderatorName = (actorPlayer != null)
+                        ? Names.display(actorPlayer, plugin)
+                        : "CONSOLE";
 
-        // Title and Author exactly as in your example
-        final String title      = "Player Banned";
-        final String authorName = "Server Logs";
+                String thumb = null;
+                UUID targetUuid = resolveUuid(targetName);
+                if (targetUuid != null) thumb = Log.playerAvatarUrl(targetUuid);
 
-        // Send via your standard pipeline (color from embeds.colors.ban)
-        Log.eventFieldsWithThumb(
-                "Ban",            // category -> color key "ban"
-                title,
-                authorName,
-                fields,
-                thumb
-        );
+                List<Log.Field> fields = new ArrayList<>();
+                fields.add(new Log.Field("Player Name:", targetName));
+                fields.add(new Log.Field("Ban Reason (if provided):",
+                        (reasonSnap == null || reasonSnap.isBlank()) ? "N/A" : reasonSnap));
+                fields.add(new Log.Field("Banned by:", moderatorName));
+                fields.add(new Log.Field("Ban Duration:",
+                        (durationSnap == null || durationSnap.isBlank()) ? "N/A" : durationSnap));
+
+                Log.eventFieldsWithThumb(
+                        "ban",
+                        "Player Banned",
+                        "Server Logs",
+                        fields,
+                        thumb
+                );
+            }
+        });
     }
 
-    private static String emptyToNA(String s) {
-        return (s == null || s.isBlank()) ? "N/A" : stripColors(s);
+    private static boolean hasAny(Player p, String... nodes) {
+        if (p.isOp()) return true;
+        for (String n : nodes) if (p.hasPermission(n)) return true;
+        return false;
     }
 
-    private static String stripColors(String s) { return s.replaceAll("§.", ""); }
-
+    @SuppressWarnings("deprecation")
     private static UUID resolveUuid(String name) {
         Player p = Bukkit.getPlayerExact(name);
         if (p != null) return p.getUniqueId();
