@@ -1,18 +1,14 @@
 package com.discordlogger.event;
 
-import com.discordlogger.listener.PlayerChat;
-import com.discordlogger.listener.PlayerCommand;
-import com.discordlogger.listener.PlayerDeath;
-import com.discordlogger.listener.PlayerJoin;
-import com.discordlogger.listener.PlayerQuit;
-import com.discordlogger.listener.ServerCommand;
+import com.discordlogger.listener.*;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public final class EventRegistry {
-    private final Plugin plugin;
+    private final JavaPlugin plugin;
 
-    public EventRegistry(Plugin plugin) { this.plugin = plugin; }
+    public EventRegistry(JavaPlugin plugin) { this.plugin = plugin; }
 
     public void registerAll() {
         PluginManager pm = plugin.getServer().getPluginManager();
@@ -26,6 +22,11 @@ public final class EventRegistry {
 
         // Server events
         pm.registerEvents(new ServerCommand(plugin), plugin);
+
+        // Moderation events
+        pm.registerEvents(new Ban(plugin), plugin);
+        pm.registerEvents(new Unban(plugin), plugin);
+        pm.registerEvents(new Kick(plugin), plugin);
     }
 
     public void fireServerStart() {
