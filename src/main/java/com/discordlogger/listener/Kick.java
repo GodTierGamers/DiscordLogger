@@ -44,6 +44,7 @@ public final class Kick implements Listener {
         if (!cmd.equals("kick")) return;
 
         final String targetName = parts.length > 1 ? parts[1] : "(unknown)";
+        final String reasonRaw  = parts.length > 2 ? parts[2] : null;
 
         // Moderator display (respects nicknames) or CONSOLE
         final String moderatorName = (actorPlayer != null)
@@ -55,9 +56,11 @@ public final class Kick implements Listener {
         UUID targetUuid = resolveUuid(targetName);
         if (targetUuid != null) thumb = Log.playerAvatarUrl(targetUuid);
 
-        // Fields as per your scaffold
+        // Fields in desired order: Player Kicked, Kick Reason (if provided), Kicked by
         List<Log.Field> fields = new ArrayList<>();
         fields.add(new Log.Field("Player Kicked", targetName));
+        fields.add(new Log.Field("Kick Reason (if provided):",
+                (reasonRaw == null || reasonRaw.isBlank()) ? "N/A" : stripColors(reasonRaw)));
         fields.add(new Log.Field("Kicked by:", moderatorName));
 
         // Category "kick" -> uses embeds.colors.kick
@@ -68,6 +71,10 @@ public final class Kick implements Listener {
                 fields,
                 thumb
         );
+    }
+
+    private static String stripColors(String s) {
+        return s == null ? null : s.replaceAll("§.", "");
     }
 
     private static UUID resolveUuid(String name) {
