@@ -21,7 +21,7 @@ public final class Kick implements Listener {
     private final JavaPlugin plugin;
     public Kick(JavaPlugin plugin) { this.plugin = plugin; }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
         if (!plugin.getConfig().getBoolean("log.moderation.kick", true)) return;
         handle(e.getPlayer(), e.getMessage()); // includes leading "/"
@@ -43,42 +43,58 @@ public final class Kick implements Listener {
         final String cmd = parts[0].toLowerCase(Locale.ROOT);
         if (!cmd.equals("kick")) return;
 
+        // Permission gate (console always allowed)
+        if (actorPlayer != null && !hasAny(actorPlayer,
+                "minecraft.command.kick", "bukkit.command.kick", "essentials.kick")) {
+            return;
+        }
+
         final String targetName = parts.length > 1 ? parts[1] : "(unknown)";
         final String reasonRaw  = parts.length > 2 ? parts[2] : null;
 
-        // Moderator display (respects nicknames) or CONSOLE
-        final String moderatorName = (actorPlayer != null)
-                ? Names.display(actorPlayer, plugin)
-                : "CONSOLE";
+        // Target must be online to be kicked; if not, bail (command would fail)
+        final Player target = Bukkit.getPlayerExact(targetName);
+        if (target == null || !target.isOnline()) return;
 
-        // Target head thumbnail (if UUID resolvable)
-        String thumb = null;
-        UUID targetUuid = resolveUuid(targetName);
-        if (targetUuid != null) thumb = Log.playerAvatarUrl(targetUuid);
+        final boolean wasOnline = true; // target is online now
 
-        // Fields in desired order: Player Kicked, Kick Reason (if provided), Kicked by
-        List<Log.Field> fields = new ArrayList<>();
-        fields.add(new Log.Field("Player Kicked", targetName));
-        fields.add(new Log.Field("Kick Reason (if provided):",
-                (reasonRaw == null || reasonRaw.isBlank()) ? "N/A" : stripColors(reasonRaw)));
-        fields.add(new Log.Field("Kicked by:", moderatorName));
+        // After command executes, verify success next tick (player no longer online)
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            boolean nowOnline = target.isOnline();
+            if (wasOnline && !nowOnline) {
+                // Moderator display (respects nicknames) or CONSOLE
+                final String moderatorName = (actorPlayer != null)
+                        ? Names.display(actorPlayer, plugin)
+                        : "CONSOLE";
 
-        // Category "kick" -> uses embeds.colors.kick
-        Log.eventFieldsWithThumb(
-                "kick",
-                "Player Kicked",
-                null,      // author -> default embeds.author ("Server Logs")
-                fields,
-                thumb
-        );
+                // Thumbnail (kicked player's head)
+                String thumb = Log.playerAvatarUrl(target.getUniqueId());
+
+                List<Log.Field> fields = new ArrayList<>();
+                fields.add(new Log.Field("Player Kicked", targetName));
+                fields.add(new Log.Field("Kick Reason (if provided):",
+                        (reasonRaw == null || reasonRaw.isBlank()) ? "N/A" : reasonRaw));
+                fields.add(new Log.Field("Kicked by:", moderatorName));
+
+                Log.eventFieldsWithThumb(
+                        "kick",
+                        "Player Kicked",
+                        null, // default author
+                        fields,
+                        thumb
+                );
+            }
+        });
     }
 
-    private static String stripColors(String s) {
-        return s == null ? null : s.replaceAll("§.", "");
+    private static boolean hasAny(Player p, String... nodes) {
+        if (p.isOp()) return true;
+        for (String n : nodes) if (p.hasPermission(n)) return true;
+        return false;
     }
 
+    @SuppressWarnings("deprecation")
     private static UUID resolveUuid(String name) {
-        if (name == null || name.isBlank()) return null;
         Player p = Bukkit.getPlayerExact(name);
         if (p != null) return p.getUniqueId();
         OfflinePlayer off = Bukkit.getOfflinePlayer(name);
