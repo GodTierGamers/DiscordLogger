@@ -24,8 +24,12 @@ public final class Log {
 
     // Embed config (single source of truth)
     private static boolean embedsEnabledFlag;
-    private static String embedAuthorName;                      // configurable
-    private static final String EMBED_FOOTER = "DiscordLogger"; // hard-coded
+    private static String embedAuthorName;
+
+    // Footer text (dynamic: "DiscordLogger v<version>")
+    private static final String EMBED_FOOTER_BASE = "DiscordLogger";
+    private static String embedFooterText = EMBED_FOOTER_BASE;
+
     private static final String PLAYER_THUMB_TEMPLATE =
             "https://mc-heads.net/avatar/{uuid}/256";
 
@@ -41,6 +45,18 @@ public final class Log {
         // determine readiness & store webhook (store null when not ready)
         ready = isLikelyDiscordWebhook(url);
         webhookUrl = ready ? url : null;
+
+        // compute footer text with plugin version (from plugin.yml -> ${project.version})
+        try {
+            String ver = plugin.getDescription().getVersion();
+            if (ver != null && !ver.isBlank()) {
+                embedFooterText = EMBED_FOOTER_BASE + " v" + ver;
+            } else {
+                embedFooterText = EMBED_FOOTER_BASE;
+            }
+        } catch (Exception ignored) {
+            embedFooterText = EMBED_FOOTER_BASE;
+        }
 
         // plain-text prefix (proxy/server name)
         plainServerName = plugin.getConfig().getString("format.name", "");
@@ -155,7 +171,7 @@ public final class Log {
                         /*color*/ colorFor(category),
                         /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
                         /*author*/ embedAuthorName,
-                        /*footer*/ EMBED_FOOTER,
+                        /*footer*/ embedFooterText,   // << dynamic footer with version
                         /*thumbnailUrl*/ null
                 );
             }
@@ -185,7 +201,7 @@ public final class Log {
                         /*color*/ colorFor(category),
                         /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
                         /*author*/ embedAuthorName,
-                        /*footer*/ EMBED_FOOTER,
+                        /*footer*/ embedFooterText,   // << dynamic footer with version
                         /*thumbnailUrl*/ thumbnailUrl
                 );
             }
@@ -259,7 +275,7 @@ public final class Log {
                     /*color*/ colorFor(category),
                     /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
                     /*author*/ (author == null || author.isBlank()) ? embedAuthorName : author,
-                    /*footer*/ EMBED_FOOTER,
+                    /*footer*/ embedFooterText,     // << dynamic footer with version
                     /*thumbnailUrl*/ thumbnailUrl,
                     /*fields*/ toFieldsArray(fields)
             );
@@ -328,7 +344,8 @@ public final class Log {
                 color,
                 timestampIso,
                 author,
-                footer,
+                // If a custom footer is not provided, use dynamic versioned footer
+                (footer == null || footer.isBlank()) ? embedFooterText : footer,
                 null, // no thumbnail for update notices
                 new String[][]{
                         new String[]{"Current Version", currentVersion, "false"},
