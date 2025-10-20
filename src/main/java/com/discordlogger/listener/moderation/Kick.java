@@ -1,4 +1,4 @@
-package com.discordlogger.listener;
+package com.discordlogger.listener.moderation;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
@@ -17,19 +17,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-public final class Deop implements Listener {
+public final class Kick implements Listener {
     private final JavaPlugin plugin;
-    public Deop(JavaPlugin plugin) { this.plugin = plugin; }
+    public Kick(JavaPlugin plugin) { this.plugin = plugin; }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
-        if (!plugin.getConfig().getBoolean("log.moderation.deop", true)) return;
+        if (!plugin.getConfig().getBoolean("log.moderation.kick", true)) return;
         handle(e.getPlayer(), e.getMessage()); // includes leading "/"
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onServerCommand(ServerCommandEvent e) {
-        if (!plugin.getConfig().getBoolean("log.moderation.deop", true)) return;
+        if (!plugin.getConfig().getBoolean("log.moderation.kick", true)) return;
         final String raw = "/" + e.getCommand(); // ServerCommandEvent lacks leading "/"
         handle(null, raw);
     }
@@ -38,40 +38,48 @@ public final class Deop implements Listener {
         final String raw = rawWithSlash.startsWith("/") ? rawWithSlash.substring(1) : rawWithSlash;
         if (raw.isBlank()) return;
 
-        // Parse: deop <player>
+        // Parse: kick <player> [reason...]
         final String[] parts = raw.split("\\s+", 3);
         final String cmd = parts[0].toLowerCase(Locale.ROOT);
-        if (!cmd.equals("deop")) return;
+        if (!cmd.equals("kick")) return;
 
         // Permission gate (console always allowed)
         if (actorPlayer != null && !hasAny(actorPlayer,
-                "minecraft.command.deop", "bukkit.command.deop", "essentials.deop")) {
+                "minecraft.command.kick", "bukkit.command.kick", "essentials.kick")) {
             return;
         }
 
         final String targetName = parts.length > 1 ? parts[1] : "(unknown)";
-        final OfflinePlayer off = Bukkit.getOfflinePlayer(targetName);
-        final boolean wasOp = off.isOp();
+        final String reasonRaw  = parts.length > 2 ? parts[2] : null;
 
-        // Verify success next tick (op -> not op)
+        // Target must be online to be kicked; if not, bail (command would fail)
+        final Player target = Bukkit.getPlayerExact(targetName);
+        if (target == null || !target.isOnline()) return;
+
+        final boolean wasOnline = true; // target is online now
+
+        // After command executes, verify success next tick (player no longer online)
         Bukkit.getScheduler().runTask(plugin, () -> {
-            if (wasOp && !off.isOp()) {
+            boolean nowOnline = target.isOnline();
+            if (wasOnline && !nowOnline) {
+                // Moderator display (respects nicknames) or CONSOLE
                 final String moderatorName = (actorPlayer != null)
                         ? Names.display(actorPlayer, plugin)
                         : "CONSOLE";
 
-                String thumb = null;
-                UUID uuid = off.getUniqueId();
-                if (uuid != null) thumb = Log.playerAvatarUrl(uuid);
+                // Thumbnail (kicked player's head)
+                String thumb = Log.playerAvatarUrl(target.getUniqueId());
 
                 List<Log.Field> fields = new ArrayList<>();
-                fields.add(new Log.Field("Player Name:", targetName));
-                fields.add(new Log.Field("Deopped by:", moderatorName));
+                fields.add(new Log.Field("Player Kicked", targetName));
+                fields.add(new Log.Field("Kick Reason (if provided):",
+                        (reasonRaw == null || reasonRaw.isBlank()) ? "N/A" : reasonRaw));
+                fields.add(new Log.Field("Kicked by:", moderatorName));
 
                 Log.eventFieldsWithThumb(
-                        "deop",               // color key from embeds.colors.deop
-                        "Player Deopped",     // title to mirror your style
-                        null,                 // author -> default (embeds.author)
+                        "kick",
+                        "Player Kicked",
+                        null, // default author
                         fields,
                         thumb
                 );
@@ -83,5 +91,13 @@ public final class Deop implements Listener {
         if (p.isOp()) return true;
         for (String n : nodes) if (p.hasPermission(n)) return true;
         return false;
+    }
+
+    @SuppressWarnings("deprecation")
+    private static UUID resolveUuid(String name) {
+        Player p = Bukkit.getPlayerExact(name);
+        if (p != null) return p.getUniqueId();
+        OfflinePlayer off = Bukkit.getOfflinePlayer(name);
+        return off != null ? off.getUniqueId() : null;
     }
 }

@@ -1,6 +1,8 @@
 package com.discordlogger.event;
 
-import com.discordlogger.listener.*;
+import com.discordlogger.listener.player.*;
+import com.discordlogger.listener.server.*;
+import com.discordlogger.listener.moderation.*;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
