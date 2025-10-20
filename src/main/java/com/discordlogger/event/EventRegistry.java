@@ -27,6 +27,8 @@ public final class EventRegistry {
         pm.registerEvents(new Ban(plugin), plugin);
         pm.registerEvents(new Unban(plugin), plugin);
         pm.registerEvents(new Kick(plugin), plugin);
+        pm.registerEvents(new Op(plugin), plugin);
+        pm.registerEvents(new Deop(plugin), plugin);
     }
 
     public void fireServerStart() {
