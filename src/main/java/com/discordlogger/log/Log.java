@@ -84,12 +84,34 @@ public final class Log {
         colorMap.put("player_death",     hex("#ED4245"));
 
         // Allow overrides via embeds.colors.*
-        ConfigurationSection cs = plugin.getConfig().getConfigurationSection("embeds.colors");
-        if (cs != null) {
-            for (String k : cs.getKeys(false)) {
-                String v = cs.getString(k);
-                if (v != null && !v.isBlank()) {
-                    colorMap.put(normalizeKey(k), hex(v));
+        // Supports both:
+        // - flat:   embeds.colors.player_join: "#...."
+        // - nested: embeds.colors.player.join: "#...."
+        ConfigurationSection base = plugin.getConfig().getConfigurationSection("embeds.colors");
+        if (base != null) {
+            for (String k : base.getKeys(false)) {
+                Object child = base.get(k);
+                if (child instanceof ConfigurationSection) {
+                    // Nested group: e.g., player: { join: "#...", quit: "#..." }
+                    ConfigurationSection group = (ConfigurationSection) child;
+                    for (String sk : group.getKeys(false)) {
+                        String v = group.getString(sk);
+                        if (v != null && !v.isBlank()) {
+                            // Store composite key: "player_join"
+                            String composite = normalizeKey(k + "_" + sk);
+                            colorMap.put(composite, hex(v));
+                            // Also store the subkey alone ("join") if not already explicitly set,
+                            // so categories like "join" (if used) can resolve; nested overrides flat.
+                            String naked = normalizeKey(sk);
+                            colorMap.put(naked, hex(v));
+                        }
+                    }
+                } else {
+                    // Flat override remains supported
+                    String v = base.getString(k);
+                    if (v != null && !v.isBlank()) {
+                        colorMap.put(normalizeKey(k), hex(v));
+                    }
                 }
             }
         }
@@ -119,7 +141,13 @@ public final class Log {
     }
 
     private static String normalizeKey(String k) {
-        return k == null ? "" : k.trim().toLowerCase().replace(' ', '_');
+        if (k == null) return "";
+        return k.trim()
+                .toLowerCase()
+                .replace(' ', '_')
+                .replace('.', '_')
+                .replace('-', '_')
+                .replace('/', '_');
     }
 
     private static int colorFor(String categoryKey) {
@@ -171,7 +199,7 @@ public final class Log {
                         /*color*/ colorFor(category),
                         /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
                         /*author*/ embedAuthorName,
-                        /*footer*/ embedFooterText,   // << dynamic footer with version
+                        /*footer*/ embedFooterText,
                         /*thumbnailUrl*/ null
                 );
             }
@@ -201,7 +229,7 @@ public final class Log {
                         /*color*/ colorFor(category),
                         /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
                         /*author*/ embedAuthorName,
-                        /*footer*/ embedFooterText,   // << dynamic footer with version
+                        /*footer*/ embedFooterText,
                         /*thumbnailUrl*/ thumbnailUrl
                 );
             }
@@ -275,7 +303,7 @@ public final class Log {
                     /*color*/ colorFor(category),
                     /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
                     /*author*/ (author == null || author.isBlank()) ? embedAuthorName : author,
-                    /*footer*/ embedFooterText,     // << dynamic footer with version
+                    /*footer*/ embedFooterText,
                     /*thumbnailUrl*/ thumbnailUrl,
                     /*fields*/ toFieldsArray(fields)
             );
