@@ -1,4 +1,4 @@
-package com.discordlogger.listener;
+package com.discordlogger.listener.server;
 
 import com.discordlogger.log.Log;
 import org.bukkit.event.EventHandler;

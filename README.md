@@ -25,9 +25,9 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
   - Plain text + Markdown format: `` `HH:mm:ss dd:MM:yyyy` - **<Category>**: <message> ``
   - **Embeds (optional)** with per-category colors, configurable author, player avatar thumbnails, server icon, and timestamps.
 - **Config-toggleable events** (all on by default):
-  - **Server**: Start, Stop, Server Command
-  - **Player**: Join, Quit, Chat, Command, Death
-  - **Moderation**: Ban, Unban, Kick
+  - **Server**: Start, Stop, Server Command e.t.c.
+  - **Player**: Join, Quit, Chat, Command, Death e.t.c.
+  - **Moderation**: Ban, Unban, Kick, Op, Deop, Whitelist Toggle, Whitelist Add/Remove e.t.c.
 - **Live reload command**: `/discordlogger reload` (perm: `discordlogger.reload`)
 - **Geyser-friendly death messages**: built from server-side damage context (not client-localized text).
 - **Automatic Config Updater**: Updates the config.yml file with new features
@@ -50,22 +50,6 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 
 ---
 
-## ⚙️ Configuration Overview
-
-- **Webhook**
-  - `webhook.url` — *REQUIRED* Discord webhook URL.
-- **Time format**
-  - `format.time` — Java DateTimeFormatter (e.g., `[HH:mm:ss dd:MM:yyyy]`).
-- **Embeds**
-  - `embeds.enabled` — `true` to send embeds.
-  - `embeds.author` — text shown as the embed author.
-  - `embeds.colors.*` — per-category embed colors (e.g., `server`, `player_join`, `player_quit`, `player_chat`, `player_command`, `server_command`, `player_death`).
-- **Event toggles**
-  - `log.server.start`, `log.server.stop`, `log.server.command`
-  - `log.player.join`, `log.player.quit`, `log.player.chat`, `log.player.command`, `log.player.death`
-
----
-
 ## 🔌 Compatibility
 
 - **Server:** Paper/Spigot **1.21+** (Tested on 1.21.8 Paper)  
@@ -76,7 +60,7 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 
 ## 🧰 Development
 
-### Branch Usage:
+**Branch Usage**:
 
 - Main: Current latest version, not developed on, only updated via PR or for workflow updates
 - Dev: May have new features implemented compared to main, is updated frequently and is fairly stable, create branches off dev
@@ -88,6 +72,8 @@ To add a new feature:
 - Develop feature
 - PR into dev
 - When enough features are compiled, dev will be PRed into main
+
+---
 
 - Build with Maven:
   ```bash
@@ -101,12 +87,3 @@ To add a new feature:
 
 This project’s license appears in the repository root.  
 ![License](https://img.shields.io/github/license/GodTierGamers/DiscordLogger)
-
----
-
-## 📬 Support
-
-Open an **Issue** with:
-- A clear description of the problem
-- Relevant `server.log` snippets
-- (If config-related) your `config.yml` with the webhook URL redacted

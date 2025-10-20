@@ -44,16 +44,26 @@ embeds:
 
   # Per-category colors (hex). Keys are case-insensitive; spaces become underscores.
   colors:
-    server: "#43B581"
-    player_join: "#57F287"
-    player_quit: "#ED4245"
-    player_chat: "#5865F2"
-    player_command: "#FEE75C"
-    server_command: "#EB459E"
-    player_death: "#ED4245"
-    ban: "#FF0000"
-    unban: "#FF0000"
-    kick: "#FF0000"
+    player:
+      join:    "#57F287"  # green
+      quit:    "#ED4245"  # red
+      chat:    "#5865F2"  # blurple
+      command: "#FEE75C"  # yellow
+      death:   "#ED4245"  # red
+      advancement: "#2ECC71" # green
+      teleport: "#3498DB" # blue
+    server:
+      start:   "#43B581"  # green
+      stop:    "#ED4245"  # red
+      command: "#EB459E"  # pink
+    moderation:
+      ban:              "#FF0000"  # red
+      unban:            "#FF0000"  # red
+      kick:             "#FF0000"  # red
+      op:               "#FF0000"  # red
+      deop:             "#FF0000"  # red
+      whitelist_toggle: "#1ABC9C"  # teal
+      whitelist:        "#16A085"  # dark teal
 
 
 
@@ -74,6 +84,8 @@ log:
     chat: true # Player Chat
     command: true # Commands executed by a player in-game
     death: true # Player Death (with death message)
+    advancement: true # Logs when a player gets an advancement
+    teleport: true # Logs when a player teleports
 
   server:
     command: true # Commands executed via the server console/terminal
@@ -84,6 +96,10 @@ log:
     ban: true # Logs when a player has been banned
     unban: true # Logs when a player has been unbanned
     kick: true # Logs when a player has been kicked
+    op: true # Logs when a player is granted op premissions
+    deop: true # Logs when a players op permissions are revoked
+    whitelist_toggle: true # Logs when the whitelist is enabled/disabled
+    whitelist_edit: true # Logs when players are added/removed from the whitelist
 
 
-# CONFIG VERSION V6, SHIPPED WITH V2.1.3
+# CONFIG VERSION V7, SHIPPED WITH V2.1.4

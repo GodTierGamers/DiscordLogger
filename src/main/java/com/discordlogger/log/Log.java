@@ -24,8 +24,12 @@ public final class Log {
 
     // Embed config (single source of truth)
     private static boolean embedsEnabledFlag;
-    private static String embedAuthorName;                      // configurable
-    private static final String EMBED_FOOTER = "DiscordLogger"; // hard-coded
+    private static String embedAuthorName;
+
+    // Footer text (dynamic: "DiscordLogger v<version>")
+    private static final String EMBED_FOOTER_BASE = "DiscordLogger";
+    private static String embedFooterText = EMBED_FOOTER_BASE;
+
     private static final String PLAYER_THUMB_TEMPLATE =
             "https://mc-heads.net/avatar/{uuid}/256";
 
@@ -41,6 +45,18 @@ public final class Log {
         // determine readiness & store webhook (store null when not ready)
         ready = isLikelyDiscordWebhook(url);
         webhookUrl = ready ? url : null;
+
+        // compute footer text with plugin version (from plugin.yml -> ${project.version})
+        try {
+            String ver = plugin.getDescription().getVersion();
+            if (ver != null && !ver.isBlank()) {
+                embedFooterText = EMBED_FOOTER_BASE + " v" + ver;
+            } else {
+                embedFooterText = EMBED_FOOTER_BASE;
+            }
+        } catch (Exception ignored) {
+            embedFooterText = EMBED_FOOTER_BASE;
+        }
 
         // plain-text prefix (proxy/server name)
         plainServerName = plugin.getConfig().getString("format.name", "");
@@ -59,21 +75,63 @@ public final class Log {
 
         // Default colors
         colorMap.clear();
-        colorMap.put("server",           hex("#43B581"));
-        colorMap.put("player_join",      hex("#57F287"));
-        colorMap.put("player_quit",      hex("#ED4245"));
-        colorMap.put("player_chat",      hex("#5865F2"));
-        colorMap.put("player_command",   hex("#FEE75C"));
-        colorMap.put("server_command",   hex("#EB459E"));
-        colorMap.put("player_death",     hex("#ED4245"));
+
+// Player
+        colorMap.put("player_join",    hex("#57F287")); // green
+        colorMap.put("player_quit",    hex("#ED4245")); // red
+        colorMap.put("player_chat",    hex("#5865F2")); // blurple
+        colorMap.put("player_command", hex("#FEE75C")); // yellow
+        colorMap.put("player_death",   hex("#ED4245")); // red
+        colorMap.put("player_advancement", hex("#2ECC71")); // green
+        colorMap.put("player_teleport", hex("#3498DB")); // blue
+
+// Server
+        colorMap.put("server_start",   hex("#43B581")); // green
+        colorMap.put("server_stop",    hex("#ED4245")); // red
+        colorMap.put("server_command", hex("#EB459E")); // pink
+
+// Moderation
+        colorMap.put("ban",               hex("#FF0000")); // red
+        colorMap.put("unban",             hex("#FF0000")); // red
+        colorMap.put("kick",              hex("#FF0000")); // red
+        colorMap.put("op",                hex("#FF0000")); // red
+        colorMap.put("deop",              hex("#FF0000")); // red
+        colorMap.put("whitelist_toggle",  hex("#1ABC9C")); // teal
+        colorMap.put("whitelist",         hex("#16A085")); // dark teal
+
+// Fallback base category (used for defaultColor if nothing else matches)
+        colorMap.put("server",            hex("#43B581"));
+
 
         // Allow overrides via embeds.colors.*
-        ConfigurationSection cs = plugin.getConfig().getConfigurationSection("embeds.colors");
-        if (cs != null) {
-            for (String k : cs.getKeys(false)) {
-                String v = cs.getString(k);
-                if (v != null && !v.isBlank()) {
-                    colorMap.put(normalizeKey(k), hex(v));
+        // Supports both:
+        // - flat:   embeds.colors.player_join: "#...."
+        // - nested: embeds.colors.player.join: "#...."
+        ConfigurationSection base = plugin.getConfig().getConfigurationSection("embeds.colors");
+        if (base != null) {
+            for (String k : base.getKeys(false)) {
+                Object child = base.get(k);
+                if (child instanceof ConfigurationSection) {
+                    // Nested group: e.g., player: { join: "#...", quit: "#..." }
+                    ConfigurationSection group = (ConfigurationSection) child;
+                    for (String sk : group.getKeys(false)) {
+                        String v = group.getString(sk);
+                        if (v != null && !v.isBlank()) {
+                            // Store composite key: "player_join"
+                            String composite = normalizeKey(k + "_" + sk);
+                            colorMap.put(composite, hex(v));
+                            // Also store the subkey alone ("join") if not already explicitly set,
+                            // so categories like "join" (if used) can resolve; nested overrides flat.
+                            String naked = normalizeKey(sk);
+                            colorMap.put(naked, hex(v));
+                        }
+                    }
+                } else {
+                    // Flat override remains supported
+                    String v = base.getString(k);
+                    if (v != null && !v.isBlank()) {
+                        colorMap.put(normalizeKey(k), hex(v));
+                    }
                 }
             }
         }
@@ -103,7 +161,13 @@ public final class Log {
     }
 
     private static String normalizeKey(String k) {
-        return k == null ? "" : k.trim().toLowerCase().replace(' ', '_');
+        if (k == null) return "";
+        return k.trim()
+                .toLowerCase()
+                .replace(' ', '_')
+                .replace('.', '_')
+                .replace('-', '_')
+                .replace('/', '_');
     }
 
     private static int colorFor(String categoryKey) {
@@ -155,7 +219,7 @@ public final class Log {
                         /*color*/ colorFor(category),
                         /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
                         /*author*/ embedAuthorName,
-                        /*footer*/ EMBED_FOOTER,
+                        /*footer*/ embedFooterText,
                         /*thumbnailUrl*/ null
                 );
             }
@@ -185,7 +249,7 @@ public final class Log {
                         /*color*/ colorFor(category),
                         /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
                         /*author*/ embedAuthorName,
-                        /*footer*/ EMBED_FOOTER,
+                        /*footer*/ embedFooterText,
                         /*thumbnailUrl*/ thumbnailUrl
                 );
             }
@@ -259,7 +323,7 @@ public final class Log {
                     /*color*/ colorFor(category),
                     /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
                     /*author*/ (author == null || author.isBlank()) ? embedAuthorName : author,
-                    /*footer*/ EMBED_FOOTER,
+                    /*footer*/ embedFooterText,
                     /*thumbnailUrl*/ thumbnailUrl,
                     /*fields*/ toFieldsArray(fields)
             );
@@ -328,7 +392,8 @@ public final class Log {
                 color,
                 timestampIso,
                 author,
-                footer,
+                // If a custom footer is not provided, use dynamic versioned footer
+                (footer == null || footer.isBlank()) ? embedFooterText : footer,
                 null, // no thumbnail for update notices
                 new String[][]{
                         new String[]{"Current Version", currentVersion, "false"},

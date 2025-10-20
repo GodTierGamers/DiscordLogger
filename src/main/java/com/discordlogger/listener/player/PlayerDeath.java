@@ -1,4 +1,4 @@
-package com.discordlogger.listener;
+package com.discordlogger.listener.player;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;

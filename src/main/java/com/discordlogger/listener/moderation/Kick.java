@@ -1,8 +1,7 @@
-package com.discordlogger.listener;
+package com.discordlogger.listener.moderation;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -18,20 +17,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-public final class Unban implements Listener {
+public final class Kick implements Listener {
     private final JavaPlugin plugin;
-    public Unban(JavaPlugin plugin) { this.plugin = plugin; }
+    public Kick(JavaPlugin plugin) { this.plugin = plugin; }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
-        if (!plugin.getConfig().getBoolean("log.moderation.unban", true)) return;
+        if (!plugin.getConfig().getBoolean("log.moderation.kick", true)) return;
         handle(e.getPlayer(), e.getMessage()); // includes leading "/"
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onServerCommand(ServerCommandEvent e) {
-        if (!plugin.getConfig().getBoolean("log.moderation.unban", true)) return;
-        final String raw = "/" + e.getCommand();
+        if (!plugin.getConfig().getBoolean("log.moderation.kick", true)) return;
+        final String raw = "/" + e.getCommand(); // ServerCommandEvent lacks leading "/"
         handle(null, raw);
     }
 
@@ -39,44 +38,48 @@ public final class Unban implements Listener {
         final String raw = rawWithSlash.startsWith("/") ? rawWithSlash.substring(1) : rawWithSlash;
         if (raw.isBlank()) return;
 
-        // <cmd> <player>
+        // Parse: kick <player> [reason...]
         final String[] parts = raw.split("\\s+", 3);
         final String cmd = parts[0].toLowerCase(Locale.ROOT);
-        final boolean isPardon = cmd.equals("pardon") || cmd.equals("unban");
-        if (!isPardon) return;
+        if (!cmd.equals("kick")) return;
 
         // Permission gate (console always allowed)
         if (actorPlayer != null && !hasAny(actorPlayer,
-                "minecraft.command.pardon", "minecraft.command.unban",
-                "bukkit.command.unban", "essentials.unban")) {
+                "minecraft.command.kick", "bukkit.command.kick", "essentials.kick")) {
             return;
         }
 
         final String targetName = parts.length > 1 ? parts[1] : "(unknown)";
+        final String reasonRaw  = parts.length > 2 ? parts[2] : null;
 
-        final BanList nameBans = Bukkit.getBanList(BanList.Type.NAME);
-        final boolean wasBanned = nameBans.isBanned(targetName);
+        // Target must be online to be kicked; if not, bail (command would fail)
+        final Player target = Bukkit.getPlayerExact(targetName);
+        if (target == null || !target.isOnline()) return;
 
-        // Only log if it actually changed from banned -> not banned on next tick
+        final boolean wasOnline = true; // target is online now
+
+        // After command executes, verify success next tick (player no longer online)
         Bukkit.getScheduler().runTask(plugin, () -> {
-            final boolean nowBanned = nameBans.isBanned(targetName);
-            if (wasBanned && !nowBanned) {
+            boolean nowOnline = target.isOnline();
+            if (wasOnline && !nowOnline) {
+                // Moderator display (respects nicknames) or CONSOLE
                 final String moderatorName = (actorPlayer != null)
                         ? Names.display(actorPlayer, plugin)
                         : "CONSOLE";
 
-                String thumb = null;
-                UUID targetUuid = resolveUuid(targetName);
-                if (targetUuid != null) thumb = Log.playerAvatarUrl(targetUuid);
+                // Thumbnail (kicked player's head)
+                String thumb = Log.playerAvatarUrl(target.getUniqueId());
 
                 List<Log.Field> fields = new ArrayList<>();
-                fields.add(new Log.Field("Player Unbanned", targetName));
-                fields.add(new Log.Field("Unbanned by:", moderatorName));
+                fields.add(new Log.Field("Player Kicked", targetName));
+                fields.add(new Log.Field("Kick Reason (if provided):",
+                        (reasonRaw == null || reasonRaw.isBlank()) ? "N/A" : reasonRaw));
+                fields.add(new Log.Field("Kicked by:", moderatorName));
 
                 Log.eventFieldsWithThumb(
-                        "unban",            // color key for unban
-                        "Player Unbanned",
-                        null,               // default author
+                        "kick",
+                        "Player Kicked",
+                        null, // default author
                         fields,
                         thumb
                 );
