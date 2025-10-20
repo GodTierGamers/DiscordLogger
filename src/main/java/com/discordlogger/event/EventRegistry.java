@@ -21,6 +21,7 @@ public final class EventRegistry {
         pm.registerEvents(new PlayerChat(plugin), plugin);
         pm.registerEvents(new PlayerCommand(plugin), plugin);
         pm.registerEvents(new PlayerDeath(plugin), plugin);
+        pm.registerEvents(new PlayerAdvancement(plugin), plugin);
 
         // Server events
         pm.registerEvents(new ServerCommand(plugin), plugin);

@@ -82,6 +82,7 @@ public final class Log {
         colorMap.put("player_chat",    hex("#5865F2")); // blurple
         colorMap.put("player_command", hex("#FEE75C")); // yellow
         colorMap.put("player_death",   hex("#ED4245")); // red
+        colorMap.put("player_advancement", hex("#2ECC71")); // green
 
 // Server
         colorMap.put("server_start",   hex("#43B581")); // green
