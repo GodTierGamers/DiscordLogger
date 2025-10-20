@@ -75,13 +75,31 @@ public final class Log {
 
         // Default colors
         colorMap.clear();
-        colorMap.put("server",           hex("#43B581"));
-        colorMap.put("player_join",      hex("#57F287"));
-        colorMap.put("player_quit",      hex("#ED4245"));
-        colorMap.put("player_chat",      hex("#5865F2"));
-        colorMap.put("player_command",   hex("#FEE75C"));
-        colorMap.put("server_command",   hex("#EB459E"));
-        colorMap.put("player_death",     hex("#ED4245"));
+
+// Player
+        colorMap.put("player_join",    hex("#57F287")); // green
+        colorMap.put("player_quit",    hex("#ED4245")); // red
+        colorMap.put("player_chat",    hex("#5865F2")); // blurple
+        colorMap.put("player_command", hex("#FEE75C")); // yellow
+        colorMap.put("player_death",   hex("#ED4245")); // red
+
+// Server
+        colorMap.put("server_start",   hex("#43B581")); // green
+        colorMap.put("server_stop",    hex("#ED4245")); // red
+        colorMap.put("server_command", hex("#EB459E")); // pink
+
+// Moderation
+        colorMap.put("ban",               hex("#FF0000")); // red
+        colorMap.put("unban",             hex("#FF0000")); // red
+        colorMap.put("kick",              hex("#FF0000")); // red
+        colorMap.put("op",                hex("#FF0000")); // red
+        colorMap.put("deop",              hex("#FF0000")); // red
+        colorMap.put("whitelist_toggle",  hex("#1ABC9C")); // teal
+        colorMap.put("whitelist",         hex("#16A085")); // dark teal
+
+// Fallback base category (used for defaultColor if nothing else matches)
+        colorMap.put("server",            hex("#43B581"));
+
 
         // Allow overrides via embeds.colors.*
         // Supports both:
