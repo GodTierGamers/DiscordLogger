@@ -27,7 +27,7 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 - **Config-toggleable events** (all on by default):
   - **Server**: Start, Stop, Server Command
   - **Player**: Join, Quit, Chat, Command, Death
-  - **Moderation**: Ban, Unban, Kick
+  - **Moderation**: Ban, Unban, Kick, Op, Deop, Whitelist Toggle, Whitelist Add/Remove
 - **Live reload command**: `/discordlogger reload` (perm: `discordlogger.reload`)
 - **Geyser-friendly death messages**: built from server-side damage context (not client-localized text).
 - **Automatic Config Updater**: Updates the config.yml file with new features
@@ -47,22 +47,6 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 
 
 > **Note:** If `webhook.url` is empty/invalid, the plugin will not function until set.
-
----
-
-## ⚙️ Configuration Overview
-
-- **Webhook**
-  - `webhook.url` — *REQUIRED* Discord webhook URL.
-- **Time format**
-  - `format.time` — Java DateTimeFormatter (e.g., `[HH:mm:ss dd:MM:yyyy]`).
-- **Embeds**
-  - `embeds.enabled` — `true` to send embeds.
-  - `embeds.author` — text shown as the embed author.
-  - `embeds.colors.*` — per-category embed colors (e.g., `server`, `player_join`, `player_quit`, `player_chat`, `player_command`, `server_command`, `player_death`).
-- **Event toggles**
-  - `log.server.start`, `log.server.stop`, `log.server.command`
-  - `log.player.join`, `log.player.quit`, `log.player.chat`, `log.player.command`, `log.player.death`
 
 ---
 

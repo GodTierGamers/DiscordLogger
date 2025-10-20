@@ -29,6 +29,7 @@ public final class EventRegistry {
         pm.registerEvents(new Kick(plugin), plugin);
         pm.registerEvents(new Op(plugin), plugin);
         pm.registerEvents(new Deop(plugin), plugin);
+        pm.registerEvents(new Whitelist(plugin), plugin);
     }
 
     public void fireServerStart() {
