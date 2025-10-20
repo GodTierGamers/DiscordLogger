@@ -83,6 +83,7 @@ public final class Log {
         colorMap.put("player_command", hex("#FEE75C")); // yellow
         colorMap.put("player_death",   hex("#ED4245")); // red
         colorMap.put("player_advancement", hex("#2ECC71")); // green
+        colorMap.put("player_teleport", hex("#3498DB")); // blue
 
 // Server
         colorMap.put("server_start",   hex("#43B581")); // green
