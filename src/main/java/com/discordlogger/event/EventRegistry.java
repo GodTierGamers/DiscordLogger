@@ -27,6 +27,7 @@ public final class EventRegistry {
 
         // Server events
         pm.registerEvents(new ServerCommand(plugin), plugin);
+        pm.registerEvents(new Explosion(plugin), plugin);
 
         // Moderation events
         pm.registerEvents(new Ban(plugin), plugin);
