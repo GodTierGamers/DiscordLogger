@@ -90,6 +90,7 @@ public final class Log {
         colorMap.put("server_start",   hex("#43B581")); // green
         colorMap.put("server_stop",    hex("#ED4245")); // red
         colorMap.put("server_command", hex("#EB459E")); // pink
+        colorMap.put("server_explosion", hex("#E74C3C")); // red
 
 // Moderation
         colorMap.put("ban",               hex("#FF0000")); // red
