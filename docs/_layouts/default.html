@@ -25,6 +25,7 @@
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
     <meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#0d1117">
 </head>
+
 <body>
 <main style="max-width: 980px; margin: 2rem auto; padding: 0 1rem;">
     <!-- This wrapper class is what GitHub’s CSS expects -->
@@ -33,6 +34,53 @@
     </article>
 </main>
 
+<div class="dl-shell">
+    <aside class="dl-sidebar" role="navigation" aria-label="Main">
+        <div class="dl-sidebar__header">
+            <a class="dl-brand" href="{{ '/' | relative_url }}">
+                <img class="dl-brand__logo" src="{{ '/assets/icons/favicon-32x32.png' | relative_url }}" alt="" width="24" height="24">
+                <span class="dl-brand__text">DiscordLogger</span>
+            </a>
+
+            <div class="dl-sidebar__controls">
+                <!-- your existing theme toggle button id if you have one -->
+                <button id="theme-toggle" class="btn btn--ghost" title="Toggle theme" aria-label="Toggle theme">🌓</button>
+                <button id="sidebar-toggle" class="btn btn--ghost" title="Collapse sidebar" aria-label="Collapse sidebar">☰</button>
+            </div>
+        </div>
+
+        <ul class="dl-nav">
+            {% assign current = page.url | replace: 'index.html', '' %}
+            {% for item in site.data.nav %}
+            {% assign is_external = item.url | slice: 0, 4 %}
+            {% if is_external == 'http' %}
+            {% assign href = item.url %}
+            {% assign active = false %}
+            {% else %}
+            {% assign href = item.url | relative_url %}
+            {% assign active = current == item.url or current == item.url | append: 'index.html' or current == item.url | append: '/' or current contains item.url %}
+            {% endif %}
+
+            <li class="dl-nav__item">
+                <a class="dl-nav__link{% if active %} is-active{% endif %}" href="{{ href }}" {% if active %}aria-current="page"{% endif %}>
+                    <span class="dl-nav__text">{{ item.title }}</span>
+                    <span class="dl-nav__activebar" aria-hidden="true"></span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <div class="dl-sidebar__footer">
+            <a class="dl-ext" href="https://github.com/GodTierGamers/DiscordLogger/releases" target="_blank" rel="noopener">Releases ↗</a>
+        </div>
+    </aside>
+
+    <main class="dl-main">
+        {{ content }}
+    </main>
+</div>
+
+<script src="{{ '/assets/js/sidebar.js' | relative_url }}"></script>
 <script defer src="{{ '/assets/theme-toggle.js' | relative_url }}"></script>
 </body>
 </html>
