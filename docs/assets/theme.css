@@ -558,26 +558,41 @@ body,
 .dl-sb-scrollbar__thumb:hover  { background: var(--sb-ov-thumb-hover); }
 .dl-sb-scrollbar__thumb:active { background: var(--sb-ov-thumb-active); cursor: grabbing; }
 
-/* --- Keep the sidebar fixed on desktop; ensure main is offset --- */
+/* --- Desktop: fixed sidebar + centered content --- */
 @media (min-width: 961px) {
     .dl-sidebar {
-        position: fixed;            /* force fixed */
-        inset: 0 auto 0 0;          /* left:0; top:0; bottom:0 */
+        position: fixed;
+        inset: 0 auto 0 0;     /* left:0; top:0; bottom:0 */
         width: var(--sidebar-w);
         height: 100dvh;
         overflow: auto;
-        transform: none !important; /* ignore mobile slide-in transform */
+        border-right: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
+        background: color-mix(in oklab, var(--bg) 92%, transparent);
+        backdrop-filter: blur(6px) saturate(120%);
+        transform: none !important;
         z-index: 60;
     }
+
     .dl-main {
-        margin-left: var(--sidebar-w);  /* content sits beside sidebar */
-        max-width: 980px;
-        width: 100%;
+        /* FLUID container beside the sidebar */
+        margin-left: var(--sidebar-w);
         padding: 32px 24px 60px;
+        width: auto;      /* <- important: no fixed width */
+        max-width: none;  /* <- important: remove any prior max-width */
+        min-width: 0;
+    }
+
+    /* Center the article within .dl-main */
+    .dl-main .markdown-body {
+        max-width: 980px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
 }
 
-/* Mobile keeps slide-in behavior */
+/* --- Mobile keeps slide-in sidebar and no left offset --- */
 @media (max-width: 960px) {
     .dl-sidebar {
         position: fixed;
@@ -586,8 +601,19 @@ body,
         height: 100dvh;
         overflow: auto;
         transform: translateX(-100%);
+        z-index: 60;
     }
     .dl-shell.sidebar-open .dl-sidebar { transform: translateX(0); }
+
+    .dl-main {
+        margin-left: 0; /* no offset on mobile */
+        padding: 28px 16px 60px;
+    }
+
+    /* Keep the centering on mobile too */
+    .dl-main .markdown-body {
+        max-width: 980px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
 }
-
-
