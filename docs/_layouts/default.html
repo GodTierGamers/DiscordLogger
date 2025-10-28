@@ -42,7 +42,7 @@
         </div>
 
         <ul class="dl-nav">
-            {% assign current = page.url | replace: 'index.html', '' %}
+            {% assign current = page.url %}
             {% for item in site.data.nav %}
             {% assign is_external = item.url | slice: 0, 4 %}
             {% if is_external == 'http' %}
@@ -50,7 +50,13 @@
             {% assign active = false %}
             {% else %}
             {% assign href = item.url | relative_url %}
-            {% assign active = current == item.url or current == item.url | append: 'index.html' or current == item.url | append: '/' or current contains item.url %}
+            {% if item.url == '/' %}
+            {% assign active = current == '/' or current == '/index.html' %}
+            {% else %}
+            {% assign item_len = item.url | size %}
+            {% assign prefix = current | slice: 0, item_len %}
+            {% assign active = prefix == item.url %}
+            {% endif %}
             {% endif %}
 
             <li class="dl-nav__item">
@@ -61,6 +67,7 @@
             </li>
             {% endfor %}
         </ul>
+
 
         <div class="dl-sidebar__footer">
             <a class="dl-ext" href="https://github.com/GodTierGamers/DiscordLogger/releases" target="_blank" rel="noopener">Releases ↗</a>
