@@ -5,16 +5,23 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>{{ page.title | default: site.title | default: "DiscordLogger" }}</title>
     <meta name="description" content="{{ page.description | default: site.description | default: 'Minecraft → Discord logging that’s clean, configurable, and production-ready.' }}">
+
+    <!-- GitHub Markdown CSS (makes it look like before) -->
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5.5.1/github-markdown.css">
+
+    <!-- Your theme vars + toggle (dark mode, etc.) -->
     <link rel="stylesheet" href="{{ '/assets/theme.css' | relative_url }}">
     <link rel="icon" href="{{ '/assets/favicon.png' | relative_url }}">
     <meta name="color-scheme" content="light dark">
 </head>
 <body>
-<main class="page-content" style="max-width: 980px; margin: 2rem auto; padding: 0 1rem;">
-    {{ content }}
+<main style="max-width: 980px; margin: 2rem auto; padding: 0 1rem;">
+    <!-- This wrapper class is what GitHub’s CSS expects -->
+    <article class="markdown-body">
+        {{ content }}
+    </article>
 </main>
 
-<!-- Theme toggle button + logic -->
 <script defer src="{{ '/assets/theme-toggle.js' | relative_url }}"></script>
 </body>
 </html>
