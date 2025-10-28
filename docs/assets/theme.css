@@ -488,3 +488,76 @@ body,
 
 /* Sidebar & code blocks keep their (themed) native scrollbars if you want:
    (Leave your existing sidebar theming rules as-is) */
+
+/* ===== Overlay Scrollbar — SIDEBAR version ===== */
+
+/* Hide native sidebar scrollbar (we'll draw our own) */
+.dl-sidebar {
+    scrollbar-width: none;                 /* Firefox */
+}
+.dl-sidebar::-webkit-scrollbar {         /* Chromium/WebKit */
+    width: 0;
+    height: 0;
+}
+
+/* Vars specific to the sidebar scrollbar */
+:root {
+    --sb-ov-w: 12px;                       /* a bit slimmer than page bar */
+    --sb-ov-inset: 8px;                    /* distance from inner right edge */
+    --sb-ov-radius: 10px;
+
+    --sb-ov-track: color-mix(in oklab, var(--fg) 8%, transparent);
+    --sb-ov-thumb: color-mix(in oklab, var(--fg) 35%, transparent);
+    --sb-ov-thumb-hover: color-mix(in oklab, var(--fg) 52%, transparent);
+    --sb-ov-thumb-active: color-mix(in oklab, var(--fg) 68%, transparent);
+}
+
+/* Container sits INSIDE the sidebar */
+.dl-sb-scrollbar {
+    position: absolute;
+    top: 0;
+    right: var(--sb-ov-inset);
+    height: 100%;
+    width: var(--sb-ov-w);
+    z-index: 3;                             /* above menu items */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 220ms ease;
+}
+
+/* Show state */
+.dl-sb-scrollbar.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Track */
+.dl-sb-scrollbar__track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 8px;
+    bottom: 8px;
+    background: var(--sb-ov-track);
+    border-radius: var(--sb-ov-radius);
+}
+
+/* Thumb */
+.dl-sb-scrollbar__thumb {
+    position: absolute;
+    left: 2px;
+    width: calc(var(--sb-ov-w) - 4px);
+    top: 8px;
+    height: 40px; /* JS updates */
+    background: var(--sb-ov-thumb);
+    border-radius: calc(var(--sb-ov-radius) - 2px);
+    transition: background-color 140ms ease;
+    cursor: grab;
+    user-select: none;
+}
+.dl-sb-scrollbar__thumb:hover  { background: var(--sb-ov-thumb-hover); }
+.dl-sb-scrollbar__thumb:active { background: var(--sb-ov-thumb-active); cursor: grabbing; }
+
+/* Ensure the sidebar can host absolutely-positioned overlay */
+.dl-sidebar { position: relative; }
+
