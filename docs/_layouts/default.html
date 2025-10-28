@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5.5.1/github-markdown.css">
 
     <!-- Your theme + favicon -->
-    <link rel="stylesheet" href="{{ '/assets/theme.css?v=2' | relative_url }}">
+    <link rel="stylesheet" href="{{ '/assets/theme.css?v=3' | relative_url }}">
     <link rel="icon" href="{{ '/assets/favicon.png' | relative_url }}">
     <meta name="color-scheme" content="light dark">
 
@@ -36,7 +36,7 @@
             </a>
 
             <div class="dl-sidebar__controls">
-                <button id="theme-toggle" class="btn btn--ghost" title="Toggle theme" aria-label="Toggle theme">🌓</button>
+                <!-- Only the sidebar toggle remains here -->
                 <button id="sidebar-toggle" class="btn btn--ghost" title="Collapse sidebar" aria-label="Collapse sidebar">☰</button>
             </div>
         </div>
@@ -45,7 +45,6 @@
             {% assign current = page.url | replace: 'index.html', '' %}
             {% for item in site.data.nav %}
             {% assign is_external = item.url | slice: 0, 4 %}
-
             {% if is_external == 'http' %}
             {% assign href = item.url %}
             {% assign active_class = '' %}
@@ -76,8 +75,6 @@
             {% endfor %}
         </ul>
 
-
-
         <div class="dl-sidebar__footer">
             <a class="dl-ext" href="https://github.com/GodTierGamers/DiscordLogger/releases" target="_blank" rel="noopener">Releases ↗</a>
         </div>
@@ -90,7 +87,10 @@
     </main>
 </div>
 
-<script src="{{ '/assets/js/sidebar.js?v=2' | relative_url }}"></script>
-<script defer src="{{ '/assets/theme-toggle.js?v=2' | relative_url }}"></script>
+<!-- Single floating theme toggle (not duplicated in the sidebar) -->
+<button id="theme-toggle" class="btn btn--ghost" title="Toggle theme" aria-label="Toggle theme">🌓</button>
+
+<script src="{{ '/assets/js/sidebar.js?v=3' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/theme-toggle.js?v=3' | relative_url }}"></script>
 </body>
 </html>

@@ -18,6 +18,9 @@
     /* Accents (used in sidebar active states, etc.) */
     --accent: #4f46e5;    /* indigo-600 */
     --accent-fg: #3730a3; /* indigo-700 */
+
+    /* Font stack to match GitHub Markdown look */
+    --font-ui: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
 }
 
 html[data-theme="dark"] {
@@ -41,6 +44,7 @@ body {
     background: var(--bg);
     color: var(--fg);
     margin: 0;
+    font-family: var(--font-ui);
 }
 
 a { color: var(--link); }
@@ -49,6 +53,9 @@ a { color: var(--link); }
 .markdown-body {
     background: var(--bg) !important;
     color: var(--fg) !important;
+
+    /* Ensure the GitHub font stack is used (prevents layout font shifts) */
+    font-family: var(--font-ui) !important;
 }
 
 /* Links inside markdown */
@@ -182,6 +189,7 @@ html[data-theme="dark"] .markdown-body blockquote {
     background: color-mix(in oklab, var(--bg) 92%, transparent);
     backdrop-filter: blur(6px) saturate(120%);
     transition: transform 200ms ease, width 200ms ease;
+    font-family: var(--font-ui);
 }
 
 @media (max-width: 960px) {
@@ -252,13 +260,20 @@ html[data-theme="dark"] .markdown-body blockquote {
     color: var(--fg);
     text-decoration: none;
     transition: background-color 160ms ease, color 160ms ease, transform 120ms ease;
+    background: transparent;
+    box-shadow: none;
+    border: 0;
 }
 .dl-nav__link:hover {
-    background: color-mix(in oklab, var(--fg) 8%, transparent);
+    background: transparent;           /* no hover box */
+    text-decoration: underline;        /* gentle hover affordance */
 }
 .dl-nav__link.is-active {
+    text-decoration: none;
     color: var(--accent-fg);
     background: color-mix(in oklab, var(--accent) 14%, transparent);
+    box-shadow: 0 0 0 1px var(--accent);
+    border-radius: 10px;
 }
 
 .dl-nav__activebar {
@@ -291,6 +306,7 @@ html[data-theme="dark"] .markdown-body blockquote {
     width: 100%;
     margin: 0 auto;
     transition: opacity 180ms ease, filter 180ms ease;
+    font-family: var(--font-ui);
 }
 
 /* ---------- Page fade (optional) ---------- */
@@ -300,29 +316,3 @@ html[data-theme="dark"] .markdown-body blockquote {
     html.page-exit { opacity: 1; }
     html.page-exit-active { opacity: 0; transition: opacity 140ms ease; }
 }
-
-/* --- Sidebar: only active link gets a box/background --- */
-.dl-nav__link {
-    background: transparent;
-    box-shadow: none;
-    border: 0;
-}
-
-.dl-nav__link:hover {
-    background: transparent;           /* no hover box */
-    text-decoration: underline;        /* gentle hover affordance */
-}
-
-.dl-nav__link.is-active {
-    text-decoration: none;
-    background: color-mix(in oklab, var(--accent) 14%, transparent);
-    box-shadow: 0 0 0 1px var(--accent);
-    border-radius: 10px;
-}
-
-/* Ensure sidebar adopts theme colors */
-.dl-sidebar {
-    background: color-mix(in oklab, var(--bg) 92%, transparent);
-    border-right: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
-}
-
