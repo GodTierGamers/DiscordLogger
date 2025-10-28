@@ -411,54 +411,74 @@ html[data-theme="dark"] .markdown-body blockquote {
   max-width: var(--hero-max) !important;
 }
 
-/* ===== Themed Scrollbars (light/dark) ===== */
+/* ===== Themed Scrollbars — thicker, inset, fade-in ===== */
 
-/* Vars for scrollbar colors */
+/* Geometry */
 :root {
-    --scrollbar-bg: var(--bg);
-    --scrollbar-thumb: color-mix(in oklab, var(--fg) 25%, transparent);
-    --scrollbar-thumb-hover: color-mix(in oklab, var(--fg) 40%, transparent);
-    --scrollbar-thumb-active: color-mix(in oklab, var(--fg) 55%, transparent);
+    --sb-w: 16px;          /* thicker */
+    --sb-radius: 12px;
 }
-html[data-theme="dark"] {
+
+/* Colors (light/dark) */
+:root {
     --scrollbar-bg: var(--bg);
     --scrollbar-thumb: color-mix(in oklab, var(--fg) 35%, transparent);
     --scrollbar-thumb-hover: color-mix(in oklab, var(--fg) 50%, transparent);
     --scrollbar-thumb-active: color-mix(in oklab, var(--fg) 65%, transparent);
+
+    /* “Current” colors (toggled by .scrollbars-visible) */
+    --sb-track-current: transparent;
+    --sb-thumb-current: transparent;
+}
+html[data-theme="dark"] {
+    --scrollbar-bg: var(--bg);
+    --scrollbar-thumb: color-mix(in oklab, var(--fg) 45%, transparent);
+    --scrollbar-thumb-hover: color-mix(in oklab, var(--fg) 60%, transparent);
+    --scrollbar-thumb-active: color-mix(in oklab, var(--fg) 75%, transparent);
 }
 
-/* Stabilize layout so scrollbars don't shift content (where supported) */
+/* When visible, swap in real colors */
+html.scrollbars-visible {
+    --sb-track-current: var(--scrollbar-bg);
+    --sb-thumb-current: var(--scrollbar-thumb);
+}
+
+/* Keep layout stable so scrollbars don’t nudge content */
 body,
 .dl-sidebar,
 .markdown-body pre {
     scrollbar-gutter: stable both-edges;
 }
 
-/* ---------- Firefox (global) ---------- */
-:root {
-    scrollbar-width: thin; /* thin | auto | none */
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-bg);
+/* ---------- Firefox ---------- */
+:root {                       /* thicker than 'thin' = default */
+    scrollbar-width: auto;      /* auto | thin | none */
+    scrollbar-color: transparent transparent;
+}
+html.scrollbars-visible {
+    scrollbar-color: var(--sb-thumb-current) var(--sb-track-current);
 }
 
-/* Optional: slightly thicker in the sidebar for better grab area */
-.dl-sidebar {
-    scrollbar-width: thin;
-}
-
-/* ---------- WebKit (Chrome/Edge/Safari/Opera) ---------- */
-/* Global defaults */
+/* ---------- WebKit family (Chrome/Edge/Safari/Opera) ---------- */
 *::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-    background: transparent; /* lets track show through */
+    width: var(--sb-w);
+    height: var(--sb-w);
+    background: transparent;
 }
 *::-webkit-scrollbar-track {
-    background: var(--scrollbar-bg);
+    background: var(--sb-track-current);
+    transition: background-color 240ms ease;
 }
 *::-webkit-scrollbar-thumb {
-    background-color: var(--scrollbar-thumb);
-    border-radius: 8px;
-    border: 3px solid var(--scrollbar-bg); /* creates an inset look */
+    background-color: var(--sb-thumb-current);
+    border-radius: var(--sb-radius);
+
+    /* “Inset from edge” illusion: fat border the same color as the track */
+    border: 4px solid var(--sb-track-current);
+
+    transition:
+            background-color 240ms ease,
+            border-color 240ms ease;
 }
 *::-webkit-scrollbar-thumb:hover {
     background-color: var(--scrollbar-thumb-hover);
@@ -467,26 +487,13 @@ body,
     background-color: var(--scrollbar-thumb-active);
 }
 
-/* Sidebar gets a touch narrower */
-.dl-sidebar::-webkit-scrollbar {
-    width: 10px;
-}
-.dl-sidebar::-webkit-scrollbar-thumb {
-    border-width: 2px;
-}
+/* Sidebar a touch narrower for precision */
+.dl-sidebar::-webkit-scrollbar { width: 14px; }
+.dl-sidebar::-webkit-scrollbar-thumb { border-width: 3px; }
 
 /* Horizontal scrollers in code blocks */
-.markdown-body pre::-webkit-scrollbar {
-    height: 10px;
-}
-.markdown-body pre::-webkit-scrollbar-thumb {
-    border-width: 2px;
-}
+.markdown-body pre::-webkit-scrollbar { height: 12px; }
+.markdown-body pre::-webkit-scrollbar-thumb { border-width: 3px; }
 
-/* Hide default corner box on two-axis scroll areas */
-*::-webkit-scrollbar-corner {
-    background: var(--scrollbar-bg);
-}
-
-
-
+/* Hide the corner filler on dual-axis areas */
+*::-webkit-scrollbar-corner { background: var(--sb-track-current); }
