@@ -95,3 +95,26 @@ html[data-theme="dark"] .markdown-body blockquote {
 .markdown-body pre .pl-c1 {
     color: var(--fg) !important;
 }
+
+/* Smooth theme transitions (no jarring flash) */
+@media (prefers-reduced-motion: no-preference) {
+    /* don't animate on very first paint */
+    html.theme-no-anim * { transition: none !important; }
+
+    body,
+    .markdown-body,
+    .markdown-body pre,
+    .markdown-body code,
+    .markdown-body table,
+    .markdown-body th,
+    .markdown-body td,
+    .markdown-body blockquote,
+    .markdown-body hr,
+    #theme-toggle {
+        transition:
+                background-color .25s ease,
+                color .25s ease,
+                border-color .25s ease,
+                box-shadow .25s ease;
+    }
+}
