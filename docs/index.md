@@ -22,9 +22,9 @@ Minecraft → Discord logging that’s clean, configurable, and production-ready
 
 ## Quick links
 
-- 🚀 **[Setup / Install](./setup.md)**
-- 🧰 **[config.yml Generator](./generator/)**
-- 📘 **[config.yml Docs (versioned)](./config/)**
+-  **[Setup / Install](./setup.md)**
+-  **[config.yml Generator](./generator/)**
+-  **[config.yml Docs (versioned)](./config/)**
 
 ---
 
@@ -43,7 +43,5 @@ Minecraft → Discord logging that’s clean, configurable, and production-ready
 > You can also use the [config.yml Generator](./generator/) to create a fully customized config.yml
 
 ## Useful Links
-- 🧩Source: https://github.com/GodTierGamers/DiscordLogger
-- 📦Releases: https://github.com/GodTierGamers/DiscordLogger/releases
-
-Made with ♥ by GodTierGamers
+- Source: https://github.com/GodTierGamers/DiscordLogger
+- Releases: https://github.com/GodTierGamers/DiscordLogger/releases
