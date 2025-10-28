@@ -300,3 +300,29 @@ html[data-theme="dark"] .markdown-body blockquote {
     html.page-exit { opacity: 1; }
     html.page-exit-active { opacity: 0; transition: opacity 140ms ease; }
 }
+
+/* --- Sidebar: only active link gets a box/background --- */
+.dl-nav__link {
+    background: transparent;
+    box-shadow: none;
+    border: 0;
+}
+
+.dl-nav__link:hover {
+    background: transparent;           /* no hover box */
+    text-decoration: underline;        /* gentle hover affordance */
+}
+
+.dl-nav__link.is-active {
+    text-decoration: none;
+    background: color-mix(in oklab, var(--accent) 14%, transparent);
+    box-shadow: 0 0 0 1px var(--accent);
+    border-radius: 10px;
+}
+
+/* Ensure sidebar adopts theme colors */
+.dl-sidebar {
+    background: color-mix(in oklab, var(--bg) 92%, transparent);
+    border-right: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
+}
+
