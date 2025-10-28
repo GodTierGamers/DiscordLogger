@@ -47,3 +47,6 @@ Minecraft → Discord logging that’s clean, configurable, and production-ready
 - 📦Releases: https://github.com/GodTierGamers/DiscordLogger/releases
 
 Made with ♥ by GodTierGamers
+
+<link rel="stylesheet" href="/assets/theme.css">
+<script defer src="/assets/theme-toggle.js"></script>

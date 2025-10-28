@@ -1,0 +1,44 @@
+:root {
+    color-scheme: light dark;           /* lets browsers style form controls properly */
+    --bg: #ffffff;
+    --fg: #0b0f14;
+    --muted: #667085;
+    --link: #1f6feb;                    /* GitHub-ish blue */
+    --border: #e5e7eb;
+    --code-bg: #f6f8fa;
+}
+
+html[data-theme="dark"] {
+    --bg: #0d1117;
+    --fg: #c9d1d9;
+    --muted: #8b949e;
+    --link: #58a6ff;
+    --border: #30363d;
+    --code-bg: #161b22;
+}
+
+html, body {
+    background: var(--bg);
+    color: var(--fg);
+}
+
+a { color: var(--link); }
+hr, table, th, td, blockquote { border-color: var(--border) !important; }
+pre, code { background: var(--code-bg); }
+
+/* Floating toggle button */
+#theme-toggle {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 9999;
+    padding: .6rem .8rem;
+    border-radius: .75rem;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
+    font: inherit;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+}
+#theme-toggle:focus { outline: 2px solid var(--link); outline-offset: 2px; }
