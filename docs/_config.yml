@@ -1,0 +1,12 @@
+title: DiscordLogger
+# When using a custom domain, baseurl is empty at runtime. relative_url handles both cases.
+
+markdown: kramdown
+
+# Apply the default layout to all Markdown pages under docs/
+defaults:
+  - scope:
+      path: ""     # everything in this source (docs) folder
+      type: "pages"
+    values:
+      layout: "default"
