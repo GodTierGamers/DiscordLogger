@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5.5.1/github-markdown.css">
 
     <!-- Your theme + favicon -->
-    <link rel="stylesheet" href="{{ '/assets/theme.css' | relative_url }}">
+    <link rel="stylesheet" href="{{ '/assets/theme.css?v=2' | relative_url }}">
     <link rel="icon" href="{{ '/assets/favicon.png' | relative_url }}">
     <meta name="color-scheme" content="light dark">
 
@@ -42,31 +42,40 @@
         </div>
 
         <ul class="dl-nav">
-            {% assign current = page.url %}
+            {% assign current = page.url | replace: 'index.html', '' %}
             {% for item in site.data.nav %}
             {% assign is_external = item.url | slice: 0, 4 %}
+
             {% if is_external == 'http' %}
             {% assign href = item.url %}
-            {% assign active = false %}
+            {% assign active_class = '' %}
             {% else %}
             {% assign href = item.url | relative_url %}
+            {% assign active_class = '' %}
+
             {% if item.url == '/' %}
-            {% assign active = current == '/' or current == '/index.html' %}
+            {% if current == '/' or current == '/index.html' %}
+            {% assign active_class = ' is-active' %}
+            {% endif %}
             {% else %}
-            {% assign item_len = item.url | size %}
-            {% assign prefix = current | slice: 0, item_len %}
-            {% assign active = prefix == item.url %}
+            {% if current == item.url
+            or current == item.url | append: 'index.html'
+            or current == item.url | append: '/'
+            or current contains item.url %}
+            {% assign active_class = ' is-active' %}
+            {% endif %}
             {% endif %}
             {% endif %}
 
             <li class="dl-nav__item">
-                <a class="dl-nav__link{% if active %} is-active{% endif %}" href="{{ href }}" {% if active %}aria-current="page"{% endif %}>
+                <a class="dl-nav__link{{ active_class }}" href="{{ href }}"{% if active_class != '' %} aria-current="page"{% endif %}>
                     <span class="dl-nav__text">{{ item.title }}</span>
                     <span class="dl-nav__activebar" aria-hidden="true"></span>
                 </a>
             </li>
             {% endfor %}
         </ul>
+
 
 
         <div class="dl-sidebar__footer">
@@ -81,7 +90,7 @@
     </main>
 </div>
 
-<script src="{{ '/assets/js/sidebar.js' | relative_url }}"></script>
-<script defer src="{{ '/assets/theme-toggle.js' | relative_url }}"></script>
+<script src="{{ '/assets/js/sidebar.js?v=2' | relative_url }}"></script>
+<script defer src="{{ '/assets/theme-toggle.js?v=2' | relative_url }}"></script>
 </body>
 </html>
