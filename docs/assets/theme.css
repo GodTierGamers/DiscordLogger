@@ -26,7 +26,9 @@
     --sidebar-w: clamp(260px, 23vw, 340px);
     --content-w: 980px; /* inner markdown max width */
 
-    --hero-bleed: clamp(0px, calc((100vw - var(--content-w)) / 2), 96px);
+    --page-w: calc(100vw - var(--sidebar-w));
+
+    --hero-bleed: clamp(0px, calc((var(--page-w) - var(--content-w)) / 2), 96px);
 }
 
 html[data-theme="dark"] {
@@ -112,24 +114,24 @@ html[data-theme="dark"] .markdown-body blockquote {
     padding: 0 1rem;
 }
 
-/* Regular images */
+/* Regular images remain responsive */
 .dl-main .markdown-body img {
     max-width: 100%;
     height: auto;
 }
 
-/* First paragraph (banner container) gets a controlled bleed */
+/* First paragraph acts as the hero “bleed” wrapper */
 .dl-main .markdown-body > p:first-of-type {
     margin-left: calc(-1 * var(--hero-bleed));
     margin-right: calc(-1 * var(--hero-bleed));
 }
 
-/* Hero image never exceeds the viewport, and shrinks to fit on narrow screens */
+/* Hero image: expand within wrapper but never exceed usable page width */
 .dl-main .markdown-body > p:first-of-type > img {
     display: block;
     margin: 8px auto 16px;
-    width: calc(100% + (var(--hero-bleed) * 2)); /* expands on wide screens */
-    max-width: min(1400px, 100vw);               /* but never wider than the screen */
+    width: calc(100% + (var(--hero-bleed) * 2));
+    max-width: min(1400px, var(--page-w)); /* cap to usable area, not full viewport */
     height: auto;
     object-fit: contain;
 }
