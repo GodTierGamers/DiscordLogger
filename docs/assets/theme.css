@@ -22,8 +22,9 @@
     /* Font stack to match GitHub Markdown look */
     --font-ui: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
 
-    /* Responsive sidebar width (desktop) */
+    /* Responsive layout vars */
     --sidebar-w: clamp(260px, 23vw, 340px);
+    --content-w: 980px; /* inner markdown max width */
 }
 
 html[data-theme="dark"] {
@@ -99,10 +100,13 @@ html[data-theme="dark"] .markdown-body blockquote {
     color: var(--fg) !important;
 }
 
-/* Constrain markdown content width similarly to GitHub’s center column */
+/* Constrain and center markdown within the free space (sidebar → right edge) */
 .dl-main .markdown-body {
-    max-width: 980px;
-    margin: 2rem auto;
+    max-width: var(--content-w);
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
     padding: 0 1rem;
 }
 
@@ -164,7 +168,7 @@ html[data-theme="dark"] .markdown-body blockquote {
 }
 
 /* ---------- Shell layout (sidebar + main) ---------- */
-/* Desktop: fixed sidebar, main offset by sidebar width */
+/* Desktop: fixed sidebar, main fills remaining space */
 @media (min-width: 961px) {
     .dl-shell {
         display: block;
@@ -190,9 +194,11 @@ html[data-theme="dark"] .markdown-body blockquote {
 
     .dl-main {
         margin-left: var(--sidebar-w);
-        max-width: 980px;
-        width: 100%;
+        margin-right: 0;
         padding: 32px 24px 60px;
+        min-width: 0;
+        max-width: none;                 /* let it span all free space */
+        width: auto;
         transition: opacity 180ms ease, filter 180ms ease;
         font-family: var(--font-ui);
     }
@@ -264,13 +270,13 @@ html[data-theme="dark"] .markdown-body blockquote {
     background: color-mix(in oklab, var(--fg) 10%, transparent);
 }
 
-/* Nav list */
+/* Nav list (roomier spacing) */
 .dl-nav {
     list-style: none;
-    margin: 10px 0 18px;
+    margin: 12px 0 20px;
     padding: 0;
     display: grid;
-    gap: 6px;
+    gap: 12px;                          /* more vertical space between items */
 }
 .dl-nav__item { position: relative; }
 
@@ -278,9 +284,9 @@ html[data-theme="dark"] .markdown-body blockquote {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 14px;              /* roomier & touch-friendly */
-    border-radius: 12px;
+    gap: 12px;
+    padding: 14px 16px;                 /* roomier & touch-friendly */
+    border-radius: 14px;
     color: var(--fg);
     text-decoration: none;
     transition: background-color 160ms ease, color 160ms ease, transform 120ms ease;
@@ -289,20 +295,20 @@ html[data-theme="dark"] .markdown-body blockquote {
     border: 0;
 }
 .dl-nav__link:hover {
-    background: transparent;          /* no hover box */
-    text-decoration: underline;       /* gentle hover affordance */
+    background: transparent;            /* no hover box */
+    text-decoration: underline;         /* gentle hover affordance */
 }
 .dl-nav__link.is-active {
     text-decoration: none;
     color: var(--accent-fg);
     background: color-mix(in oklab, var(--accent) 15%, transparent);
     box-shadow: 0 0 0 1px var(--accent);
-    border-radius: 12px;
+    border-radius: 14px;
 }
 
 .dl-nav__activebar {
     position: absolute;
-    left: 8px; top: 50%;
+    left: 10px; top: 50%;
     transform: translateY(-50%) scaleY(0);
     width: 3px; height: 70%;
     background: var(--accent);
