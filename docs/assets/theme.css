@@ -80,3 +80,18 @@ html[data-theme="dark"]  { color-scheme: dark; }
 html[data-theme="dark"] .markdown-body blockquote {
     color: var(--fg) !important;
 }
+
+/* Make all code follow our theme (readable in both modes) */
+.markdown-body pre,
+.markdown-body pre code,
+.markdown-body code {
+    background: var(--code-bg) !important;
+    color: var(--fg) !important;
+}
+
+/* Neutralize GitHub token colors inside fenced code blocks */
+.markdown-body pre [class^="pl-"],
+.markdown-body pre .pl-ent,
+.markdown-body pre .pl-c1 {
+    color: var(--fg) !important;
+}

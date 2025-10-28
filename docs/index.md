@@ -16,7 +16,6 @@ Minecraft → Discord logging that’s clean, configurable, and production-ready
 - **Per-category colors** and a consistent, fields-first embed style
 - **Smart safety**: only logs moderation actions if they actually succeeded
 - **Versioned config**: automatic merging across updates (keeps your settings)
-- **Nice touches**: player head thumbnails, footer with plugin version + icon
 
 ---
 
