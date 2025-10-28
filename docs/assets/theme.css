@@ -25,6 +25,8 @@
     /* Responsive layout vars */
     --sidebar-w: clamp(260px, 23vw, 340px);
     --content-w: 980px; /* inner markdown max width */
+
+    --hero-bleed: clamp(0px, 4vw, 96px);
 }
 
 html[data-theme="dark"] {
@@ -110,15 +112,28 @@ html[data-theme="dark"] .markdown-body blockquote {
     padding: 0 1rem;
 }
 
-/* Responsive images + tidy banner look */
+/* Regular images */
 .dl-main .markdown-body img { max-width: 100%; height: auto; }
+
+/* Hero (first image on the page) — bleed wider than content */
+.dl-main .markdown-body > p:first-of-type {
+    margin-left: calc(-1 * var(--hero-bleed));
+    margin-right: calc(-1 * var(--hero-bleed));
+}
+
 .dl-main .markdown-body > p:first-of-type > img {
     display: block;
     margin: 8px auto 16px;
-    width: 100%;
-    max-width: 840px;
+    width: calc(100% + (var(--hero-bleed) * 2));
+    max-width: 1400px;
     object-fit: contain;
 }
+
+/* Optional: kill bleed on very narrow screens */
+@media (max-width: 520px) {
+    :root { --hero-bleed: 0px; }
+}
+
 
 /* ---------- Theme toggle button (floating) ---------- */
 #theme-toggle {
