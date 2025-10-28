@@ -558,6 +558,36 @@ body,
 .dl-sb-scrollbar__thumb:hover  { background: var(--sb-ov-thumb-hover); }
 .dl-sb-scrollbar__thumb:active { background: var(--sb-ov-thumb-active); cursor: grabbing; }
 
-/* Ensure the sidebar can host absolutely-positioned overlay */
-.dl-sidebar { position: relative; }
+/* --- Keep the sidebar fixed on desktop; ensure main is offset --- */
+@media (min-width: 961px) {
+    .dl-sidebar {
+        position: fixed;            /* force fixed */
+        inset: 0 auto 0 0;          /* left:0; top:0; bottom:0 */
+        width: var(--sidebar-w);
+        height: 100dvh;
+        overflow: auto;
+        transform: none !important; /* ignore mobile slide-in transform */
+        z-index: 60;
+    }
+    .dl-main {
+        margin-left: var(--sidebar-w);  /* content sits beside sidebar */
+        max-width: 980px;
+        width: 100%;
+        padding: 32px 24px 60px;
+    }
+}
+
+/* Mobile keeps slide-in behavior */
+@media (max-width: 960px) {
+    .dl-sidebar {
+        position: fixed;
+        left: 0; top: 0; bottom: 0;
+        width: var(--sidebar-w);
+        height: 100dvh;
+        overflow: auto;
+        transform: translateX(-100%);
+    }
+    .dl-shell.sidebar-open .dl-sidebar { transform: translateX(0); }
+}
+
 
