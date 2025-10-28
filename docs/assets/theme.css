@@ -411,4 +411,82 @@ html[data-theme="dark"] .markdown-body blockquote {
   max-width: var(--hero-max) !important;
 }
 
+/* ===== Themed Scrollbars (light/dark) ===== */
+
+/* Vars for scrollbar colors */
+:root {
+    --scrollbar-bg: var(--bg);
+    --scrollbar-thumb: color-mix(in oklab, var(--fg) 25%, transparent);
+    --scrollbar-thumb-hover: color-mix(in oklab, var(--fg) 40%, transparent);
+    --scrollbar-thumb-active: color-mix(in oklab, var(--fg) 55%, transparent);
+}
+html[data-theme="dark"] {
+    --scrollbar-bg: var(--bg);
+    --scrollbar-thumb: color-mix(in oklab, var(--fg) 35%, transparent);
+    --scrollbar-thumb-hover: color-mix(in oklab, var(--fg) 50%, transparent);
+    --scrollbar-thumb-active: color-mix(in oklab, var(--fg) 65%, transparent);
+}
+
+/* Stabilize layout so scrollbars don't shift content (where supported) */
+body,
+.dl-sidebar,
+.markdown-body pre {
+    scrollbar-gutter: stable both-edges;
+}
+
+/* ---------- Firefox (global) ---------- */
+:root {
+    scrollbar-width: thin; /* thin | auto | none */
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-bg);
+}
+
+/* Optional: slightly thicker in the sidebar for better grab area */
+.dl-sidebar {
+    scrollbar-width: thin;
+}
+
+/* ---------- WebKit (Chrome/Edge/Safari/Opera) ---------- */
+/* Global defaults */
+*::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+    background: transparent; /* lets track show through */
+}
+*::-webkit-scrollbar-track {
+    background: var(--scrollbar-bg);
+}
+*::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 8px;
+    border: 3px solid var(--scrollbar-bg); /* creates an inset look */
+}
+*::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+}
+*::-webkit-scrollbar-thumb:active {
+    background-color: var(--scrollbar-thumb-active);
+}
+
+/* Sidebar gets a touch narrower */
+.dl-sidebar::-webkit-scrollbar {
+    width: 10px;
+}
+.dl-sidebar::-webkit-scrollbar-thumb {
+    border-width: 2px;
+}
+
+/* Horizontal scrollers in code blocks */
+.markdown-body pre::-webkit-scrollbar {
+    height: 10px;
+}
+.markdown-body pre::-webkit-scrollbar-thumb {
+    border-width: 2px;
+}
+
+/* Hide default corner box on two-axis scroll areas */
+*::-webkit-scrollbar-corner {
+    background: var(--scrollbar-bg);
+}
+
+
 
