@@ -411,89 +411,80 @@ html[data-theme="dark"] .markdown-body blockquote {
   max-width: var(--hero-max) !important;
 }
 
-/* ===== Themed Scrollbars — thicker, inset, fade-in ===== */
+/* ===== Overlay Scrollbar (page) — inset & fades ===== */
 
-/* Geometry */
+/* Hide native page scrollbar (keep sidebars/code blocks alone) */
+html {
+    /* Firefox */
+    scrollbar-width: none;
+}
+/* Chromium/WebKit (page only) */
+html::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Variables */
 :root {
-    --sb-w: 16px;          /* thicker */
-    --sb-radius: 12px;
+    --overlay-sb-w: 16px;
+    --overlay-sb-inset: 14px; /* distance from right edge */
+    --overlay-sb-radius: 12px;
+
+    --overlay-sb-track: color-mix(in oklab, var(--fg) 8%, transparent);
+    --overlay-sb-thumb: color-mix(in oklab, var(--fg) 38%, transparent);
+    --overlay-sb-thumb-hover: color-mix(in oklab, var(--fg) 55%, transparent);
+    --overlay-sb-thumb-active: color-mix(in oklab, var(--fg) 70%, transparent);
 }
 
-/* Colors (light/dark) */
-:root {
-    --scrollbar-bg: var(--bg);
-    --scrollbar-thumb: color-mix(in oklab, var(--fg) 35%, transparent);
-    --scrollbar-thumb-hover: color-mix(in oklab, var(--fg) 50%, transparent);
-    --scrollbar-thumb-active: color-mix(in oklab, var(--fg) 65%, transparent);
-
-    /* “Current” colors (toggled by .scrollbars-visible) */
-    --sb-track-current: transparent;
-    --sb-thumb-current: transparent;
-}
-html[data-theme="dark"] {
-    --scrollbar-bg: var(--bg);
-    --scrollbar-thumb: color-mix(in oklab, var(--fg) 45%, transparent);
-    --scrollbar-thumb-hover: color-mix(in oklab, var(--fg) 60%, transparent);
-    --scrollbar-thumb-active: color-mix(in oklab, var(--fg) 75%, transparent);
+/* Container */
+.dl-scrollbar {
+    position: fixed;
+    top: 0;
+    right: var(--overlay-sb-inset);
+    height: 100dvh;
+    width: var(--overlay-sb-w);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none; /* enabled when visible */
+    transition: opacity 220ms ease;
 }
 
-/* When visible, swap in real colors */
-html.scrollbars-visible {
-    --sb-track-current: var(--scrollbar-bg);
-    --sb-thumb-current: var(--scrollbar-thumb);
+/* Show state */
+.dl-scrollbar.is-visible {
+    opacity: 1;
+    pointer-events: auto;
 }
 
-/* Keep layout stable so scrollbars don’t nudge content */
+/* Track */
+.dl-scrollbar__track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 8px;
+    bottom: 8px;
+    background: var(--overlay-sb-track);
+    border-radius: var(--overlay-sb-radius);
+}
+
+/* Thumb */
+.dl-scrollbar__thumb {
+    position: absolute;
+    left: 2px;
+    width: calc(var(--overlay-sb-w) - 4px);
+    top: 8px;
+    height: 48px; /* will be overridden by JS */
+    background: var(--overlay-sb-thumb);
+    border-radius: calc(var(--overlay-sb-radius) - 2px);
+    transition: background-color 140ms ease;
+    cursor: grab;
+    user-select: none;
+}
+.dl-scrollbar__thumb:hover { background: var(--overlay-sb-thumb-hover); }
+.dl-scrollbar__thumb:active { background: var(--overlay-sb-thumb-active); cursor: grabbing; }
+
+/* Keep content from “nudging” when scrollbars appear elsewhere */
 body,
 .dl-sidebar,
 .markdown-body pre {
     scrollbar-gutter: stable both-edges;
 }
 
-/* ---------- Firefox ---------- */
-:root {                       /* thicker than 'thin' = default */
-    scrollbar-width: auto;      /* auto | thin | none */
-    scrollbar-color: transparent transparent;
-}
-html.scrollbars-visible {
-    scrollbar-color: var(--sb-thumb-current) var(--sb-track-current);
-}
-
-/* ---------- WebKit family (Chrome/Edge/Safari/Opera) ---------- */
-*::-webkit-scrollbar {
-    width: var(--sb-w);
-    height: var(--sb-w);
-    background: transparent;
-}
-*::-webkit-scrollbar-track {
-    background: var(--sb-track-current);
-    transition: background-color 240ms ease;
-}
-*::-webkit-scrollbar-thumb {
-    background-color: var(--sb-thumb-current);
-    border-radius: var(--sb-radius);
-
-    /* “Inset from edge” illusion: fat border the same color as the track */
-    border: 4px solid var(--sb-track-current);
-
-    transition:
-            background-color 240ms ease,
-            border-color 240ms ease;
-}
-*::-webkit-scrollbar-thumb:hover {
-    background-color: var(--scrollbar-thumb-hover);
-}
-*::-webkit-scrollbar-thumb:active {
-    background-color: var(--scrollbar-thumb-active);
-}
-
-/* Sidebar a touch narrower for precision */
-.dl-sidebar::-webkit-scrollbar { width: 14px; }
-.dl-sidebar::-webkit-scrollbar-thumb { border-width: 3px; }
-
-/* Horizontal scrollers in code blocks */
-.markdown-body pre::-webkit-scrollbar { height: 12px; }
-.markdown-body pre::-webkit-scrollbar-thumb { border-width: 3px; }
-
-/* Hide the corner filler on dual-axis areas */
-*::-webkit-scrollbar-corner { background: var(--sb-track-current); }
+/* Sidebar & code blocks keep their (themed) native scrollbars if you want:
+   (Leave your existing sidebar theming rules as-is) */
