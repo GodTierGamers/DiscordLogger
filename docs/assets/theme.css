@@ -360,3 +360,55 @@ html[data-theme="dark"] .markdown-body blockquote {
     html.page-exit { opacity: 1; }
     html.page-exit-active { opacity: 0; transition: opacity 140ms ease; }
 }
+
+/* --- HERO IMAGE: center within usable page width (minus fixed sidebar) --- */
+
+/* Variables to drive usable width + bleed */
+:root {
+    --content-w: 980px;
+    --page-w: calc(100vw - var(--sidebar-w));
+    --hero-max: min(1200px, var(--page-w));
+    --hero-bleed: clamp(0px, calc((var(--page-w) - var(--content-w)) / 2), 96px);
+}
+@media (max-width: 960px) {
+    :root {
+        --page-w: 100vw;
+        --hero-max: min(100vw, 1200px);
+        --hero-bleed: clamp(0px, calc((var(--page-w) - var(--content-w)) / 2), 48px);
+    }
+}
+
+/* Make the first paragraph act as the hero wrapper (center + bleed) */
+.dl-main .markdown-body > p:first-child {
+    margin-left: calc(-1 * var(--hero-bleed));
+    margin-right: calc(-1 * var(--hero-bleed));
+    display: block;
+}
+
+/* Target the banner image robustly (by being first image on page)
+   If you prefer, replace this selector with [alt="DiscordLogger"] */
+.dl-main .markdown-body > p:first-child > img {
+    display: block !important;
+    margin: 8px auto 16px !important;
+    width: min(100%, var(--hero-max)) !important;
+    max-width: var(--hero-max) !important;
+    height: auto !important;
+    object-fit: contain !important;
+    box-sizing: border-box !important;
+}
+
+/* Safety: never exceed the content area on extremely wide screens */
+@media (min-width: 961px) {
+    .dl-main .markdown-body > p:first-child > img {
+        max-width: min(var(--hero-max), var(--page-w)) !important;
+    }
+}
+
+.dl-main .markdown-body img[alt="DiscordLogger"] {
+  display:block !important;
+  margin: 8px auto 16px !important;
+  width: min(100%, var(--hero-max)) !important;
+  max-width: var(--hero-max) !important;
+}
+
+
