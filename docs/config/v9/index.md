@@ -15,7 +15,7 @@ description: Full documentation for config.yml schema v9 — defaults, per-key e
   </a>
 </div>
 
-> The docs below explain **every key** in v9. Where examples are shown, you’ll see placeholders in comments — paste the actual code blocks on your site.
+> The docs below explain **every key** in v9.
 
 ---
 
