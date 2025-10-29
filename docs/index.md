@@ -26,7 +26,7 @@ Minecraft → Discord logging that’s clean, configurable, and production-ready
 
 ## Quick links
 
--  **[Setup / Install](./setup.md)**
+-  **[Setup / Install](setup/index.md)**
 -  **[config.yml Generator](./generator/)**
 -  **[config.yml Docs (versioned)](./config/)**
 
