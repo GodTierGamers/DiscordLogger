@@ -4,6 +4,7 @@ title: Config Docs — v9
 description: Full documentation for config.yml schema v9 — defaults, per-key explanations, and a downloadable config file.
 ---
 
+![DiscordLogger](https://files.godtiergamers.xyz/DiscordLogger-Banner.png "DiscordLogger")
 # config.yml Docs — v9
 
 **_Supported Plugin Versions:_ v2.1.5**
