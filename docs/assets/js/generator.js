@@ -214,7 +214,7 @@
     });
     confirmWrap.querySelector('#no').addEventListener('click', () => {
         statusBox.className = 'cfg-status is-info';
-        statusBox.textContent = 'Double-check the URL, channel permissions, or try the proxy method.';
+        statusBox.textContent = 'Try double checking the URL and try again.';
     });
 
     // Assemble
