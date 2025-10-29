@@ -125,5 +125,5 @@ You can toggle categories (and colors) in `config.yml`. See:
 
 ### Next steps
 
-- ✅ Done setting up? Try the **[config.yml Generator](/generator/)**.
+- Want to generate the perfect config? See **[config.yml Generator](/generator/)**.
 - Need details for every key? See **[Config Docs](/config/)**.
