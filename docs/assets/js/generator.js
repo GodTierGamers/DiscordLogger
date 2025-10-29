@@ -49,7 +49,7 @@
                     "Hello, this is a test of your webhook to confirm if it works, if you are seeing this message, it worked.\n\n" +
                     "If you did not request a webhook test, confirm with other members of your server if they created a webhook or used an already existing webhook URL, " +
                     "if nobody in your server requested this, reset/delete the webhook URL",
-                url: "https://files.godtiergamers.xyz/DiscordLogger-Logo-removebg.png",
+                url: "https://discordlogger.godtiergamers.xyz",
                 color: 5814783,
                 author: {
                     name: "DiscordLogger Webhook Test",
