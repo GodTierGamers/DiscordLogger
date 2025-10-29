@@ -4,6 +4,7 @@ title: Setup / Install
 description: Install DiscordLogger, set your webhook, and verify everything is working.
 ---
 
+![DiscordLogger](https://files.godtiergamers.xyz/DiscordLogger-Banner.png "DiscordLogger")
 # Setup / Install
 
 This guide walks you through installing **DiscordLogger** and getting logs into Discord in minutes.
