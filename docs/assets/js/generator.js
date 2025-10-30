@@ -149,7 +149,7 @@
     const p2next = el('button', {class:'cfg-btn cfg-btn--primary', type:'button', id:'p2next', disabled:''}, 'Next');
 
     const p2 = makePanel('2', '2) Discord webhook', [
-        el('p', {class:'cfg-note'}, 'Paste your Discord channel webhook here. We’ll send **your** test embed to it.'),
+        el('p', {class:'cfg-note'}, 'Paste your Discord channel webhook here. We’ll send a test embed to it.'),
         el('label', {class:'cfg-label'}, 'Webhook URL'),
         webhookInput,
         webhookTestBtn,
@@ -225,7 +225,7 @@
         return w;
     };
     const p4 = makePanel('4', '4) What do you want to log?', [
-        el('p', {class:'cfg-note'}, 'Toggle categories on/off. Names here are nicer, but the generated YAML will use the real keys.'),
+        el('p', {class:'cfg-note'}, 'Toggle categories on/off.'),
         el('h3', {class:'cfg-sub'}, 'Player'),
         makeCheckbox('player.join', 'Join'),
         makeCheckbox('player.quit', 'Quit'),
