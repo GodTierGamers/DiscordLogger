@@ -1,16 +1,9 @@
-/* DiscordLogger – config.yml generator (version-aware, NO fallback builder, NO inline test embed)
-   Assumptions (part of your release process):
-   - generator.config.js defines:
-       window.DL_PROXY_URL
-       window.DL_VERSIONS
-       window.DL_CONFIGS
-       window.DL_TEST_EMBED   <-- we ONLY use this, we do NOT build our own here
-   - For every configVersion in window.DL_VERSIONS there is a matching entry in window.DL_CONFIGS:
-       { templateUrl, optionsUrl, downloadUrl? }
-   - config.template.yml contains the tokens we replace:
-       {{WEBHOOK_URL}}, {{FORMAT_TIME}}, {{FORMAT_NAME}},
-       {{EMBEDS_ENABLED}}, {{EMBED_AUTHOR}}, {{EMBED_COLORS}},
-       {{LOG_SECTION}}, {{CONFIG_VERSION}}, {{GENERATED_AT}}
+/* DiscordLogger – config.yml generator (version-aware, strict assets, no fallback)
+   Assumes generator.config.js defines:
+   - window.DL_PROXY_URL
+   - window.DL_VERSIONS
+   - window.DL_CONFIGS
+   - window.DL_TEST_EMBED
 */
 (() => {
     const mount = document.getElementById('cfg-gen');
@@ -87,7 +80,7 @@
         plainServerName: '',
         plainTimeFmt: '[HH:mm:ss, dd:MM:yyyy]',
 
-        // dynamic
+        // dynamic (from options.json)
         toggles: {},
         colors: {}
     };
@@ -96,7 +89,7 @@
     const normalizeOptions = (raw) => {
         if (!raw) return null;
 
-        // new format (recommended): { categories: {...}, categoryOrder: [...] }
+        // new format
         if (raw.categories) {
             const order = Array.isArray(raw.categoryOrder)
                 ? raw.categoryOrder
@@ -107,7 +100,7 @@
             };
         }
 
-        // old / flat format: { logs: { "player.join": { ... } } }
+        // old / flat format
         if (raw.logs) {
             const cats = {};
             Object.entries(raw.logs).forEach(([key, def]) => {
@@ -167,9 +160,8 @@
             throw new Error(`[cfg-gen] No DL_CONFIGS entry for ${configVersion}`);
         }
 
-        if (state.loadedFor === configVersion && state.options && state.templateText) {
-            return;
-        }
+        // already good
+        if (state.loadedFor === configVersion && state.options && state.templateText) return;
 
         const [optJSON, tplText] = await Promise.all([
             meta.optionsUrl ? fetchJSON(meta.optionsUrl) : Promise.reject(new Error('Missing optionsUrl')),
@@ -229,6 +221,7 @@
             versionLoading.style.display = 'none';
         }
     };
+    // initial load
     updateVersionNote();
 
     const p1 = makePanel('1', '1) Plugin version', [
@@ -524,8 +517,7 @@
         webhookTestBtn.disabled = true;
         confirmRow.style.display = 'none';
 
-        // IMPORTANT: test payload comes ONLY from generator.config.js
-        // We assume window.DL_TEST_EMBED is present there.
+        // test payload comes ONLY from generator.config.js
         const base = (typeof structuredClone === 'function')
             ? structuredClone(window.DL_TEST_EMBED)
             : JSON.parse(JSON.stringify(window.DL_TEST_EMBED));
@@ -622,16 +614,23 @@
         state.plainServerName = e.target.value;
     });
 
+    // ⬇⬇⬇ THIS WAS THE BUTTON THAT "DIDN'T WORK" – it now catches missing assets
     $('#p3next').addEventListener('click', async (e) => {
         e.preventDefault();
-        if (state.loadedFor !== state.configVersion) {
-            await ensureAssetsLoaded(state.configVersion);
+        try {
+            if (state.loadedFor !== state.configVersion) {
+                await ensureAssetsLoaded(state.configVersion);
+            }
+            // we have assets, render latest UI from them
+            renderLogToggles();
+            renderColors();
+            showPanel('4');
+        } catch (err) {
+            console.warn('[cfg-gen] failed to load assets for', state.configVersion, err);
+            // still move forward but tell the user
+            p4list.innerHTML = `<p class="cfg-note" style="color:#ef4444;">Could not load options for ${state.configVersion}. Make sure /docs/assets/configs/${state.configVersion}/options.json exists.</p>`;
+            showPanel('4');
         }
-        showPanel('4');
-    });
-    $('#p3back').addEventListener('click', (e) => {
-        e.preventDefault();
-        showPanel('2');
     });
 
     updateLogStyleUI();
@@ -668,12 +667,12 @@
         document.body.appendChild(a); a.click(); a.remove();
     });
 
-    /* ----------------- YAML build (NO fallback) ----------------- */
+    /* ----------------- YAML build ----------------- */
     function buildLogSectionFromState(indent = '') {
         const lines = [];
         const opt = state.options;
         if (!opt) {
-            return '# ERROR: options.json not loaded for this config version\n';
+            return `# ERROR: options.json not loaded for ${state.configVersion}\n`;
         }
 
         lines.push(`${indent}log:`);
@@ -695,8 +694,7 @@
 
     function buildEmbedColorsFromState(indent = '  ') {
         const opt = state.options;
-        if (!opt) return '# ERROR: options.json not loaded';
-
+        if (!opt) return `# ERROR: options.json not loaded for ${state.configVersion}`;
         const lines = [];
         lines.push(`${indent}colors:`);
         opt.order.forEach(catKey => {
