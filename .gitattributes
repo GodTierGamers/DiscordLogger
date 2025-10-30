@@ -1,2 +1,98 @@
-# Auto detect text files and perform LF normalization
+###############################################################################
+# Global defaults
+###############################################################################
+# Let Git try to detect text vs binary.
 * text=auto
+
+# Always use LF for code-y things so WSL, macOS, CI, and servers are happy.
+# Windows editors can still show LF fine.
+###############################################################################
+# Shell / scripts
+###############################################################################
+*.sh      text eol=lf
+*.bash    text eol=lf
+*.zsh     text eol=lf
+*.ps1     text eol=crlf
+*.cmd     text eol=crlf
+*.bat     text eol=crlf
+
+###############################################################################
+# Web / Jekyll / Docs
+###############################################################################
+*.html    text eol=lf
+*.htm     text eol=lf
+*.css     text eol=lf
+*.scss    text eol=lf
+*.js      text eol=lf
+*.mjs     text eol=lf
+*.cjs     text eol=lf
+*.json    text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.md      text eol=lf
+*.markdown text eol=lf
+*.liquid  text eol=lf
+*.xml     text eol=lf
+Gemfile   text eol=lf
+Gemfile.lock text eol=lf
+_site/**  text eol=lf
+
+###############################################################################
+# Java / Gradle / Maven
+###############################################################################
+*.java    text eol=lf
+*.kt      text eol=lf
+*.gradle  text eol=lf
+gradlew   text eol=lf
+gradlew.bat text eol=crlf
+pom.xml   text eol=lf
+*.properties text eol=lf
+
+###############################################################################
+# Node / JS tooling
+###############################################################################
+package.json    text eol=lf
+package-lock.json text eol=lf
+yarn.lock       text eol=lf
+pnpm-lock.yaml  text eol=lf
+*.ts            text eol=lf
+*.tsx           text eol=lf
+
+###############################################################################
+# Git / CI / Config
+###############################################################################
+.gitattributes  text eol=lf
+.gitignore      text eol=lf
+.editorconfig   text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+.github/**      text eol=lf
+.github/workflows/** text eol=lf
+
+###############################################################################
+# Images / binaries – NEVER touch line endings
+###############################################################################
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.webp   binary
+*.ico    binary
+*.icns   binary
+*.pdf    binary
+*.zip    binary
+*.tar    binary
+*.gz     binary
+*.7z     binary
+*.jar    binary
+*.war    binary
+*.ear    binary
+*.class  binary
+*.fsa    binary
+
+###############################################################################
+# Project-specific (DiscordLogger site)
+###############################################################################
+docs/assets/configs/** text eol=lf
+
+export/**         text eol=lf
