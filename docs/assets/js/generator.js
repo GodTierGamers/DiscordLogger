@@ -47,17 +47,20 @@
         return txt.replace(re1, value).replace(re2, value);
     };
 
+    const normUrl = (u) => {
+        if (!u) return u;
+        if (/^https?:\/\//i.test(u)) return u;
+        if (u.startsWith('/')) return u;
+        // make root-relative to avoid /docs/docs/... when page is in a subdir
+        return '/' + u.replace(/^\/+/, '');
+    };
+
     /* ----------------- initial data ----------------- */
     const allVersions = window.DL_VERSIONS || { '2.1.5': { configVersion: 'v9' } };
     const DEFAULT_PLUGIN = Object.keys(allVersions)[0];
 
-    const allConfigs  = window.DL_CONFIGS || {
-        'v9': {
-            templateUrl: '/docs/assets/configs/v9/config.template.yml',
-            downloadUrl: '/docs/assets/configs/v9/config.yml',
-            optionsUrl:  '/docs/assets/configs/v9/options.json'
-        }
-    };
+    // DO NOT hardcode /docs/... here – always trust generator.config.js
+    const allConfigs  = window.DL_CONFIGS || {};
 
     const state = {
         currentPanel: '1',
@@ -89,7 +92,7 @@
     const normalizeOptions = (raw) => {
         if (!raw) return null;
 
-        // new format
+        // preferred format
         if (raw.categories) {
             const order = Array.isArray(raw.categoryOrder)
                 ? raw.categoryOrder
@@ -100,7 +103,7 @@
             };
         }
 
-        // old / flat format
+        // fallback for flat
         if (raw.logs) {
             const cats = {};
             Object.entries(raw.logs).forEach(([key, def]) => {
@@ -157,18 +160,26 @@
     const ensureAssetsLoaded = async (configVersion) => {
         const meta = allConfigs[configVersion];
         if (!meta) {
-            throw new Error(`[cfg-gen] No DL_CONFIGS entry for ${configVersion}`);
+            throw new Error(`[cfg-gen] DL_CONFIGS has no entry for ${configVersion}`);
         }
 
-        // already good
+        // already loaded correctly
         if (state.loadedFor === configVersion && state.options && state.templateText) return;
 
+        const optUrl = normUrl(meta.optionsUrl);
+        const tplUrl = normUrl(meta.templateUrl);
+
         const [optJSON, tplText] = await Promise.all([
-            meta.optionsUrl ? fetchJSON(meta.optionsUrl) : Promise.reject(new Error('Missing optionsUrl')),
-            meta.templateUrl ? fetchText(meta.templateUrl) : Promise.reject(new Error('Missing templateUrl'))
+            fetchJSON(optUrl),
+            fetchText(tplUrl)
         ]);
 
-        state.options = normalizeOptions(optJSON);
+        const normalized = normalizeOptions(optJSON);
+        if (!normalized) {
+            throw new Error(`[cfg-gen] options.json for ${configVersion} is not in expected shape`);
+        }
+
+        state.options = normalized;
         state.templateText = tplText;
         state.loadedFor = configVersion;
 
@@ -203,7 +214,7 @@
         });
 
     const versionNote = el('p', {class:'cfg-note'});
-    const versionLoading = el('p', {class:'cfg-note', style:'display:none'}, 'Loading config assets…');
+    const versionLoading = el('p', {class:'cfg-note', style:'display:none'}, 'Loading version assets…');
 
     const updateVersionNote = async () => {
         state.pluginVersion = versionSelect.value;
@@ -216,6 +227,7 @@
             renderLogToggles();
             renderColors();
         } catch (e) {
+            // only console: public site shouldn't see tooling paths
             console.warn(e);
         } finally {
             versionLoading.style.display = 'none';
@@ -318,7 +330,7 @@
     /* ----------------- Panel 4: what to log ----------------- */
     const p4list = el('div', {class:'cfg-loglist'});
     const p4 = makePanel('4', '4) What do you want to log?', [
-        el('p', {class:'cfg-note'}, 'This list comes from assets/configs/<version>/options.json for the version you picked.'),
+        // public-facing: no “this comes from …”
         p4list,
         el('div', {class:'cfg-actions'}, [
             el('button', {class:'cfg-btn', type:'button', id:'p4back'}, 'Back'),
@@ -357,7 +369,7 @@
         p4list.innerHTML = '';
         const opt = state.options;
         if (!opt) {
-            p4list.appendChild(el('p', {class:'cfg-note'}, 'Error: options.json not loaded for this version.'));
+            p4list.appendChild(el('p', {class:'cfg-note'}, 'We couldn’t load the list of log options. Try again.'));
             return;
         }
 
@@ -369,7 +381,8 @@
 
             Object.entries(cat.items || {}).forEach(([logKey, def]) => {
                 const fullKey = `${catKey}.${logKey}`;
-                const checked = state.toggles[fullKey] !== undefined ? state.toggles[fullKey] : (def.default !== undefined ? !!def.default : true);
+                const checked = state.toggles[fullKey] !== undefined ? state.toggles[fullKey]
+                    : (def.default !== undefined ? !!def.default : true);
                 const cb = el('input', {type:'checkbox', 'data-key':fullKey, ...(checked ? {checked:''} : {})});
                 const friendly = def.label || human(logKey);
                 const row = el('label', {class:'cfg-check'}, [
@@ -387,7 +400,7 @@
         colorsWrap.innerHTML = '';
         const opt = state.options;
         if (!opt) {
-            colorsWrap.appendChild(el('p', {class:'cfg-note'}, 'Error: options.json not loaded for this version.'));
+            colorsWrap.appendChild(el('p', {class:'cfg-note'}, 'We couldn’t load embed colors. Try again.'));
             return;
         }
 
@@ -517,7 +530,7 @@
         webhookTestBtn.disabled = true;
         confirmRow.style.display = 'none';
 
-        // test payload comes ONLY from generator.config.js
+        // payload from generator.config.js
         const base = (typeof structuredClone === 'function')
             ? structuredClone(window.DL_TEST_EMBED)
             : JSON.parse(JSON.stringify(window.DL_TEST_EMBED));
@@ -614,21 +627,19 @@
         state.plainServerName = e.target.value;
     });
 
-    // ⬇⬇⬇ THIS WAS THE BUTTON THAT "DIDN'T WORK" – it now catches missing assets
     $('#p3next').addEventListener('click', async (e) => {
         e.preventDefault();
         try {
-            if (state.loadedFor !== state.configVersion) {
+            if (state.loadedFor !== state.configVersion || !state.options || !state.templateText) {
                 await ensureAssetsLoaded(state.configVersion);
             }
-            // we have assets, render latest UI from them
             renderLogToggles();
             renderColors();
             showPanel('4');
         } catch (err) {
-            console.warn('[cfg-gen] failed to load assets for', state.configVersion, err);
-            // still move forward but tell the user
-            p4list.innerHTML = `<p class="cfg-note" style="color:#ef4444;">Could not load options for ${state.configVersion}. Make sure /docs/assets/configs/${state.configVersion}/options.json exists.</p>`;
+            console.warn('[cfg-gen] failed to load generator assets for', state.configVersion, err);
+            // PUBLIC-FACING message, no internal paths:
+            p4list.innerHTML = '<p class="cfg-note">We couldn’t load the log options right now. Please refresh and try again.</p>';
             showPanel('4');
         }
     });
@@ -672,7 +683,7 @@
         const lines = [];
         const opt = state.options;
         if (!opt) {
-            return `# ERROR: options.json not loaded for ${state.configVersion}\n`;
+            return `# ERROR: could not build log section – missing options for ${state.configVersion}\n`;
         }
 
         lines.push(`${indent}log:`);
@@ -694,7 +705,7 @@
 
     function buildEmbedColorsFromState(indent = '  ') {
         const opt = state.options;
-        if (!opt) return `# ERROR: options.json not loaded for ${state.configVersion}`;
+        if (!opt) return `# ERROR: missing options for ${state.configVersion}`;
         const lines = [];
         lines.push(`${indent}colors:`);
         opt.order.forEach(catKey => {
@@ -713,10 +724,10 @@
 
     function buildYaml() {
         if (!state.templateText) {
-            return `# ERROR: Missing config.template.yml for ${state.configVersion}\n# Make sure /docs/assets/configs/${state.configVersion}/config.template.yml exists.`;
+            return `# ERROR: Missing config.template.yml for ${state.configVersion}\n# Deploy /docs/assets/configs/${state.configVersion}/config.template.yml before using the generator.`;
         }
         if (!state.options) {
-            return `# ERROR: Missing options.json for ${state.configVersion}\n# Make sure /docs/assets/configs/${state.configVersion}/options.json exists.`;
+            return `# ERROR: Missing options.json for ${state.configVersion}\n# Deploy /docs/assets/configs/${state.configVersion}/options.json before using the generator.`;
         }
 
         const logSection  = buildLogSectionFromState('');
