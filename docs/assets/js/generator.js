@@ -1,15 +1,16 @@
-/* DiscordLogger – config.yml generator (version-aware, strict assets, no fallback)
-   Assumes generator.config.js defines:
-   - window.DL_PROXY_URL
-   - window.DL_VERSIONS
-   - window.DL_CONFIGS
-   - window.DL_TEST_EMBED
+/* DiscordLogger – config.yml generator (template-driven, 1-step-at-a-time)
+   - pulls version → configVersion from window.DL_VERSIONS
+   - pulls per-config assets (template + options) from window.DL_CONFIGS
+   - fills placeholders like {{TIME_FORMAT}}, {{COLOR_player.join}}, {{LOG_player.join}}
+   - NO fallback builder: if template/options are missing, we stop and tell the user
 */
 (() => {
     const mount = document.getElementById('cfg-gen');
     if (!mount) return;
 
-    /* ----------------- tiny utils ----------------- */
+    /* -------------------------------------------------------
+       tiny utils
+    ------------------------------------------------------- */
     const $  = (s, el=document) => el.querySelector(s);
     const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
     const el = (tag, attrs={}, kids=[]) => {
@@ -27,166 +28,59 @@
     };
     const pad2 = (x) => String(x).padStart(2, '0');
 
+    const isoNice = () => {
+        const d = new Date();
+        return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+    };
+
     const isDiscordWebhook = (u) =>
         /^https:\/\/(?:ptb\.|canary\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_\-]+/i
             .test((u||'').trim());
 
     const withWait = (url) => url.includes('?') ? `${url}&wait=true` : `${url}?wait=true`;
 
-    const isoNice = () => {
-        const d = new Date();
-        return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
-    };
-
     const human = (s) => s.replace(/[_\-]+/g,' ').replace(/\b\w/g, m => m.toUpperCase());
 
-    const replaceToken = (txt, name, value) => {
-        if (!txt) return txt;
-        const re1 = new RegExp(`{{\\s*${name}\\s*}}`, 'g');
-        const re2 = new RegExp(`%%${name}%%`, 'g');
-        return txt.replace(re1, value).replace(re2, value);
-    };
+    /* -------------------------------------------------------
+       global config from generator.config.js
+    ------------------------------------------------------- */
+    const DL_BASE     = window.DL_BASE     || '';
+    const DL_VERSIONS = window.DL_VERSIONS || {};
+    const DL_CONFIGS  = window.DL_CONFIGS  || {};
+    const DL_PROXY    = (window.DL_PROXY_URL || '').trim();
+    const DL_TEST_EMBED = window.DL_TEST_EMBED || null;
 
-    const normUrl = (u) => {
-        if (!u) return u;
-        if (/^https?:\/\//i.test(u)) return u;
-        if (u.startsWith('/')) return u;
-        // make root-relative to avoid /docs/docs/... when page is in a subdir
-        return '/' + u.replace(/^\/+/, '');
-    };
+    const VERSION_KEYS = Object.keys(DL_VERSIONS);
+    const DEFAULT_PLUGIN = VERSION_KEYS.length ? VERSION_KEYS[0] : '2.1.5';
 
-    /* ----------------- initial data ----------------- */
-    const allVersions = window.DL_VERSIONS || { '2.1.5': { configVersion: 'v9' } };
-    const DEFAULT_PLUGIN = Object.keys(allVersions)[0];
-
-    // DO NOT hardcode /docs/... here – always trust generator.config.js
-    const allConfigs  = window.DL_CONFIGS || {};
-
+    /* -------------------------------------------------------
+       runtime state
+    ------------------------------------------------------- */
     const state = {
         currentPanel: '1',
-
         pluginVersion: DEFAULT_PLUGIN,
-        configVersion: allVersions[DEFAULT_PLUGIN]?.configVersion || 'v9',
+        configVersion: DL_VERSIONS[DEFAULT_PLUGIN]?.configVersion || 'v9',
 
-        // loaded from remote
-        options: null,
-        templateText: null,
-        loadedFor: null,
+        template: '',    // raw text from /assets/configs/{v}/config.template.yml
+        options: null,   // JSON from /assets/configs/{v}/options.json
 
-        // step 2
         webhookUrl: '',
         webhookConfirmed: false,
 
-        // step 3
         embedsEnabled: true,
         embedAuthor: 'Server Logs',
+
         plainServerName: '',
         plainTimeFmt: '[HH:mm:ss, dd:MM:yyyy]',
 
-        // dynamic (from options.json)
-        toggles: {},
-        colors: {}
+        // filled after options load
+        toggles: {},   // e.g. { 'player.join': true }
+        colors: {},    // e.g. { 'player.join': '#57F287' }
     };
 
-    /* ----------------- normalize options.json ----------------- */
-    const normalizeOptions = (raw) => {
-        if (!raw) return null;
-
-        // preferred format
-        if (raw.categories) {
-            const order = Array.isArray(raw.categoryOrder)
-                ? raw.categoryOrder
-                : Object.keys(raw.categories);
-            return {
-                order,
-                categories: raw.categories
-            };
-        }
-
-        // fallback for flat
-        if (raw.logs) {
-            const cats = {};
-            Object.entries(raw.logs).forEach(([key, def]) => {
-                const [cat, sub] = key.split('.', 2);
-                if (!cats[cat]) {
-                    cats[cat] = { label: human(cat), items: {} };
-                }
-                cats[cat].items[sub] = {
-                    label: def.label || human(sub),
-                    default: def.default !== undefined ? !!def.default : true,
-                    color: def.color || ''
-                };
-            });
-            return {
-                order: Object.keys(cats),
-                categories: cats
-            };
-        }
-
-        return null;
-    };
-
-    const applyOptionsToState = (opt) => {
-        state.toggles = {};
-        state.colors  = {};
-
-        if (!opt) return;
-
-        opt.order.forEach(catKey => {
-            const cat = opt.categories[catKey];
-            if (!cat || !cat.items) return;
-            Object.entries(cat.items).forEach(([logKey, def]) => {
-                const fullKey = `${catKey}.${logKey}`;
-                state.toggles[fullKey] = def.default !== undefined ? !!def.default : true;
-                if (def.color) {
-                    state.colors[fullKey] = def.color;
-                }
-            });
-        });
-    };
-
-    /* ----------------- dynamic fetch ----------------- */
-    const fetchText = async (url) => {
-        const res = await fetch(url, {cache: 'no-store'});
-        if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-        return res.text();
-    };
-    const fetchJSON = async (url) => {
-        const res = await fetch(url, {cache: 'no-store'});
-        if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-        return res.json();
-    };
-
-    const ensureAssetsLoaded = async (configVersion) => {
-        const meta = allConfigs[configVersion];
-        if (!meta) {
-            throw new Error(`[cfg-gen] DL_CONFIGS has no entry for ${configVersion}`);
-        }
-
-        // already loaded correctly
-        if (state.loadedFor === configVersion && state.options && state.templateText) return;
-
-        const optUrl = normUrl(meta.optionsUrl);
-        const tplUrl = normUrl(meta.templateUrl);
-
-        const [optJSON, tplText] = await Promise.all([
-            fetchJSON(optUrl),
-            fetchText(tplUrl)
-        ]);
-
-        const normalized = normalizeOptions(optJSON);
-        if (!normalized) {
-            throw new Error(`[cfg-gen] options.json for ${configVersion} is not in expected shape`);
-        }
-
-        state.options = normalized;
-        state.templateText = tplText;
-        state.loadedFor = configVersion;
-
-        applyOptionsToState(state.options);
-    };
-
-    /* ----------------- layout shell ----------------- */
+    /* -------------------------------------------------------
+       layout shell
+    ------------------------------------------------------- */
     mount.innerHTML = '';
     const wrapper = el('div', {class:'cfg-wrap'});
     mount.appendChild(wrapper);
@@ -205,52 +99,40 @@
         });
     };
 
-    /* ----------------- Panel 1 ----------------- */
+    /* -------------------------------------------------------
+       Panel 1 – plugin version
+    ------------------------------------------------------- */
     const versionSelect = el('select', {class:'cfg-input cfg-input--select'});
-    Object.keys(allVersions)
-        .sort()
-        .forEach(v => {
-            versionSelect.appendChild(el('option', {value:v, ...(v===state.pluginVersion ? {selected:''} : {})}, v));
-        });
+    VERSION_KEYS.sort().forEach(v => {
+        versionSelect.appendChild(el('option', {
+            value: v,
+            ...(v === state.pluginVersion ? {selected:''} : {})
+        }, v));
+    });
 
     const versionNote = el('p', {class:'cfg-note'});
-    const versionLoading = el('p', {class:'cfg-note', style:'display:none'}, 'Loading version assets…');
-
-    const updateVersionNote = async () => {
-        state.pluginVersion = versionSelect.value;
-        state.configVersion = allVersions?.[state.pluginVersion]?.configVersion || 'v9';
-        versionNote.textContent = `Config schema: ${state.configVersion}`;
-
-        versionLoading.style.display = '';
-        try {
-            await ensureAssetsLoaded(state.configVersion);
-            renderLogToggles();
-            renderColors();
-        } catch (e) {
-            // only console: public site shouldn't see tooling paths
-            console.warn(e);
-        } finally {
-            versionLoading.style.display = 'none';
-        }
-    };
-    // initial load
-    updateVersionNote();
 
     const p1 = makePanel('1', '1) Plugin version', [
-        el('p', {class:'cfg-note'}, 'Pick the DiscordLogger version you installed.'),
+        el('p', {class:'cfg-note'}, 'Pick the DiscordLogger version you installed. Multiple plugin versions can share a config version.'),
         el('label', {class:'cfg-label'}, 'Plugin version'),
         versionSelect,
         versionNote,
-        versionLoading,
         el('div', {class:'cfg-actions'}, [
             el('button', {class:'cfg-btn cfg-btn--primary', type:'button', id:'p1next'}, 'Next')
         ])
     ]);
 
-    /* ----------------- Panel 2 ----------------- */
-    const webhookInput = el('input', {class:'cfg-input', type:'url', placeholder:'https://discord.com/api/webhooks/...'});
+    /* -------------------------------------------------------
+       Panel 2 – webhook
+    ------------------------------------------------------- */
+    const webhookInput  = el('input', {
+        class:'cfg-input',
+        type:'url',
+        placeholder:'https://discord.com/api/webhooks/...'
+    });
     const webhookStatus = el('div', {class:'cfg-status', style:'display:none'});
     const webhookTestBtn = el('button', {class:'cfg-btn', type:'button'}, 'Send test');
+
     const confirmRow = el('div', {class:'cfg-confirm', style:'display:none'}, [
         el('p', {class:'cfg-note'}, 'Did the test message appear in your Discord channel?'),
         el('div', {class:'cfg-actions-inline'}, [
@@ -258,6 +140,7 @@
             el('button', {class:'cfg-btn cfg-btn--ghost', type:'button', id:'p2no'}, 'No, try again')
         ])
     ]);
+
     const p2next = el('button', {class:'cfg-btn cfg-btn--primary', type:'button', id:'p2next', disabled:''}, 'Next');
 
     const p2 = makePanel('2', '2) Discord webhook', [
@@ -273,21 +156,15 @@
         ])
     ]);
 
-    /* ----------------- Panel 3 ----------------- */
-    const TIME_PRESETS = [
-        {label: 'Default (same as plugin)', value: '[HH:mm:ss, dd:MM:yyyy]'},
-        {label: 'EU 24h (dd/MM/yyyy HH:mm)', value: '[dd/MM/yyyy HH:mm]'},
-        {label: 'US 12h (MM/dd/yyyy HH:mm)', value: '[MM/dd/yyyy HH:mm]'},
-        {label: 'Time only (HH:mm:ss)', value: '[HH:mm:ss]'},
-        {label: 'Custom…', value: ''},
-    ];
-
+    /* -------------------------------------------------------
+       Panel 3 – log style (embeds vs plain)
+    ------------------------------------------------------- */
     const radioEmbeds = el('label', {class:'cfg-radio'}, [
         el('input', {type:'radio', name:'logstyle', value:'embeds', checked:''}),
         el('span', {}, 'Use embeds (recommended)')
     ]);
     const embedsExtra = el('div', {class:'cfg-inline'}, [
-        el('label', {class:'cfg-label', for:'embedAuthor'}, 'Author name (shown in embed header)'),
+        el('label', {class:'cfg-label', for:'embedAuthor'}, 'Author name'),
         el('input', {id:'embedAuthor', class:'cfg-input', type:'text', value: state.embedAuthor})
     ]);
 
@@ -296,13 +173,20 @@
         el('span', {}, 'Use plain text')
     ]);
 
+    const TIME_PRESETS = [
+        {label: 'Default (same as plugin)', value: '[HH:mm:ss, dd:MM:yyyy]'},
+        {label: 'EU 24h (dd/MM/yyyy HH:mm)', value: '[dd/MM/yyyy HH:mm]'},
+        {label: 'US 12h (MM/dd/yyyy HH:mm)', value: '[MM/dd/yyyy HH:mm]'},
+        {label: 'Time only (HH:mm:ss)', value: '[HH:mm:ss]'},
+        {label: 'Custom…', value: ''},
+    ];
     const dtPresetSel = el('select', {class:'cfg-input cfg-input--select', id:'dtPreset'});
     TIME_PRESETS.forEach(p => dtPresetSel.appendChild(el('option', {value:p.value}, p.label)));
 
     const dtCustomWrap = el('div', {class:'cfg-inline', style:'margin-top:.4rem;'}, [
         el('label', {class:'cfg-label', for:'plainFmt'}, 'Custom pattern'),
         el('input', {id:'plainFmt', class:'cfg-input', type:'text', value: state.plainTimeFmt}),
-        el('p', {class:'cfg-note', id:'fmtPrev'}, 'Preview: ')
+        el('p', {class:'cfg-note', id:'fmtPrev'}, 'Preview:')
     ]);
 
     const plainExtra = el('div', {class:'cfg-plain', style:'display:none'}, [
@@ -310,7 +194,7 @@
         el('input', {id:'plainName', class:'cfg-input', type:'text', placeholder:'e.g. Survival, Creative', value:state.plainServerName}),
         el('p', {class:'cfg-note'}, 'Useful if you run multiple servers behind a proxy.'),
         el('label', {class:'cfg-label'}, 'Timestamp format'),
-        el('p', {class:'cfg-note'}, 'Pick a pattern or choose “Custom…” and type your own Java DateTimeFormatter style.'),
+        el('p', {class:'cfg-note'}, 'Pick a pattern or choose “Custom…” and type your own Java-like pattern.'),
         dtPresetSel,
         dtCustomWrap
     ]);
@@ -327,19 +211,28 @@
         ])
     ]);
 
-    /* ----------------- Panel 4: what to log ----------------- */
-    const p4list = el('div', {class:'cfg-loglist'});
+    /* -------------------------------------------------------
+       Panel 4 – what to log (built from options.json)
+    ------------------------------------------------------- */
+    const logListWrap = el('div', {class:'cfg-loglist'}, [
+        el('p', {class:'cfg-note'}, 'Loading log options…')
+    ]);
+
     const p4 = makePanel('4', '4) What do you want to log?', [
-        // public-facing: no “this comes from …”
-        p4list,
+        logListWrap,
         el('div', {class:'cfg-actions'}, [
             el('button', {class:'cfg-btn', type:'button', id:'p4back'}, 'Back'),
             el('button', {class:'cfg-btn cfg-btn--primary', type:'button', id:'p4next'}, 'Next')
         ])
     ]);
 
-    /* ----------------- Panel 5: colors ----------------- */
-    const colorsWrap = el('div', {class:'cfg-colwrap'});
+    /* -------------------------------------------------------
+       Panel 5 – colors (only if embeds)
+    ------------------------------------------------------- */
+    const colorsWrap = el('div', {class:'cfg-colwrap'}, [
+        el('p', {class:'cfg-note'}, 'Loading colors…')
+    ]);
+
     const p5 = makePanel('5', '5) Embed colors', [
         el('p', {class:'cfg-note'}, 'Only used when “Use embeds” is selected.'),
         colorsWrap,
@@ -349,7 +242,9 @@
         ])
     ]);
 
-    /* ----------------- Panel 6: result ----------------- */
+    /* -------------------------------------------------------
+       Panel 6 – result
+    ------------------------------------------------------- */
     const yamlOut = el('textarea', {class:'cfg-yaml', readonly:''});
     yamlOut.setAttribute('wrap', 'off');
 
@@ -364,72 +259,137 @@
     wrapper.append(p1, p2, p3, p4, p5, p6);
     showPanel('1');
 
-    /* ----------------- renderers ----------------- */
-    function renderLogToggles() {
-        p4list.innerHTML = '';
-        const opt = state.options;
-        if (!opt) {
-            p4list.appendChild(el('p', {class:'cfg-note'}, 'We couldn’t load the list of log options. Try again.'));
+    /* -------------------------------------------------------
+       fetch helpers
+    ------------------------------------------------------- */
+    async function fetchText(url) {
+        const res = await fetch(url, {cache:'no-cache'});
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+        return await res.text();
+    }
+    async function fetchJson(url) {
+        const res = await fetch(url, {cache:'no-cache'});
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+        return await res.json();
+    }
+
+    async function loadAssetsForCurrentConfig() {
+        const meta = DL_CONFIGS[state.configVersion];
+        if (!meta) {
+            // no template/options for this version
+            state.template = '';
+            state.options  = null;
+            logListWrap.innerHTML = '';
+            logListWrap.appendChild(el('p', {class:'cfg-status is-error'}, `This config version (${state.configVersion}) has no assets defined.`));
+            colorsWrap.innerHTML = '';
+            colorsWrap.appendChild(el('p', {class:'cfg-status is-error'}, `This config version (${state.configVersion}) has no colors defined.`));
+            return;
+        }
+        try {
+            const [tpl, opts] = await Promise.all([
+                fetchText(meta.templateUrl),
+                fetchJson(meta.optionsUrl)
+            ]);
+            state.template = tpl;
+            state.options  = opts;
+            buildLogUIFromOptions();
+            buildColorUIFromOptions();
+        } catch (e) {
+            state.template = '';
+            state.options  = null;
+            logListWrap.innerHTML = '';
+            logListWrap.appendChild(el('p', {class:'cfg-status is-error'}, `Could not load config assets for ${state.configVersion}.`));
+            colorsWrap.innerHTML = '';
+            colorsWrap.appendChild(el('p', {class:'cfg-status is-error'}, `Could not load config assets for ${state.configVersion}.`));
+        }
+    }
+
+    /* -------------------------------------------------------
+       options.json → step 4 UI
+    ------------------------------------------------------- */
+    function buildLogUIFromOptions() {
+        const opts = state.options;
+        if (!opts || !Array.isArray(opts.groups)) {
+            logListWrap.innerHTML = '';
+            logListWrap.appendChild(el('p', {class:'cfg-status is-error'}, 'No logging options were found for this version.'));
             return;
         }
 
-        opt.order.forEach(catKey => {
-            const cat = opt.categories[catKey];
-            if (!cat) return;
-
-            p4list.appendChild(el('h3', {class:'cfg-sub'}, cat.label || human(catKey)));
-
-            Object.entries(cat.items || {}).forEach(([logKey, def]) => {
-                const fullKey = `${catKey}.${logKey}`;
-                const checked = state.toggles[fullKey] !== undefined ? state.toggles[fullKey]
-                    : (def.default !== undefined ? !!def.default : true);
-                const cb = el('input', {type:'checkbox', 'data-key':fullKey, ...(checked ? {checked:''} : {})});
-                const friendly = def.label || human(logKey);
-                const row = el('label', {class:'cfg-check'}, [
-                    cb, ' ', friendly
-                ]);
-                cb.addEventListener('change', () => {
-                    state.toggles[fullKey] = cb.checked;
+        // rebuild state.toggles from options
+        const toggles = {};
+        logListWrap.innerHTML = '';
+        opts.groups.forEach(group => {
+            const h = el('h3', {class:'cfg-sub'}, group.label || human(group.id || ''));
+            logListWrap.appendChild(h);
+            (group.items || []).forEach(item => {
+                const k = item.key;
+                const d = (item.default !== undefined) ? !!item.default : true;
+                toggles[k] = d;
+                const cb = el('input', {
+                    type:'checkbox',
+                    'data-key':k,
+                    ...(d ? {checked:''} : {})
                 });
-                p4list.appendChild(row);
+                const label = el('label', {class:'cfg-check'}, [
+                    cb,
+                    ' ',
+                    item.label || human(k)
+                ]);
+                logListWrap.appendChild(label);
+            });
+        });
+        state.toggles = toggles;
+
+        // wire checkboxes → state
+        $$('.cfg-check input[type=checkbox]', logListWrap).forEach(cb => {
+            cb.addEventListener('change', () => {
+                state.toggles[cb.dataset.key] = cb.checked;
             });
         });
     }
 
-    function renderColors() {
+    /* -------------------------------------------------------
+       options.json → step 5 UI (colors)
+    ------------------------------------------------------- */
+    function buildColorUIFromOptions() {
+        const opts = state.options;
         colorsWrap.innerHTML = '';
-        const opt = state.options;
-        if (!opt) {
-            colorsWrap.appendChild(el('p', {class:'cfg-note'}, 'We couldn’t load embed colors. Try again.'));
-            return;
+
+        // prefer colors from options.json
+        const colors = {};
+        if (opts && opts.colors && typeof opts.colors === 'object') {
+            Object.assign(colors, opts.colors);
         }
 
-        opt.order.forEach(catKey => {
-            const cat = opt.categories[catKey];
-            if (!cat) return;
+        // ensure we always keep them on state
+        state.colors = colors;
 
-            const groupBox = el('div', {class:'cfg-colgroup'}, [
-                el('h3', {class:'cfg-sub'}, cat.label || human(catKey))
-            ]);
-
-            Object.entries(cat.items || {}).forEach(([logKey, def]) => {
-                const fullKey = `${catKey}.${logKey}`;
-                const existingColor = state.colors[fullKey] || def.color || '#5865F2';
-
-                const row = el('div', {class:'cfg-colrow'}, [
-                    el('label', {class:'cfg-label'}, def.label || human(logKey)),
-                    el('div', {class:'cfg-colinputs'}, [
-                        el('input', {type:'color', value: existingColor, 'data-key':fullKey}),
-                        el('input', {type:'text', class:'cfg-input cfg-input--tiny', value: existingColor, 'data-key':fullKey})
-                    ])
-                ]);
-
-                groupBox.appendChild(row);
-            });
-
-            colorsWrap.appendChild(groupBox);
+        // group by prefix before the '.'
+        const groups = {};
+        Object.entries(colors).forEach(([key, val]) => {
+            const [cat, sub] = key.split('.', 2);
+            (groups[cat] ??= []).push({sub, val, key});
         });
 
+        // draw
+        Object.keys(groups).sort().forEach(cat => {
+            const catBox = el('div', {class:'cfg-colgroup'}, [
+                el('h3', {class:'cfg-sub'}, human(cat))
+            ]);
+            groups[cat].forEach(row => {
+                const rowEl = el('div', {class:'cfg-colrow'}, [
+                    el('label', {class:'cfg-label'}, `${human(cat)} ${human(row.sub)}`),
+                    el('div', {class:'cfg-colinputs'}, [
+                        el('input', {type:'color', value:row.val, 'data-key':row.key}),
+                        el('input', {type:'text', class:'cfg-input cfg-input--tiny', value:row.val, 'data-key':row.key})
+                    ])
+                ]);
+                catBox.appendChild(rowEl);
+            });
+            colorsWrap.appendChild(catBox);
+        });
+
+        // wire
         $$('input[type=color]', colorsWrap).forEach(inp => {
             inp.addEventListener('input', () => {
                 const k = inp.dataset.key;
@@ -452,62 +412,18 @@
         });
     }
 
-    /* ----------------- nav wiring ----------------- */
-    $('#p1next').addEventListener('click', (e) => {
-        e.preventDefault();
-        showPanel('2');
-    });
-    $('#p2back').addEventListener('click', (e) => {
-        e.preventDefault();
-        showPanel('1');
-    });
-    $('#p3back').addEventListener('click', (e) => {
-        e.preventDefault();
-        showPanel('2');
-    });
-    $('#p4back').addEventListener('click', (e) => {
-        e.preventDefault();
-        showPanel('3');
-    });
-    $('#p5back').addEventListener('click', (e) => {
-        e.preventDefault();
-        showPanel('4');
-    });
-
-    /* ----------------- webhook logic ----------------- */
+    /* -------------------------------------------------------
+       webhook step
+    ------------------------------------------------------- */
     const setWebhookStatus = (txt, cls='') => {
         webhookStatus.textContent = txt;
         webhookStatus.className = `cfg-status ${cls}`;
         webhookStatus.style.display = txt ? '' : 'none';
     };
 
-    const postViaProxy = async (proxyUrl, webhookUrl, payload) => {
-        const res = await fetch(proxyUrl, {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ url: withWait(webhookUrl), payload })
-        });
-        const text = await res.text().catch(()=> '');
-        let data = null; try { data = text ? JSON.parse(text) : null; } catch {}
-        return { ok: res.ok, status: res.status, data, text };
-    };
-    const postDirect = async (webhookUrl, payload) => {
-        try {
-            const res = await fetch(withWait(webhookUrl), {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify(payload)
-            });
-            let json = null; try { json = await res.json(); } catch {}
-            return { ok: res.ok, status: res.status, data: json };
-        } catch {
-            return { ok:false, status:0 };
-        }
-    };
-
     const validateWebhookNext = () => {
         const ok = isDiscordWebhook(state.webhookUrl) && state.webhookConfirmed;
-        $('#p2next').disabled = !ok;
+        p2next.disabled = !ok;
     };
 
     webhookInput.addEventListener('input', () => {
@@ -518,40 +434,57 @@
         validateWebhookNext();
     });
 
-    webhookTestBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
+    async function sendWebhookTest(url, payload) {
+        if (DL_PROXY) {
+            const res = await fetch(DL_PROXY, {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ url: withWait(url), payload })
+            });
+            return res.ok;
+        } else {
+            try {
+                const res = await fetch(withWait(url), {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                return res.ok;
+            } catch {
+                return false;
+            }
+        }
+    }
+
+    webhookTestBtn.addEventListener('click', async () => {
         const url = webhookInput.value.trim();
         if (!isDiscordWebhook(url)) {
             setWebhookStatus('Please enter a valid Discord webhook URL.', 'is-error');
             return;
         }
 
-        setWebhookStatus('Sending test...', 'is-info');
+        setWebhookStatus('Sending test…', 'is-info');
         webhookTestBtn.disabled = true;
         confirmRow.style.display = 'none';
 
-        // payload from generator.config.js
-        const base = (typeof structuredClone === 'function')
-            ? structuredClone(window.DL_TEST_EMBED)
-            : JSON.parse(JSON.stringify(window.DL_TEST_EMBED));
-
-        if (base.embeds && base.embeds[0]) {
-            base.embeds[0].timestamp = new Date().toISOString();
+        const payload = DL_TEST_EMBED ? structuredClone(DL_TEST_EMBED) : {
+            content: null,
+            embeds: [
+                {
+                    title: 'DiscordLogger Webhook Test',
+                    description: 'Test.',
+                    timestamp: new Date().toISOString()
+                }
+            ]
+        };
+        if (payload.embeds && payload.embeds[0]) {
+            payload.embeds[0].timestamp = new Date().toISOString();
         }
 
-        const proxy = (window.DL_PROXY_URL || '').trim();
-        let res;
-        try {
-            res = proxy
-                ? await postViaProxy(proxy, url, base)
-                : await postDirect(url, base);
-        } catch {
-            res = { ok:false };
-        }
-
+        const ok = await sendWebhookTest(url, payload);
         webhookTestBtn.disabled = false;
 
-        if (res.ok) {
+        if (ok) {
             setWebhookStatus('Test message sent. Check Discord.', 'is-ok');
         } else {
             setWebhookStatus("Couldn't send webhook, please check your webhook URL", 'is-error');
@@ -560,36 +493,41 @@
         confirmRow.style.display = '';
     });
 
-    $('#p2yes').addEventListener('click', (e) => {
-        e.preventDefault();
+    $('#p2yes').addEventListener('click', () => {
         state.webhookConfirmed = true;
         setWebhookStatus('Webhook confirmed.', 'is-ok');
         validateWebhookNext();
     });
-    $('#p2no').addEventListener('click', (e) => {
-        e.preventDefault();
+    $('#p2no').addEventListener('click', () => {
         state.webhookConfirmed = false;
         setWebhookStatus('Check your URL and try again.', 'is-info');
         validateWebhookNext();
     });
 
-    $('#p2next').addEventListener('click', (e) => {
-        e.preventDefault();
-        showPanel('3');
+    /* -------------------------------------------------------
+       log style step
+    ------------------------------------------------------- */
+    function updateLogStyleUI() {
+        const style = $('input[name="logstyle"]:checked', p3)?.value || 'embeds';
+        state.embedsEnabled = (style === 'embeds');
+        embedsExtra.style.display = state.embedsEnabled ? '' : 'none';
+        plainExtra.style.display  = state.embedsEnabled ? 'none' : '';
+    }
+
+    $$('input[name="logstyle"]', p3).forEach(r => r.addEventListener('change', updateLogStyleUI));
+
+    // plain text extras
+    const plainFmtInput = $('#plainFmt');
+    const fmtPrev       = $('#fmtPrev');
+    const plainNameInp  = $('#plainName');
+    const embedAuthorInp = $('#embedAuthor');
+
+    plainNameInp.addEventListener('input', () => {
+        state.plainServerName = plainNameInp.value;
     });
-
-    /* ----------------- log style logic ----------------- */
-    const updateLogStyleUI = () => {
-        const useEmbeds = $('input[name="logstyle"]:checked').value === 'embeds';
-        state.embedsEnabled = useEmbeds;
-        embedsExtra.style.display = useEmbeds ? '' : 'none';
-        plainExtra.style.display = useEmbeds ? 'none' : '';
-    };
-
-    $$('input[name="logstyle"]').forEach(r => r.addEventListener('change', updateLogStyleUI));
-
-    const fmtInput = $('#plainFmt');
-    const fmtPrev  = $('#fmtPrev');
+    embedAuthorInp.addEventListener('input', () => {
+        state.embedAuthor = embedAuthorInp.value;
+    });
 
     const updateFmtPreview = () => {
         const d = new Date();
@@ -601,154 +539,144 @@
             'dd': pad2(d.getDate()),
             'MM': pad2(d.getMonth()+1)
         };
-        let s = fmtInput.value;
+        let s = plainFmtInput.value;
         s = s.replace(/yyyy|HH|MM|dd|mm|ss/g, m => map[m] ?? m);
         fmtPrev.textContent = 'Preview: ' + s;
-        state.plainTimeFmt = fmtInput.value;
+        state.plainTimeFmt = plainFmtInput.value;
     };
+    plainFmtInput.addEventListener('input', updateFmtPreview);
 
     dtPresetSel.addEventListener('change', () => {
         const v = dtPresetSel.value;
         if (v) {
-            fmtInput.value = v;
-            fmtInput.disabled = true;
+            plainFmtInput.value = v;
+            plainFmtInput.disabled = true;
         } else {
-            fmtInput.disabled = false;
-            fmtInput.focus();
+            plainFmtInput.disabled = false;
+            plainFmtInput.focus();
         }
         updateFmtPreview();
-    });
-    fmtInput.addEventListener('input', updateFmtPreview);
-
-    $('#embedAuthor').addEventListener('input', (e) => {
-        state.embedAuthor = e.target.value;
-    });
-    $('#plainName').addEventListener('input', (e) => {
-        state.plainServerName = e.target.value;
-    });
-
-    $('#p3next').addEventListener('click', async (e) => {
-        e.preventDefault();
-        try {
-            if (state.loadedFor !== state.configVersion || !state.options || !state.templateText) {
-                await ensureAssetsLoaded(state.configVersion);
-            }
-            renderLogToggles();
-            renderColors();
-            showPanel('4');
-        } catch (err) {
-            console.warn('[cfg-gen] failed to load generator assets for', state.configVersion, err);
-            // PUBLIC-FACING message, no internal paths:
-            p4list.innerHTML = '<p class="cfg-note">We couldn’t load the log options right now. Please refresh and try again.</p>';
-            showPanel('4');
-        }
     });
 
     updateLogStyleUI();
     updateFmtPreview();
 
-    /* ----------------- step 4 -> colors/result ----------------- */
-    $('#p4next').addEventListener('click', (e) => {
-        e.preventDefault();
+    /* -------------------------------------------------------
+       panel navigation
+    ------------------------------------------------------- */
+    $('#p1next').addEventListener('click', () => showPanel('2'));
+    $('#p2back').addEventListener('click', () => showPanel('1'));
+    $('#p2next').addEventListener('click', () => showPanel('3'));
+    $('#p3back').addEventListener('click', () => showPanel('2'));
+    $('#p3next').addEventListener('click', () => showPanel('4'));
+    $('#p4back').addEventListener('click', () => showPanel('3'));
+    $('#p5back').addEventListener('click', () => showPanel('4'));
+
+    /* -------------------------------------------------------
+       Step 4 → Step 5 / 6
+    ------------------------------------------------------- */
+    $('#p4next').addEventListener('click', () => {
         if (state.embedsEnabled) {
             showPanel('5');
         } else {
-            yamlOut.value = buildYaml();
+            // no colors step
+            const finalYaml = renderFinalYamlFromTemplate();
+            yamlOut.value = finalYaml;
             showPanel('6');
         }
     });
 
-    /* ----------------- colors -> result ----------------- */
-    $('#p5next').addEventListener('click', (e) => {
-        e.preventDefault();
-        yamlOut.value = buildYaml();
+    $('#p5next').addEventListener('click', () => {
+        const finalYaml = renderFinalYamlFromTemplate();
+        yamlOut.value = finalYaml;
         showPanel('6');
     });
 
-    /* ----------------- result actions ----------------- */
-    $('#copyYaml').addEventListener('click', async (e) => {
-        e.preventDefault();
+    /* -------------------------------------------------------
+       final YAML builder (fills template)
+    ------------------------------------------------------- */
+    function renderFinalYamlFromTemplate() {
+        if (!state.template) {
+            return '# Could not build config: template for this version is missing.';
+        }
+
+        let out = state.template;
+
+        // basic replacements
+        const baseRepls = {
+            '{{WEBHOOK_URL}}': state.webhookUrl,
+            '{{TIME_FORMAT}}': state.plainTimeFmt,
+            '{{PLAIN_NAME}}': (state.plainServerName || ''),
+            '{{NICKNAMES}}': 'true',
+            '{{EMBEDS_AUTHOR}}': (state.embedAuthor || '')
+        };
+        Object.entries(baseRepls).forEach(([ph,val]) => {
+            out = out.split(ph).join(val);
+        });
+
+        // colors
+        Object.entries(state.colors || {}).forEach(([key,val]) => {
+            const ph = `{{COLOR_${key}}}`;
+            out = out.split(ph).join(val);
+        });
+
+        // logs
+        Object.entries(state.toggles || {}).forEach(([key,val]) => {
+            const ph = `{{LOG_${key}}}`;
+            out = out.split(ph).join(val ? 'true' : 'false');
+        });
+
+        // footer
+        const stamp = `# CONFIG VERSION ${state.configVersion.toUpperCase()}, GENERATED ON WEBSITE ON ${isoNice()}`;
+        if (!out.trimEnd().endsWith(stamp)) {
+            out = out.replace(/\s*$/, '') + '\n\n' + stamp + '\n';
+        }
+
+        return out;
+    }
+
+    /* -------------------------------------------------------
+       result actions
+    ------------------------------------------------------- */
+    $('#copyYaml').addEventListener('click', async () => {
         try { await navigator.clipboard.writeText(yamlOut.value); } catch {}
     });
-    $('#downloadYaml').addEventListener('click', (e) => {
-        e.preventDefault();
+
+    $('#downloadYaml').addEventListener('click', () => {
         const a = document.createElement('a');
         a.download = 'config.yml';
         a.href = URL.createObjectURL(new Blob([yamlOut.value], {type:'text/yaml'}));
-        document.body.appendChild(a); a.click(); a.remove();
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
     });
 
-    /* ----------------- YAML build ----------------- */
-    function buildLogSectionFromState(indent = '') {
-        const lines = [];
-        const opt = state.options;
-        if (!opt) {
-            return `# ERROR: could not build log section – missing options for ${state.configVersion}\n`;
-        }
-
-        lines.push(`${indent}log:`);
-        opt.order.forEach(catKey => {
-            const cat = opt.categories[catKey];
-            lines.push(`${indent}  ${catKey}:`);
-            Object.entries(cat.items || {}).forEach(([logKey, def]) => {
-                const fullKey = `${catKey}.${logKey}`;
-                const enabled = state.toggles[fullKey] !== undefined
-                    ? state.toggles[fullKey]
-                    : (def.default !== undefined ? !!def.default : true);
-                const comment = def.label ? ` # ${def.label}` : '';
-                lines.push(`${indent}    ${logKey}: ${enabled ? 'true' : 'false'}${comment}`);
-            });
-            lines.push('');
-        });
-        return lines.join('\n').trimEnd();
+    /* -------------------------------------------------------
+       version change → reload assets
+    ------------------------------------------------------- */
+    function updateVersionNote() {
+        state.pluginVersion = versionSelect.value;
+        state.configVersion = DL_VERSIONS[state.pluginVersion]?.configVersion || 'v9';
+        versionNote.textContent = `Config schema: ${state.configVersion}`;
     }
 
-    function buildEmbedColorsFromState(indent = '  ') {
-        const opt = state.options;
-        if (!opt) return `# ERROR: missing options for ${state.configVersion}`;
-        const lines = [];
-        lines.push(`${indent}colors:`);
-        opt.order.forEach(catKey => {
-            const cat = opt.categories[catKey];
-            lines.push(`${indent}  ${catKey}:`);
-            Object.entries(cat.items || {}).forEach(([logKey, def]) => {
-                const fullKey = `${catKey}.${logKey}`;
-                const color = state.colors[fullKey] || def.color;
-                if (color) {
-                    lines.push(`${indent}    ${logKey}: "${color}"`);
-                }
-            });
-        });
-        return lines.join('\n');
-    }
+    versionSelect.addEventListener('change', async () => {
+        updateVersionNote();
+        // show temporary loading states in p4/p5
+        logListWrap.innerHTML = '';
+        logListWrap.appendChild(el('p', {class:'cfg-note'}, 'Loading log options…'));
+        colorsWrap.innerHTML = '';
+        colorsWrap.appendChild(el('p', {class:'cfg-note'}, 'Loading colors…'));
+        await loadAssetsForCurrentConfig();
+    });
 
-    function buildYaml() {
-        if (!state.templateText) {
-            return `# ERROR: Missing config.template.yml for ${state.configVersion}\n# Deploy /docs/assets/configs/${state.configVersion}/config.template.yml before using the generator.`;
-        }
-        if (!state.options) {
-            return `# ERROR: Missing options.json for ${state.configVersion}\n# Deploy /docs/assets/configs/${state.configVersion}/options.json before using the generator.`;
-        }
+    // initial load
+    updateVersionNote();
+    loadAssetsForCurrentConfig().catch(() => { /* handled above */ });
 
-        const logSection  = buildLogSectionFromState('');
-        const embedColors = buildEmbedColorsFromState('  ');
-
-        let y = state.templateText;
-
-        y = replaceToken(y, 'WEBHOOK_URL', state.webhookUrl);
-        y = replaceToken(y, 'FORMAT_TIME', state.plainTimeFmt);
-        y = replaceToken(y, 'FORMAT_NAME', (state.plainServerName || '').replace(/"/g, '\\"'));
-        y = replaceToken(y, 'EMBEDS_ENABLED', state.embedsEnabled ? 'true' : 'false');
-        y = replaceToken(y, 'EMBED_AUTHOR', (state.embedAuthor || '').replace(/"/g, '\\"'));
-        y = replaceToken(y, 'EMBED_COLORS', embedColors);
-        y = replaceToken(y, 'LOG_SECTION', logSection);
-        y = replaceToken(y, 'CONFIG_VERSION', state.configVersion.toUpperCase());
-        y = replaceToken(y, 'GENERATED_AT', isoNice());
-
-        return y;
-    }
-
-    /* ----------------- styles ----------------- */
+    /* -------------------------------------------------------
+       inline styles for the generator
+    ------------------------------------------------------- */
     const style = document.createElement('style');
     style.textContent = `
     #cfg-gen .cfg-wrap { max-width: 740px; margin: 0 auto; }
@@ -846,6 +774,6 @@
       overflow: auto;
       resize: vertical;
     }
-  `;
+    `;
     document.head.appendChild(style);
 })();
