@@ -1,60 +1,42 @@
-// Optional: proxy URL for webhook tests (your Cloudflare Worker /relay endpoint)
-// Leave blank to attempt a direct POST (usually blocked by CORS in browsers).
 window.DL_PROXY_URL = window.DL_PROXY_URL || "";
 
-// Map plugin → config schema + stock download URL (for future use on the page)
+/**
+ * Map: plugin version -> config schema version
+ * If multiple plugin versions share the same config (e.g. v9),
+ * just point them all to the same configVersion.
+ */
 window.DL_VERSIONS = {
-    "2.1.5": { configVersion: "v9", downloadUrl: "/docs/assets/configs/v9/config.yml" },
-    // "2.1.6": { configVersion: "v9", downloadUrl: "/docs/assets/configs/v9/config.yml" },
+    "2.1.5": { configVersion: "v9" },
+    // "2.1.6": { configVersion: "v9" },
+    // "2.2.0": { configVersion: "v10" },
 };
 
-// Default on/off toggles for v9
-window.DL_DEFAULT_TOGGLES = {
-    "log.player.join": true,
-    "log.player.quit": true,
-    "log.player.chat": true,
-    "log.player.command": true,
-    "log.player.death": true,
-    "log.player.teleport": true,
-    "log.player.gamemode": true,
+/**
+ * Per-config-version metadata.
+ * NOTE:
+ * - The generator must fetch BOTH:
+ *    1) templateUrl  → the YAML skeleton with ASCII + placeholders
+ *    2) optionsUrl   → the list of categories/logs (with per-log defaults!)
+ * - If you add a new config version, add it here and drop the files in the same folder.
+ */
+window.DL_CONFIGS = {
+    "v9": {
+        templateUrl: "/docs/assets/configs/v9/config.template.yml",
+        downloadUrl: "/docs/assets/configs/v9/config.yml",
+        optionsUrl: "/docs/assets/configs/v9/options.json"
+    }
 
-    "log.server.start": true,
-    "log.server.stop": true,
-    "log.server.command": true,
-    "log.server.explosion": true,
-
-    "log.moderation.ban": true,
-    "log.moderation.unban": true,
-    "log.moderation.kick": true,
-    "log.moderation.op": true,
-    "log.moderation.deop": true,
-    "log.moderation.whitelist_toggle": true,
-    "log.moderation.whitelist": true
+    // "v10": {
+    //     templateUrl: "/docs/assets/configs/v10/config.template.yml",
+    //     downloadUrl: "/docs/assets/configs/v10/config.yml",
+    //     optionsUrl: "/docs/assets/configs/v10/options.json"
+    // }
 };
 
-// Default colors (v9) — matches your theme (moderation = red, join = green, etc.)
-window.DL_DEFAULT_COLORS = {
-    "player.join": "#57F287",
-    "player.quit": "#ED4245",
-    "player.chat": "#5865F2",
-    "player.command": "#FEE75C",
-    "player.death": "#ED4245",
-
-    "server.start": "#43B581",
-    "server.stop":  "#ED4245",
-    "server.command":"#EB459E",
-    "server.explosion": "#F97316",
-
-    "moderation.ban": "#FF3B30",
-    "moderation.unban": "#FF3B30",
-    "moderation.kick": "#FF3B30",
-    "moderation.op": "#FF3B30",
-    "moderation.deop": "#FF3B30",
-    "moderation.whitelist_toggle": "#1ABC9C",
-    "moderation.whitelist": "#16A085"
-};
-
-// Exact webhook test payload you want
+/**
+ * Exact webhook test payload you wanted.
+ * Kept here so the generator can import it without hardcoding.
+ */
 window.DL_TEST_EMBED = {
     content: null,
     embeds: [

@@ -1,0 +1,106 @@
+####################################################################################################################################
+#                                                                                                                                  #
+#    /$$$$$$$  /$$                                               /$$ /$$                                                           #
+#   | $$__  $$|__/                                              | $$| $$                                                           #
+#   | $$  \ $$ /$$  /$$$$$$$  /$$$$$$$  /$$$$$$   /$$$$$$   /$$$$$$$| $$        /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$    #
+#   | $$  | $$| $$ /$$_____/ /$$_____/ /$$__  $$ /$$__  $$ /$$__  $$| $$       /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$   #
+#   | $$  | $$| $$|  $$$$$$ | $$      | $$  \ $$| $$  \__/| $$  | $$| $$      | $$  \ $$| $$  \ $$| $$  \ $$| $$$$$$$$| $$  \__/   #
+#   | $$  | $$| $$ \____  $$| $$      | $$  | $$| $$      | $$  | $$| $$      | $$  | $$| $$  | $$| $$  | $$| $$_____/| $$         #
+#   | $$$$$$$/| $$ /$$$$$$$/|  $$$$$$$|  $$$$$$/| $$      |  $$$$$$$| $$$$$$$$|  $$$$$$/|  $$$$$$$|  $$$$$$$|  $$$$$$$| $$         #
+#   |_______/ |__/|_______/  \_______/ \______/ |__/       \_______/|________/ \______/  \____  $$ \____  $$ \_______/|__/         #
+#                                                                                     /$$  \ $$ /$$  \ $$                          #
+#                                                                                    |  $$$$$$/|  $$$$$$/                          #
+#                                                                                     \______/  \______/                           #
+#                                                                                                                                  #
+####################################################################################################################################
+
+#############################
+# D O C U M E N T A T I O N #
+#############################
+
+# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v9/
+
+###################
+# WEBHOOK OPTIONS #
+###################
+
+webhook:
+  url: "{{WEBHOOK_URL}}"
+
+##################
+# FORMAT OPTIONS #
+##################
+
+format:
+  time: "{{TIME_FORMAT}}"
+  name: "{{PLAIN_NAME}}"
+  nicknames: {{NICKNAMES}}
+
+#################
+# EMBED OPTIONS #
+#################
+
+embeds:
+  enabled: {{EMBEDS_ENABLED}}
+  author: "{{EMBEDS_AUTHOR}}"
+  colors:
+    player:
+      join:    "{{COLOR_player.join}}"
+      quit:    "{{COLOR_player.quit}}"
+      chat:    "{{COLOR_player.chat}}"
+      command: "{{COLOR_player.command}}"
+      death:   "{{COLOR_player.death}}"
+      advancement: "{{COLOR_player.advancement}}"
+      teleport: "{{COLOR_player.teleport}}"
+      gamemode: "{{COLOR_player.gamemode}}"
+    server:
+      start:   "{{COLOR_server.start}}"
+      stop:    "{{COLOR_server.stop}}"
+      command: "{{COLOR_server.command}}"
+      explosion: "{{COLOR_server.explosion}}"
+    moderation:
+      ban:              "{{COLOR_moderation.ban}}"
+      unban:            "{{COLOR_moderation.unban}}"
+      kick:             "{{COLOR_moderation.kick}}"
+      op:               "{{COLOR_moderation.op}}"
+      deop:             "{{COLOR_moderation.deop}}"
+      whitelist_toggle: "{{COLOR_moderation.whitelist_toggle}}"
+      whitelist:        "{{COLOR_moderation.whitelist}}"
+
+####################################################################################
+#                                                                                  #
+#     _                      _                ___         _    _                   #
+#    | |    ___  __ _  __ _ (_) _ _   __ _   / _ \  _ __ | |_ (_) ___  _ _   ___   #
+#    | |__ / _ \/ _` |/ _` || || ' \ / _` | | (_) || '_ \|  _|| |/ _ \| ' \ (_-<   #
+#    |____|\___/\__, |\__, ||_||_||_|\__, |  \___/ | .__/ \__||_|\___/|_||_|/__/   #
+#               |___/ |___/          |___/         |_|                             #
+#                                                                                  #
+####################################################################################
+
+log:
+  player:
+    join: {{LOG_player.join}} # Player Join
+    quit: {{LOG_player.quit}} # Player Quit
+    chat: {{LOG_player.chat}} # Player Chat
+    command: {{LOG_player.command}} # Commands executed by a player in-game
+    death: {{LOG_player.death}} # Player Death (with death message)
+    advancement: {{LOG_player.advancement}} # Logs when a player gets an advancement
+    teleport: {{LOG_player.teleport}} # Logs when a player teleports
+    gamemode: {{LOG_player.gamemode}} # Logs when a players gamemode changes
+
+  server:
+    command: {{LOG_server.command}} # Commands executed via the server console/terminal
+    start: {{LOG_server.start}} # Logged when the plugin/server starts
+    stop: {{LOG_server.stop}} # Logged on /stop / clean shutdown
+    explosion: {{LOG_server.explosion}} # Log when an explosion occurs
+
+  moderation:
+    ban: {{LOG_moderation.ban}} # Logs when a player has been banned
+    unban: {{LOG_moderation.unban}} # Logs when a player has been unbanned
+    kick: {{LOG_moderation.kick}} # Logs when a player has been kicked
+    op: {{LOG_moderation.op}} # Logs when a player is granted op premissions
+    deop: {{LOG_moderation.deop}} # Logs when a player has their op permissions revoked
+    whitelist_toggle: {{LOG_moderation.whitelist_toggle}} # Logs when the whitelist is enabled/disabled
+    whitelist: {{LOG_moderation.whitelist}} # Logs when players are added/removed from the whitelist
+
+# CONFIG VERSION V9, GENERATED ON WEBSITE ON {{GENERATED_AT}}

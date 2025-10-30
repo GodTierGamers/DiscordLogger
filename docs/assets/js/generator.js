@@ -1,4 +1,17 @@
-/* DiscordLogger – config.yml generator (clean, 1-step-at-a-time) */
+/* DiscordLogger – config.yml generator (version-aware, NO fallback builder, NO inline test embed)
+   Assumptions (part of your release process):
+   - generator.config.js defines:
+       window.DL_PROXY_URL
+       window.DL_VERSIONS
+       window.DL_CONFIGS
+       window.DL_TEST_EMBED   <-- we ONLY use this, we do NOT build our own here
+   - For every configVersion in window.DL_VERSIONS there is a matching entry in window.DL_CONFIGS:
+       { templateUrl, optionsUrl, downloadUrl? }
+   - config.template.yml contains the tokens we replace:
+       {{WEBHOOK_URL}}, {{FORMAT_TIME}}, {{FORMAT_NAME}},
+       {{EMBEDS_ENABLED}}, {{EMBED_AUTHOR}}, {{EMBED_COLORS}},
+       {{LOG_SECTION}}, {{CONFIG_VERSION}}, {{GENERATED_AT}}
+*/
 (() => {
     const mount = document.getElementById('cfg-gen');
     if (!mount) return;
@@ -26,6 +39,7 @@
             .test((u||'').trim());
 
     const withWait = (url) => url.includes('?') ? `${url}&wait=true` : `${url}?wait=true`;
+
     const isoNice = () => {
         const d = new Date();
         return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
@@ -33,57 +47,143 @@
 
     const human = (s) => s.replace(/[_\-]+/g,' ').replace(/\b\w/g, m => m.toUpperCase());
 
-    /* ----------------- initial data ----------------- */
-    const DEFAULT_PLUGIN = Object.keys(window.DL_VERSIONS || {'2.1.5':{configVersion:'v9'}})[0];
-
-    const normalizeToggles = (t) => {
-        const out = {};
-        for (const [k,v] of Object.entries(t || {})) {
-            const key = k.startsWith('log.') ? k.slice(4) : k;
-            out[key] = !!v;
-        }
-        // always make sure advancement exists
-        if (out['player.advancement'] === undefined) out['player.advancement'] = true;
-        // rename old whitelist -> whitelist_edit
-        if (out['moderation.whitelist'] !== undefined && out['moderation.whitelist_edit'] === undefined) {
-            out['moderation.whitelist_edit'] = !!out['moderation.whitelist'];
-            delete out['moderation.whitelist'];
-        }
-        return out;
+    const replaceToken = (txt, name, value) => {
+        if (!txt) return txt;
+        const re1 = new RegExp(`{{\\s*${name}\\s*}}`, 'g');
+        const re2 = new RegExp(`%%${name}%%`, 'g');
+        return txt.replace(re1, value).replace(re2, value);
     };
 
-    const ensureColors = (c={}) => {
-        const out = { ...c };
-        out['player.advancement'] ??= '#2ECC71';
-        return out;
+    /* ----------------- initial data ----------------- */
+    const allVersions = window.DL_VERSIONS || { '2.1.5': { configVersion: 'v9' } };
+    const DEFAULT_PLUGIN = Object.keys(allVersions)[0];
+
+    const allConfigs  = window.DL_CONFIGS || {
+        'v9': {
+            templateUrl: '/docs/assets/configs/v9/config.template.yml',
+            downloadUrl: '/docs/assets/configs/v9/config.yml',
+            optionsUrl:  '/docs/assets/configs/v9/options.json'
+        }
     };
 
     const state = {
         currentPanel: '1',
+
         pluginVersion: DEFAULT_PLUGIN,
-        configVersion: (window.DL_VERSIONS?.[DEFAULT_PLUGIN]?.configVersion) || 'v9',
+        configVersion: allVersions[DEFAULT_PLUGIN]?.configVersion || 'v9',
+
+        // loaded from remote
+        options: null,
+        templateText: null,
+        loadedFor: null,
+
+        // step 2
         webhookUrl: '',
         webhookConfirmed: false,
+
+        // step 3
         embedsEnabled: true,
         embedAuthor: 'Server Logs',
         plainServerName: '',
         plainTimeFmt: '[HH:mm:ss, dd:MM:yyyy]',
-        toggles: normalizeToggles(window.DL_DEFAULT_TOGGLES || {
-            'player.join': true, 'player.quit': true, 'player.chat': true, 'player.command': true,
-            'player.death': true, 'player.advancement': true, 'player.teleport': true, 'player.gamemode': true,
-            'server.start': true, 'server.stop': true, 'server.command': true, 'server.explosion': true,
-            'moderation.ban': true, 'moderation.unban': true, 'moderation.kick': true,
-            'moderation.op': true, 'moderation.deop': true,
-            'moderation.whitelist_toggle': true, 'moderation.whitelist_edit': true,
-        }),
-        colors: ensureColors(window.DL_DEFAULT_COLORS || {
-            'player.join':'#57F287','player.quit':'#ED4245','player.chat':'#5865F2','player.command':'#FEE75C','player.death':'#ED4245','player.advancement':'#2ECC71','player.teleport':'#3498DB','player.gamemode':'#9B59B6',
-            'server.start':'#43B581','server.stop':'#ED4245','server.command':'#EB459E','server.explosion':'#E74C3C',
-            'moderation.ban':'#FF3B30','moderation.unban':'#FF3B30','moderation.kick':'#FF3B30','moderation.op':'#FF3B30','moderation.deop':'#FF3B30','moderation.whitelist_toggle':'#1ABC9C','moderation.whitelist':'#16A085'
-        }),
+
+        // dynamic
+        toggles: {},
+        colors: {}
     };
 
-    /* ----------------- layout ----------------- */
+    /* ----------------- normalize options.json ----------------- */
+    const normalizeOptions = (raw) => {
+        if (!raw) return null;
+
+        // new format (recommended): { categories: {...}, categoryOrder: [...] }
+        if (raw.categories) {
+            const order = Array.isArray(raw.categoryOrder)
+                ? raw.categoryOrder
+                : Object.keys(raw.categories);
+            return {
+                order,
+                categories: raw.categories
+            };
+        }
+
+        // old / flat format: { logs: { "player.join": { ... } } }
+        if (raw.logs) {
+            const cats = {};
+            Object.entries(raw.logs).forEach(([key, def]) => {
+                const [cat, sub] = key.split('.', 2);
+                if (!cats[cat]) {
+                    cats[cat] = { label: human(cat), items: {} };
+                }
+                cats[cat].items[sub] = {
+                    label: def.label || human(sub),
+                    default: def.default !== undefined ? !!def.default : true,
+                    color: def.color || ''
+                };
+            });
+            return {
+                order: Object.keys(cats),
+                categories: cats
+            };
+        }
+
+        return null;
+    };
+
+    const applyOptionsToState = (opt) => {
+        state.toggles = {};
+        state.colors  = {};
+
+        if (!opt) return;
+
+        opt.order.forEach(catKey => {
+            const cat = opt.categories[catKey];
+            if (!cat || !cat.items) return;
+            Object.entries(cat.items).forEach(([logKey, def]) => {
+                const fullKey = `${catKey}.${logKey}`;
+                state.toggles[fullKey] = def.default !== undefined ? !!def.default : true;
+                if (def.color) {
+                    state.colors[fullKey] = def.color;
+                }
+            });
+        });
+    };
+
+    /* ----------------- dynamic fetch ----------------- */
+    const fetchText = async (url) => {
+        const res = await fetch(url, {cache: 'no-store'});
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+        return res.text();
+    };
+    const fetchJSON = async (url) => {
+        const res = await fetch(url, {cache: 'no-store'});
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+        return res.json();
+    };
+
+    const ensureAssetsLoaded = async (configVersion) => {
+        const meta = allConfigs[configVersion];
+        if (!meta) {
+            throw new Error(`[cfg-gen] No DL_CONFIGS entry for ${configVersion}`);
+        }
+
+        if (state.loadedFor === configVersion && state.options && state.templateText) {
+            return;
+        }
+
+        const [optJSON, tplText] = await Promise.all([
+            meta.optionsUrl ? fetchJSON(meta.optionsUrl) : Promise.reject(new Error('Missing optionsUrl')),
+            meta.templateUrl ? fetchText(meta.templateUrl) : Promise.reject(new Error('Missing templateUrl'))
+        ]);
+
+        state.options = normalizeOptions(optJSON);
+        state.templateText = tplText;
+        state.loadedFor = configVersion;
+
+        applyOptionsToState(state.options);
+    };
+
+    /* ----------------- layout shell ----------------- */
     mount.innerHTML = '';
     const wrapper = el('div', {class:'cfg-wrap'});
     mount.appendChild(wrapper);
@@ -100,42 +200,49 @@
         $$('.cfg-panel', wrapper).forEach(p => {
             p.style.display = (p.dataset.panel === id ? 'block' : 'none');
         });
-        // if we land on colors, but embeds are off, skip straight to result
-        if (id === '5' && !state.embedsEnabled) {
-            // build immediately
-            yamlOut.value = buildYaml();
-            showPanel('6');
-        }
     };
 
-    /* ----------------- Panel 1: version ----------------- */
+    /* ----------------- Panel 1 ----------------- */
     const versionSelect = el('select', {class:'cfg-input cfg-input--select'});
-    Object.keys(window.DL_VERSIONS || {[DEFAULT_PLUGIN]:{configVersion:'v9'}})
+    Object.keys(allVersions)
         .sort()
         .forEach(v => {
             versionSelect.appendChild(el('option', {value:v, ...(v===state.pluginVersion ? {selected:''} : {})}, v));
         });
 
     const versionNote = el('p', {class:'cfg-note'});
-    const updateVersionNote = () => {
+    const versionLoading = el('p', {class:'cfg-note', style:'display:none'}, 'Loading config assets…');
+
+    const updateVersionNote = async () => {
         state.pluginVersion = versionSelect.value;
-        state.configVersion = window.DL_VERSIONS?.[state.pluginVersion]?.configVersion || 'v9';
+        state.configVersion = allVersions?.[state.pluginVersion]?.configVersion || 'v9';
         versionNote.textContent = `Config schema: ${state.configVersion}`;
+
+        versionLoading.style.display = '';
+        try {
+            await ensureAssetsLoaded(state.configVersion);
+            renderLogToggles();
+            renderColors();
+        } catch (e) {
+            console.warn(e);
+        } finally {
+            versionLoading.style.display = 'none';
+        }
     };
     updateVersionNote();
-    versionSelect.addEventListener('change', updateVersionNote);
 
     const p1 = makePanel('1', '1) Plugin version', [
-        el('p', {class:'cfg-note'}, 'Pick the DiscordLogger version you installed. Multiple plugin versions can share a config version.'),
+        el('p', {class:'cfg-note'}, 'Pick the DiscordLogger version you installed.'),
         el('label', {class:'cfg-label'}, 'Plugin version'),
         versionSelect,
         versionNote,
+        versionLoading,
         el('div', {class:'cfg-actions'}, [
             el('button', {class:'cfg-btn cfg-btn--primary', type:'button', id:'p1next'}, 'Next')
         ])
     ]);
 
-    /* ----------------- Panel 2: webhook ----------------- */
+    /* ----------------- Panel 2 ----------------- */
     const webhookInput = el('input', {class:'cfg-input', type:'url', placeholder:'https://discord.com/api/webhooks/...'});
     const webhookStatus = el('div', {class:'cfg-status', style:'display:none'});
     const webhookTestBtn = el('button', {class:'cfg-btn', type:'button'}, 'Send test');
@@ -161,9 +268,7 @@
         ])
     ]);
 
-    /* ----------------- Panel 3: log style ----------------- */
-
-    // presets for Java-like time formats, but human
+    /* ----------------- Panel 3 ----------------- */
     const TIME_PRESETS = [
         {label: 'Default (same as plugin)', value: '[HH:mm:ss, dd:MM:yyyy]'},
         {label: 'EU 24h (dd/MM/yyyy HH:mm)', value: '[dd/MM/yyyy HH:mm]'},
@@ -176,8 +281,7 @@
         el('input', {type:'radio', name:'logstyle', value:'embeds', checked:''}),
         el('span', {}, 'Use embeds (recommended)')
     ]);
-
-    const embedsExtra = el('div', {class:'cfg-inline', style:''}, [
+    const embedsExtra = el('div', {class:'cfg-inline'}, [
         el('label', {class:'cfg-label', for:'embedAuthor'}, 'Author name (shown in embed header)'),
         el('input', {id:'embedAuthor', class:'cfg-input', type:'text', value: state.embedAuthor})
     ]);
@@ -187,9 +291,9 @@
         el('span', {}, 'Use plain text')
     ]);
 
-    // nice, guided date/time
     const dtPresetSel = el('select', {class:'cfg-input cfg-input--select', id:'dtPreset'});
     TIME_PRESETS.forEach(p => dtPresetSel.appendChild(el('option', {value:p.value}, p.label)));
+
     const dtCustomWrap = el('div', {class:'cfg-inline', style:'margin-top:.4rem;'}, [
         el('label', {class:'cfg-label', for:'plainFmt'}, 'Custom pattern'),
         el('input', {id:'plainFmt', class:'cfg-input', type:'text', value: state.plainTimeFmt}),
@@ -219,70 +323,107 @@
     ]);
 
     /* ----------------- Panel 4: what to log ----------------- */
-    const makeCheckbox = (key, label) => {
-        const cb = el('input', {type:'checkbox', 'data-key':key, ...(state.toggles[key] ? {checked:''}:{})});
-        const w  = el('label', {class:'cfg-check'}, [cb, ' ', label]);
-        return w;
-    };
+    const p4list = el('div', {class:'cfg-loglist'});
     const p4 = makePanel('4', '4) What do you want to log?', [
-        el('p', {class:'cfg-note'}, 'Toggle categories on/off.'),
-        el('h3', {class:'cfg-sub'}, 'Player'),
-        makeCheckbox('player.join', 'Join'),
-        makeCheckbox('player.quit', 'Quit'),
-        makeCheckbox('player.chat', 'Chat'),
-        makeCheckbox('player.command', 'Command'),
-        makeCheckbox('player.death', 'Death'),
-        makeCheckbox('player.advancement', 'Advancement'),
-        makeCheckbox('player.teleport', 'Teleport'),
-        makeCheckbox('player.gamemode', 'Gamemode'),
-        el('h3', {class:'cfg-sub'}, 'Server'),
-        makeCheckbox('server.start', 'Start'),
-        makeCheckbox('server.stop', 'Stop'),
-        makeCheckbox('server.command', 'Command (console)'),
-        makeCheckbox('server.explosion', 'Explosion'),
-        el('h3', {class:'cfg-sub'}, 'Moderation'),
-        makeCheckbox('moderation.ban', 'Ban'),
-        makeCheckbox('moderation.unban', 'Unban'),
-        makeCheckbox('moderation.kick', 'Kick'),
-        makeCheckbox('moderation.op', 'OP'),
-        makeCheckbox('moderation.deop', 'De-OP'),
-        makeCheckbox('moderation.whitelist_toggle', 'Whitelist Toggle'),
-        makeCheckbox('moderation.whitelist_edit', 'Whitelist Edit'),
+        el('p', {class:'cfg-note'}, 'This list comes from assets/configs/<version>/options.json for the version you picked.'),
+        p4list,
         el('div', {class:'cfg-actions'}, [
             el('button', {class:'cfg-btn', type:'button', id:'p4back'}, 'Back'),
             el('button', {class:'cfg-btn cfg-btn--primary', type:'button', id:'p4next'}, 'Next')
         ])
     ]);
 
-    /* ----------------- Panel 5: embed colors ----------------- */
+    /* ----------------- Panel 5: colors ----------------- */
     const colorsWrap = el('div', {class:'cfg-colwrap'});
-    const renderColors = () => {
-        colorsWrap.innerHTML = '';
-        const groups = { player:[], server:[], moderation:[] };
-        for (const [key,val] of Object.entries(state.colors)) {
-            const [cat, sub] = key.split('.',2);
-            if (!groups[cat]) groups[cat] = [];
-            groups[cat].push({sub, val});
+    const p5 = makePanel('5', '5) Embed colors', [
+        el('p', {class:'cfg-note'}, 'Only used when “Use embeds” is selected.'),
+        colorsWrap,
+        el('div', {class:'cfg-actions'}, [
+            el('button', {class:'cfg-btn', type:'button', id:'p5back'}, 'Back'),
+            el('button', {class:'cfg-btn cfg-btn--primary', type:'button', id:'p5next'}, 'Generate')
+        ])
+    ]);
+
+    /* ----------------- Panel 6: result ----------------- */
+    const yamlOut = el('textarea', {class:'cfg-yaml', readonly:''});
+    yamlOut.setAttribute('wrap', 'off');
+
+    const p6 = makePanel('6', 'Your config.yml', [
+        yamlOut,
+        el('div', {class:'cfg-actions'}, [
+            el('button', {class:'cfg-btn', type:'button', id:'copyYaml'}, 'Copy'),
+            el('button', {class:'cfg-btn cfg-btn--primary', type:'button', id:'downloadYaml'}, 'Download')
+        ])
+    ]);
+
+    wrapper.append(p1, p2, p3, p4, p5, p6);
+    showPanel('1');
+
+    /* ----------------- renderers ----------------- */
+    function renderLogToggles() {
+        p4list.innerHTML = '';
+        const opt = state.options;
+        if (!opt) {
+            p4list.appendChild(el('p', {class:'cfg-note'}, 'Error: options.json not loaded for this version.'));
+            return;
         }
-        ['player','server','moderation'].forEach(cat => {
-            if (!groups[cat] || !groups[cat].length) return;
-            const box = el('div', {class:'cfg-colgroup'}, [
-                el('h3', {class:'cfg-sub'}, human(cat))
+
+        opt.order.forEach(catKey => {
+            const cat = opt.categories[catKey];
+            if (!cat) return;
+
+            p4list.appendChild(el('h3', {class:'cfg-sub'}, cat.label || human(catKey)));
+
+            Object.entries(cat.items || {}).forEach(([logKey, def]) => {
+                const fullKey = `${catKey}.${logKey}`;
+                const checked = state.toggles[fullKey] !== undefined ? state.toggles[fullKey] : (def.default !== undefined ? !!def.default : true);
+                const cb = el('input', {type:'checkbox', 'data-key':fullKey, ...(checked ? {checked:''} : {})});
+                const friendly = def.label || human(logKey);
+                const row = el('label', {class:'cfg-check'}, [
+                    cb, ' ', friendly
+                ]);
+                cb.addEventListener('change', () => {
+                    state.toggles[fullKey] = cb.checked;
+                });
+                p4list.appendChild(row);
+            });
+        });
+    }
+
+    function renderColors() {
+        colorsWrap.innerHTML = '';
+        const opt = state.options;
+        if (!opt) {
+            colorsWrap.appendChild(el('p', {class:'cfg-note'}, 'Error: options.json not loaded for this version.'));
+            return;
+        }
+
+        opt.order.forEach(catKey => {
+            const cat = opt.categories[catKey];
+            if (!cat) return;
+
+            const groupBox = el('div', {class:'cfg-colgroup'}, [
+                el('h3', {class:'cfg-sub'}, cat.label || human(catKey))
             ]);
-            groups[cat].forEach(({sub,val}) => {
+
+            Object.entries(cat.items || {}).forEach(([logKey, def]) => {
+                const fullKey = `${catKey}.${logKey}`;
+                const existingColor = state.colors[fullKey] || def.color || '#5865F2';
+
                 const row = el('div', {class:'cfg-colrow'}, [
-                    el('label', {class:'cfg-label'}, `${human(cat)} ${human(sub)}`),
+                    el('label', {class:'cfg-label'}, def.label || human(logKey)),
                     el('div', {class:'cfg-colinputs'}, [
-                        el('input', {type:'color', value:val, 'data-key':`${cat}.${sub}`}),
-                        el('input', {type:'text', class:'cfg-input cfg-input--tiny', value:val, 'data-key':`${cat}.${sub}`})
+                        el('input', {type:'color', value: existingColor, 'data-key':fullKey}),
+                        el('input', {type:'text', class:'cfg-input cfg-input--tiny', value: existingColor, 'data-key':fullKey})
                     ])
                 ]);
-                box.appendChild(row);
+
+                groupBox.appendChild(row);
             });
-            colorsWrap.appendChild(box);
+
+            colorsWrap.appendChild(groupBox);
         });
 
-        // wiring
         $$('input[type=color]', colorsWrap).forEach(inp => {
             inp.addEventListener('input', () => {
                 const k = inp.dataset.key;
@@ -303,42 +444,29 @@
                 }
             });
         });
-    };
-    renderColors();
+    }
 
-    const p5 = makePanel('5', '5) Embed colors', [
-        el('p', {class:'cfg-note'}, 'Only used when “Use embeds” is selected.'),
-        colorsWrap,
-        el('div', {class:'cfg-actions'}, [
-            el('button', {class:'cfg-btn', type:'button', id:'p5back'}, 'Back'),
-            el('button', {class:'cfg-btn cfg-btn--primary', type:'button', id:'p5next'}, 'Generate')
-        ])
-    ]);
-
-    /* ----------------- Panel 6: result ----------------- */
-    const yamlOut = el('textarea', {class:'cfg-yaml', readonly:''});
-    // allow horizontal scroll to keep ASCII art intact
-    yamlOut.setAttribute('wrap', 'off');
-
-    const p6 = makePanel('6', 'Your config.yml', [
-        yamlOut,
-        el('div', {class:'cfg-actions'}, [
-            el('button', {class:'cfg-btn', type:'button', id:'copyYaml'}, 'Copy'),
-            el('button', {class:'cfg-btn cfg-btn--primary', type:'button', id:'downloadYaml'}, 'Download')
-        ])
-    ]);
-
-    // assemble
-    wrapper.append(p1, p2, p3, p4, p5, p6);
-    // show only #1 at start
-    showPanel('1');
-
-    /* ----------------- wiring: top level ----------------- */
-    $('#p1next').addEventListener('click', () => showPanel('2'));
-    $('#p2back').addEventListener('click', () => showPanel('1'));
-    $('#p3back').addEventListener('click', () => showPanel('2'));
-    $('#p4back').addEventListener('click', () => showPanel('3'));
-    $('#p5back').addEventListener('click', () => showPanel('4'));
+    /* ----------------- nav wiring ----------------- */
+    $('#p1next').addEventListener('click', (e) => {
+        e.preventDefault();
+        showPanel('2');
+    });
+    $('#p2back').addEventListener('click', (e) => {
+        e.preventDefault();
+        showPanel('1');
+    });
+    $('#p3back').addEventListener('click', (e) => {
+        e.preventDefault();
+        showPanel('2');
+    });
+    $('#p4back').addEventListener('click', (e) => {
+        e.preventDefault();
+        showPanel('3');
+    });
+    $('#p5back').addEventListener('click', (e) => {
+        e.preventDefault();
+        showPanel('4');
+    });
 
     /* ----------------- webhook logic ----------------- */
     const setWebhookStatus = (txt, cls='') => {
@@ -384,7 +512,8 @@
         validateWebhookNext();
     });
 
-    webhookTestBtn.addEventListener('click', async () => {
+    webhookTestBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
         const url = webhookInput.value.trim();
         if (!isDiscordWebhook(url)) {
             setWebhookStatus('Please enter a valid Discord webhook URL.', 'is-error');
@@ -395,33 +524,14 @@
         webhookTestBtn.disabled = true;
         confirmRow.style.display = 'none';
 
-        // build exact-ish test
-        const base = window.DL_TEST_EMBED || {
-            content: null,
-            embeds: [
-                {
-                    title: 'DiscordLogger Webhook Test',
-                    description: 'Hello, this is a test of your webhook to confirm if it works, if you are seeing this message, it worked.\n\nIf you did not request a webhook test, confirm with other members of your server.',
-                    url: 'https://discordlogger.godtiergamers.xyz',
-                    color: 5814783,
-                    author: {
-                        name: 'DiscordLogger Webhook Test',
-                        url: 'https://discordlogger.godtiergamers.xyz',
-                        icon_url: 'https://files.godtiergamers.xyz/DiscordLogger-Logo-removebg.png'
-                    },
-                    footer: {
-                        text: 'DiscordLogger Webhook Test',
-                        icon_url: 'https://files.godtiergamers.xyz/DiscordLogger-Logo-removebg.png'
-                    },
-                    thumbnail: {
-                        url: 'https://files.godtiergamers.xyz/DiscordLogger-Logo-removebg.png'
-                    }
-                }
-            ],
-            attachments: []
-        };
+        // IMPORTANT: test payload comes ONLY from generator.config.js
+        // We assume window.DL_TEST_EMBED is present there.
+        const base = (typeof structuredClone === 'function')
+            ? structuredClone(window.DL_TEST_EMBED)
+            : JSON.parse(JSON.stringify(window.DL_TEST_EMBED));
+
         if (base.embeds && base.embeds[0]) {
-            base.embeds[0] = { ...base.embeds[0], timestamp: new Date().toISOString() };
+            base.embeds[0].timestamp = new Date().toISOString();
         }
 
         const proxy = (window.DL_PROXY_URL || '').trim();
@@ -442,22 +552,26 @@
             setWebhookStatus("Couldn't send webhook, please check your webhook URL", 'is-error');
         }
 
-        // we always let user confirm manually
         confirmRow.style.display = '';
     });
 
-    $('#p2yes').addEventListener('click', () => {
+    $('#p2yes').addEventListener('click', (e) => {
+        e.preventDefault();
         state.webhookConfirmed = true;
         setWebhookStatus('Webhook confirmed.', 'is-ok');
         validateWebhookNext();
     });
-    $('#p2no').addEventListener('click', () => {
+    $('#p2no').addEventListener('click', (e) => {
+        e.preventDefault();
         state.webhookConfirmed = false;
         setWebhookStatus('Check your URL and try again.', 'is-info');
         validateWebhookNext();
     });
 
-    $('#p2next').addEventListener('click', () => showPanel('3'));
+    $('#p2next').addEventListener('click', (e) => {
+        e.preventDefault();
+        showPanel('3');
+    });
 
     /* ----------------- log style logic ----------------- */
     const updateLogStyleUI = () => {
@@ -465,11 +579,10 @@
         state.embedsEnabled = useEmbeds;
         embedsExtra.style.display = useEmbeds ? '' : 'none';
         plainExtra.style.display = useEmbeds ? 'none' : '';
-        // DO NOT force-show p5 here – that was the bug.
     };
 
     $$('input[name="logstyle"]').forEach(r => r.addEventListener('change', updateLogStyleUI));
-    // datetime presets
+
     const fmtInput = $('#plainFmt');
     const fmtPrev  = $('#fmtPrev');
 
@@ -495,7 +608,6 @@
             fmtInput.value = v;
             fmtInput.disabled = true;
         } else {
-            // custom
             fmtInput.disabled = false;
             fmtInput.focus();
         }
@@ -503,22 +615,31 @@
     });
     fmtInput.addEventListener('input', updateFmtPreview);
 
-    // init UI for step 3 only after we get there
-    $('#p3next').addEventListener('click', () => showPanel('4'));
-    $('#p3back').addEventListener('click', () => showPanel('2'));
-    // but we still need defaults
+    $('#embedAuthor').addEventListener('input', (e) => {
+        state.embedAuthor = e.target.value;
+    });
+    $('#plainName').addEventListener('input', (e) => {
+        state.plainServerName = e.target.value;
+    });
+
+    $('#p3next').addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (state.loadedFor !== state.configVersion) {
+            await ensureAssetsLoaded(state.configVersion);
+        }
+        showPanel('4');
+    });
+    $('#p3back').addEventListener('click', (e) => {
+        e.preventDefault();
+        showPanel('2');
+    });
+
     updateLogStyleUI();
     updateFmtPreview();
 
-    /* ----------------- what to log ----------------- */
-    $$('.cfg-check input[type=checkbox]', p4).forEach(cb => {
-        cb.addEventListener('change', () => {
-            state.toggles[cb.dataset.key] = cb.checked;
-        });
-    });
-
-    $('#p4next').addEventListener('click', () => {
-        // if embeds, go to colors; else, straight to YAML
+    /* ----------------- step 4 -> colors/result ----------------- */
+    $('#p4next').addEventListener('click', (e) => {
+        e.preventDefault();
         if (state.embedsEnabled) {
             showPanel('5');
         } else {
@@ -528,142 +649,97 @@
     });
 
     /* ----------------- colors -> result ----------------- */
-    $('#p5next').addEventListener('click', () => {
+    $('#p5next').addEventListener('click', (e) => {
+        e.preventDefault();
         yamlOut.value = buildYaml();
         showPanel('6');
     });
 
     /* ----------------- result actions ----------------- */
-    $('#copyYaml').addEventListener('click', async () => {
+    $('#copyYaml').addEventListener('click', async (e) => {
+        e.preventDefault();
         try { await navigator.clipboard.writeText(yamlOut.value); } catch {}
     });
-    $('#downloadYaml').addEventListener('click', () => {
+    $('#downloadYaml').addEventListener('click', (e) => {
+        e.preventDefault();
         const a = document.createElement('a');
         a.download = 'config.yml';
         a.href = URL.createObjectURL(new Blob([yamlOut.value], {type:'text/yaml'}));
         document.body.appendChild(a); a.click(); a.remove();
     });
 
-    /* ----------------- YAML builder ----------------- */
-    function buildYaml() {
-        const L = [];
-        L.push(
-            `####################################################################################################################################
-#                                                                                                                                  #
-#    /$$$$$$$  /$$                                               /$$ /$$                                                           #
-#   | $$__  $$|__/                                              | $$| $$                                                           #
-#   | $$  \\ $$ /$$  /$$$$$$$  /$$$$$$$  /$$$$$$   /$$$$$$   /$$$$$$$| $$        /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$    #
-#   | $$  | $$| $$ /$$_____/ /$$_____/ /$$__  $$ /$$__  $$ /$$__  $$| $$       /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$   #
-#   | $$  | $$| $$|  $$$$$$ | $$      | $$  \\ $$| $$  \\__/| $$  | $$| $$      | $$  \\ $$| $$  \\ $$| $$  \\ $$| $$$$$$$$| $$  \\__/   #
-#   | $$  | $$| $$ \\____  $$| $$      | $$  | $$| $$      | $$  | $$| $$      | $$  | $$| $$  | $$| $$  | $$| $$_____/| $$         #
-#   | $$$$$$$/| $$ /$$$$$$$/|  $$$$$$$|  $$$$$$/| $$      |  $$$$$$$| $$$$$$$$|  $$$$$$/|  $$$$$$$|  $$$$$$$|  $$$$$$$| $$         #
-#   |_______/ |__/|_______/  \\_______/ \\______/ |__/       \\_______/|________/ \\______/  \\____  $$ \\____  $$ \\_______/|__/         #
-#                                                                                     /$$  \\ $$ /$$  \\ $$                          #
-#                                                                                    |  $$$$$$/|  $$$$$$/                          #
-#                                                                                     \\______/  \\______/                           #
-#                                                                                                                                  #
-####################################################################################################################################
-
-#############################
-# D O C U M E N T A T I O N #
-#############################
-
-# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/${state.configVersion}/
-
-###################
-# WEBHOOK OPTIONS #
-###################
-`);
-        L.push('webhook:');
-        L.push(`  url: "${state.webhookUrl}" # Discord webhook URL goes here, plugin will not function until present`);
-        L.push('');
-        L.push(
-            `##################
-# FORMAT OPTIONS #
-##################
-
-format:
-  # ONLY USED FOR PLAIN TEXT MESSAGES (EMBEDS DISABLED)
-  # Usage (case-sensitive): HH=hours, mm=minutes, ss=seconds, dd=day, MM=month, yyyy=year
-  time: "${state.plainTimeFmt}"
-  # Only used for plain text, for embeds edit author name
-  name: "${(state.plainServerName||'').replace(/"/g,'\\"')}"
-  # Show nicknames (if set) as "Nickname (RealName)" in all player-related logs
-  nicknames: true
-
-#################
-# EMBED OPTIONS #
-#################
-`);
-        L.push('embeds:');
-        L.push(`  enabled: ${state.embedsEnabled ? 'true' : 'false'}`);
-        L.push(`  author: "${(state.embedAuthor||'').replace(/"/g,'\\"')}" # Can be modified for proxy servers (e.g. Survival, Creative)`);
-        L.push('');
-        L.push('  # Per-category colors (hex). Keys are case-insensitive; spaces become underscores.');
-        L.push('  colors:');
-        const group = {};
-        for (const [k,v] of Object.entries(state.colors)) {
-            const [cat,sub] = k.split('.',2);
-            (group[cat] ??= {})[sub] = v;
-        }
-        for (const cat of ['player','server','moderation']) {
-            if (!group[cat]) continue;
-            L.push(`    ${cat}:`);
-            for (const [sub,hex] of Object.entries(group[cat])) {
-                L.push(`      ${sub}: "${hex}"`);
-            }
-        }
-        L.push('');
-        L.push(
-            `####################################################################################
-#                                                                                  #
-#     _                      _                ___         _    _                   #
-#    | |    ___  __ _  __ _ (_) _ _   __ _   / _ \\  _ __ | |_ (_) ___  _ _   ___   #
-#    | |__ / _ \\/ _\` |/ _\` || || ' \\ / _\` | | (_) || '_ \\|  _|| |/ _ \\| ' \\ (_-<   #
-#    |____|\\___/\\__, |\\__, ||_||_||_|\\__, |  \\___/ | .__/ \\__||_|\\___/|_||_|/__/   #
-#               |___/ |___/          |___/         |_|                             #
-#                                                                                  #
-####################################################################################
-`);
-        L.push('log:');
-
-        // group toggles
-        const tg = {};
-        for (const [k,v] of Object.entries(state.toggles)) {
-            const [cat, sub] = k.split('.',2);
-            (tg[cat] ??= {})[sub] = v;
+    /* ----------------- YAML build (NO fallback) ----------------- */
+    function buildLogSectionFromState(indent = '') {
+        const lines = [];
+        const opt = state.options;
+        if (!opt) {
+            return '# ERROR: options.json not loaded for this config version\n';
         }
 
-        // player
-        L.push('  player:');
-        ['join','quit','chat','command','death','advancement','teleport','gamemode'].forEach(k => {
-            if (tg.player && k in tg.player) {
-                L.push(`    ${k}: ${tg.player[k] ? 'true' : 'false'}`);
-            }
+        lines.push(`${indent}log:`);
+        opt.order.forEach(catKey => {
+            const cat = opt.categories[catKey];
+            lines.push(`${indent}  ${catKey}:`);
+            Object.entries(cat.items || {}).forEach(([logKey, def]) => {
+                const fullKey = `${catKey}.${logKey}`;
+                const enabled = state.toggles[fullKey] !== undefined
+                    ? state.toggles[fullKey]
+                    : (def.default !== undefined ? !!def.default : true);
+                const comment = def.label ? ` # ${def.label}` : '';
+                lines.push(`${indent}    ${logKey}: ${enabled ? 'true' : 'false'}${comment}`);
+            });
+            lines.push('');
         });
-        L.push('');
-        // server
-        L.push('  server:');
-        ['command','start','stop','explosion'].forEach(k => {
-            if (tg.server && k in tg.server) {
-                L.push(`    ${k}: ${tg.server[k] ? 'true' : 'false'}`);
-            }
-        });
-        L.push('');
-        // moderation
-        L.push('  moderation:');
-        ['ban','unban','kick','op','deop','whitelist_toggle','whitelist_edit'].forEach(k => {
-            if (tg.moderation && k in tg.moderation) {
-                L.push(`    ${k}: ${tg.moderation[k] ? 'true' : 'false'}`);
-            }
-        });
-        L.push('');
-        L.push(`# CONFIG VERSION ${state.configVersion.toUpperCase()}, GENERATED ON WEBSITE ON ${isoNice()}`);
-        L.push('');
-        return L.join('\n');
+        return lines.join('\n').trimEnd();
     }
 
-    /* ----------------- inject styles just for generator ----------------- */
+    function buildEmbedColorsFromState(indent = '  ') {
+        const opt = state.options;
+        if (!opt) return '# ERROR: options.json not loaded';
+
+        const lines = [];
+        lines.push(`${indent}colors:`);
+        opt.order.forEach(catKey => {
+            const cat = opt.categories[catKey];
+            lines.push(`${indent}  ${catKey}:`);
+            Object.entries(cat.items || {}).forEach(([logKey, def]) => {
+                const fullKey = `${catKey}.${logKey}`;
+                const color = state.colors[fullKey] || def.color;
+                if (color) {
+                    lines.push(`${indent}    ${logKey}: "${color}"`);
+                }
+            });
+        });
+        return lines.join('\n');
+    }
+
+    function buildYaml() {
+        if (!state.templateText) {
+            return `# ERROR: Missing config.template.yml for ${state.configVersion}\n# Make sure /docs/assets/configs/${state.configVersion}/config.template.yml exists.`;
+        }
+        if (!state.options) {
+            return `# ERROR: Missing options.json for ${state.configVersion}\n# Make sure /docs/assets/configs/${state.configVersion}/options.json exists.`;
+        }
+
+        const logSection  = buildLogSectionFromState('');
+        const embedColors = buildEmbedColorsFromState('  ');
+
+        let y = state.templateText;
+
+        y = replaceToken(y, 'WEBHOOK_URL', state.webhookUrl);
+        y = replaceToken(y, 'FORMAT_TIME', state.plainTimeFmt);
+        y = replaceToken(y, 'FORMAT_NAME', (state.plainServerName || '').replace(/"/g, '\\"'));
+        y = replaceToken(y, 'EMBEDS_ENABLED', state.embedsEnabled ? 'true' : 'false');
+        y = replaceToken(y, 'EMBED_AUTHOR', (state.embedAuthor || '').replace(/"/g, '\\"'));
+        y = replaceToken(y, 'EMBED_COLORS', embedColors);
+        y = replaceToken(y, 'LOG_SECTION', logSection);
+        y = replaceToken(y, 'CONFIG_VERSION', state.configVersion.toUpperCase());
+        y = replaceToken(y, 'GENERATED_AT', isoNice());
+
+        return y;
+    }
+
+    /* ----------------- styles ----------------- */
     const style = document.createElement('style');
     style.textContent = `
     #cfg-gen .cfg-wrap { max-width: 740px; margin: 0 auto; }
@@ -758,7 +834,7 @@ format:
       padding: .6rem .7rem;
       box-sizing: border-box;
       white-space: pre;
-      overflow: auto;        /* horizontal & vertical */
+      overflow: auto;
       resize: vertical;
     }
   `;
