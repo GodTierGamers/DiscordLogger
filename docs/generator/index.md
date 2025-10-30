@@ -7,7 +7,7 @@ description: Interactive generator for DiscordLogger config.yml
 ![DiscordLogger](https://files.godtiergamers.xyz/DiscordLogger-Banner.png "DiscordLogger")
 # config.yml Generator
 
-Pick your plugin/config version, test your webhook, and then continue to log options & colors (coming next).
+Pick your plugin/config version, test your webhook, and then continue to log options & colors.
 
 <div id="cfg-gen" class="markdown-body"></div>
 

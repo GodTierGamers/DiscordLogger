@@ -177,59 +177,119 @@ These are the defaults shipped with v9 (customizable under `embeds.colors`):
 > This is the exact file that ships with v9. Download above, or paste the block below when editing this page.
 
 ```yaml
-# DiscordLogger — config v9 (ships with v2.1.5)
+####################################################################################################################################
+#                                                                                                                                  #
+#    /$$$$$$$  /$$                                               /$$ /$$                                                           #
+#   | $$__  $$|__/                                              | $$| $$                                                           #
+#   | $$  \ $$ /$$  /$$$$$$$  /$$$$$$$  /$$$$$$   /$$$$$$   /$$$$$$$| $$        /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$    #
+#   | $$  | $$| $$ /$$_____/ /$$_____/ /$$__  $$ /$$__  $$ /$$__  $$| $$       /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$   #
+#   | $$  | $$| $$|  $$$$$$ | $$      | $$  \ $$| $$  \__/| $$  | $$| $$      | $$  \ $$| $$  \ $$| $$  \ $$| $$$$$$$$| $$  \__/   #
+#   | $$  | $$| $$ \____  $$| $$      | $$  | $$| $$      | $$  | $$| $$      | $$  | $$| $$  | $$| $$  | $$| $$_____/| $$         #
+#   | $$$$$$$/| $$ /$$$$$$$/|  $$$$$$$|  $$$$$$/| $$      |  $$$$$$$| $$$$$$$$|  $$$$$$/|  $$$$$$$|  $$$$$$$|  $$$$$$$| $$         #
+#   |_______/ |__/|_______/  \_______/ \______/ |__/       \_______/|________/ \______/  \____  $$ \____  $$ \_______/|__/         #
+#                                                                                     /$$  \ $$ /$$  \ $$                          #
+#                                                                                    |  $$$$$$/|  $$$$$$/                          #
+#                                                                                     \______/  \______/                           #
+#                                                                                                                                  #
+####################################################################################################################################
+
+#############################
+# D O C U M E N T A T I O N #
+#############################
+
+# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v9/
+
+###################
+# WEBHOOK OPTIONS #
+###################
+
 webhook:
-  url: ""   # REQUIRED: Discord webhook URL
+  url: "" # Discord webhook URL goes here, plugin will not function until present
+
+##################
+# FORMAT OPTIONS #
+##################
+
+format:
+  # ONLY USED FOR PLAIN TEXT MESSAGES (EMBEDS DISABLED)
+  # Usage (case-sensitive): HH=hours, mm=minutes, ss=seconds, dd=day, MM=month, yyyy=year
+  time: "[HH:mm:ss, dd:MM:yyyy]"
+  # Only used for plain text, for embeds edit author name
+  name: ""
+  # Show nicknames (if set) as "Nickname (RealName)" in all player-related logs
+  nicknames: true
+
+#################
+# EMBED OPTIONS #
+#################
 
 embeds:
   enabled: true
-  author: "Server Logs"
+  author: "Server Logs" # Can be modified for proxy servers (e.g. Survival, Creative)
+
+  # Per-category colors (hex). Keys are case-insensitive; spaces become underscores.
   colors:
     player:
-      join: "#57F287"
-      quit: "#ED4245"
-      chat: "#5865F2"
-      command: "#FEE75C"
-      death: "#ED4245"
+      join:    "#57F287"  # green
+      quit:    "#ED4245"  # red
+      chat:    "#5865F2"  # blurple
+      command: "#FEE75C"  # yellow
+      death:   "#ED4245"  # red
+      advancement: "#2ECC71" # green
+      teleport: "#3498DB" # blue
+      gamemode: "#9B59B6" # purple
     server:
-      start: "#43B581"
-      stop: "#ED4245"
-      command: "#EB459E"
+      start:   "#43B581"  # green
+      stop:    "#ED4245"  # red
+      command: "#EB459E"  # pink
+      explosion: "#E74C3C" # red
     moderation:
-      ban: "#FF0000"
-      unban: "#FF0000"
-      kick: "#FF0000"
-      op: "#FF0000"
-      deop: "#FF0000"
-      whitelist_toggle: "#1ABC9C"
-      whitelist: "#16A085"
+      ban:              "#FF0000"  # red
+      unban:            "#FF0000"  # red
+      kick:             "#FF0000"  # red
+      op:               "#FF0000"  # red
+      deop:             "#FF0000"  # red
+      whitelist_toggle: "#1ABC9C"  # teal
+      whitelist:        "#16A085"  # dark teal
 
-format:
-  name: ""                          # Optional server label for plain text
-  time: "[HH:mm:ss dd:MM:yyyy]"     # Timestamp for console/plain text
+
+
+####################################################################################
+#                                                                                  #
+#     _                      _                ___         _    _                   #
+#    | |    ___  __ _  __ _ (_) _ _   __ _   / _ \  _ __ | |_ (_) ___  _ _   ___   #
+#    | |__ / _ \/ _` |/ _` || || ' \ / _` | | (_) || '_ \|  _|| |/ _ \| ' \ (_-<   #
+#    |____|\___/\__, |\__, ||_||_||_|\__, |  \___/ | .__/ \__||_|\___/|_||_|/__/   #
+#               |___/ |___/          |___/         |_|                             #
+#                                                                                  #
+####################################################################################
 
 log:
   player:
-    join: true
-    quit: true
-    chat: true
-    command: true
-    death: true
-    teleport: true
-    gamemode: true
+    join: true # Player Join
+    quit: true # Player Quit
+    chat: true # Player Chat
+    command: true # Commands executed by a player in-game
+    death: true # Player Death (with death message)
+    advancement: true # Logs when a player gets an advancement
+    teleport: true # Logs when a player teleports
+    gamemode: true # Logs when a players gamemode changes
+
   server:
-    start: true
-    stop: true
-    command: true
-    explosion: true
+    command: true # Commands executed via the server console/terminal
+    start: true # Logged when the plugin/server starts
+    stop: true # Logged on /stop / clean shutdown
+    explosion: true # Log when an explosion occurs
+
   moderation:
-    ban: true
-    unban: true
-    kick: true
-    op: true
-    deop: true
-    whitelist_toggle: true
-    whitelist: true
+    ban: true # Logs when a player has been banned
+    unban: true # Logs when a player has been unbanned
+    kick: true # Logs when a player has been kicked
+    op: true # Logs when a player is granted op premissions
+    deop: true # Logs when a players op permissions are revoked
+    whitelist_toggle: true # Logs when the whitelist is enabled/disabled
+    whitelist_edit: true # Logs when players are added/removed from the whitelist
+
 
 # CONFIG VERSION V9, DOWNLOADED FROM WEBSITE
 ```
