@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" data-theme="">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{{ page.title | default: site.title | default: "DiscordLogger" }}</title>
+    <meta name="description" content="{{ page.description | default: site.description | default: 'Minecraft → Discord logging that’s clean, configurable, and production-ready.' }}">
+
+    <!-- GitHub Markdown CSS (keeps the original look) -->
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5.5.1/github-markdown.css">
+
+    <!-- Your theme + favicon -->
+    <link rel="stylesheet" href="{{ '/assets/theme.css?v=8' | relative_url }}">
+    <link rel="icon" href="{{ '/assets/favicon.png' | relative_url }}">
+    <meta name="color-scheme" content="light dark">
+
+    <!-- Favicons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/icons/apple-touch-icon.png' | relative_url }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ '/assets/icons/favicon-32x32.png' | relative_url }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ '/assets/icons/favicon-16x16.png' | relative_url }}">
+    <link rel="manifest" href="{{ '/assets/icons/site.webmanifest' | relative_url }}">
+    <link rel="shortcut icon" href="{{ '/assets/icons/favicon-32x32.png' | relative_url }}">
+
+    <!-- Theme color -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#0d1117">
+</head>
+
+<body>
+<div class="dl-shell">
+    <aside class="dl-sidebar" role="navigation" aria-label="Main">
+        <div class="dl-sidebar__header">
+            <a class="dl-brand" href="{{ '/' | relative_url }}">
+                <img class="dl-brand__logo" src="{{ '/assets/icons/favicon-32x32.png' | relative_url }}" alt="" width="24" height="24">
+                <span class="dl-brand__text">DiscordLogger</span>
+            </a>
+
+            <div class="dl-sidebar__controls">
+                <!-- Only the sidebar toggle remains here -->
+                <button id="sidebar-toggle" class="btn btn--ghost" title="Collapse sidebar" aria-label="Collapse sidebar">☰</button>
+            </div>
+        </div>
+
+        <ul class="dl-nav">
+            {% assign current = page.url | replace: 'index.html', '' %}
+            {% for item in site.data.nav %}
+            {% assign is_external = item.url | slice: 0, 4 %}
+            {% if is_external == 'http' %}
+            {% assign href = item.url %}
+            {% assign active_class = '' %}
+            {% else %}
+            {% assign href = item.url | relative_url %}
+            {% assign active_class = '' %}
+
+            {% if item.url == '/' %}
+            {% if current == '/' or current == '/index.html' %}
+            {% assign active_class = ' is-active' %}
+            {% endif %}
+            {% else %}
+            {% if current == item.url
+            or current == item.url | append: 'index.html'
+            or current == item.url | append: '/'
+            or current contains item.url %}
+            {% assign active_class = ' is-active' %}
+            {% endif %}
+            {% endif %}
+            {% endif %}
+
+            <li class="dl-nav__item">
+                <a class="dl-nav__link{{ active_class }}" href="{{ href }}"{% if active_class != '' %} aria-current="page"{% endif %}>
+                    <span class="dl-nav__text">{{ item.title }}</span>
+                    <span class="dl-nav__activebar" aria-hidden="true"></span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <div class="dl-sidebar__footer">
+            <a class="dl-download-btn" href="{{ '/downloads/' | relative_url }}">
+                ⬇ Download DiscordLogger
+            </a>
+        </div>
+    </aside>
+
+    <main class="dl-main">
+        <article class="markdown-body">
+            {{ content }}
+        </article>
+    </main>
+</div>
+
+<!-- Single floating theme toggle (not duplicated in the sidebar) -->
+<button id="theme-toggle" class="btn btn--ghost" title="Toggle theme" aria-label="Toggle theme">🌓</button>
+
+<script src="{{ '/assets/js/sidebar.js?v=3' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/theme-toggle.js?v=3' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/scrollbar-overlay.js?v=1' | relative_url }}"></script>
+
+</body>
+</html>
