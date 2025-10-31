@@ -23,9 +23,11 @@ public final class EventRegistry {
         pm.registerEvents(new PlayerDeath(plugin), plugin);
         pm.registerEvents(new PlayerAdvancement(plugin), plugin);
         pm.registerEvents(new PlayerTeleport(plugin), plugin);
+        pm.registerEvents(new PlayerGamemode(plugin), plugin);
 
         // Server events
         pm.registerEvents(new ServerCommand(plugin), plugin);
+        pm.registerEvents(new Explosion(plugin), plugin);
 
         // Moderation events
         pm.registerEvents(new Ban(plugin), plugin);
