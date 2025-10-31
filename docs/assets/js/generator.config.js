@@ -3,8 +3,8 @@ window.DL_PROXY_URL = "";
 window.DL_BASE = "/assets/configs";
 
 window.DL_VERSIONS = {
-    "2.1.5": { configVersion: "v9" },
-    // "2.1.6": { configVersion: "v9" },
+    "2.1.5": { configVersion: "v9" }
+    // "2.1.6": { configVersion: "v10" }
 };
 
 window.DL_CONFIGS = {
@@ -14,7 +14,11 @@ window.DL_CONFIGS = {
 
         // must exist: docs/assets/configs/v9/options.json
         optionsUrl: "/assets/configs/v9/options.json"
-    }
+     }
+    // "v10": {
+    //     templateUrl: "/assets/configs/v10/config.template.yml",
+    //     optionsUrl: "/assets/configs/v10/options.json"
+    // }
 };
 
 window.DL_TEST_EMBED = {
