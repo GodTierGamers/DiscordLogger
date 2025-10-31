@@ -19,6 +19,10 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 
 ---
 
+## 💻 [Website](https://discordlogger.godtiergamers.xyz)
+
+---
+
 ## ✨ Features
 
 - **Discord webhook logging**
