@@ -136,8 +136,6 @@ html[data-theme="dark"] .markdown-body blockquote {
     object-fit: contain;
 }
 
-
-
 /* ---------- Theme toggle button (floating) ---------- */
 #theme-toggle {
     position: fixed;
@@ -202,12 +200,16 @@ html[data-theme="dark"] .markdown-body blockquote {
         width: var(--sidebar-w);
         height: 100dvh;
         overflow: auto;
-        padding: 20px 16px;
+        padding: 20px 16px 18px 16px;
         border-right: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
         background: color-mix(in oklab, var(--bg) 92%, transparent);
         backdrop-filter: blur(6px) saturate(120%);
         transform: none !important;
         font-family: var(--font-ui);
+
+        /* so footer can stick to bottom */
+        display: flex;
+        flex-direction: column;
     }
 
     .dl-main {
@@ -241,12 +243,15 @@ html[data-theme="dark"] .markdown-body blockquote {
         height: 100dvh;
         transform: translateX(-100%);
         z-index: 60;
-        padding: 18px 12px;
+        padding: 18px 12px 16px 12px;
         border-right: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
         background: color-mix(in oklab, var(--bg) 92%, transparent);
         backdrop-filter: blur(6px) saturate(120%);
         font-family: var(--font-ui);
         transition: transform 200ms ease, width 200ms ease;
+
+        display: flex;
+        flex-direction: column;
     }
     .dl-shell.sidebar-open .dl-sidebar { transform: translateX(0); }
 }
@@ -339,12 +344,40 @@ html[data-theme="dark"] .markdown-body blockquote {
 
 /* Sidebar footer */
 .dl-sidebar__footer {
-    margin-top: 16px;
-    padding: 8px 6px;
+    margin-top: auto; /* push to bottom */
+    padding: 14px 4px 30px 4px; /* ← extra bottom so button isn’t half off-screen */
     border-top: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
+    gap: .5rem;
+    display: flex;
+    flex-direction: column;
 }
-.dl-ext { color: var(--muted); text-decoration: none; }
-.dl-ext:hover { color: var(--fg); }
+
+/* Big green download button in footer */
+.dl-download-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: #22c55e;                /* green-500 */
+    color: #032315;                     /* darker text for green */
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0.7rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid #16a34a;          /* green-600 */
+    transition: transform 120ms ease, box-shadow 120ms ease, background 160ms ease;
+    font-size: 0.9rem;
+}
+.dl-download-btn:hover {
+    background: #16a34a;                /* green-600 */
+    box-shadow: 0 6px 18px rgba(0,0,0,.14);
+    transform: translateY(-1px);
+}
+.dl-download-btn:active {
+    transform: translateY(0);
+}
+
+/* old .dl-ext kept just in case */
+.dl-ext { display:none; }
 
 /* ---------- Main content ---------- */
 .dl-main {
@@ -385,8 +418,7 @@ html[data-theme="dark"] .markdown-body blockquote {
     display: block;
 }
 
-/* Target the banner image robustly (by being first image on page)
-   If you prefer, replace this selector with [alt="DiscordLogger"] */
+/* Target the banner image robustly (by being first image on page) */
 .dl-main .markdown-body > p:first-child > img {
     display: block !important;
     margin: 8px auto 16px !important;
@@ -405,10 +437,10 @@ html[data-theme="dark"] .markdown-body blockquote {
 }
 
 .dl-main .markdown-body img[alt="DiscordLogger"] {
-  display:block !important;
-  margin: 8px auto 16px !important;
-  width: min(100%, var(--hero-max)) !important;
-  max-width: var(--hero-max) !important;
+    display:block !important;
+    margin: 8px auto 16px !important;
+    width: min(100%, var(--hero-max)) !important;
+    max-width: var(--hero-max) !important;
 }
 
 /* ===== Overlay Scrollbar (page) — inset & fades ===== */
@@ -486,9 +518,6 @@ body,
     scrollbar-gutter: stable both-edges;
 }
 
-/* Sidebar & code blocks keep their (themed) native scrollbars if you want:
-   (Leave your existing sidebar theming rules as-is) */
-
 /* ===== Overlay Scrollbar — SIDEBAR version ===== */
 
 /* Hide native sidebar scrollbar (we'll draw our own) */
@@ -519,7 +548,7 @@ body,
     right: var(--sb-ov-inset);
     height: 100%;
     width: var(--sb-ov-w);
-    z-index: 3;                             /* above menu items */
+    z-index: 74;                             /* above menu items, below modals if any */
     opacity: 0;
     pointer-events: none;
     transition: opacity 220ms ease;
@@ -574,15 +603,13 @@ body,
     }
 
     .dl-main {
-        /* FLUID container beside the sidebar */
         margin-left: var(--sidebar-w);
         padding: 32px 24px 60px;
-        width: auto;      /* <- important: no fixed width */
-        max-width: none;  /* <- important: remove any prior max-width */
+        width: auto;
+        max-width: none;
         min-width: 0;
     }
 
-    /* Center the article within .dl-main */
     .dl-main .markdown-body {
         max-width: 980px;
         margin-left: auto;
@@ -606,14 +633,178 @@ body,
     .dl-shell.sidebar-open .dl-sidebar { transform: translateX(0); }
 
     .dl-main {
-        margin-left: 0; /* no offset on mobile */
+        margin-left: 0;
         padding: 28px 16px 60px;
     }
 
-    /* Keep the centering on mobile too */
     .dl-main .markdown-body {
         max-width: 980px;
         margin: 2rem auto;
         padding: 0 1rem;
+    }
+}
+/* how far the button should "bleed" out of the sidebar on desktop */
+:root {
+    --dl-download-bleed: 14px;
+}
+
+/* footer stays at the bottom, but we won't give it side padding
+   because the button is going to bleed out */
+.dl-sidebar__footer {
+    margin-top: auto;
+    padding: 14px 0 0 0;
+    border-top: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
+    position: relative;
+}
+
+/* the actual button */
+.dl-download-btn {
+    display: block;
+    /* make it wider than the sidebar... */
+    width: calc(100% + (var(--dl-download-bleed) * 2));
+    /* ...and shift it left so it’s centred */
+    margin-left: calc(var(--dl-download-bleed) * -1);
+    /* move it *up* by the same amount so it doesn't clip on the bottom */
+    margin-bottom: calc(var(--dl-download-bleed) * -1);
+
+    box-sizing: border-box;
+    background: #22c55e;
+    color: #032315;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 9999px; /* full pill */
+    padding: 0.7rem 1rem;
+    border: 1px solid #16a34a;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 160ms ease;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 18px rgba(0,0,0,.14);
+}
+
+.dl-download-btn:hover {
+    background: #16a34a;
+    transform: translateY(-1px);
+}
+
+.dl-download-btn:active {
+    transform: translateY(0);
+}
+
+/* mobile: sidebar has 12px padding, so reduce the bleed a bit */
+@media (max-width: 960px) {
+    :root {
+        --dl-download-bleed: 10px;
+    }
+}
+/* how far the button should "bleed" out of the sidebar on desktop */
+:root {
+    --dl-download-bleed: 14px;
+}
+
+/* footer pinned to bottom, but leave room for the lifted button */
+.dl-sidebar__footer {
+    margin-top: auto;
+    padding: 14px 0 calc(var(--dl-download-bleed) + 6px) 0;
+    border-top: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
+    position: relative;
+}
+
+/* big green download button, centered, rounded, bleeding equally */
+.dl-download-btn {
+    display: block;
+    width: calc(100% + (var(--dl-download-bleed) * 2));
+    margin-left: calc(var(--dl-download-bleed) * -1);
+
+    /* this is the important change — move it UP by the same amount
+       instead of pushing it DOWN */
+    margin-bottom: var(--dl-download-bleed);
+
+    box-sizing: border-box;
+    background: #22c55e;
+    color: #032315;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 9999px;
+    padding: 0.7rem 1rem;
+    border: 1px solid #16a34a;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 160ms ease;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 18px rgba(0,0,0,.14);
+}
+
+.dl-download-btn:hover {
+    background: #16a34a;
+    transform: translateY(-1px);
+}
+
+.dl-download-btn:active {
+    transform: translateY(0);
+}
+
+/* mobile: a little less dramatic bleed */
+@media (max-width: 960px) {
+    :root {
+        --dl-download-bleed: 10px;
+    }
+    .dl-sidebar__footer {
+        padding-bottom: calc(var(--dl-download-bleed) + 6px);
+    }
+}
+/* how far the button should "bleed" out of the sidebar on desktop */
+:root {
+    --dl-download-bleed: 10px; /* was 14px */
+}
+
+/* footer pinned to bottom, but leave room for the lifted button */
+.dl-sidebar__footer {
+    margin-top: auto;
+    padding: 14px 0 calc(var(--dl-download-bleed) + 6px) 0;
+    border-top: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
+    position: relative;
+}
+
+/* big green download button, centered, rounded, slightly narrower bleed, taller */
+.dl-download-btn {
+    display: block;
+    width: calc(100% + (var(--dl-download-bleed) * 2));
+    margin-left: calc(var(--dl-download-bleed) * -1);
+    margin-bottom: var(--dl-download-bleed); /* lift it up from the very bottom */
+    box-sizing: border-box;
+
+    background: #22c55e;
+    color: #032315;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+
+    /* taller */
+    padding: 0.95rem 1.15rem;
+
+    /* fully rounded */
+    border-radius: 9999px;
+    border: 1px solid #16a34a;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 160ms ease;
+    font-size: 0.92rem; /* slightly bigger so taller button doesn't look empty */
+    line-height: 1.1;
+    box-shadow: 0 4px 18px rgba(0,0,0,.14);
+}
+
+.dl-download-btn:hover {
+    background: #16a34a;
+    transform: translateY(-1px);
+}
+
+.dl-download-btn:active {
+    transform: translateY(0);
+}
+
+/* mobile: even smaller bleed */
+@media (max-width: 960px) {
+    :root {
+        --dl-download-bleed: 8px;
+    }
+    .dl-sidebar__footer {
+        padding-bottom: calc(var(--dl-download-bleed) + 6px);
     }
 }
