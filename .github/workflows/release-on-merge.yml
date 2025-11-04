@@ -1,4 +1,4 @@
-name: Release on merge to main
+name: "Release on merge to main"
 
 on:
   pull_request:
@@ -16,159 +16,144 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (full history)
+      - name: "Checkout merge commit (full history)"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: "Guard: must target main"
         run: |
           echo "Base branch: ${{ github.event.pull_request.base.ref }}"
-          if [ "${{ github.event.pull_request.base.ref }}" != "main" ]; then
-            echo "Not targeting main; exiting."
-            exit 1
-          fi
+          test "${{ github.event.pull_request.base.ref }}" = "main"
 
-      - name: Set up JDK
+      - name: "Read release spec"
+        id: spec
+        run: |
+          set -euo pipefail
+          SPEC=".github/release-spec.md"
+          if [ ! -f "$SPEC" ]; then
+            echo "missing=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          TITLE="$(grep -E '^Release Title:' "$SPEC" | sed 's/^Release Title:[[:space:]]*//')"
+          TAG="$(grep -E '^Release Tag Number:' "$SPEC" | sed 's/^Release Tag Number:[[:space:]]*//')"
+          BASENAME="$(grep -E '^Custom File Name:' "$SPEC" | sed 's/^Custom File Name:[[:space:]]*//')"
+          
+          if grep -Eq '^(\[x\]|\[X\]) No Changelog' "$SPEC"; then NO_CHANGELOG=true; else NO_CHANGELOG=false; fi
+          if grep -Eq '^(\[x\]|\[X\]) Pre-Release' "$SPEC"; then PRE_RELEASE=true; else PRE_RELEASE=false; fi
+          
+          MANUAL_BODY="$(awk '/^---CONTENT---/{flag=1;next}/^---END---/{flag=0}flag' "$SPEC")"
+          
+          if [ -z "$TITLE" ] || [ -z "$TAG" ] || [ -z "$BASENAME" ]; then
+            echo "missing=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          echo "missing=false"              >> "$GITHUB_OUTPUT"
+          echo "title=$TITLE"               >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG"                   >> "$GITHUB_OUTPUT"
+          echo "basename=$BASENAME"         >> "$GITHUB_OUTPUT"
+          echo "no_changelog=$NO_CHANGELOG" >> "$GITHUB_OUTPUT"
+          echo "pre_release=$PRE_RELEASE"   >> "$GITHUB_OUTPUT"
+          
+          # multiline output for MANUAL_BODY (unique delimiter)
+          DELIM="MANUAL_$(date +%s)_$$"
+          {
+            echo "manual_body<<$DELIM"
+            printf '%s\n' "$MANUAL_BODY"
+            echo "$DELIM"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: "Stop if no valid spec"
+        if: steps.spec.outputs.missing == 'true'
+        run: echo "No valid .github/release-spec.md – skipping release."
+
+
+      - name: "Set up JDK (Temurin 21, cache Maven)"
+        if: steps.spec.outputs.missing == 'false'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
           cache: maven
 
-      - name: Build (skip tests for speed)
+      - name: "Build (skip tests for speed)"
+        if: steps.spec.outputs.missing == 'false'
         run: mvn -B -ntp -DskipTests clean package
 
-      - name: Find built jar
+      - name: "Find built jar (exclude sources/javadoc)"
+        if: steps.spec.outputs.missing == 'false'
         id: jar
         run: |
-          file=$(ls -1 target/*.jar | grep -v -E 'sources|javadoc' | head -n1)
+          set -euo pipefail
+          file="$(ls -1 target/*.jar | grep -v -E 'sources|javadoc' | head -n1)"
           echo "file=$file" >> "$GITHUB_OUTPUT"
 
-      - name: Read version from pom.xml
-        id: ver
-        run: |
-          v=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive org.codehaus.mojo:exec-maven-plugin:3.5.1:exec)
-          echo "version=$v" >> "$GITHUB_OUTPUT"
-          echo "tag=v${v}" >> "$GITHUB_OUTPUT"
-          echo "name=DiscordLogger v${v}" >> "$GITHUB_OUTPUT"
-
-      - name: Parse release options (pre-release, custom tag, title)
-        id: relopts
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const body = context.payload.pull_request?.body || '';
-            const pre = /\[\s*x\s*\]\s*Pre-release/i.test(body);
-            const tagMatch   = body.match(/<!--\s*RELEASE-TAG:START\s*-->\s*([\s\S]*?)\s*<!--\s*RELEASE-TAG:END\s*-->/i);
-            const titleMatch = body.match(/<!--\s*RELEASE-TITLE:START\s*-->\s*([\s\S]*?)\s*<!--\s*RELEASE-TITLE:END\s*-->/i);
-            const jarMatch   = body.match(/<!--\s*CUSTOM-JAR-NAME:START\s*-->\s*([\s\S]*?)\s*<!--\s*CUSTOM-JAR-NAME:END\s*-->/i);
-
-            function clean(s) { return (s || '').trim(); }
-
-            core.setOutput('pre',   pre ? 'true' : 'false');
-            core.setOutput('tag',   clean(tagMatch && tagMatch[1]));
-            core.setOutput('title', clean(titleMatch && titleMatch[1]));
-            core.setOutput('jar',   clean(jarMatch && jarMatch[1]));
-
-
-
-      - name: Rename jar for release
+      - name: "Rename artifact to custom file name"
+        if: steps.spec.outputs.missing == 'false'
         id: jar_named
         run: |
-          ver="${{ steps.ver.outputs.version }}"
-          ver="${ver%-SNAPSHOT}"
-
-          # Default filename if no custom name provided
-          default_name="DiscordLogger-v${ver}.jar"
-
-          # Use custom jar base name if provided (no '.jar' needed), else default
-          base="${{ steps.relopts.outputs.jar }}"
-          if [ -n "$base" ]; then
-            # strip any accidental .jar and sanitize a bit
-            base="${base%.jar}"
-            # allow letters, numbers, space, dot, dash, underscore
-            safe_base="$(printf '%s' "$base" | tr -cd '[:alnum:]._ -')"
-            [ -z "$safe_base" ] && safe_base="DiscordLogger-v${ver}"
-            new="${safe_base}.jar"
-          else
-            new="$default_name"
-          fi
-
-          src="${{ steps.jar.outputs.file }}"
-          dest="target/${new}"
-
-          echo "Renaming artifact:"
-          echo "  src : $src"
-          echo "  dest: $dest"
-
-          cp "$src" "$dest"
+          set -euo pipefail
+          base="${{ steps.spec.outputs.basename }}"
+          base="${base%.jar}"                                         # strip accidental .jar
+          safe_base="$(printf '%s' "$base" | tr -cd '[:alnum:]._ -')" # sanitize
+          [ -z "$safe_base" ] && safe_base="DiscordLogger"
+          dest="target/${safe_base}.jar"
+          cp "${{ steps.jar.outputs.file }}" "$dest"
           echo "file=$dest" >> "$GITHUB_OUTPUT"
 
-
-      - name: Label integration PR as skip-changelog
+      - name: "Label integration PR as skip-changelog"
+        if: steps.spec.outputs.missing == 'false'
         uses: actions/github-script@v7
         with:
           script: |
-            const pr = context.payload.pull_request;
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: pr.number,
+              issue_number: context.payload.pull_request.number,
               labels: ['skip-changelog']
             });
 
-      - name: Determine previous main release baseline
+      - name: "Determine previous main release baseline"
+        if: steps.spec.outputs.missing == 'false'
         id: prev
         run: |
           set -euo pipefail
           git fetch --tags --force
-          prevTag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --merged origin/main | sort -V | tail -n 1 || true)
+          prevTag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --merged origin/main | sort -V | tail -n 1 || true)"
           if [ -n "$prevTag" ]; then
             prevRef="$prevTag"
-            prevSha=$(git rev-list -n 1 "$prevTag")
+            prevSha="$(git rev-list -n 1 "$prevTag")"
           else
-            prevSha=$(git rev-list --max-parents=0 origin/main)
+            prevSha="$(git rev-list --max-parents=0 origin/main)"
             prevRef="$prevSha"
           fi
           echo "tag=$prevTag" >> "$GITHUB_OUTPUT"
           echo "sha=$prevSha" >> "$GITHUB_OUTPUT"
           echo "ref=$prevRef" >> "$GITHUB_OUTPUT"
 
-      - name: Create tag (or fallback if tag exists)
+      - name: "Create annotated tag (fallback if exists)"
+        if: steps.spec.outputs.missing == 'false'
         id: tag
         run: |
-          TAG="${{ steps.relopts.outputs.tag }}"
-          if [ -z "$TAG" ]; then
-            TAG="${{ steps.ver.outputs.tag }}"
-          fi
-
+          set -euo pipefail
+          TAG="${{ steps.spec.outputs.tag }}"
           if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
             TAG="${TAG}-r${GITHUB_RUN_NUMBER}"
             echo "Existing tag found, using fallback: $TAG"
           fi
-
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "${{ steps.ver.outputs.name }}"
+          git tag -a "$TAG" -m "${{ steps.spec.outputs.title }}"
           git push origin "$TAG"
 
-
-      - name: Detect "No changelog" checkbox
-        id: skip
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const body = context.payload.pull_request?.body || '';
-            const checked = /\[\s*x\s*\]\s*No changelog for this release/i.test(body);
-            core.setOutput('skip', checked ? 'true' : 'false');
-
-
-      - name: Build changelog for this release
-        if: ${{ steps.skip.outputs.skip != 'true' }}   # <— only run if not skipping
+      - name: "Build changelog (auto between tags)"
+        if: steps.spec.outputs.missing == 'false' && steps.spec.outputs.no_changelog != 'true'
         id: changelog
-        uses: mikepenz/release-changelog-builder-action@v5
+        uses: mikepenz/release-changelog-builder-action@v6
         with:
           configuration: .github/release-changelog-builder-config.json
           fromTag: ${{ steps.prev.outputs.tag }}
@@ -177,43 +162,82 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: "Assemble release body → RELEASE_BODY.md"
+        if: steps.spec.outputs.missing == 'false'
+        run: |
+          set -euo pipefail
+          : > RELEASE_BODY.md
 
-      - name: Compose release body (PR notes + optional changelog)
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const body = context.payload.pull_request?.body || '';
-            const m = body.match(/<!--\s*RELEASE-NOTES:START\s*-->([\s\S]*?)<!--\s*RELEASE-NOTES:END\s*-->/i);
-            const notes = (m ? m[1] : '').trim();
-            const skip = process.env.SKIP === 'true';
-            const changelogRaw = skip ? '' : (process.env.CHANGELOG || '').trim();
+          if [ -n "${MANUAL:-}" ]; then
+            printf "%s\n" "${MANUAL}" >> RELEASE_BODY.md
+          fi
 
-            let out = '';
-            if (notes) {
-              out += notes.trim();
-            }
-            if (changelogRaw) {
-              // add a blank line + header, then the changelog body
-              out += (out ? '\n\n' : '') + '# Changelog\n\n' + changelogRaw + '\n';
-            }
-            if (!out) {
-              out = '_No user-facing changes in this release_\\n';
-            }
+          if [ "${NO_CHANGELOG:-false}" != "true" ] && [ -n "${AUTO_CHANGELOG:-}" ]; then
+            if [ -s RELEASE_BODY.md ]; then
+              printf "\n\n# Changelog\n\n" >> RELEASE_BODY.md
+            fi
+            printf "%s\n" "${AUTO_CHANGELOG}" >> RELEASE_BODY.md
+          fi
 
-            fs.writeFileSync('RELEASE_BODY.md', out);
+          if [ ! -s RELEASE_BODY.md ]; then
+            printf "_No user-facing changes in this release_\n" > RELEASE_BODY.md
+          fi
         env:
-          SKIP: ${{ steps.skip.outputs.skip }}
-          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
+          MANUAL: ${{ steps.spec.outputs.manual_body }}
+          AUTO_CHANGELOG: ${{ steps.changelog.outputs.changelog }}
+          NO_CHANGELOG: ${{ steps.spec.outputs.no_changelog }}
 
-
-
-      - name: Create GitHub Release
+      - name: "Create GitHub Release"
+        if: steps.spec.outputs.missing == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: ${{ steps.relopts.outputs.title != '' && steps.relopts.outputs.title || steps.ver.outputs.name }}
-          prerelease: ${{ steps.relopts.outputs.pre == 'true' }}
-          body_path: RELEASE_BODY.md           # (if you’re composing notes+changelog)
-          files: ${{ steps.jar_named.outputs.file }}
+          tag_name:  ${{ steps.tag.outputs.tag }}
+          name:      ${{ steps.spec.outputs.title }}
+          body_path: RELEASE_BODY.md
+          prerelease: ${{ steps.spec.outputs.pre_release }}
+          files:     ${{ steps.jar_named.outputs.file }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: "Reset release spec (blank template) on main"
+        if: steps.spec.outputs.missing == 'false'
+        run: |
+          set -e
+          printf "%s\n" \
+            "Release Title:" \
+            "Release Tag Number:" \
+            "Custom File Name:" \
+            "" \
+            "[ ] No Changelog" \
+            "[ ] Pre-Release" \
+            "" \
+            "---CONTENT---" \
+            "---END---" > .github/release-spec.md
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/release-spec.md
+          git commit -m "chore: reset release spec (main)" || true
+          git push origin HEAD:main || true
+
+      - name: "Reset release spec (blank template) on dev"
+        if: steps.spec.outputs.missing == 'false'
+        run: |
+          set -e
+          git fetch origin dev || true
+          git checkout -B tmp-reset-dev origin/dev
+
+          printf "%s\n" \
+            "Release Title:" \
+            "Release Tag Number:" \
+            "Custom File Name:" \
+            "" \
+            "[ ] No Changelog" \
+            "[ ] Pre-Release" \
+            "" \
+            "---CONTENT---" \
+            "---END---" > .github/release-spec.md
+
+          git add .github/release-spec.md
+          git commit -m "chore: reset release spec (dev)" || true
+          git push origin HEAD:dev || true

@@ -1,0 +1,71 @@
+name: "Feature request"
+description: "Propose a new capability or improvement"
+title: "[Feature]: <short summary>"
+labels: ["feat"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: "Tell us what problem this solves and how it should work."
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      description: "What’s the pain point for server admins/players?"
+      render: markdown
+      placeholder: |
+        When staff /op or /deop, we need an audit log with who executed it.
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: "Describe behavior, messages, and any toggles."
+      render: markdown
+      placeholder: |
+        - Add `log.staff.opped-player` and `log.staff.deopped-player`
+        - Webhook format: `[TIME] Staff OP: <executor> → <target>`
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      render: markdown
+      placeholder: |
+        - Parsing console logs (brittle)
+        - External moderation plugin hooks (adds dependency)
+
+  - type: textarea
+    id: impacts
+    attributes:
+      label: Config & compatibility impacts
+      render: markdown
+      placeholder: |
+        - New config keys (defaults): `true`
+        - Backward compatible: Yes
+        - Permission nodes: none
+        - Docs: add section under Staff logs
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      render: markdown
+      placeholder: |
+        - [ ] Logged when /op and /deop are executed
+        - [ ] Shows executor and target
+        - [ ] Respects config toggles
+        - [ ] Localized advancement names (if applicable)
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - Nice to have
+        - Important
+        - Urgent
+      default: 0

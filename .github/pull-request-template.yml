@@ -1,0 +1,98 @@
+name: Pull Request
+description: Tell us what changed and how to verify it. No release notes here — the release spec file handles that.
+title: "[PR]: <short summary>"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing to **DiscordLogger**! Please fill out the sections below so we can review quickly.
+
+  - type: textarea
+    id: whats-changed
+    attributes:
+      label: What’s changed?
+      description: Short, user-facing bullets. Keep it human.
+      placeholder: |
+        - Add: log staff OP/DEOP events to webhook
+        - Fix: respawn log formatting (XYZ → X, Y, Z)
+        - Refactor: centralize config getters into ConfigManager
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: type-of-change
+    attributes:
+      label: Type of change
+      description: Tick all that apply. (Use matching labels when you open the PR.)
+      options:
+        - label: ✨ Feature (`feat`)
+        - label: 🐛 Fix (`bug`)
+        - label: 🛠 Refactor (`refactor`)
+        - label: 🧰 Maintenance (`chore`)
+        - label: 🧪 Tests (`test`)
+        - label: 📝 Docs (`docs`)
+        - label: ⚙️ CI/CD (`ci`, `build`)
+        - label: Skip changelog (`skip-changelog`)
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation & context
+      description: Why is this change needed? Link issues/threads if relevant.
+      placeholder: |
+        Closes #123. Current logs miss who executed the /op command. This adds staff attributions and resolves support issues.
+    validations:
+      required: false
+
+  - type: textarea
+    id: testing
+    attributes:
+      label: How to test (exact steps)
+      description: Be explicit so reviewers can reproduce locally or on a test server.
+      placeholder: |
+        1) Build: mvn -B -ntp clean package
+        2) Drop JAR into plugins/, restart server (Paper 1.20.6)
+        3) /op TestUser → check webhook shows "Opped player"
+        4) Toggle `log.staff.opped-player` off → confirm no log
+    validations:
+      required: true
+
+  - type: textarea
+    id: plugin-impacts
+    attributes:
+      label: Plugin impacts (configs, commands, permissions)
+      description: Note any user/admin actions required.
+      placeholder: |
+        - Config keys added/changed: `log.staff.opped-player` (default: true)
+        - Commands added/changed: none
+        - Permission nodes: none
+        - Data migration: none
+        - Backward-compat: yes (new keys default safely)
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / logs (optional)
+      description: Paste relevant console output, webhook screenshots, or stack traces.
+      placeholder: |
+        [image or code]
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: Code compiles locally (`mvn -B -ntp clean package`)
+        - label: Labels added that match “Type of change”
+        - label: Tests added/updated (if logic changed)
+        - label: Docs updated (README / docs/ pages) if behavior changed
+        - label: Config defaults sane + no NPEs on missing keys
+        - label: Verified on supported MC/Paper/Spigot version(s)
+    validations:
+      required: true

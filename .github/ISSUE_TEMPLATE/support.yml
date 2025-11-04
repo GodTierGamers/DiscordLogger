@@ -1,0 +1,23 @@
+name: "Support / question"
+description: "Ask a question about usage or configuration"
+title: "[Question]: <short summary>"
+labels: ["question"]
+assignees: []
+body:
+  - type: input
+    id: pluginver
+    attributes:
+      label: DiscordLogger version
+      placeholder: "e.g., v1.0.4"
+  - type: input
+    id: mcversion
+    attributes:
+      label: Minecraft version
+      placeholder: "e.g., 1.20.6"
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      render: markdown
+      placeholder: |
+        How do I disable advancement logging but keep staff logs enabled?
