@@ -13,9 +13,9 @@ Thanks for helping improve **DiscordLogger**! This guide explains how we work an
 
 - Java 21 (Temurin recommended)
 - Build locally:
-<!-- CODE BLOCK (bash):
+```bash
 mvn -B -ntp clean package
--->
+```
 - Test on a clean Paper/Spigot server when possible.
 
 ## Pull Requests
@@ -43,9 +43,9 @@ Pick the template that fits your change. All links below target **base = `dev`**
 ### PR checklist (quick)
 
 - [ ] Compiles locally
-<!-- CODE BLOCK (bash):
+```bash
 mvn -B -ntp clean package
--->
+```
 - [ ] Tests/logs show the behavior works
 - [ ] Labels match type (feat/bug/refactor/docs/ci/chore)
 - [ ] Updated docs/config examples if behavior changed
