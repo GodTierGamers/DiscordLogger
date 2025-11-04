@@ -50,17 +50,6 @@ mvn -B -ntp clean package
 - [ ] Labels match type (feat/bug/refactor/docs/ci/chore)
 - [ ] Updated docs/config examples if behavior changed
 
-## Releases (dev → main)
-
-1. On **`dev`**, fill in **`.github/release-spec.md`**:
-    - `Release Title:`
-    - `Release Tag Number:`
-    - `Custom File Name:` (no `.jar`)
-    - Tick `[ ] No Changelog` or `[ ] Pre-Release` if needed
-    - Put any **manual notes** between `---CONTENT---` and `---END---`.
-2. Open PR **`dev` → `main`** (any template is fine; release data comes from the spec file).
-3. Merge: the workflow tags, builds, publishes the release, then resets the spec on **`dev`** and **`main`**.
-
 ## Issue tracker (quick links)
 
 - **Bug report**  
