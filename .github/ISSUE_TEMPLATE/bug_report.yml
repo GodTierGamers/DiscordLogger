@@ -1,0 +1,126 @@
+name: "Bug report"
+description: "Something isn't working as expected"
+title: "[Bug]: <short summary>"
+labels: ["bug", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug for **DiscordLogger**. Please fill in the details below.
+
+  - type: checkboxes
+    id: prechecks
+    attributes:
+      label: Pre-checks
+      options:
+        - label: I searched existing issues and PRs for duplicates
+          required: true
+        - label: I’m using the latest DiscordLogger release
+          required: true
+        - label: I can reproduce on a clean server with only this plugin installed
+          required: false
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Server platform
+      options:
+        - Paper
+        - Purpur
+        - Spigot
+        - Other (Bukkit-compatible)
+    validations:
+      required: true
+
+  - type: input
+    id: mcversion
+    attributes:
+      label: Minecraft version
+      placeholder: "e.g., 1.20.6"
+    validations:
+      required: true
+
+  - type: input
+    id: pluginver
+    attributes:
+      label: DiscordLogger version
+      placeholder: "e.g., v1.0.4"
+    validations:
+      required: true
+
+  - type: input
+    id: javaver
+    attributes:
+      label: Java version
+      placeholder: "e.g., 21 (Temurin)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: "Number each step. Be exact."
+      placeholder: |
+        1) Start server with DiscordLogger
+        2) Run /op TestUser
+        3) Observe webhook…
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / stack traces
+      description: "Paste the smallest log that reproduces the issue. Redact secrets."
+      render: shell
+      placeholder: |
+        [Server.log excerpt or stack trace]
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Related config.yml snippet (optional)
+      description: "Redact webhook URLs/tokens."
+      render: yaml
+      placeholder: |
+        log:
+          staff:
+            opped-player: true
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - label: Blocks server start
+        - label: Breaks a major feature
+        - label: Minor/visual issue
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context / screenshots (optional)
+      render: markdown

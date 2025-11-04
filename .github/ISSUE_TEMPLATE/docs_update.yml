@@ -1,0 +1,29 @@
+name: "Docs update"
+description: "Fix or improve documentation"
+title: "[Docs]: <topic>"
+labels: ["docs"]
+assignees: []
+body:
+  - type: textarea
+    id: scope
+    attributes:
+      label: Pages to update
+      render: markdown
+      placeholder: |
+        - docs/configuration.md
+        - docs/events/staff.md
+
+  - type: textarea
+    id: change
+    attributes:
+      label: What should change?
+      render: markdown
+      placeholder: |
+        - Add examples for `log.player.advancement`
+        - Clarify webhook timestamp format `[DAY-MONTH-YEAR H:M:S]`
+
+  - type: textarea
+    id: snippets
+    attributes:
+      label: Snippets / examples (optional)
+      render: markdown
