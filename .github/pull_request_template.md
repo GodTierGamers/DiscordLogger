@@ -54,4 +54,3 @@ mvn -B -ntp clean package
 - [ ] Config defaults are safe (no NPEs on missing keys)
 - [ ] Verified on supported MC/Paper/Spigot version(s)
 
-> **Releases:** For `dev → main` release PRs, **fill `.github/release-spec.md`** on `dev` before opening the PR. The workflow reads title/tag/body from that file and then resets it on both branches after publishing.
