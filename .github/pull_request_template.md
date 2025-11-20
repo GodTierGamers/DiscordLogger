@@ -45,9 +45,6 @@
 
 ### Checklist
 - [ ] Compiles locally
-```bash
-mvn -B -ntp clean package
-```
 - [ ] Tests added/updated (if logic changed)
 - [ ] Docs updated (README / docs/) if behavior changed
 - [ ] Labels match type (feat/bug/refactor/docs/ci/chore/ci)

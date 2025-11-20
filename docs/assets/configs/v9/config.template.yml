@@ -48,8 +48,12 @@ webhook:
 ##################
 
 format:
+  # ONLY USED FOR PLAIN TEXT MESSAGES (EMBEDS DISABLED)
+  # Usage (case-sensitive): HH=hours, mm=minutes, ss=seconds, dd=day, MM=month, yyyy=year
   time: "{{TIME_FORMAT}}"
+  # Only used for plain text, for embeds edit author name
   name: "{{PLAIN_NAME}}"
+  # Show nicknames (if set) as "Nickname (RealName)" in all player-related logs
   nicknames: {{NICKNAMES}}
 
 #################
