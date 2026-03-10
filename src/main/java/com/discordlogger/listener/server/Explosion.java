@@ -23,7 +23,7 @@ import java.util.Locale;
 public final class Explosion implements Listener {
     // ---------- YOUR CDN ----------
     private static final String ICON_BASE =
-            "https://files.godtiergamers.xyz/discordlogger/icons/explosions/";
+            "https://discordlogger.godtiergamers.xyz/assets/icons/explosions/";
 
     // File names you mirrored (transparent PNGs)
     private static final String ICON_TNT             = ICON_BASE + "tnt.png";
