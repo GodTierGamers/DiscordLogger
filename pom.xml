@@ -5,7 +5,7 @@
 
     <groupId>com.discordlogger</groupId>
     <artifactId>discordlogger</artifactId>
-    <version>2.1.6-ICON-BETA</version>
+    <version>2.1.6-JAVA-BETA</version>
     <name>DiscordLogger</name>
     <description>Logs server events to a Discord channel via webhooks.</description>
     <url>https://github.com/GodTierGamers/DiscordLogger</url>
@@ -13,7 +13,7 @@
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <paper.api.version>1.21.10-R0.1-SNAPSHOT</paper.api.version>
+        <paper.api.version>1.21.11-R0.1-SNAPSHOT</paper.api.version>
     </properties>
 
     <repositories>
@@ -24,11 +24,12 @@
     </repositories>
 
     <dependencies>
-        <!-- Paper/Spigot API provided by the server at runtime -->
+        <!-- Paper API provided by the server at runtime; paper-api is required
+             for Paper-specific events such as AsyncChatEvent. -->
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.21.10-R0.1-SNAPSHOT</version>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>${paper.api.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -81,17 +82,27 @@
                             </relocations>
                             <!-- Disable to avoid ASM parsing issues with Java 21 bytecode -->
                             <minimizeJar>false</minimizeJar>
+                            <filters>
+                                <!-- Exclude snakeyaml's META-INF to avoid MANIFEST.MF overlap warning.
+                                     We only need the snakeyaml classes, not its manifest. -->
+                                <filter>
+                                    <artifact>org.yaml:snakeyaml</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+            <!-- maven.compiler.release=21 in <properties> drives the compiler.
+                 No override here so Java 21 features (records, pattern matching, etc.)
+                 compile and target correctly. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>11</source>
-                    <target>11</target>
-                </configuration>
+                <version>3.13.0</version>
             </plugin>
         </plugins>
     </build>
