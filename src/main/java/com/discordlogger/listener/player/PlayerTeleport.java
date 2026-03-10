@@ -100,8 +100,6 @@ public final class PlayerTeleport implements Listener {
                 return "End Portal";
             case END_GATEWAY:
                 return "End Gateway";
-            case CHORUS_FRUIT:
-                return "Chorus Fruit";
             case SPECTATE:
                 return "Spectate";
             case UNKNOWN:
