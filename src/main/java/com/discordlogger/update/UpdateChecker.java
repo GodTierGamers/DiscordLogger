@@ -7,82 +7,135 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.concurrent.CompletableFuture;
 
 public final class UpdateChecker {
-    private static final String LATEST_URL = "https://github.com/GodTierGamers/DiscordLogger/releases/latest";
-    private static final int UPDATE_COLOR = 458_496; // per your spec
+    private static final String API_URL =
+            "https://api.github.com/repos/GodTierGamers/DiscordLogger/releases/latest";
+    private static final String RELEASES_URL =
+            "https://github.com/GodTierGamers/DiscordLogger/releases/latest";
+    private static final Duration TIMEOUT     = Duration.ofSeconds(10);
+    private static final int      UPDATE_COLOR = 458_496;
 
     private UpdateChecker() {}
 
     /** Fire-and-forget onEnable hook. */
     public static void checkAsync(JavaPlugin plugin) {
-        final String current = normalizeVersion(plugin.getDescription().getVersion());
+        final String current = normalizeVersion(plugin.getPluginMeta().getVersion());
 
-        // Run off the main thread
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                HttpClient client = HttpClient.newBuilder()
-                        .followRedirects(HttpClient.Redirect.ALWAYS)
-                        .build();
+            try (HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(TIMEOUT)
+                    .build()) {
 
-                HttpRequest req = HttpRequest.newBuilder(URI.create(LATEST_URL))
+                // Use the GitHub JSON API instead of following the HTML redirect.
+                // The redirect URL parsing was brittle (e.g. if GitHub changes the
+                // URL structure). The API returns stable JSON with a "tag_name" field.
+                HttpRequest req = HttpRequest.newBuilder(URI.create(API_URL))
+                        .timeout(TIMEOUT)
+                        .header("Accept", "application/vnd.github+json")
                         .header("User-Agent", "DiscordLogger/" + current)
                         .GET()
                         .build();
 
-                HttpResponse<Void> resp = client.send(req, HttpResponse.BodyHandlers.discarding());
-                String latestTag = lastPathSegment(resp.uri().getPath()); // e.g. v2.1.1
+                HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+
+                if (resp.statusCode() != 200) {
+                    plugin.getLogger().fine("Update check returned HTTP " + resp.statusCode());
+                    return;
+                }
+
+                String body = resp.body();
+
+                // Skip pre-release / nightly builds entirely
+                if (isPreRelease(body)) {
+                    plugin.getLogger().fine("Update check: latest release is a pre-release, skipping.");
+                    return;
+                }
+
+                String latestTag = extractTagName(body);
+                if (latestTag == null || latestTag.isBlank()) {
+                    plugin.getLogger().fine("Update check: could not parse tag_name from response.");
+                    return;
+                }
+
                 String latest = normalizeVersion(latestTag);
 
                 if (isNewer(latest, current)) {
-                    // Console banner
-                    banner(plugin, "NEW UPDATE AVAILABLE",
+                    banner(plugin,
                             "Current: " + current,
                             "Latest : " + latest,
-                            "Download: " + LATEST_URL);
-
-                    // Send to Discord
-                    sendWebhookNotice(plugin, current, latest);
+                            "Download: " + RELEASES_URL);
+                    sendWebhookNotice(current, latest);
                 }
             } catch (Exception e) {
-                // Quietly ignore network hiccups; no spam
+                // Quietly ignore network hiccups on startup
                 plugin.getLogger().fine("Update check failed: " + e.getMessage());
             }
         });
     }
 
-    private static void sendWebhookNotice(JavaPlugin plugin, String current, String latest) {
-        // If embeds are enabled, send a rich embed with fields; else plain line
+    // -------------------------------------------------------------------------
+
+    private static void sendWebhookNotice(String current, String latest) {
         if (Log.embedsEnabled()) {
-            String nowIso = OffsetDateTime.now(ZoneOffset.UTC).toString();
             Log.sendUpdateEmbed(
                     "Plugin Updates",
-                    "A new update is available for DiscordLogger, you can download it [here](" + LATEST_URL + ")",
+                    "A new update is available for DiscordLogger, you can download it [here](" + RELEASES_URL + ")",
                     UPDATE_COLOR,
-                    nowIso,
+                    OffsetDateTime.now(ZoneOffset.UTC).toString(),
                     Log.embedAuthor(),
                     "DiscordLogger",
                     current,
                     latest
             );
         } else {
-            Log.plain("**Plugin Updates**: A new update for DiscordLogger is available, [download here](" + LATEST_URL + ")");
+            Log.plain("**Plugin Updates**: A new update for DiscordLogger is available, [download here](" + RELEASES_URL + ")");
         }
     }
 
-    private static void banner(JavaPlugin plugin, String title, String... lines) {
+    private static void banner(JavaPlugin plugin, String... lines) {
         String bar = "==============================";
-        plugin.getLogger().warning(bar + " " + title + " " + bar);
+        plugin.getLogger().warning(bar + " NEW UPDATE AVAILABLE " + bar);
         for (String l : lines) plugin.getLogger().warning(l);
         plugin.getLogger().warning("================================================================");
     }
 
-    private static String lastPathSegment(String path) {
-        int idx = path.lastIndexOf('/');
-        return (idx >= 0 && idx + 1 < path.length()) ? path.substring(idx + 1) : path;
+    /**
+     * Returns true if the GitHub API response has "prerelease": true.
+     * Used to suppress update notices for nightly/dev releases.
+     */
+    private static boolean isPreRelease(String json) {
+        if (json == null) return false;
+        final String key = "\"prerelease\"";
+        int ki = json.indexOf(key);
+        if (ki < 0) return false;
+        int colon = json.indexOf(':', ki + key.length());
+        if (colon < 0) return false;
+        // value will be "true" or "false" (no quotes, JSON boolean)
+        String rest = json.substring(colon + 1).trim();
+        return rest.startsWith("true");
+    }
+
+    /**
+     * Extracts the value of "tag_name" from a GitHub API JSON response.
+     * Avoids a full JSON parser dependency — the field is always a simple string.
+     * Example: {"tag_name":"v2.1.6",...} -> "v2.1.6"
+     */
+    private static String extractTagName(String json) {
+        if (json == null) return null;
+        final String key = "\"tag_name\"";
+        int ki = json.indexOf(key);
+        if (ki < 0) return null;
+        int colon = json.indexOf(':', ki + key.length());
+        if (colon < 0) return null;
+        int open = json.indexOf('"', colon + 1);
+        if (open < 0) return null;
+        int close = json.indexOf('"', open + 1);
+        if (close < 0) return null;
+        return json.substring(open + 1, close);
     }
 
     private static String normalizeVersion(String v) {
@@ -93,9 +146,9 @@ public final class UpdateChecker {
         return v;
     }
 
-    /** Very simple semver-ish compare: 1.2.3 vs 1.2.10; returns true if a>b numerically. */
+    /** Simple semver-ish compare: returns true if a > b numerically. */
     private static boolean isNewer(String a, String b) {
-        String[] as = a.split("\\D+"); // split on non-digits
+        String[] as = a.split("\\D+");
         String[] bs = b.split("\\D+");
         int n = Math.max(as.length, bs.length);
         for (int i = 0; i < n; i++) {
