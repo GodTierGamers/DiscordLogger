@@ -15,7 +15,7 @@ public final class DiscordWebhook {
 
     // Hardcoded footer icon for all embeds
     private static final String FOOTER_ICON_URL =
-            "https://files.godtiergamers.xyz/DiscordLogger-Logo-removebg.jpg";
+            "https://discordlogger.godtiergamers.xyz/assets/icons/DiscordLogger-Logo-removebg.png";
 
     /** Plain content message (legacy). */
     public static void sendAsync(JavaPlugin plugin, String url, String content) {
