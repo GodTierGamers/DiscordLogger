@@ -2,6 +2,7 @@ package com.discordlogger.listener.player;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -17,10 +18,12 @@ public final class PlayerQuit implements Listener {
     public void onQuit(PlayerQuitEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.quit", true)) return;
 
-        String who = Names.display(e.getPlayer(), plugin); // falls back to cache if needed
+        String who = Names.display(e.getPlayer(), plugin);
         String msg = who + " left the server";
         Log.eventWithThumb("Player Quit", msg, Log.playerAvatarUrl(e.getPlayer().getUniqueId()));
 
-        Names.remove(e.getPlayer());
+        // Defer cache eviction to the next tick so that other MONITOR-priority
+        // listeners on the same PlayerQuitEvent can still resolve the nickname.
+        Bukkit.getScheduler().runTask(plugin, () -> Names.remove(e.getPlayer()));
     }
 }
