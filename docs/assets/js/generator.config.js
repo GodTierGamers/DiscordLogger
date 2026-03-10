@@ -3,7 +3,8 @@ window.DL_PROXY_URL = "";
 window.DL_BASE = "/assets/configs";
 
 window.DL_VERSIONS = {
-    "2.1.5": { configVersion: "v9" }
+    "2.1.5": { configVersion: "v9" },
+    "2.1.6": { configVersion: "v9" }
     // "2.1.6": { configVersion: "v10" }
 };
 
@@ -35,15 +36,15 @@ window.DL_TEST_EMBED = {
             author: {
                 name: "DiscordLogger Webhook Test",
                 url: "https://discordlogger.godtiergamers.xyz",
-                icon_url: "https://files.godtiergamers.xyz/DiscordLogger-Logo-removebg.png"
+                icon_url: "https://discordlogger.godtiergamers.xyz/assets/icons/DiscordLogger-Logo-removebg.png"
             },
             footer: {
                 text: "DiscordLogger Webhook Test",
-                icon_url: "https://files.godtiergamers.xyz/DiscordLogger-Logo-removebg.png"
+                icon_url: "https://discordlogger.godtiergamers.xyz/assets/icons/DiscordLogger-Logo-removebg.png"
             },
             timestamp: new Date().toISOString(),
             thumbnail: {
-                url: "https://files.godtiergamers.xyz/DiscordLogger-Logo-removebg.png"
+                url: "https://discordlogger.godtiergamers.xyz/assets/icons/DiscordLogger-Logo-removebg.png"
             }
         }
     ],
