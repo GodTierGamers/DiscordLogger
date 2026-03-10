@@ -6,7 +6,7 @@ import org.bukkit.plugin.Plugin;
 public final class ServerStart {
     private ServerStart() {}
 
-    private static final String THUMB_SERVER = "https://cdn-icons-png.flaticon.com/512/1411/1411887.png";
+    private static final String THUMB_SERVER = "https://discordlogger.godtiergamers.xyz/assets/icons/server.png";
 
     public static void handle(Plugin plugin) {
         // Category string drives the color key -> "server_start"
