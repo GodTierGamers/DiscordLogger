@@ -9,51 +9,54 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.List;
 
 public final class Log {
-    private static JavaPlugin plugin;
-    private static String webhookUrl;
-    private static DateTimeFormatter timeFmt;
-    private static String plainServerName;
+    // All fields volatile: init() runs on the main thread; logging methods are
+    // called from async scheduler threads. Without volatile, the JVM is free to
+    // serve stale cached values to reader threads.
+    private static volatile JavaPlugin plugin;
+    private static volatile String webhookUrl;
+    private static volatile DateTimeFormatter timeFmt;
+    private static volatile String plainServerName;
 
     // Only send to Discord when true (valid webhook)
-    private static boolean ready;
+    private static volatile boolean ready;
 
     // Embed config (single source of truth)
-    private static boolean embedsEnabledFlag;
-    private static String embedAuthorName;
+    private static volatile boolean embedsEnabledFlag;
+    private static volatile String embedAuthorName;
 
     // Footer text (dynamic: "DiscordLogger v<version>")
     private static final String EMBED_FOOTER_BASE = "DiscordLogger";
-    private static String embedFooterText = EMBED_FOOTER_BASE;
+    private static volatile String embedFooterText = EMBED_FOOTER_BASE;
 
     private static final String PLAYER_THUMB_TEMPLATE =
             "https://mc-heads.net/avatar/{uuid}/256";
 
-    private static final Map<String, Integer> colorMap = new HashMap<>();
-    private static int defaultColor = 0x5865F2;
+    // colorMap is replaced atomically: a fully-built map is assigned in one
+    // volatile write, so async threads never see a half-populated map.
+    private static volatile Map<String, Integer> colorMap = new HashMap<>();
+    private static volatile int defaultColor = 0x5865F2;
 
     private Log() {}
 
-    /** Initialize runtime config. Safe to call even if url is invalid; we’ll run degraded. */
+    /** Initialize runtime config. Safe to call even if url is invalid; we'll run degraded. */
     public static void init(JavaPlugin pl, String url, String timePattern) {
         plugin = pl;
 
         // determine readiness & store webhook (store null when not ready)
-        ready = isLikelyDiscordWebhook(url);
+        ready = isValidWebhookUrl(url);
         webhookUrl = ready ? url : null;
 
         // compute footer text with plugin version (from plugin.yml -> ${project.version})
         try {
             String ver = plugin.getDescription().getVersion();
-            if (ver != null && !ver.isBlank()) {
-                embedFooterText = EMBED_FOOTER_BASE + " v" + ver;
-            } else {
-                embedFooterText = EMBED_FOOTER_BASE;
-            }
+            embedFooterText = (ver != null && !ver.isBlank())
+                    ? EMBED_FOOTER_BASE + " v" + ver
+                    : EMBED_FOOTER_BASE;
         } catch (Exception ignored) {
             embedFooterText = EMBED_FOOTER_BASE;
         }
@@ -73,80 +76,80 @@ public final class Log {
         embedsEnabledFlag = plugin.getConfig().getBoolean("embeds.enabled", false);
         embedAuthorName   = plugin.getConfig().getString("embeds.author", "Server Logs");
 
-        // Default colors
-        colorMap.clear();
+        // Build the color map into a local variable first, then assign atomically.
+        // This ensures async threads never observe a partially-populated map.
+        int baseDefaultColor = 0x5865F2;
+        Map<String, Integer> cm = new HashMap<>();
 
-// Player
-        colorMap.put("player_join",    hex("#57F287")); // green
-        colorMap.put("player_quit",    hex("#ED4245")); // red
-        colorMap.put("player_chat",    hex("#5865F2")); // blurple
-        colorMap.put("player_command", hex("#FEE75C")); // yellow
-        colorMap.put("player_death",   hex("#ED4245")); // red
-        colorMap.put("player_advancement", hex("#2ECC71")); // green
-        colorMap.put("player_teleport", hex("#3498DB")); // blue
-        colorMap.put("player_gamemode", hex("#9B59B6")); // purple
+        // Player
+        cm.put("player_join",        hex("#57F287", baseDefaultColor)); // green
+        cm.put("player_quit",        hex("#ED4245", baseDefaultColor)); // red
+        cm.put("player_chat",        hex("#5865F2", baseDefaultColor)); // blurple
+        cm.put("player_command",     hex("#FEE75C", baseDefaultColor)); // yellow
+        cm.put("player_death",       hex("#ED4245", baseDefaultColor)); // red
+        cm.put("player_advancement", hex("#2ECC71", baseDefaultColor)); // green
+        cm.put("player_teleport",    hex("#3498DB", baseDefaultColor)); // blue
+        cm.put("player_gamemode",    hex("#9B59B6", baseDefaultColor)); // purple
 
-// Server
-        colorMap.put("server_start",   hex("#43B581")); // green
-        colorMap.put("server_stop",    hex("#ED4245")); // red
-        colorMap.put("server_command", hex("#EB459E")); // pink
-        colorMap.put("server_explosion", hex("#E74C3C")); // red
+        // Server
+        cm.put("server_start",     hex("#43B581", baseDefaultColor)); // green
+        cm.put("server_stop",      hex("#ED4245", baseDefaultColor)); // red
+        cm.put("server_command",   hex("#EB459E", baseDefaultColor)); // pink
+        cm.put("server_explosion", hex("#E74C3C", baseDefaultColor)); // red
 
-// Moderation
-        colorMap.put("ban",               hex("#FF0000")); // red
-        colorMap.put("unban",             hex("#FF0000")); // red
-        colorMap.put("kick",              hex("#FF0000")); // red
-        colorMap.put("op",                hex("#FF0000")); // red
-        colorMap.put("deop",              hex("#FF0000")); // red
-        colorMap.put("whitelist_toggle",  hex("#1ABC9C")); // teal
-        colorMap.put("whitelist",         hex("#16A085")); // dark teal
+        // Moderation
+        cm.put("ban",              hex("#FF0000", baseDefaultColor)); // red
+        cm.put("unban",            hex("#FF0000", baseDefaultColor)); // red
+        cm.put("kick",             hex("#FF0000", baseDefaultColor)); // red
+        cm.put("op",               hex("#FF0000", baseDefaultColor)); // red
+        cm.put("deop",             hex("#FF0000", baseDefaultColor)); // red
+        cm.put("whitelist_toggle", hex("#1ABC9C", baseDefaultColor)); // teal
+        cm.put("whitelist",        hex("#16A085", baseDefaultColor)); // dark teal
 
-// Fallback base category (used for defaultColor if nothing else matches)
-        colorMap.put("server",            hex("#43B581"));
-
+        // Fallback base category
+        cm.put("server", hex("#43B581", baseDefaultColor));
 
         // Allow overrides via embeds.colors.*
         // Supports both:
         // - flat:   embeds.colors.player_join: "#...."
         // - nested: embeds.colors.player.join: "#...."
+        int currentDefault = cm.getOrDefault("server", baseDefaultColor);
         ConfigurationSection base = plugin.getConfig().getConfigurationSection("embeds.colors");
         if (base != null) {
             for (String k : base.getKeys(false)) {
                 Object child = base.get(k);
                 if (child instanceof ConfigurationSection) {
-                    // Nested group: e.g., player: { join: "#...", quit: "#..." }
                     ConfigurationSection group = (ConfigurationSection) child;
                     for (String sk : group.getKeys(false)) {
                         String v = group.getString(sk);
                         if (v != null && !v.isBlank()) {
-                            // Store composite key: "player_join"
-                            String composite = normalizeKey(k + "_" + sk);
-                            colorMap.put(composite, hex(v));
-                            // Also store the subkey alone ("join") if not already explicitly set,
-                            // so categories like "join" (if used) can resolve; nested overrides flat.
-                            String naked = normalizeKey(sk);
-                            colorMap.put(naked, hex(v));
+                            cm.put(normalizeKey(k + "_" + sk), hex(v, currentDefault));
+                            cm.put(normalizeKey(sk), hex(v, currentDefault));
                         }
                     }
                 } else {
-                    // Flat override remains supported
                     String v = base.getString(k);
                     if (v != null && !v.isBlank()) {
-                        colorMap.put(normalizeKey(k), hex(v));
+                        cm.put(normalizeKey(k), hex(v, currentDefault));
                     }
                 }
             }
         }
-        defaultColor = colorMap.getOrDefault("server", defaultColor);
+
+        // Atomic assignment: async threads either see the old complete map or the
+        // new complete map — never a half-built one.
+        defaultColor = cm.getOrDefault("server", baseDefaultColor);
+        colorMap = cm;
     }
 
     // ---- Public helpers (used by other components like UpdateChecker) ----
-    public static boolean isReady() { return ready; }
-    public static boolean embedsEnabled() { return embedsEnabledFlag; }
-    public static String embedAuthor() { return embedAuthorName; }
+    public static boolean isReady()        { return ready; }
+    public static boolean embedsEnabled()  { return embedsEnabledFlag; }
+    public static String embedAuthor()     { return embedAuthorName; }
 
     // ---- Internal utilities ----
-    private static boolean isLikelyDiscordWebhook(String url) {
+
+    private static boolean isValidWebhookUrl(String url) {
         if (url == null || url.isBlank()) return false;
         return url.startsWith("https://discord.com/api/webhooks/")
                 || url.startsWith("https://discordapp.com/api/webhooks/")
@@ -154,12 +157,17 @@ public final class Log {
                 || url.startsWith("https://canary.discord.com/api/webhooks/");
     }
 
-    private static int hex(String s) {
-        if (s == null) return defaultColor;
+    private static int hex(String s, int fallback) {
+        if (s == null) return fallback;
         s = s.trim();
         if (s.startsWith("#")) s = s.substring(1);
         try { return (int) Long.parseLong(s, 16); }
-        catch (NumberFormatException e) { return defaultColor; }
+        catch (NumberFormatException e) { return fallback; }
+    }
+
+    // Overload used during color-map construction before defaultColor is finalised
+    private static int hex(String s) {
+        return hex(s, defaultColor);
     }
 
     private static String normalizeKey(String k) {
@@ -209,29 +217,23 @@ public final class Log {
     public static void event(String category, String message) {
         final String now = ts();
         if (embedsEnabledFlag) {
-            // Console echo only (clean text); send EMBED to Discord if ready
-            String consoleLine = "[" + now + "] " + category + ": " + message;
-            plugin.getLogger().info(consoleLine);
-
+            plugin.getLogger().info("[" + now + "] " + category + ": " + message);
             if (ready) {
                 DiscordWebhook.sendEmbed(
                         plugin, webhookUrl,
-                        /*title*/ category,
-                        /*description*/ message,
-                        /*color*/ colorFor(category),
+                        /*title*/        category,
+                        /*description*/  message,
+                        /*color*/        colorFor(category),
                         /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                        /*author*/ embedAuthorName,
-                        /*footer*/ embedFooterText,
+                        /*author*/       embedAuthorName,
+                        /*footer*/       embedFooterText,
                         /*thumbnailUrl*/ null
                 );
             }
         } else {
-            // Plain text path (includes optional server prefix)
             String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
             plugin.getLogger().info(line);
-            if (ready) {
-                DiscordWebhook.sendAsync(plugin, webhookUrl, line);
-            }
+            if (ready) DiscordWebhook.sendAsync(plugin, webhookUrl, line);
         }
     }
 
@@ -239,35 +241,25 @@ public final class Log {
     public static void eventWithThumb(String category, String message, String thumbnailUrl) {
         final String now = ts();
         if (embedsEnabledFlag) {
-            // Console echo only; send EMBED to Discord if ready
-            String consoleLine = "[" + now + "] " + category + ": " + message;
-            plugin.getLogger().info(consoleLine);
-
+            plugin.getLogger().info("[" + now + "] " + category + ": " + message);
             if (ready) {
                 DiscordWebhook.sendEmbed(
                         plugin, webhookUrl,
-                        /*title*/ category,
-                        /*description*/ message,
-                        /*color*/ colorFor(category),
+                        /*title*/        category,
+                        /*description*/  message,
+                        /*color*/        colorFor(category),
                         /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                        /*author*/ embedAuthorName,
-                        /*footer*/ embedFooterText,
+                        /*author*/       embedAuthorName,
+                        /*footer*/       embedFooterText,
                         /*thumbnailUrl*/ thumbnailUrl
                 );
             }
         } else {
-            // Plain text path (includes optional server prefix)
             String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
             plugin.getLogger().info(line);
-            if (ready) {
-                DiscordWebhook.sendAsync(plugin, webhookUrl, line);
-            }
+            if (ready) DiscordWebhook.sendAsync(plugin, webhookUrl, line);
         }
     }
-
-    /* =========================
-       =   NEW: Fields support  =
-       ========================= */
 
     /** Simple value object for embed fields. */
     public static final class Field {
@@ -286,13 +278,12 @@ public final class Log {
     }
 
     /**
-     * General-purpose event sender for "structured" embeds with fields.
-     * Uses the same pipeline (author/footer/colors/timestamps) as other events.
-     * - category: used for color (embeds.colors.<category>)
-     * - title: embed title (e.g., "Player Ban")
-     * - author: author name (null -> use embeds.author)
+     * General-purpose event sender for structured embeds with fields.
+     * - category: used for color lookup (embeds.colors.<category>)
+     * - title: embed title (e.g. "Player Ban")
+     * - author: author name (null -> use embeds.author from config)
      * - fields: list of field name/value pairs (inline respected)
-     * - thumbnailUrl: optional image (e.g., player head)
+     * - thumbnailUrl: optional image (e.g. player head)
      */
     public static void eventFieldsWithThumb(String category,
                                             String title,
@@ -301,36 +292,37 @@ public final class Log {
                                             String thumbnailUrl) {
         final String now = ts();
 
-        // Console echo for visibility
+        // Console echo
         StringBuilder console = new StringBuilder();
-        console.append("[").append(now).append("] ").append(title == null || title.isBlank() ? category : title).append(": ");
+        console.append("[").append(now).append("] ")
+                .append(title == null || title.isBlank() ? category : title).append(": ");
         if (fields != null && !fields.isEmpty()) {
             boolean first = true;
             for (Field f : fields) {
                 if (!first) console.append(" | ");
-                console.append(f.name).append(" ").append(f.value == null || f.value.isBlank() ? "N/A" : mdEscape(f.value));
+                console.append(f.name).append(" ")
+                        .append(f.value == null || f.value.isBlank() ? "N/A" : mdEscape(f.value));
                 first = false;
             }
         }
         plugin.getLogger().info(console.toString());
 
-        if (!ready) return; // no webhook URL -> console only
+        if (!ready) return;
 
         if (embedsEnabledFlag) {
             DiscordWebhook.sendEmbedWithFields(
                     plugin,
                     webhookUrl,
-                    /*title*/ (title == null || title.isBlank()) ? category : title,
-                    /*description*/ "",
-                    /*color*/ colorFor(category),
+                    /*title*/        (title == null || title.isBlank()) ? category : title,
+                    /*description*/  "",
+                    /*color*/        colorFor(category),
                     /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                    /*author*/ (author == null || author.isBlank()) ? embedAuthorName : author,
-                    /*footer*/ embedFooterText,
+                    /*author*/       (author == null || author.isBlank()) ? embedAuthorName : author,
+                    /*footer*/       embedFooterText,
                     /*thumbnailUrl*/ thumbnailUrl,
-                    /*fields*/ toFieldsArray(fields)
+                    /*fields*/       toFieldsArray(fields)
             );
         } else {
-            // Plain text fallback: multiline, readable
             StringBuilder sb = new StringBuilder();
             sb.append("`").append(now).append("`").append(nameSegment())
                     .append(" - **").append(category).append("**: ")
@@ -346,7 +338,7 @@ public final class Log {
         }
     }
 
-    /** Convenience wrapper that uses the default embed author and no thumbnail. */
+    /** Convenience wrapper: default embed author, no thumbnail. */
     public static void eventFields(String category, String title, List<Field> fields) {
         eventFieldsWithThumb(category, title, embedAuthorName, fields, null);
     }
@@ -356,22 +348,20 @@ public final class Log {
         String[][] arr = new String[fields.size()][3];
         for (int i = 0; i < fields.size(); i++) {
             Field f = fields.get(i);
-            String v = (f.value == null || f.value.isBlank()) ? "N/A" : f.value;
             arr[i][0] = f.name;
-            arr[i][1] = v;
+            arr[i][1] = (f.value == null || f.value.isBlank()) ? "N/A" : f.value;
             arr[i][2] = Boolean.toString(f.inline);
         }
         return arr;
     }
 
-    /** Build the hard-coded player avatar URL from UUID (mc-heads). */
+    /** Build the player avatar URL from UUID (mc-heads.net). */
     public static String playerAvatarUrl(UUID uuid) {
         if (uuid == null) return null;
-        String noDash = uuid.toString().replace("-", "");
-        return PLAYER_THUMB_TEMPLATE.replace("{uuid}", noDash);
+        return PLAYER_THUMB_TEMPLATE.replace("{uuid}", uuid.toString().replace("-", ""));
     }
 
-    /** Send the "Plugin Updates" embed with fields (used by the update checker). */
+    /** Send the "Plugin Updates" embed with fields (used by UpdateChecker). */
     public static void sendUpdateEmbed(String title,
                                        String description,
                                        int color,
@@ -380,11 +370,9 @@ public final class Log {
                                        String footer,
                                        String currentVersion,
                                        String newVersion) {
-        // Console visibility
-        String now = ts();
-        plugin.getLogger().info("[" + now + "] " + title + ": " + mdEscape(description));
+        plugin.getLogger().info("[" + ts() + "] " + title + ": " + mdEscape(description));
 
-        if (!ready) return; // no webhook URL -> console only
+        if (!ready) return;
 
         DiscordWebhook.sendEmbedWithFields(
                 plugin,
@@ -394,12 +382,11 @@ public final class Log {
                 color,
                 timestampIso,
                 author,
-                // If a custom footer is not provided, use dynamic versioned footer
                 (footer == null || footer.isBlank()) ? embedFooterText : footer,
-                null, // no thumbnail for update notices
+                null,
                 new String[][]{
-                        new String[]{"Current Version", currentVersion, "false"},
-                        new String[]{"New Version", newVersion, "false"}
+                        {"Current Version", currentVersion, "false"},
+                        {"New Version",     newVersion,     "false"}
                 }
         );
     }
