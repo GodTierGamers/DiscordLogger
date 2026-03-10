@@ -7,7 +7,7 @@ description: Full documentation for config.yml schema v9 — defaults, per-key e
 ![DiscordLogger](https://files.godtiergamers.xyz/DiscordLogger-Banner.png "DiscordLogger")
 # config.yml Docs — v9
 
-**_Supported Plugin Versions:_ v2.1.5**
+**_Supported Plugin Versions:_ v2.1.5, v2.1.6**
 
 <div style="margin:1rem 0 1.25rem;">
   <a class="btn" href="/assets/configs/v9/config.yml" download>

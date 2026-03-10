@@ -20,7 +20,7 @@ public final class PlayerAdvancement implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onAdvancement(PlayerAdvancementDoneEvent e) {
-        if (!plugin.getConfig().getBoolean("log.player.advancement", false)) return;
+        if (!plugin.getConfig().getBoolean("log.player.advancement", true)) return;
 
         final NamespacedKey key = e.getAdvancement().getKey();
         final String ns = key.getNamespace();   // usually "minecraft"

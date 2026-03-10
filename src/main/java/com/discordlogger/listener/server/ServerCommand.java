@@ -10,7 +10,7 @@ import org.bukkit.plugin.Plugin;
 public final class ServerCommand implements Listener {
     private final Plugin plugin;
 
-    private static final String THUMB_SERVER = "https://cdn-icons-png.flaticon.com/512/1411/1411887.png";
+    private static final String THUMB_SERVER = "https://discordlogger.godtiergamers.xyz/assets/icons/server.png";
 
     public ServerCommand(Plugin plugin) { this.plugin = plugin; }
 

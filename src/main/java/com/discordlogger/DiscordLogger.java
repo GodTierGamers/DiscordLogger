@@ -2,15 +2,13 @@ package com.discordlogger;
 
 import com.discordlogger.command.Commands;
 import com.discordlogger.command.Reload;
+import com.discordlogger.config.ConfigMigrator;
 import com.discordlogger.event.EventRegistry;
 import com.discordlogger.log.Log;
+import com.discordlogger.update.UpdateChecker;
 import org.bukkit.plugin.java.JavaPlugin;
-import com.discordlogger.config.ConfigMigrator;
 
 import java.io.File;
-
-// NEW: import the update checker
-import com.discordlogger.update.UpdateChecker;
 
 public final class DiscordLogger extends JavaPlugin {
 
@@ -19,7 +17,7 @@ public final class DiscordLogger extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        com.discordlogger.config.ConfigMigrator.migrateIfVersionChanged(this, "config.yml", new java.io.File(getDataFolder(), "config.yml"));
+        ConfigMigrator.migrateIfVersionChanged(this, "config.yml", new File(getDataFolder(), "config.yml"));
         reloadConfig();
 
         // Apply config (no hard-disable on missing webhook)
@@ -34,12 +32,12 @@ public final class DiscordLogger extends JavaPlugin {
         events.registerAll();
 
         if (getCommand("discordlogger") != null) {
-            com.discordlogger.command.Commands router = new com.discordlogger.command.Commands(new com.discordlogger.command.Reload(this));
+            Commands router = new Commands(new Reload(this));
             getCommand("discordlogger").setExecutor(router);
             getCommand("discordlogger").setTabCompleter(router);
         }
 
-        // NEW: async update check (console + Discord notice if newer available)
+        // Async update check (console + Discord notice if newer version available)
         UpdateChecker.checkAsync(this);
 
         // Server start log will go to console; to Discord only if webhook is valid
@@ -57,24 +55,14 @@ public final class DiscordLogger extends JavaPlugin {
         final String url = getConfig().getString("webhook.url", "");
         final String timePattern = getConfig().getString("format.time", "[HH:mm:ss dd:MM:yyyy]");
 
-        // NEW: always initialize Log first so degraded mode works (even if URL invalid)
+        // Always initialize Log so degraded mode works even if the webhook URL is invalid
         Log.init(this, url, timePattern);
 
-        if (!isLikelyDiscordWebhook(url)) {
+        if (!Log.isReady()) {
             getLogger().severe("Invalid or missing webhook.url in config.yml.");
             return false;
         }
 
-        // (kept from your original code) re-init is harmless when valid
-        Log.init(this, url, timePattern);
         return true;
-    }
-
-    private boolean isLikelyDiscordWebhook(String url) {
-        if (url == null || url.isBlank()) return false;
-        return url.startsWith("https://discord.com/api/webhooks/")
-                || url.startsWith("https://discordapp.com/api/webhooks/")
-                || url.startsWith("https://ptb.discord.com/api/webhooks/")
-                || url.startsWith("https://canary.discord.com/api/webhooks/");
     }
 }

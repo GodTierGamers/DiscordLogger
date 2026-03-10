@@ -11,11 +11,11 @@ Pick the **config schema version** your server is using.
 If you’re not sure, open your `config.yml` and check the **last line**; it will look like:
 
 ```text
-# CONFIG VERSION V9, SHIPPED WITH V2.1.5
+# CONFIG VERSION V9, SHIPPED WITH V2.1.6
 ```
 
 > Start here:
-- **[v9](/config/v9/)** — ships with **DiscordLogger v2.1.5**
+- **[v9](/config/v9/)** — ships with **DiscordLogger v2.1.5, v2.1.6**
 
 _This page will list more versions (v10, v11, …) as they’re released._
 
