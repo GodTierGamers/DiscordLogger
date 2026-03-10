@@ -7,7 +7,7 @@ title: Home
 
 Minecraft → Discord logging that’s clean, configurable, and production-ready.
 
-> **Latest plugin:** v2.1.5  
+> **Latest plugin:** v2.1.6 
 > **Latest config version:** v9
 
 ---
