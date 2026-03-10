@@ -23,16 +23,17 @@ public final class Whitelist implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
-        // handle both toggle and edits, but honor toggles individually later
-        if (!plugin.getConfig().getBoolean("log.moderation.whitelist_toggle", true)
-                && !plugin.getConfig().getBoolean("log.moderation.whitelist_edit", true)) return;
+        boolean logToggle = plugin.getConfig().getBoolean("log.moderation.whitelist_toggle", true);
+        boolean logEdit   = plugin.getConfig().getBoolean("log.moderation.whitelist_edit",   true);
+        if (!logToggle && !logEdit) return;
         handle(e.getPlayer(), e.getMessage()); // includes leading "/"
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onServerCommand(ServerCommandEvent e) {
-        if (!plugin.getConfig().getBoolean("log.moderation.whitelist_toggle", true)
-                && !plugin.getConfig().getBoolean("log.moderation.whitelist_edit", true)) return;
+        boolean logToggle = plugin.getConfig().getBoolean("log.moderation.whitelist_toggle", true);
+        boolean logEdit   = plugin.getConfig().getBoolean("log.moderation.whitelist_edit",   true);
+        if (!logToggle && !logEdit) return;
         final String raw = "/" + e.getCommand(); // ServerCommandEvent lacks leading "/"
         handle(null, raw);
     }
