@@ -2,6 +2,7 @@ package com.discordlogger.listener.server;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import com.discordlogger.util.StringUtil;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.Material;
@@ -21,7 +22,6 @@ import java.util.List;
 import java.util.Locale;
 
 public final class Explosion implements Listener {
-    // ---------- YOUR CDN ----------
     private static final String ICON_BASE =
             "https://discordlogger.godtiergamers.xyz/assets/icons/explosions/";
 
@@ -52,7 +52,7 @@ public final class Explosion implements Listener {
         if (!enabled()) return;
 
         final EntityType type = (e.getEntity() == null) ? null : e.getEntity().getType();
-        final String source = (type == null) ? "Unknown" : toTitle(type.name());
+        final String source = (type == null) ? "Unknown" : StringUtil.toTitle(type.name());
         final String thumb  = getEntityThumb(type);
 
         final Location loc = e.getLocation();
@@ -85,7 +85,7 @@ public final class Explosion implements Listener {
 
         final Block b = e.getBlock();
         final Material mat = (b == null) ? null : b.getType();
-        final String srcMat = (mat == null) ? "Unknown Block" : toTitle(mat.name());
+        final String srcMat = (mat == null) ? "Unknown Block" : StringUtil.toTitle(mat.name());
         final String source  = "Block: " + srcMat;
         final String thumb   = getBlockThumb(mat);
 
@@ -195,18 +195,4 @@ public final class Explosion implements Listener {
         return wn + " (" + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ() + ")";
     }
 
-    private static String toTitle(String s) {
-        String t = s.toLowerCase(Locale.ROOT).replace('_', ' ');
-        String[] parts = t.split("\\s+");
-        StringBuilder out = new StringBuilder(t.length());
-        for (int i = 0; i < parts.length; i++) {
-            String w = parts[i];
-            if (!w.isEmpty()) {
-                out.append(Character.toUpperCase(w.charAt(0)));
-                if (w.length() > 1) out.append(w.substring(1));
-                if (i + 1 < parts.length) out.append(' ');
-            }
-        }
-        return out.toString();
-    }
 }

@@ -2,6 +2,7 @@ package com.discordlogger.listener.player;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import com.discordlogger.util.StringUtil;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -105,22 +106,8 @@ public final class PlayerTeleport implements Listener {
             case UNKNOWN:
                 return "Unknown";
             default:
-                return toTitle(c.name());
+                return StringUtil.toTitle(c.name());
         }
     }
 
-    private static String toTitle(String s) {
-        String t = s.toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
-        String[] parts = t.split("\\s+");
-        StringBuilder out = new StringBuilder(t.length());
-        for (int i = 0; i < parts.length; i++) {
-            String w = parts[i];
-            if (!w.isEmpty()) {
-                out.append(Character.toUpperCase(w.charAt(0)));
-                if (w.length() > 1) out.append(w.substring(1));
-                if (i + 1 < parts.length) out.append(' ');
-            }
-        }
-        return out.toString();
-    }
 }
