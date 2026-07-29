@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "pull-request-title-pattern": "chore: release ${version}",
+  "changelog-sections": [
+    { "type": "feat", "section": "✨ Features" },
+    { "type": "fix", "section": "🐛 Fixes" },
+    { "type": "perf", "section": "⚡ Performance" },
+    { "type": "refactor", "section": "🛠 Refactors" },
+    { "type": "docs", "section": "📝 Docs" },
+    { "type": "chore", "section": "🧰 Maintenance", "hidden": false },
+    { "type": "ci", "section": "⚙️ CI/CD" },
+    { "type": "build", "section": "⚙️ CI/CD" },
+    { "type": "test", "section": "🧪 Tests", "hidden": true }
+  ],
+  "packages": {
+    ".": {
+      "release-type": "maven",
+      "package-name": "discordlogger",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/main/resources/config.yml"
+        }
+      ]
+    }
+  }
+}

@@ -10,30 +10,51 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class UpdateChecker {
-    private static final String API_URL =
-            "https://api.github.com/repos/GodTierGamers/DiscordLogger/releases/latest";
+    // Lists releases (stable + pre-releases), newest first -- unlike /releases/latest,
+    // which only ever returns the newest non-prerelease and can't tell a nightly
+    // build how far behind it is.
+    private static final String RELEASES_LIST_API_URL =
+            "https://api.github.com/repos/GodTierGamers/DiscordLogger/releases?per_page=50";
     private static final String RELEASES_URL =
             "https://github.com/GodTierGamers/DiscordLogger/releases/latest";
-    private static final Duration TIMEOUT     = Duration.ofSeconds(10);
+    private static final Duration TIMEOUT      = Duration.ofSeconds(10);
     private static final int      UPDATE_COLOR = 458_496;
+
+    // Nightly users are notified about EVERY new stable release, but about newer
+    // nightlies only once they're meaningfully behind (more than 2 builds) --
+    // "upgrade frequently" without nagging on every single nightly.
+    private static final int NIGHTLY_LAG_THRESHOLD = 2;
+
+    private static final Pattern TAG_NAME_RE = Pattern.compile("\"tag_name\"\\s*:\\s*\"([^\"]*)\"");
 
     private UpdateChecker() {}
 
     /** Fire-and-forget onEnable hook. */
     public static void checkAsync(JavaPlugin plugin) {
-        final String current = normalizeVersion(plugin.getPluginMeta().getVersion());
+        if (BuildInfo.isDev()) {
+            plugin.getLogger().fine("Update check skipped for a local/dev build.");
+            return;
+        }
+
+        final SemVer current = SemVer.parse(BuildInfo.version());
+        if (current == null) {
+            plugin.getLogger().fine("Update check skipped: could not parse running version.");
+            return;
+        }
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try (HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(TIMEOUT)
                     .build()) {
 
-                // Use the GitHub JSON API instead of following the HTML redirect.
-                // The redirect URL parsing was brittle (e.g. if GitHub changes the
-                // URL structure). The API returns stable JSON with a "tag_name" field.
-                HttpRequest req = HttpRequest.newBuilder(URI.create(API_URL))
+                HttpRequest req = HttpRequest.newBuilder(URI.create(RELEASES_LIST_API_URL))
                         .timeout(TIMEOUT)
                         .header("Accept", "application/vnd.github+json")
                         .header("User-Agent", "DiscordLogger/" + current)
@@ -47,28 +68,12 @@ public final class UpdateChecker {
                     return;
                 }
 
-                String body = resp.body();
+                List<ReleaseInfo> releases = parseReleases(resp.body());
 
-                // Skip pre-release / nightly builds entirely
-                if (isPreRelease(body)) {
-                    plugin.getLogger().fine("Update check: latest release is a pre-release, skipping.");
-                    return;
-                }
-
-                String latestTag = extractTagName(body);
-                if (latestTag == null || latestTag.isBlank()) {
-                    plugin.getLogger().fine("Update check: could not parse tag_name from response.");
-                    return;
-                }
-
-                String latest = normalizeVersion(latestTag);
-
-                if (isNewer(latest, current)) {
-                    banner(plugin,
-                            "Current: " + current,
-                            "Latest : " + latest,
-                            "Download: " + RELEASES_URL);
-                    sendWebhookNotice(current, latest);
+                if (BuildInfo.isStable()) {
+                    checkStable(plugin, current, releases);
+                } else if (BuildInfo.isNightly()) {
+                    checkNightly(plugin, current, releases);
                 }
             } catch (Exception e) {
                 // Quietly ignore network hiccups on startup
@@ -78,12 +83,72 @@ public final class UpdateChecker {
     }
 
     // -------------------------------------------------------------------------
+    // Channel-specific logic
+    // -------------------------------------------------------------------------
 
-    private static void sendWebhookNotice(String current, String latest) {
+    /** Stable channel: notify on ANY newer stable release. Pre-releases are invisible. */
+    private static void checkStable(JavaPlugin plugin, SemVer current, List<ReleaseInfo> releases) {
+        for (ReleaseInfo r : releases) {
+            if (r.prerelease()) continue;
+            SemVer latest = SemVer.parse(r.tag());
+            if (latest == null) return;
+            if (latest.compareTo(current) > 0) {
+                notify(plugin, current, latest, "A new stable release is available.");
+            }
+            return; // first non-prerelease encountered (list is newest-first) is latest stable
+        }
+    }
+
+    /**
+     * Nightly channel: notify on EVERY newer stable release, and about newer
+     * nightlies only once more than {@link #NIGHTLY_LAG_THRESHOLD} of them exist.
+     */
+    private static void checkNightly(JavaPlugin plugin, SemVer current, List<ReleaseInfo> releases) {
+        SemVer bestStable = null;
+        int newerNightlyCount = 0;
+
+        for (ReleaseInfo r : releases) {
+            SemVer v = SemVer.parse(r.tag());
+            if (v == null) continue;
+
+            if (r.prerelease()) {
+                if (v.compareTo(current) > 0) newerNightlyCount++;
+            } else if (bestStable == null || v.compareTo(bestStable) > 0) {
+                bestStable = v;
+            }
+        }
+
+        if (bestStable != null && bestStable.compareTo(current) > 0) {
+            notify(plugin, current, bestStable,
+                    "A new stable release is available -- nightly users should move to it.");
+            return;
+        }
+
+        if (newerNightlyCount > NIGHTLY_LAG_THRESHOLD) {
+            notify(plugin, current, null,
+                    newerNightlyCount + " newer nightly builds are available -- you are falling behind.");
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Notification (console banner + Discord webhook notice)
+    // -------------------------------------------------------------------------
+
+    private static void notify(JavaPlugin plugin, SemVer current, SemVer latest, String headline) {
+        String latestStr = (latest != null) ? latest.toString() : "see the releases page";
+        banner(plugin,
+                headline,
+                "Current: " + current,
+                "Latest : " + latestStr,
+                "Download: " + RELEASES_URL);
+        sendWebhookNotice(current.toString(), latestStr, headline);
+    }
+
+    private static void sendWebhookNotice(String current, String latest, String headline) {
         if (Log.embedsEnabled()) {
             Log.sendUpdateEmbed(
                     "Plugin Updates",
-                    "A new update is available for DiscordLogger, you can download it [here](" + RELEASES_URL + ")",
+                    headline + " You can download it [here](" + RELEASES_URL + ")",
                     UPDATE_COLOR,
                     OffsetDateTime.now(ZoneOffset.UTC).toString(),
                     Log.embedAuthor(),
@@ -92,7 +157,7 @@ public final class UpdateChecker {
                     latest
             );
         } else {
-            Log.plain("**Plugin Updates**: A new update for DiscordLogger is available, [download here](" + RELEASES_URL + ")");
+            Log.plain("**Plugin Updates**: " + headline + " [Download here](" + RELEASES_URL + ")");
         }
     }
 
@@ -103,59 +168,101 @@ public final class UpdateChecker {
         plugin.getLogger().warning("================================================================");
     }
 
-    /**
-     * Returns true if the GitHub API response has "prerelease": true.
-     * Used to suppress update notices for nightly/dev releases.
-     */
-    private static boolean isPreRelease(String json) {
-        if (json == null) return false;
-        final String key = "\"prerelease\"";
-        int ki = json.indexOf(key);
-        if (ki < 0) return false;
-        int colon = json.indexOf(':', ki + key.length());
-        if (colon < 0) return false;
-        // value will be "true" or "false" (no quotes, JSON boolean)
-        String rest = json.substring(colon + 1).trim();
-        return rest.startsWith("true");
-    }
+    // -------------------------------------------------------------------------
+    // GitHub releases-list JSON scraping (no JSON dependency, matches the
+    // string-scanning approach this class has always used)
+    // -------------------------------------------------------------------------
+
+    private record ReleaseInfo(String tag, boolean prerelease) {}
 
     /**
-     * Extracts the value of "tag_name" from a GitHub API JSON response.
-     * Avoids a full JSON parser dependency — the field is always a simple string.
-     * Example: {"tag_name":"v2.1.6",...} -> "v2.1.6"
+     * Pairs each "tag_name" with the "prerelease" flag that appears before the NEXT
+     * "tag_name" in the document. Safe without a full JSON parser because GitHub's
+     * release objects are emitted sequentially and never nest another release inside
+     * one -- so "everything between this tag_name and the next" is exactly one release.
      */
-    private static String extractTagName(String json) {
-        if (json == null) return null;
-        final String key = "\"tag_name\"";
-        int ki = json.indexOf(key);
-        if (ki < 0) return null;
-        int colon = json.indexOf(':', ki + key.length());
-        if (colon < 0) return null;
-        int open = json.indexOf('"', colon + 1);
-        if (open < 0) return null;
-        int close = json.indexOf('"', open + 1);
-        if (close < 0) return null;
-        return json.substring(open + 1, close);
-    }
+    private static List<ReleaseInfo> parseReleases(String json) {
+        List<ReleaseInfo> out = new ArrayList<>();
+        if (json == null) return out;
 
-    private static String normalizeVersion(String v) {
-        if (v == null) return "";
-        v = v.trim();
-        if (v.startsWith("v") || v.startsWith("V")) v = v.substring(1);
-        v = v.replace("-SNAPSHOT", "");
-        return v;
-    }
+        List<String> tags = new ArrayList<>();
+        List<Integer> starts = new ArrayList<>();
+        List<Integer> ends = new ArrayList<>();
 
-    /** Simple semver-ish compare: returns true if a > b numerically. */
-    private static boolean isNewer(String a, String b) {
-        String[] as = a.split("\\D+");
-        String[] bs = b.split("\\D+");
-        int n = Math.max(as.length, bs.length);
-        for (int i = 0; i < n; i++) {
-            int ai = (i < as.length && !as[i].isEmpty()) ? Integer.parseInt(as[i]) : 0;
-            int bi = (i < bs.length && !bs[i].isEmpty()) ? Integer.parseInt(bs[i]) : 0;
-            if (ai != bi) return ai > bi;
+        Matcher m = TAG_NAME_RE.matcher(json);
+        while (m.find()) {
+            tags.add(m.group(1));
+            starts.add(m.start());
+            ends.add(m.end());
         }
-        return false;
+
+        for (int i = 0; i < tags.size(); i++) {
+            int from = ends.get(i);
+            int to = (i + 1 < tags.size()) ? starts.get(i + 1) : json.length();
+            String segment = json.substring(from, to);
+            boolean prerelease = segment.contains("\"prerelease\":true") || segment.contains("\"prerelease\": true");
+            out.add(new ReleaseInfo(tags.get(i), prerelease));
+        }
+        return out;
+    }
+
+    // -------------------------------------------------------------------------
+    // Semver-ish version, with -BETA.N precedence (stable ranks above any beta
+    // of the same major.minor.patch; higher BETA numbers rank above lower ones)
+    // -------------------------------------------------------------------------
+
+    private record SemVer(int major, int minor, int patch, Integer beta) implements Comparable<SemVer> {
+        static SemVer parse(String raw) {
+            if (raw == null) return null;
+            String v = raw.trim();
+            if (v.isEmpty()) return null;
+            if (v.startsWith("v") || v.startsWith("V")) v = v.substring(1);
+            v = v.replace("-SNAPSHOT", "");
+
+            Integer betaNum = null;
+            int betaIdx = v.toUpperCase(Locale.ROOT).indexOf("-BETA.");
+            if (betaIdx >= 0) {
+                String betaPart = v.substring(betaIdx + "-BETA.".length());
+                try {
+                    betaNum = Integer.parseInt(betaPart.replaceAll("\\D.*$", ""));
+                } catch (NumberFormatException ignored) {
+                    betaNum = 0;
+                }
+                v = v.substring(0, betaIdx);
+            }
+
+            String[] parts = v.split("\\.");
+            if (parts.length == 0 || parts[0].isBlank()) return null;
+
+            return new SemVer(part(parts, 0), part(parts, 1), part(parts, 2), betaNum);
+        }
+
+        private static int part(String[] parts, int i) {
+            if (i >= parts.length) return 0;
+            String digits = parts[i].replaceAll("\\D", "");
+            if (digits.isEmpty()) return 0;
+            try {
+                return Integer.parseInt(digits);
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+
+        @Override
+        public int compareTo(SemVer o) {
+            if (major != o.major) return Integer.compare(major, o.major);
+            if (minor != o.minor) return Integer.compare(minor, o.minor);
+            if (patch != o.patch) return Integer.compare(patch, o.patch);
+            if (beta == null && o.beta == null) return 0;
+            if (beta == null) return 1;   // stable ranks above any beta of the same x.y.z
+            if (o.beta == null) return -1;
+            return Integer.compare(beta, o.beta);
+        }
+
+        @Override
+        public String toString() {
+            String base = major + "." + minor + "." + patch;
+            return (beta != null) ? base + "-BETA." + beta : base;
+        }
     }
 }

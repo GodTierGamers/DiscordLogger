@@ -1,20 +1,8 @@
 # Pull Request
 
-## What’s changed?
+## What's changed?
 <!-- Short, user-facing bullets. Keep it human. -->
 -
-
-## Type of change
-<!-- Tick all that apply; please add matching labels. -->
-- [ ] ✨ Feature (`feat`)
-- [ ] 🐛 Fix (`bug`)
-- [ ] 🛠 Refactor (`refactor`)
-- [ ] 🧰 Maintenance (`chore`)
-- [ ] 🧪 Tests (`test`)
-- [ ] 📝 Docs (`docs`)
-- [ ] ⚙️ CI/CD (`ci`, `build`)
-- [ ] 🔥 Breaking change (explain below)
-- [ ] Skip changelog (`skip-changelog`)
 
 ## Motivation & context
 <!-- Why is this needed? Link issues/threads (e.g., Closes #123). -->
@@ -26,17 +14,11 @@
 3.
 
 ## Plugin impacts (configs, commands, permissions)
-<!-- Note any user/admin actions required. -->
+<!-- Note any user/admin actions required. Leave blank if none. -->
 - Config keys added/changed:
 - Commands added/changed:
 - Permission nodes:
 - Data migration:
-- Backward-compat:
-
-## Risk & rollout
-- Risk level: ☐ Low ☐ Medium ☐ High
-- Mitigations / tests:
-- Manual rollback steps (if any):
 
 ## Screenshots / logs (optional)
 <!-- Paste webhook screenshots, console logs, or traces. -->
@@ -44,10 +26,9 @@
 ---
 
 ### Checklist
-- [ ] Compiles locally
-- [ ] Tests added/updated (if logic changed)
-- [ ] Docs updated (README / docs/) if behavior changed
-- [ ] Labels match type (feat/bug/refactor/docs/ci/chore/ci)
+- [ ] **PR title follows Conventional Commits** (`feat: ...`, `fix: ...`, `docs: ...`, `chore: ...`, `refactor: ...`, `ci: ...`, `test: ...`) — this title becomes the changelog entry on release, and CI will reject the PR if it doesn't match.
+- [ ] `mvn -B -ntp clean package` builds locally
 - [ ] Config defaults are safe (no NPEs on missing keys)
-- [ ] Verified on supported MC/Paper/Spigot version(s)
-
+- [ ] If a `log.*`/`embeds.*` config key was added/changed: `EventRegistry`/listener wired up, `config.yml` updated, **and** `docs/assets/configs/v*/options.json` + `config.template.yml` updated to match (CI's `validate-generator-data` job checks this)
+- [ ] Docs updated (`README.md` / `docs/`) if user-facing behavior changed
+- [ ] Verified on a real Paper server, not just `mvn package`

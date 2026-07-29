@@ -5,6 +5,8 @@ import com.discordlogger.command.Reload;
 import com.discordlogger.config.ConfigMigrator;
 import com.discordlogger.event.EventRegistry;
 import com.discordlogger.log.Log;
+import com.discordlogger.update.BuildInfo;
+import com.discordlogger.update.NightlyNotice;
 import com.discordlogger.update.UpdateChecker;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -16,9 +18,13 @@ public final class DiscordLogger extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        BuildInfo.load(this);
+
         saveDefaultConfig();
         ConfigMigrator.migrateIfVersionChanged(this, "config.yml", new File(getDataFolder(), "config.yml"));
         reloadConfig();
+
+        new NightlyNotice(this).activate(this);
 
         // Apply config (no hard-disable on missing webhook)
         boolean ok = applyRuntimeConfig();

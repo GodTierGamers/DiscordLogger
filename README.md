@@ -60,20 +60,9 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
 
 ## 🧰 Development
 
-**Branch Usage**:
+Trunk-based: `main` is the only long-lived branch. To contribute, branch off `main` (e.g. `feat/banLogs`, `fix/deathMessages`), open a PR back into `main` with a [Conventional Commits](https://www.conventionalcommits.org/) title (`feat: ...`, `fix: ...`) — the title becomes the changelog entry. Releases and changelogs are fully automated via release-please; nightly beta builds (`vX.Y.Z-BETA.N`) publish automatically from unreleased work on `main`.
 
-- Main: Current latest version, not developed on, only updated via PR or for workflow updates
-- Dev: May have new features implemented compared to main, is updated frequently and is fairly stable, create branches off dev
-- All other branches (e.g. feat/banLogs): Active features in development, not expected to be functional yet, still in active development
-
-To add a new feature:
-- Create a branch based off dev
-- Name it approprietly (e.g. feat/banLogs)
-- Develop feature
-- PR into dev
-- When enough features are compiled, dev will be PRed into main
-
----
+See **[AGENTS.md](AGENTS.md)** for the full contributor guide: architecture, conventions, workflow, and release process.
 
 - Build with Maven:
   ```bash
@@ -87,3 +76,9 @@ To add a new feature:
 
 This project’s license appears in the repository root.  
 ![License](https://img.shields.io/github/license/GodTierGamers/DiscordLogger)
+
+---
+
+## 🤖 AI Disclosure
+
+Parts of this project — including code, documentation, and the release automation — are developed with the assistance of AI tools. All AI-assisted changes go through the same pull-request review, CI checks, and testing as any other contribution, and a human maintainer reviews and approves everything that ships.
