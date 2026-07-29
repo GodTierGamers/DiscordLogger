@@ -1,0 +1,224 @@
+name: Nightly Build
+
+on:
+  schedule:
+    # 15:00 UTC nightly (~1am AEST). Arbitrary -- adjust freely.
+    - cron: "0 15 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: nightly-build
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.compute.outputs.skip }}
+      new_tag: ${{ steps.compute.outputs.new_tag }}
+      new_version: ${{ steps.compute.outputs.new_version }}
+      beta_n: ${{ steps.compute.outputs.beta_n }}
+      prev_ref: ${{ steps.compute.outputs.prev_ref }}
+    steps:
+      - name: Checkout main (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Compute next nightly version
+        id: compute
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          # ---- Find the most recent stable tag (vX.Y.Z, no -BETA suffix) ----
+          LATEST_STABLE_TAG="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | grep -Ev -- '-BETA\.' | sort -V | tail -n1 || true)"
+          if [ -n "$LATEST_STABLE_TAG" ]; then
+            STABLE_SHA="$(git rev-list -n1 "$LATEST_STABLE_TAG")"
+            STABLE_VERSION="${LATEST_STABLE_TAG#v}"
+          else
+            STABLE_SHA="$(git rev-list --max-parents=0 HEAD | tail -n1)"
+            STABLE_VERSION="0.0.0"
+          fi
+
+          HEAD_SHA="$(git rev-parse HEAD)"
+
+          # ---- Skip if there's literally nothing since the last stable release ----
+          if [ "$HEAD_SHA" = "$STABLE_SHA" ]; then
+            echo "No commits since $LATEST_STABLE_TAG -- nothing to preview."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # ---- Skip if there's nothing new since the last nightly ----
+          LAST_NIGHTLY_TAG="$(git tag --list 'v*-BETA.*' | sort -V | tail -n1 || true)"
+          if [ -n "$LAST_NIGHTLY_TAG" ]; then
+            LAST_NIGHTLY_SHA="$(git rev-list -n1 "$LAST_NIGHTLY_TAG")"
+            if [ "$HEAD_SHA" = "$LAST_NIGHTLY_SHA" ]; then
+              echo "No new commits since $LAST_NIGHTLY_TAG -- skipping nightly."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          # ---- Determine the bump type from conventional commit subjects ----
+          # Mirrors release-please: feat -> minor, breaking (!) -> major, else patch.
+          BUMP="patch"
+          while IFS= read -r subject; do
+            case "$subject" in
+              feat\(*\)!:*|feat!:*|fix\(*\)!:*|fix!:*|refactor\(*\)!:*|refactor!:*) BUMP="major" ;;
+              feat\(*\):*|feat:*) [ "$BUMP" = "major" ] || BUMP="minor" ;;
+            esac
+          done < <(git log "${STABLE_SHA}..HEAD" --pretty=format:%s)
+
+          IFS='.' read -r MAJ MIN PAT <<< "$STABLE_VERSION"
+          case "$BUMP" in
+            major) MAJ=$((MAJ + 1)); MIN=0; PAT=0 ;;
+            minor) MIN=$((MIN + 1)); PAT=0 ;;
+            patch) PAT=$((PAT + 1)) ;;
+          esac
+          NEW_VERSION="${MAJ}.${MIN}.${PAT}"
+
+          # ---- Next BETA counter for this upcoming version ----
+          LAST_BETA_N="$(git tag --list "v${NEW_VERSION}-BETA.*" \
+            | sed -E "s/^v${NEW_VERSION}-BETA\.([0-9]+)\$/\1/" \
+            | sort -n | tail -n1 || true)"
+          if [ -z "$LAST_BETA_N" ]; then
+            BETA_N=1
+          else
+            BETA_N=$((LAST_BETA_N + 1))
+          fi
+          NEW_TAG="v${NEW_VERSION}-BETA.${BETA_N}"
+
+          if [ -n "$LAST_NIGHTLY_TAG" ]; then
+            PREV_REF="$LAST_NIGHTLY_TAG"
+          elif [ -n "$LATEST_STABLE_TAG" ]; then
+            PREV_REF="$LATEST_STABLE_TAG"
+          else
+            PREV_REF="$STABLE_SHA"
+          fi
+
+          echo "Building $NEW_TAG (bump: $BUMP, since: $PREV_REF)"
+          echo "skip=false"                 >> "$GITHUB_OUTPUT"
+          echo "new_tag=$NEW_TAG"           >> "$GITHUB_OUTPUT"
+          echo "new_version=$NEW_VERSION"   >> "$GITHUB_OUTPUT"
+          echo "beta_n=$BETA_N"             >> "$GITHUB_OUTPUT"
+          echo "prev_ref=$PREV_REF"         >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Set version (uncommitted, build-local only)
+        run: mvn -B -ntp versions:set -DnewVersion="${{ needs.plan.outputs.new_version }}-BETA.${{ needs.plan.outputs.beta_n }}" -DgenerateBackupPoms=false
+
+      - name: Stamp version + build date into config.yml trailer
+        env:
+          NEW_TAG: ${{ needs.plan.outputs.new_tag }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, re, datetime
+
+          path = "src/main/resources/config.yml"
+          new_tag = os.environ["NEW_TAG"]
+          built = datetime.datetime.utcnow().strftime("%d-%m-%Y")
+
+          with open(path, "r", encoding="utf-8") as f:
+              text = f.read()
+
+          # Consumes any existing BUILT/annotation suffix too, so this stays
+          # idempotent if it's ever run more than once against the same checkout.
+          pattern = re.compile(
+              r"CONFIG VERSION V(\d+), SHIPPED WITH v[^\s(]*"
+              r"(?:\s+BUILT\s+\S+)?(?:\s*\([^)]*\))?"
+          )
+
+          def repl(m):
+              return f"CONFIG VERSION V{m.group(1)}, SHIPPED WITH {new_tag} BUILT {built}"
+
+          new_text, n = pattern.subn(repl, text, count=1)
+          if n == 0:
+              raise SystemExit("Could not find CONFIG VERSION trailer in " + path)
+
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(new_text)
+
+          print(f"Stamped {new_tag} BUILT {built} into {path}")
+          PY
+
+      - name: Build
+        run: |
+          mvn -B -ntp \
+            -Ddl.build.channel=nightly \
+            -Ddl.build.date=$(date -u +%d-%m-%Y) \
+            clean package
+
+      - name: Locate & rename artifact
+        id: jar
+        run: |
+          set -euo pipefail
+          src="$(ls -1 target/*.jar | grep -v -E 'sources|javadoc|original' | head -n1)"
+          dest="target/DiscordLogger-${{ needs.plan.outputs.new_tag }}.jar"
+          cp "$src" "$dest"
+          echo "file=$dest" >> "$GITHUB_OUTPUT"
+
+      - name: Generate SHA-256 checksum
+        id: checksum
+        run: |
+          set -euo pipefail
+          sha256sum "${{ steps.jar.outputs.file }}" > "${{ steps.jar.outputs.file }}.sha256"
+          echo "file=${{ steps.jar.outputs.file }}.sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Build nightly release notes
+        env:
+          PREV_REF: ${{ needs.plan.outputs.prev_ref }}
+          NEW_VERSION: ${{ needs.plan.outputs.new_version }}
+          BETA_N: ${{ needs.plan.outputs.beta_n }}
+        run: |
+          set -euo pipefail
+          {
+            echo "> ⚠️ **Nightly build — not for production servers.** Automated preview build, expect bugs. Report issues on GitHub."
+            echo ""
+            echo "**Base version:** ${NEW_VERSION} &nbsp;•&nbsp; **Build:** BETA.${BETA_N}"
+            echo ""
+            echo "### Changes since ${PREV_REF}"
+            echo ""
+            git log "${PREV_REF}..HEAD" --pretty=format:'- %s (%h)' || true
+            echo ""
+          } > /tmp/nightly-body.md
+          if ! grep -q '^- ' /tmp/nightly-body.md; then
+            echo "_No new commits recorded since the previous build._" >> /tmp/nightly-body.md
+          fi
+
+      - name: Publish nightly pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.plan.outputs.new_tag }}
+          name: "Nightly ${{ needs.plan.outputs.new_tag }}"
+          target_commitish: main
+          prerelease: true
+          body_path: /tmp/nightly-body.md
+          files: |
+            ${{ steps.jar.outputs.file }}
+            ${{ steps.checksum.outputs.file }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

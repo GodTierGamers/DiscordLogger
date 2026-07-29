@@ -2,12 +2,36 @@ name: CI
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [main]
   pull_request:
-    branches: [ main, dev ]
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      java: ${{ steps.filter.outputs.java }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            java:
+              - 'src/**'
+              - 'pom.xml'
+            docs:
+              - 'docs/assets/configs/**'
+              - 'scripts/validate-config-generator.py'
+
   build:
+    needs: changes
+    if: needs.changes.outputs.java == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -33,3 +57,15 @@ jobs:
             target/*.jar
             !target/*-sources.jar
             !target/*-javadoc.jar
+
+  validate-generator-data:
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate config generator data
+        run: python3 scripts/validate-config-generator.py

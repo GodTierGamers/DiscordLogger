@@ -87,3 +87,9 @@ To add a new feature:
 
 This project’s license appears in the repository root.  
 ![License](https://img.shields.io/github/license/GodTierGamers/DiscordLogger)
+
+---
+
+## 🤖 AI Disclosure
+
+Parts of this project — including code, documentation, and the release automation — are developed with the assistance of AI tools (Anthropic's Claude). All AI-assisted changes go through the same pull-request review, CI checks, and testing as any other contribution, and a human maintainer reviews and approves everything that ships.

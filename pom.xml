@@ -14,6 +14,12 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <paper.api.version>1.21.11-R0.1-SNAPSHOT</paper.api.version>
+
+        <!-- Build channel/date are stamped by CI (-Ddl.build.channel=stable|nightly,
+             -Ddl.build.date=DD-MM-YYYY). A plain local `mvn package` gets "dev",
+             so a hand-built JAR is never mistaken for a release artifact. -->
+        <dl.build.channel>dev</dl.build.channel>
+        <dl.build.date>unknown</dl.build.date>
     </properties>
 
     <repositories>
@@ -43,21 +49,25 @@
 
     <build>
         <resources>
-            <!-- include all resources unfiltered (config.yml, etc.), EXCEPT plugin.yml -->
+            <!-- include all resources unfiltered (config.yml, etc.), EXCEPT plugin.yml
+                 and build-info.properties -->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>false</filtering>
                 <excludes>
                     <exclude>plugin.yml</exclude>
+                    <exclude>build-info.properties</exclude>
                 </excludes>
             </resource>
 
-            <!-- include ONLY plugin.yml with filtering so ${project.version} works -->
+            <!-- include ONLY plugin.yml + build-info.properties with filtering,
+                 so ${project.version} / ${dl.build.channel} / ${dl.build.date} work -->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
                     <include>plugin.yml</include>
+                    <include>build-info.properties</include>
                 </includes>
             </resource>
         </resources>

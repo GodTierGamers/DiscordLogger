@@ -1,0 +1,202 @@
+# AGENTS.md — DiscordLogger
+
+**This file is the standing working agreement for AI agents (and a reference for human contributors) in this repository. Always work off this file.** Everything below was verified against the actual source at the time of writing; when in doubt, the code wins — and if you find this file wrong, fix it in the same PR.
+
+## What this project is
+
+**DiscordLogger** is a Minecraft **Paper** server plugin (Java 21) that posts server events to a Discord channel via **webhooks** — either as rich embeds (per-event colors, player-head thumbnails, timestamps) or as plain Markdown text. It ships with a versioned `config.yml` that auto-migrates between schema versions, a channel-aware update checker, and a companion **Jekyll website** (in `docs/`) hosted on GitHub Pages at `https://discordlogger.godtiergamers.xyz` that includes an interactive config generator.
+
+- **Current plugin version:** tracked by `pom.xml` / `.release-please-manifest.json` — never hand-edit either, see **Releases** below.
+- **Current config schema:** **v9** (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V9, SHIPPED WITH v2.1.6 (x-release-please-version)`)
+- **Paper API:** `1.21.11-R0.1-SNAPSHOT` (`provided` scope), `api-version: 1.21`
+- **GitHub:** `GodTierGamers/DiscordLogger`
+
+## AI working agreement (the short version)
+
+1. **Trunk-based**: branch off `main` (`feat/<name>`, `fix/<name>`), PR into `main`. Never commit directly to `main`.
+2. **Conventional Commit PR titles** (`feat:` / `fix:` / `docs:` / `chore:` / `refactor:` / `ci:` / `test:` …) — `lint-pr.yml` rejects anything else. The title becomes the changelog entry verbatim. Squash-merge.
+3. **Verify before PR**: `mvn -B -ntp clean package` must pass; for listener/config changes, exercise on a real Paper server when practical.
+4. **Config changes travel in lockstep**: `config.yml` + listener + `EventRegistry` + `docs/assets/configs/v*/options.json` + `config.template.yml` in the same PR; run `python3 scripts/validate-config-generator.py` locally (CI runs it too).
+5. **Open PRs, leave merging to the user** unless explicitly told to merge.
+6. **Never hand-edit** `.release-please-manifest.json`, `CHANGELOG.md`, or `pom.xml`'s `<version>` — those belong to release-please.
+7. Keep this file current: workflow or architecture changes update AGENTS.md in the same PR.
+
+## Build & test
+
+```bash
+mvn -B -ntp clean package     # compile + shade → target/discordlogger-<version>.jar
+mvn -B -ntp clean compile     # compile only (faster sanity check)
+```
+
+- **There is no test suite.** `mvn package` compiling cleanly is the only automated check. Real verification means dropping the shaded JAR into a Paper server's `plugins/` folder.
+- The shade plugin relocates SnakeYAML to `com.discordlogger.shaded.snakeyaml` and excludes its `META-INF`. `minimizeJar` is deliberately **off** (ASM/Java 21 bytecode issues).
+- **Maven resource filtering applies ONLY to `plugin.yml` and `build-info.properties`** (for `${project.version}` / `${dl.build.channel}` / `${dl.build.date}`). `config.yml` is copied **verbatim** — it contains `$` characters in ASCII art that must never be filtered. Don't add filtering to it; CI stamps its trailer via targeted regex replacement instead.
+- A plain local `mvn package` produces a **`dev`-channel** build (`dl.build.channel` defaults to `dev` in `pom.xml`) — see `BuildInfo`.
+
+## Repository layout
+
+```
+pom.xml                                Maven build
+release-please-config.json             release-please: changelog sections, extra-files
+.release-please-manifest.json          release-please: current released version (state)
+scripts/validate-config-generator.py   CI check: options.json <-> template <-> Java source
+src/main/resources/
+  plugin.yml                           Plugin descriptor (Maven-filtered)
+  build-info.properties                Build channel/version/date, baked in at package time
+  config.yml                           Default config, schema v9 (NOT filtered)
+src/main/java/com/discordlogger/
+  DiscordLogger.java                   Plugin entry point (onEnable/onDisable)
+  log/Log.java                         Static logging facade (the API everything calls)
+  webhook/DiscordWebhook.java          Manual JSON building + HTTP POST to Discord
+  config/ConfigMigrator.java           Comment-preserving config version migration
+  event/EventRegistry.java             Registers all listeners; fires start/stop
+  event/ServerStart.java               Static handler (not a Listener)
+  event/ServerStop.java                Static handler (not a Listener)
+  command/Commands.java                Subcommand router (executor + tab completer)
+  command/Subcommand.java              Interface: name/description/permission/execute/tabComplete
+  command/Reload.java                  /discordlogger reload
+  update/BuildInfo.java                Reads build-info.properties (channel/version/built)
+  update/NightlyNotice.java            Nightly-channel warnings (console + first-boot op chat)
+  update/UpdateChecker.java            Async, channel-aware GitHub release check on startup
+  util/Names.java                      Nickname resolution + cache ("Nick (Real)")
+  listener/player/                     PlayerJoin, PlayerQuit, PlayerChat, PlayerCommand,
+                                        PlayerDeath, PlayerAdvancement, PlayerTeleport, PlayerGamemode
+  listener/server/                     ServerCommand, Explosion
+  listener/moderation/                 Ban, Unban, Kick, Op, Deop, Whitelist
+docs/                                  Jekyll website (GitHub Pages, deploys from main)
+.github/workflows/
+  ci.yml                               Build + docs-validate on push/PR to main (path-filtered)
+  lint-pr.yml                          Enforces Conventional Commit PR titles
+  release-please.yml                   Maintains the rolling Release PR on main
+  release-build.yml                    Builds & attaches the stable JAR on release publish
+  nightly.yml                          Cron + manual nightly beta builds from main
+.github/dependabot.yml                 Weekly maven/github-actions/bundler dependency PRs
+```
+
+## Branches, releases, and the nightly channel
+
+**Trunk-based development.** `main` is the only long-lived branch; short-lived `feat/*` / `fix/*` branches PR into it. (A `dev` branch existed historically — it has been retired; if you see references to it anywhere, they're stale.)
+
+### Releasing
+1. Conventional commits accumulate on `main` (squash-merged PR titles).
+2. `release-please.yml` maintains a rolling **Release PR**: version bump computed from commit types (`fix:` → patch, `feat:` → minor, `!`/BREAKING → major), `CHANGELOG.md` from commit titles, `pom.xml` bumped natively, and `config.yml`'s annotated trailer line rewritten (the `(x-release-please-version)` marker — `ConfigMigrator` ignores everything after the `V<n>` number, verified).
+3. **Merging the Release PR is the release.** release-please tags `v<version>` and publishes the GitHub Release with the changelog as its body.
+4. `release-build.yml` fires on `release: published` (guard: skips `-BETA.` tags): checks out the tag, stamps `BUILT <DD-MM-YYYY>` onto the trailer, builds with `-Ddl.build.channel=stable`, attaches `DiscordLogger-v<version>.jar` + `.sha256`.
+5. **Config schema revisions (v9 → v10) stay manual and deliberate** — bump the `V<n>` trailer, add `docs/assets/configs/v<n>/`, wire the generator config. Never inferred from commits.
+
+### Build channels (`BuildInfo`, baked in at package time — never inferred from the version string)
+
+| Channel | Set by | Version format | Behavior |
+|---|---|---|---|
+| `stable` | `release-build.yml` | `2.1.7` | Normal update checks; `NightlyNotice` inert. |
+| `nightly` | `nightly.yml` | `2.1.7-BETA.3` | Console warning **every start**; ops get an in-game chat notice **once per nightly version** (marker file `.nightly-notice`); update checks notify on **every** new stable and when **more than 2** nightlies behind. |
+| `dev` | default (local build) | whatever `pom.xml` says | Update checks skipped entirely. |
+
+### Nightly builds (`nightly.yml`)
+Cron (15:00 UTC — arbitrary, adjust freely) + `workflow_dispatch`, building from `main`:
+- **Skips** if `main`'s HEAD matches the last nightly tag or the last stable tag — no identical rebuilds, which also naturally bounds how many nightlies exist (they're all kept forever, never pruned).
+- Computes the **upcoming version** the same way release-please will (conventional commits since the last stable tag), so the beta's base version always matches the eventual stable release.
+- Numbers builds `v<version>-BETA.1`, `.2`, … — derived from existing tags each run, self-resets when the base version moves (e.g. a `feat:` lands and `2.1.7-BETA.9` jumps to `2.2.0-BETA.1`).
+- Version injected via `mvn versions:set` (CI-local, never committed); trailer stamped `SHIPPED WITH v<version>-BETA.<n> BUILT <DD-MM-YYYY>` — every version string in the built JAR matches what was built, while the repo never contains a beta version string.
+- Publishes each nightly as its own pre-release (`prerelease: true`) with notes listing commits since the previous nightly, plus JAR + checksum.
+- Stable servers never see nightlies: the stable-channel update check skips pre-releases entirely.
+
+### CI (`ci.yml`)
+Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes; `validate-generator-data` runs on `docs/assets/configs/**` changes; both on a mixed PR. Concurrency cancels superseded runs. PR builds upload the JAR as an artifact.
+
+### Repo settings that matter (configured, not in files)
+- "Allow GitHub Actions to create and approve pull requests" **must stay enabled** — release-please cannot open its Release PR without it.
+- Branch protection on `main` requires the CI + lint checks; merged branches auto-delete.
+
+## Runtime architecture
+
+### Startup flow (`DiscordLogger.onEnable`)
+1. `BuildInfo.load(this)` — reads the baked-in channel first; later steps depend on it.
+2. `saveDefaultConfig()` writes the bundled `config.yml` on first run.
+3. `ConfigMigrator.migrateIfVersionChanged(...)` migrates the user's config if the schema version changed.
+4. `new NightlyNotice(this).activate(this)` — no-op unless nightly channel.
+5. `applyRuntimeConfig()` reads `webhook.url` + `format.time` and calls `Log.init(...)`. A missing/invalid webhook does **not** disable the plugin — it runs "degraded" (console-only) with a warning to set the URL and `/discordlogger reload`.
+6. `EventRegistry.registerAll()` registers every listener **unconditionally** — per-event enable checks happen inside each handler by reading config live (this is what makes reload work without re-registering).
+7. Commands wired up, `UpdateChecker.checkAsync(...)` fired, then `events.fireServerStart()`.
+
+### `Log` (static facade — the only way anything sends to Discord)
+- All state is `static volatile`; `init()` runs on the main thread, senders on async scheduler threads. The color map is built locally then assigned in **one volatile write** so async readers never see a half-built map. Preserve this pattern.
+- `Log.isReady()` gates all Discord sends; console logging always happens.
+- API: `plain(String)`; `event(category, message)` / `eventWithThumb(...)`; `eventFields(...)` / `eventFieldsWithThumb(category, title, author, List<Field>, thumbUrl)`; `sendUpdateEmbed(...)` (UpdateChecker only); `mdEscape(String)` (use on any player-controlled text); `playerAvatarUrl(UUID)` (mc-heads.net).
+- **Color resolution:** category strings are normalized (lowercase; spaces/dots/dashes/slashes → `_`) then looked up, so `"Player Join"` → `player_join`. Defaults hard-coded in `Log.init`, overridable via `embeds.colors.*` (nested or flat keys). Unknown categories fall back to the `server` color.
+- Valid webhook URL prefixes: `discord.com`, `discordapp.com`, `ptb.discord.com`, `canary.discord.com` (all `https://…/api/webhooks/`).
+
+### `DiscordWebhook`
+- JSON built **by hand with StringBuilder** (no JSON library); `escape()` handles quotes/backslashes/control chars — keep escaping every interpolated string.
+- `dispatch()` posts async via the Bukkit scheduler but **falls back to synchronous when the plugin is disabled** (so the Server Stop embed isn't dropped at shutdown). Don't "fix" that away.
+- HTTP 200/204 = success; 10-second timeouts; footer icon hard-coded to the website-hosted logo.
+
+### `ConfigMigrator`
+- Schema version = regex-matched trailer comment `CONFIG VERSION V<n>` (case-insensitive; trailing text after the number is ignored, which is why the release-please annotation and `BUILT` stamps are safe).
+- Migrates only when both versions are detectable and differ: parses both YAMLs (SnakeYAML), flattens to dotted paths, transplants user values into the **new default text** in-place (preserving all comments/ASCII art, respecting inline comments), then rotates: user file → `config.old.yml`, new → `config.yml`.
+- Removed/renamed keys silently keep new defaults. Generic — no per-version migration code.
+
+### Listeners — common patterns (follow when adding events)
+- One final class per event; constructor takes `JavaPlugin` (or `Plugin`).
+- First line of every handler: live config gate, e.g. `if (!plugin.getConfig().getBoolean("log.player.join", true)) return;` — never cached.
+- `@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)` on almost everything (exceptions: `PlayerChat`, `PlayerCommand` use default priority).
+- Player text → `Names.display(player, plugin)` + `Log.mdEscape(...)`; player embeds get `Log.playerAvatarUrl(uuid)` thumbnails; server events use the hosted `server.png`.
+- **Moderation listeners are command sniffers, not API hooks:** they watch `PlayerCommandPreprocessEvent` + `ServerCommandEvent`, parse the raw command, gate on vanilla/Bukkit/Essentials permission nodes (console always allowed), then **verify the state actually changed on the next tick** before logging. `Kick` is two-phase (intent map keyed by target UUID → confirmed by `PlayerKickEvent`, stale entries cleaned after 2 ticks).
+- Notable: `PlayerJoin` delays 2 ticks for nickname plugins; `PlayerQuit` defers cache eviction 1 tick; `PlayerChat` uses Paper `AsyncChatEvent` + Adventure serializer (why Paper API is required); `PlayerAdvancement` skips `recipes/*` and `*/root`; `PlayerDeath` builds Geyser-friendly messages from damage context; `Explosion` handles entity+block explosions with CDN icons and a 20-block nearby-player list; `ServerStart`/`ServerStop` are static handlers called by `EventRegistry`, not listeners.
+
+### Commands
+- Root `/discordlogger` (aliases `/dlogger`, `/dlog`), permission `discordlogger.reload` (default op). `Commands` routes `Subcommand` implementations (LinkedHashMap, permission-filtered help/tab-complete). Only subcommand today: `reload`.
+- Adding one: implement `Subcommand`, add to the `new Commands(...)` varargs in `onEnable`, register any new permission in `plugin.yml`.
+
+### `UpdateChecker`
+- Async on startup; skips for `dev` channel. Fetches the **releases list** (`/releases?per_page=50`) — not `/releases/latest` — because nightly builds need to see pre-releases. Parses `tag_name`/`prerelease` pairs by regex (no JSON library, intentional; see `parseReleases` for why it's safe) and ranks with a `SemVer` record where stable > any `-BETA.N` of the same version, higher N > lower.
+- Stable channel: notify on any newer stable, pre-releases invisible. Nightly channel: notify on **every** newer stable, and on nightlies only when **more than 2** behind (`NIGHTLY_LAG_THRESHOLD`). Notifications = console banner + Discord webhook notice (embed or plain per config).
+
+## Config reference (schema v9)
+
+```yaml
+webhook.url            ""            # plugin is console-only until valid
+format.time            "[HH:mm:ss, dd:MM:yyyy]"  # Java DateTimeFormatter; plain-text mode only
+format.name            ""            # plain-text server-name prefix (proxy setups)
+format.nicknames       true          # "Nick (Real)" in player logs
+embeds.enabled         true          # false → plain Markdown messages
+embeds.author          "Server Logs"
+embeds.colors.<cat>.<event>  "#RRGGBB"
+log.player.{join,quit,chat,command,death,advancement,teleport,gamemode}
+log.server.{command,start,stop,explosion}
+log.moderation.{ban,unban,kick,op,deop,whitelist_toggle,whitelist_edit}
+```
+All `log.*` toggles ship as `true` in the default file.
+
+### ⚠️ Known inconsistency (still open — don't propagate it)
+**Java fallback defaults don't all match config.yml.** `PlayerTeleport`, `PlayerGamemode`, and `Explosion` use `getBoolean(key, false)` while everything else uses `true` (and config.yml ships all `true`). The fallback only matters if the key is missing from a user's file, but the convention is *Java default == config.yml default* — fix toward `true` if you touch these. (Good first `fix:` PR.)
+
+## Website (`docs/`)
+
+Jekyll site (GitHub Pages gem stack) at `discordlogger.godtiergamers.xyz` (CNAME present). Pages use `_layouts/default.html` via `_config.yml` defaults; nav in `_data/nav.yml`. **Deploys from `main`** — docs changes go live on merge, independent of plugin releases.
+
+- **Local dev:** `cd docs && bundle install && bundle exec jekyll serve --livereload --watch` (`docs/test.sh` does the same). `docs/_site/` is gitignored build output — never edit, never trust.
+- **Config generator** (`/generator/`): vanilla-JS IIFE `docs/assets/js/generator.js`, mounted on `#cfg-gen`, fully **data-driven**:
+  - `generator.config.js`: `DL_VERSIONS` (plugin version → schema), `DL_CONFIGS` (schema → data URLs), `DL_PROXY_URL`, `DL_TEST_EMBED`. **Expected to be fully rewritten** in a future generator overhaul — don't build automation against its current shape.
+  - `docs/assets/configs/v9/options.json` drives the toggles/colors UI; `config.template.yml` is the `{{TOKEN}}` output template.
+  - New plugin version, same schema: one `DL_VERSIONS` entry. New schema: new `docs/assets/configs/v<n>/` + `DL_CONFIGS`/`DL_VERSIONS` entries + docs page. No generator.js changes needed.
+  - `scripts/validate-config-generator.py` cross-checks options ↔ template ↔ Java source (CI runs it; run locally after touching any of these).
+- **Beta/nightly display**: not implemented yet — the rewritten generator should fetch the GitHub releases API client-side (CORS-open) and badge `prerelease: true` entries as beta, deriving the badge from the API so it can never go stale.
+- **Webhook testing / CORS:** Discord webhooks allow simple browser POSTs; `docs/cloudflare/discord-proxy.js` is an optional Cloudflare Worker relay used when `DL_PROXY_URL` is set (currently `""`).
+- The plugin hot-links icons from the site (`/assets/icons/…`) — the site being up is a runtime dependency of embeds.
+
+## Conventions
+
+- **Java 21, Paper API only**; Adventure preferred for anything new touching chat components (`ChatColor` lingers in command feedback).
+- Final classes, private constructors on static utility classes, `LinkedHashMap` where iteration order matters.
+- Config keys: lowercase snake_case, grouped `log.<category>.<event>`.
+- Every new logged event, in lockstep: listener (with live config gate) + `EventRegistry` registration + `log.*` key in `config.yml` + default color in `Log.init` + generator `options.json`/template entries + docs mention. The validator catches the generator-side half in CI.
+- Escape user-visible strings via `Log.mdEscape`; prefer structured `Log.Field` embeds for multi-datum events.
+
+## Things NOT in this repo (avoid confusion)
+
+- **No test suite**, no linter/formatter config (Java).
+- `dependency-reduced-pom.xml` is shade-plugin output that happens to be committed — don't edit by hand.
+- **No `release-spec.md` / `release-changelog-builder-config.json` / `release-on-merge.yml`** — replaced by release-please. References to them (old memory, old docs) are stale.
+- **No `dev` branch** — retired in favor of trunk-based development on `main`.
+- On 2026-07-28 the working tree was reset to `main`, discarding an unreleased v2.1.7 + website rewrite + "config v10" effort (archived at `~/Documents/DiscordLogger-archive-2026-07-28/`). References to config **v10**, a modular generator rewrite, or nested sub-option toggles mean that archived work, **not** the current codebase.
