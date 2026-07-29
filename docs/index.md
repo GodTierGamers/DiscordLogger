@@ -3,7 +3,7 @@ layout: default
 title: Home
 ---
 
-![DiscordLogger](https://files.godtiergamers.xyz/DiscordLogger-Banner.png "DiscordLogger")
+![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
 
 Minecraft → Discord logging that’s clean, configurable, and production-ready.
 

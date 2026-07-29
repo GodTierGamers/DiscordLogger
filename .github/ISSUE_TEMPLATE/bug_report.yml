@@ -16,20 +16,32 @@ body:
       options:
         - label: I searched existing issues and PRs for duplicates
           required: true
-        - label: I’m using the latest DiscordLogger release
+        - label: I'm on the latest build of my channel (latest stable release, or latest nightly if on the beta channel)
           required: true
         - label: I can reproduce on a clean server with only this plugin installed
           required: false
 
   - type: dropdown
+    id: channel
+    attributes:
+      label: Release channel
+      description: "Nightly builds show a version like 2.3.0-BETA.4 and warn in console on startup."
+      options:
+        - Stable release
+        - Nightly (BETA pre-release)
+        - Built from source
+    validations:
+      required: true
+
+  - type: dropdown
     id: platform
     attributes:
       label: Server platform
+      description: "DiscordLogger requires Paper or a Paper fork — it does not run on plain Spigot."
       options:
         - Paper
         - Purpur
-        - Spigot
-        - Other (Bukkit-compatible)
+        - Other Paper fork
     validations:
       required: true
 
@@ -37,15 +49,16 @@ body:
     id: mcversion
     attributes:
       label: Minecraft version
-      placeholder: "e.g., 1.20.6"
+      placeholder: "e.g., 1.21.8"
     validations:
       required: true
 
   - type: input
     id: pluginver
     attributes:
-      label: DiscordLogger version
-      placeholder: "e.g., v1.0.4"
+      label: DiscordLogger version (exact)
+      description: "From the console startup log or the JAR name. For nightlies include the full BETA number."
+      placeholder: "e.g., 2.2.0 or 2.3.0-BETA.4"
     validations:
       required: true
 
@@ -90,7 +103,7 @@ body:
     id: logs
     attributes:
       label: Relevant logs / stack traces
-      description: "Paste the smallest log that reproduces the issue. Redact secrets."
+      description: "Paste the smallest log that reproduces the issue. Redact webhook URLs and other secrets."
       render: shell
       placeholder: |
         [Server.log excerpt or stack trace]
@@ -105,8 +118,8 @@ body:
       render: yaml
       placeholder: |
         log:
-          staff:
-            opped-player: true
+          moderation:
+            op: true
     validations:
       required: false
 
