@@ -210,7 +210,7 @@ jobs:
           fi
 
       - name: Publish nightly pre-release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.plan.outputs.new_tag }}
           name: "Nightly ${{ needs.plan.outputs.new_tag }}"
