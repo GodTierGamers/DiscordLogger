@@ -12,10 +12,10 @@ body:
     id: problem
     attributes:
       label: Problem / use case
-      description: "What’s the pain point for server admins/players?"
+      description: "What's the pain point for server admins/players?"
       render: markdown
       placeholder: |
-        When staff /op or /deop, we need an audit log with who executed it.
+        When staff ban or kick players, we need an audit log showing who executed it and why.
 
   - type: textarea
     id: proposal
@@ -24,8 +24,8 @@ body:
       description: "Describe behavior, messages, and any toggles."
       render: markdown
       placeholder: |
-        - Add `log.staff.opped-player` and `log.staff.deopped-player`
-        - Webhook format: `[TIME] Staff OP: <executor> → <target>`
+        - Add `log.moderation.mute` toggle
+        - Embed shows: muted player, duration, reason, and who executed it
     validations:
       required: true
 
@@ -44,10 +44,10 @@ body:
       label: Config & compatibility impacts
       render: markdown
       placeholder: |
-        - New config keys (defaults): `true`
-        - Backward compatible: Yes
+        - New config keys (defaults): `log.moderation.mute: true`
+        - Backward compatible: yes (config auto-migrates)
         - Permission nodes: none
-        - Docs: add section under Staff logs
+        - Config generator: new toggle in the events step
 
   - type: textarea
     id: acceptance
@@ -55,10 +55,10 @@ body:
       label: Acceptance criteria
       render: markdown
       placeholder: |
-        - [ ] Logged when /op and /deop are executed
+        - [ ] Logged when a player is muted/unmuted
         - [ ] Shows executor and target
-        - [ ] Respects config toggles
-        - [ ] Localized advancement names (if applicable)
+        - [ ] Respects config toggle
+        - [ ] Works from both in-game and console commands
 
   - type: dropdown
     id: priority

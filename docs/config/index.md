@@ -4,7 +4,7 @@ title: Config Docs
 description: Pick your config.yml version to view the correct documentation and download the exact file that shipped with the plugin.
 ---
 
-![DiscordLogger](https://files.godtiergamers.xyz/DiscordLogger-Banner.png "DiscordLogger")
+![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
 # Config Docs
 
 Pick the **config schema version** your server is using.  

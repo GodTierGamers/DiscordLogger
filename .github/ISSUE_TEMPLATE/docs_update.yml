@@ -1,5 +1,5 @@
 name: "Docs update"
-description: "Fix or improve documentation"
+description: "Fix or improve documentation (website or repo docs)"
 title: "[Docs]: <topic>"
 labels: ["docs"]
 assignees: []
@@ -10,8 +10,9 @@ body:
       label: Pages to update
       render: markdown
       placeholder: |
-        - docs/configuration.md
-        - docs/events/staff.md
+        - docs/config/v9/index.md (config reference)
+        - docs/setup/index.md (setup guide)
+        - README.md
 
   - type: textarea
     id: change
@@ -20,7 +21,7 @@ body:
       render: markdown
       placeholder: |
         - Add examples for `log.player.advancement`
-        - Clarify webhook timestamp format `[DAY-MONTH-YEAR H:M:S]`
+        - Clarify the `format.time` pattern syntax
 
   - type: textarea
     id: snippets

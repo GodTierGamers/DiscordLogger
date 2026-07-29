@@ -32,3 +32,4 @@
 - [ ] If a `log.*`/`embeds.*` config key was added/changed: `EventRegistry`/listener wired up, `config.yml` updated, **and** `docs/assets/configs/v*/options.json` + `config.template.yml` updated to match (CI's `validate-generator-data` job checks this)
 - [ ] Docs updated (`README.md` / `docs/`) if user-facing behavior changed
 - [ ] Verified on a real Paper server, not just `mvn package`
+- [ ] If AI tools meaningfully assisted this change, I've disclosed that above and have personally reviewed, understood, and tested everything submitted (see [CONTRIBUTING.md](../CONTRIBUTING.md))

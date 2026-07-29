@@ -4,20 +4,26 @@ title: "[Question]: <short summary>"
 labels: ["question"]
 assignees: []
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the [documentation](https://discordlogger.godtiergamers.xyz) first — many answers live there, including the [config generator](https://discordlogger.godtiergamers.xyz/generator/).
   - type: input
     id: pluginver
     attributes:
       label: DiscordLogger version
-      placeholder: "e.g., v1.0.4"
+      placeholder: "e.g., 2.2.0"
   - type: input
     id: mcversion
     attributes:
       label: Minecraft version
-      placeholder: "e.g., 1.20.6"
+      placeholder: "e.g., 1.21.8"
   - type: textarea
     id: question
     attributes:
       label: Your question
       render: markdown
       placeholder: |
-        How do I disable advancement logging but keep staff logs enabled?
+        How do I disable advancement logging but keep moderation logs enabled?
+    validations:
+      required: true

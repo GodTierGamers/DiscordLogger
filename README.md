@@ -1,21 +1,18 @@
-![DiscordLogger](https://files.godtiergamers.xyz/DiscordLogger-Banner.png "DiscordLogger")
+![DiscordLogger](https://discordlogger.godtiergamers.xyz/assets/DiscordLogger-Banner.webp "DiscordLogger")
 
 <!-- Badges (GodTierGamers/DiscordLogger) -->
 ![Build](https://img.shields.io/github/actions/workflow/status/GodTierGamers/DiscordLogger/ci.yml?branch=main&label=build)
 ![Release](https://img.shields.io/github/v/release/GodTierGamers/DiscordLogger)
+![Nightly](https://img.shields.io/github/v/release/GodTierGamers/DiscordLogger?include_prereleases&label=nightly)
 ![Downloads](https://img.shields.io/github/downloads/GodTierGamers/DiscordLogger/total)
 ![Issues](https://img.shields.io/github/issues/GodTierGamers/DiscordLogger)
-![PRs](https://img.shields.io/github/issues-pr/GodTierGamers/DiscordLogger)
-![Stars](https://img.shields.io/github/stars/GodTierGamers/DiscordLogger)
-![Last Commit](https://img.shields.io/github/last-commit/GodTierGamers/DiscordLogger)
-![Code Size](https://img.shields.io/github/languages/code-size/GodTierGamers/DiscordLogger)
 ![License](https://img.shields.io/github/license/GodTierGamers/DiscordLogger)
 ![Java](https://img.shields.io/badge/Java-21%2B-orange)
 ![Paper](https://img.shields.io/badge/Paper-1.21%2B-blue)
 ![Discord Webhooks](https://img.shields.io/badge/Discord-Webhooks-5865F2)
 
-A minimal, reliable Minecraft server **logging plugin** that posts clean messages to a **Discord webhook** — in Markdown **or rich embeds**.  
-Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
+A minimal, reliable Minecraft server **logging plugin** that posts clean messages to a **Discord webhook** — in Markdown **or rich embeds**.
+Built for **Paper 1.21+** (and Paper forks like Purpur), tested with Geyser/Floodgate (Bedrock cross-play).
 
 ---
 
@@ -25,56 +22,67 @@ Built for Paper/Spigot 1.21+, tested with Geyser/Floodgate (Bedrock cross-play).
   - Plain text + Markdown format: `` `HH:mm:ss dd:MM:yyyy` - **<Category>**: <message> ``
   - **Embeds (optional)** with per-category colors, configurable author, player avatar thumbnails, server icon, and timestamps.
 - **Config-toggleable events** (all on by default):
-  - **Server**: Start, Stop, Server Command e.t.c.
-  - **Player**: Join, Quit, Chat, Command, Death e.t.c.
-  - **Moderation**: Ban, Unban, Kick, Op, Deop, Whitelist Toggle, Whitelist Add/Remove e.t.c.
-- **Live reload command**: `/discordlogger reload` (perm: `discordlogger.reload`)
+  - **Player**: Join, Quit, Chat, Command, Death, Advancement, Teleport, Gamemode
+  - **Server**: Start, Stop, Console Command, Explosion
+  - **Moderation**: Ban, Unban, Kick, Op, Deop, Whitelist Toggle, Whitelist Add/Remove
+- **Live reload command**: `/discordlogger reload` (perm: `discordlogger.reload`, aliases `/dlogger`, `/dlog`)
 - **Geyser-friendly death messages**: built from server-side damage context (not client-localized text).
-- **Automatic Config Updater**: Updates the config.yml file with new features
-- **Automatic update prompts**: Plugin will prompt you when a new version is available
-- **Nickname support**: Nicknames are recognized in server logs
-
+- **Automatic config updater**: migrates your `config.yml` between versions, preserving your settings and comments.
+- **Channel-aware update notifications**: stable servers are notified of new stable releases; nightly builds also warn when they fall behind.
+- **Nickname support**: nicknames are recognized in server logs as `Nickname (RealName)`.
+- **[Config generator](https://discordlogger.godtiergamers.xyz/generator/)**: build your `config.yml` on the website, no hand-editing needed.
 
 ---
 
-## 📦 Installation
+## 📦 Downloads
 
-1. Download the latest [release](https://github.com/GodTierGamers/DiscordLogger/releases/latest) and place the JAR in your server’s `plugins/` folder.  
-2. Start the server once to generate `plugins/DiscordLogger/config.yml`.  
-3. Edit `config.yml` and set a valid **Discord webhook** URL at `webhook.url`.  
-4. (Optional) Adjust the timestamp format and per-event toggles under `log.*`, and set `embeds.enabled: true` to use embeds.  
-5. Restart the server (or run `/discordlogger reload` after editing config).
+| Channel | What it is | Where |
+|---|---|---|
+| **Stable** | Tested releases. Use these on production servers. | [Latest release](https://github.com/GodTierGamers/DiscordLogger/releases/latest) |
+| **Nightly** | Automated `vX.Y.Z-BETA.N` pre-release builds of unreleased work. May be unstable — the plugin itself will remind you. | [All releases](https://github.com/GodTierGamers/DiscordLogger/releases) (marked *Pre-release*) |
 
+Every release includes a `.sha256` checksum for the JAR.
 
-> **Note:** If `webhook.url` is empty/invalid, the plugin will not function until set.
+---
+
+## 🚀 Installation
+
+1. Download the latest [release](https://github.com/GodTierGamers/DiscordLogger/releases/latest) and place the JAR in your server's `plugins/` folder.
+2. Start the server once to generate `plugins/DiscordLogger/config.yml`.
+3. Edit `config.yml` and set a valid **Discord webhook** URL at `webhook.url` — or generate a complete config with the [config generator](https://discordlogger.godtiergamers.xyz/generator/).
+4. (Optional) Adjust per-event toggles under `log.*`, embed colors, and the timestamp format.
+5. Restart the server (or run `/discordlogger reload`).
+
+> **Note:** If `webhook.url` is empty/invalid, the plugin still runs and logs to console, but nothing posts to Discord until it's set.
 
 ---
 
 ## 🔌 Compatibility
 
-- **Server:** Paper/Spigot **1.21+** (Tested on 1.21.8 Paper)  
-- **Java:** **21+**  
+- **Server:** Paper **1.21+** (or Paper forks such as Purpur). The plugin uses Paper-specific APIs and does not run on plain Spigot.
+- **Java:** **21+**
 - **Cross-play:** Compatible with **Geyser/Floodgate** — death messages are server-generated for consistency across Java/Bedrock names/locales.
 
 ---
 
 ## 🧰 Development
 
-Trunk-based: `main` is the only long-lived branch. To contribute, branch off `main` (e.g. `feat/banLogs`, `fix/deathMessages`), open a PR back into `main` with a [Conventional Commits](https://www.conventionalcommits.org/) title (`feat: ...`, `fix: ...`) — the title becomes the changelog entry. Releases and changelogs are fully automated via release-please; nightly beta builds (`vX.Y.Z-BETA.N`) publish automatically from unreleased work on `main`.
+Trunk-based: `main` is the only long-lived branch. Branch off `main`, open a PR with a [Conventional Commits](https://www.conventionalcommits.org/) title (`feat: ...`, `fix: ...`) — the title becomes the changelog entry. Versioning, changelogs, releases, and nightly builds are fully automated.
 
-See **[AGENTS.md](AGENTS.md)** for the full contributor guide: architecture, conventions, workflow, and release process.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — how to contribute, PR expectations, AI-assistance policy
+- **[AGENTS.md](AGENTS.md)** — full contributor guide: architecture, conventions, workflow, release process
 
-- Build with Maven:
-  ```bash
-  git clone https://github.com/GodTierGamers/DiscordLogger.git
-  mvn -B -DskipTests package
-  ```
+Build locally:
+```bash
+git clone https://github.com/GodTierGamers/DiscordLogger.git
+mvn -B -ntp clean package
+```
 
 ---
 
 ## 📄 License
 
-This project’s license appears in the repository root.  
+This project's license appears in the repository root.
 ![License](https://img.shields.io/github/license/GodTierGamers/DiscordLogger)
 
 ---

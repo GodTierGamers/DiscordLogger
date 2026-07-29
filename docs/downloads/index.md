@@ -4,7 +4,7 @@ title: Downloads
 description: Latest DiscordLogger builds from GitHub Releases.
 ---
 
-![DiscordLogger](https://files.godtiergamers.xyz/DiscordLogger-Banner.png "DiscordLogger")
+![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
 # Downloads
 
 Latest builds from **GitHub Releases**.
