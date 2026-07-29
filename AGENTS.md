@@ -22,6 +22,7 @@ These rules apply to every contribution, whether written by a person or an AI ag
 5. **Merging is a maintainer's call** — AI agents open PRs and stop there unless a maintainer explicitly says to merge.
 6. **Never hand-edit** `.release-please-manifest.json`, `CHANGELOG.md`, or `pom.xml`'s `<version>` — those belong to release-please.
 7. Keep this file current: workflow or architecture changes update AGENTS.md in the same PR.
+8. **AI attribution policy**: the README's *AI Disclosure* section is the single, project-level statement of AI involvement. Do **not** add per-commit or per-PR attribution — no `Co-Authored-By: Claude/AI` trailers, no "Generated with …" footers in commits or PR descriptions, no AI credits in code comments. The project is transparent about AI assistance without implying any individual change was unreviewed or machine-owned.
 
 ## Build & test
 
