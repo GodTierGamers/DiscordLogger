@@ -69,8 +69,7 @@ docs/                                  Jekyll website (GitHub Pages, deploys fro
 .github/workflows/
   ci.yml                               Build + docs-validate on push/PR to main (path-filtered)
   lint-pr.yml                          Enforces Conventional Commit PR titles
-  release-please.yml                   Maintains the rolling Release PR on main
-  release-build.yml                    Builds & attaches the stable JAR on release publish
+  release-please.yml                   Rolling Release PR on main + builds/attaches the stable JAR
   nightly.yml                          Cron + manual nightly beta builds from main
 .github/dependabot.yml                 Weekly maven/github-actions/bundler dependency PRs
 ```
@@ -82,15 +81,15 @@ docs/                                  Jekyll website (GitHub Pages, deploys fro
 ### Releasing
 1. Conventional commits accumulate on `main` (squash-merged PR titles).
 2. `release-please.yml` maintains a rolling **Release PR**: version bump computed from commit types (`fix:` → patch, `feat:` → minor, `!`/BREAKING → major), `CHANGELOG.md` from commit titles, `pom.xml` bumped natively, and `config.yml`'s annotated trailer line rewritten (the `(x-release-please-version)` marker — `ConfigMigrator` ignores everything after the `V<n>` number, verified).
-3. **Merging the Release PR is the release.** release-please tags `v<version>` and publishes the GitHub Release with the changelog as its body.
-4. `release-build.yml` fires on `release: published` (guard: skips `-BETA.` tags): checks out the tag, stamps `BUILT <DD-MM-YYYY>` onto the trailer, builds with `-Ddl.build.channel=stable`, attaches `DiscordLogger-v<version>.jar` + `.sha256`.
+3. **Merging the Release PR is the release.** The next `release-please.yml` run (triggered by that merge) tags `v<version>` and publishes the GitHub Release with the changelog as its body.
+4. The same workflow run's `build-artifact` job then checks out the tag, stamps `BUILT <DD-MM-YYYY>` onto the trailer, builds with `-Ddl.build.channel=stable`, and attaches `DiscordLogger-v<version>.jar` + `.sha256`. (The build lives in the same run rather than a `release: published` listener because events created with the built-in `GITHUB_TOKEN` don't trigger other workflows — a separate listener would never fire.)
 5. **Config schema revisions (v9 → v10) stay manual and deliberate** — bump the `V<n>` trailer, add `docs/assets/configs/v<n>/`, wire the generator config. Never inferred from commits.
 
 ### Build channels (`BuildInfo`, baked in at package time — never inferred from the version string)
 
 | Channel | Set by | Version format | Behavior |
 |---|---|---|---|
-| `stable` | `release-build.yml` | `2.1.7` | Normal update checks; `NightlyNotice` inert. |
+| `stable` | `release-please.yml` (`build-artifact` job) | `2.1.7` | Normal update checks; `NightlyNotice` inert. |
 | `nightly` | `nightly.yml` | `2.1.7-BETA.3` | Console warning **every start**; ops get an in-game chat notice **once per nightly version** (marker file `.nightly-notice`); update checks notify on **every** new stable and when **more than 2** nightlies behind. |
 | `dev` | default (local build) | whatever `pom.xml` says | Update checks skipped entirely. |
 

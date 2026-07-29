@@ -1,5 +1,12 @@
 name: Release Please
 
+# Runs on every push to main. Maintains the rolling Release PR; when that PR
+# is merged, the same run creates the tag + GitHub Release AND builds/attaches
+# the stable JAR. The build lives in this workflow (not a `release: published`
+# listener) deliberately: events created with the built-in GITHUB_TOKEN do not
+# trigger other workflows, so a separate release-triggered workflow would
+# never fire for release-please's releases.
+
 on:
   push:
     branches: [main]
@@ -15,8 +22,110 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: googleapis/release-please-action@v4
+        id: release
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  build-artifact:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: tag
+        env:
+          TAG_OUTPUT: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          TAG="${TAG_OUTPUT:-}"
+          if [ -z "$TAG" ]; then
+            # Fallback: newest stable tag (release-please just pushed it)
+            TAG="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | grep -Ev -- '-BETA\.' | sort -V | tail -n1)"
+          fi
+          [ -n "$TAG" ] || { echo "Could not resolve release tag"; exit 1; }
+          echo "Building release artifact for $TAG"
+          git checkout "$TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Stamp build date into config.yml trailer
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re, datetime
+
+          path = "src/main/resources/config.yml"
+          built = datetime.datetime.utcnow().strftime("%d-%m-%Y")
+
+          with open(path, "r", encoding="utf-8") as f:
+              text = f.read()
+
+          # Trailer already contains the correct released version (release-please
+          # rewrote it in the merged Release PR) -- we only append the build date.
+          # The optional BUILT/annotation suffixes are consumed too so this stays
+          # idempotent if it's ever run more than once against the same checkout.
+          pattern = re.compile(
+              r"(CONFIG VERSION V\d+, SHIPPED WITH v[0-9][^\s(]*)"
+              r"(?:\s+BUILT\s+\S+)?(?:\s*\([^)]*\))?"
+          )
+
+          def repl(m):
+              return f"{m.group(1)} BUILT {built}"
+
+          new_text, n = pattern.subn(repl, text, count=1)
+          if n == 0:
+              raise SystemExit("Could not find CONFIG VERSION trailer in " + path)
+
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(new_text)
+
+          print(f"Stamped build date {built} into {path}")
+          PY
+
+      - name: Build (skip tests for speed)
+        run: |
+          mvn -B -ntp -DskipTests \
+            -Ddl.build.channel=stable \
+            -Ddl.build.date=$(date -u +%d-%m-%Y) \
+            clean package
+
+      - name: Rename artifact + checksum
+        id: jar
+        run: |
+          set -euo pipefail
+          src="$(ls -1 target/*.jar | grep -v -E 'sources|javadoc|original' | head -n1)"
+          version="${{ steps.tag.outputs.tag }}"
+          version="${version#v}"
+          dest="target/DiscordLogger-v${version}.jar"
+          cp "$src" "$dest"
+          sha256sum "$dest" > "${dest}.sha256"
+          echo "file=$dest" >> "$GITHUB_OUTPUT"
+
+      - name: Attach artifacts to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release upload "${{ steps.tag.outputs.tag }}" \
+            "${{ steps.jar.outputs.file }}" \
+            "${{ steps.jar.outputs.file }}.sha256" \
+            --clobber
