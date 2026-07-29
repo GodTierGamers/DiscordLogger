@@ -1,6 +1,6 @@
 # AGENTS.md — DiscordLogger
 
-**This file is the standing working agreement for AI agents (and a reference for human contributors) in this repository. Always work off this file.** Everything below was verified against the actual source at the time of writing; when in doubt, the code wins — and if you find this file wrong, fix it in the same PR.
+**The contributor's guide to this repository — how the project is built, how it works internally, and how changes ship.** It's written for anyone picking up the codebase: human contributors and AI coding agents alike, with no prior context assumed. Everything below was verified against the actual source at the time of writing; when in doubt, the code wins — and if you find this file wrong, fix it in the same PR.
 
 ## What this project is
 
@@ -11,13 +11,15 @@
 - **Paper API:** `1.21.11-R0.1-SNAPSHOT` (`provided` scope), `api-version: 1.21`
 - **GitHub:** `GodTierGamers/DiscordLogger`
 
-## AI working agreement (the short version)
+## Working agreement (the short version)
+
+These rules apply to every contribution, whether written by a person or an AI agent:
 
 1. **Trunk-based**: branch off `main` (`feat/<name>`, `fix/<name>`), PR into `main`. Never commit directly to `main`.
 2. **Conventional Commit PR titles** (`feat:` / `fix:` / `docs:` / `chore:` / `refactor:` / `ci:` / `test:` …) — `lint-pr.yml` rejects anything else. The title becomes the changelog entry verbatim. Squash-merge.
 3. **Verify before PR**: `mvn -B -ntp clean package` must pass; for listener/config changes, exercise on a real Paper server when practical.
 4. **Config changes travel in lockstep**: `config.yml` + listener + `EventRegistry` + `docs/assets/configs/v*/options.json` + `config.template.yml` in the same PR; run `python3 scripts/validate-config-generator.py` locally (CI runs it too).
-5. **Open PRs, leave merging to the user** unless explicitly told to merge.
+5. **Merging is a maintainer's call** — AI agents open PRs and stop there unless a maintainer explicitly says to merge.
 6. **Never hand-edit** `.release-please-manifest.json`, `CHANGELOG.md`, or `pom.xml`'s `<version>` — those belong to release-please.
 7. Keep this file current: workflow or architecture changes update AGENTS.md in the same PR.
 
@@ -197,6 +199,6 @@ Jekyll site (GitHub Pages gem stack) at `discordlogger.godtiergamers.xyz` (CNAME
 
 - **No test suite**, no linter/formatter config (Java).
 - `dependency-reduced-pom.xml` is shade-plugin output that happens to be committed — don't edit by hand.
-- **No `release-spec.md` / `release-changelog-builder-config.json` / `release-on-merge.yml`** — replaced by release-please. References to them (old memory, old docs) are stale.
+- **No `release-spec.md` / `release-changelog-builder-config.json` / `release-on-merge.yml`** — replaced by release-please. Any reference to them (old docs, old issues, old habits) is stale.
 - **No `dev` branch** — retired in favor of trunk-based development on `main`.
-- On 2026-07-28 the working tree was reset to `main`, discarding an unreleased v2.1.7 + website rewrite + "config v10" effort (archived at `~/Documents/DiscordLogger-archive-2026-07-28/`). References to config **v10**, a modular generator rewrite, or nested sub-option toggles mean that archived work, **not** the current codebase.
+- In July 2026 an unreleased effort (v2.1.7 + website rewrite + "config v10" with nested sub-option toggles) was deliberately discarded to start fresh; the maintainer keeps an archive of it outside the repo. References to config **v10**, a modular generator rewrite, or nested sub-option toggles mean that discarded work, **not** the current codebase.
