@@ -92,4 +92,4 @@ This project’s license appears in the repository root.
 
 ## 🤖 AI Disclosure
 
-Parts of this project — including code, documentation, and the release automation — are developed with the assistance of AI tools (Anthropic's Claude). All AI-assisted changes go through the same pull-request review, CI checks, and testing as any other contribution, and a human maintainer reviews and approves everything that ships.
+Parts of this project — including code, documentation, and the release automation — are developed with the assistance of AI tools. All AI-assisted changes go through the same pull-request review, CI checks, and testing as any other contribution, and a human maintainer reviews and approves everything that ships.
