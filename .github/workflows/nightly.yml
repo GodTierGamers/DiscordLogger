@@ -83,6 +83,18 @@ jobs:
           esac
           NEW_VERSION="${MAJ}.${MIN}.${PAT}"
 
+          # ---- Honor Release-As footers (mirrors release-please) ----
+          # The most recent commit since the last stable release carrying a
+          # "Release-As: X.Y.Z" footer overrides the computed version, so
+          # nightly numbering always matches what release-please will ship.
+          RELEASE_AS="$(git log "${STABLE_SHA}..HEAD" --pretty=format:%B \
+            | grep -oiE '^Release-As:[[:space:]]*v?[0-9]+\.[0-9]+\.[0-9]+' \
+            | head -n1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+          if [ -n "$RELEASE_AS" ]; then
+            echo "Release-As footer found: overriding computed $NEW_VERSION -> $RELEASE_AS"
+            NEW_VERSION="$RELEASE_AS"
+          fi
+
           # ---- Next BETA counter for this upcoming version ----
           LAST_BETA_N="$(git tag --list "v${NEW_VERSION}-BETA.*" \
             | sed -E "s/^v${NEW_VERSION}-BETA\.([0-9]+)\$/\1/" \
