@@ -11,9 +11,9 @@
     <url>https://github.com/GodTierGamers/DiscordLogger</url>
 
     <properties>
-        <maven.compiler.release>21</maven.compiler.release>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <paper.api.version>1.21.11-R0.1-SNAPSHOT</paper.api.version>
+        <paper.api.version>26.2.build.87-stable</paper.api.version>
 
         <!-- Build channel/date are stamped by CI (-Ddl.build.channel=stable|nightly,
              -Ddl.build.date=DD-MM-YYYY). A plain local `mvn package` gets "dev",
@@ -90,7 +90,7 @@
                                     <shadedPattern>com.discordlogger.shaded.snakeyaml</shadedPattern>
                                 </relocation>
                             </relocations>
-                            <!-- Disable to avoid ASM parsing issues with Java 21 bytecode -->
+                            <!-- Disable to avoid ASM parsing issues with modern bytecode -->
                             <minimizeJar>false</minimizeJar>
                             <!-- dependency-reduced-pom.xml only matters when publishing to a
                                  Maven repo (so consumers don't inherit shaded deps). This
@@ -111,9 +111,10 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- maven.compiler.release=21 in <properties> drives the compiler.
-                 No override here so Java 21 features (records, pattern matching, etc.)
-                 compile and target correctly. -->
+            <!-- maven.compiler.release in <properties> drives the compiler; no
+                 override here. Targeting 25 to match Minecraft 26.x, which requires
+                 a Java 25 runtime — so the emitted bytecode can't load on older
+                 Java. See ARCHITECTURE.md for what that means for compatibility. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
