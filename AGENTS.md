@@ -6,7 +6,7 @@ Everything below was verified against the actual source at the time of writing; 
 
 ## What this project is
 
-**DiscordLogger** is a Minecraft **Paper** server plugin (Java 21) that posts server events to a Discord channel via **webhooks** — either as rich embeds (per-event colors, player-head thumbnails, timestamps) or as plain Markdown text. It ships with a versioned `config.yml` that auto-migrates between schema versions, a channel-aware update checker, and a companion **Jekyll website** (in `docs/`) hosted on GitHub Pages at `https://discordlogger.godtiergamers.xyz` that includes an interactive config generator.
+**DiscordLogger** is a Minecraft **Paper** server plugin (Java 25) that posts server events to a Discord channel via **webhooks** — either as rich embeds (per-event colors, player-head thumbnails, timestamps) or as plain Markdown text. It ships with a versioned `config.yml` that auto-migrates between schema versions, a channel-aware update checker, and a companion **Jekyll website** (in `docs/`) hosted on GitHub Pages at `https://discordlogger.godtiergamers.xyz` that includes an interactive config generator.
 
 - **Current plugin version:** tracked by `pom.xml` / `.release-please-manifest.json` — never hand-edit either, see **Releases** below.
 - **Current config schema:** **v9** (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V9, SHIPPED WITH v2.1.6 (x-release-please-version)`)
@@ -43,7 +43,7 @@ mvn -B -ntp clean compile     # compile only (faster sanity check)
 ```
 
 - **There is no test suite.** `mvn package` compiling cleanly is the only automated check. Real verification means dropping the shaded JAR into a Paper server's `plugins/` folder.
-- The shade plugin relocates SnakeYAML to `com.discordlogger.shaded.snakeyaml` and excludes its `META-INF`. `minimizeJar` is deliberately **off** (ASM/Java 21 bytecode issues).
+- The shade plugin relocates SnakeYAML to `com.discordlogger.shaded.snakeyaml` and excludes its `META-INF`. `minimizeJar` is deliberately **off** (ASM/modern bytecode issues).
 - **Maven resource filtering applies ONLY to `plugin.yml` and `build-info.properties`** (for `${project.version}` / `${dl.build.channel}` / `${dl.build.date}`). `config.yml` is copied **verbatim** — it contains `$` characters in ASCII art that must never be filtered. Don't add filtering to it; CI stamps its trailer via targeted regex replacement instead.
 - A plain local `mvn package` produces a **`dev`-channel** build (`dl.build.channel` defaults to `dev` in `pom.xml`) — see `BuildInfo`.
 
@@ -288,7 +288,7 @@ Renders straight from the releases API. Nightly builds (tag matches `-BETA.N`) g
 
 ## Conventions
 
-- **Java 21, Paper API only**; Adventure preferred for anything new touching chat components (`ChatColor` lingers in command feedback).
+- **Java 25, Paper API only**; Adventure preferred for anything new touching chat components (`ChatColor` lingers in command feedback).
 - Final classes, private constructors on static utility classes, `LinkedHashMap` where iteration order matters.
 - Config keys: lowercase snake_case, grouped `log.<category>.<event>`.
 - Every new logged event, in lockstep: listener (with live config gate) + `EventRegistry` registration + `log.*` key in `config.yml` + default color in `Log.init` + generator `options.json` (including its `defaultColor`, which must match the plugin default) / template entries + docs mention. The validator catches the generator-side half in CI.

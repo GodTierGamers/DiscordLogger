@@ -7,12 +7,12 @@
 ![Downloads](https://img.shields.io/github/downloads/GodTierGamers/DiscordLogger/total)
 ![Issues](https://img.shields.io/github/issues/GodTierGamers/DiscordLogger)
 ![License](https://img.shields.io/github/license/GodTierGamers/DiscordLogger)
-![Java](https://img.shields.io/badge/Java-21%2B-orange)
-![Paper](https://img.shields.io/badge/Paper-1.21%2B-blue)
+![Java](https://img.shields.io/badge/Java-25%2B-orange)
+![Paper](https://img.shields.io/badge/Paper-26.x-blue)
 ![Discord Webhooks](https://img.shields.io/badge/Discord-Webhooks-5865F2)
 
 A minimal, reliable Minecraft server **logging plugin** that posts clean messages to a **Discord webhook** — in Markdown **or rich embeds**.
-Built for **Paper 1.21+** (and Paper forks like Purpur), tested with Geyser/Floodgate (Bedrock cross-play).
+Built for **Paper 26.x** (and Paper forks like Purpur) on **Java 25+**, tested with Geyser/Floodgate (Bedrock cross-play).
 
 ---
 
@@ -59,8 +59,8 @@ Every release includes a `.sha256` checksum for the JAR.
 
 ## 🔌 Compatibility
 
-- **Server:** Paper **1.21+**, or a Paper fork such as Purpur. The plugin uses Paper-specific APIs, so Paper is required — it will tell you clearly on startup if the server doesn't provide them.
-- **Java:** **21+**
+- **Server:** Paper **26.x**, or a Paper fork such as Purpur. The plugin uses Paper-specific APIs, so Paper is required — it will tell you clearly on startup if the server doesn't provide them.
+- **Java:** **25+** — Minecraft 26.x requires it, and the plugin is compiled for it. It will not load on older Java runtimes.
 - **Cross-play:** Compatible with **Geyser/Floodgate** — death messages are server-generated for consistency across Java/Bedrock names/locales.
 
 ---

@@ -16,7 +16,8 @@ This guide walks you through installing **DiscordLogger** and getting logs into 
 
 ## 1) Requirements
 
-- **Server:** Paper 1.21+, or a Paper fork such as Purpur (tested on Paper 1.21.8, supports 1.21.10)
+- **Server:** Paper 26.x, or a Paper fork such as Purpur
+- **Java:** 25 or newer (Minecraft 26.x requires it)
 - **Discord:** A channel where you can create a webhook
 - **Permissions:**
     - Discord:
