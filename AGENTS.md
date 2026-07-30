@@ -190,7 +190,9 @@ All `log.*` toggles ship as `true` in the default file.
 
 ### Config file dictionary — four places hold "the config," they are not the same thing
 
-Four near-identical copies of the config content exist. Confusing them is the single most common way this repo drifts — it already happened twice: a hint-text reword landed on two of four copies and nobody noticed the other two for several sessions (one of them, the doc-page embed, had *already* been silently missing an entire banner block before anyone caught it). Files 1–3 carry an identity comment block at the top (`DL_FILE_IDENTITY_START`/`END`) stating which one they are — read it before editing any of them.
+Four near-identical copies of the config content exist. Confusing them is the single most common way this repo drifts — it already happened twice: a hint-text reword landed on two of four copies and nobody noticed the other two for several sessions (one of them, the doc-page embed, had *already* been silently missing an entire banner block before anyone caught it).
+
+**These files carry no in-file "which copy am I" markers, deliberately.** An earlier attempt put identity headers at the top of each one; every path a user obtains a config — fresh install, website download, and generator output — then handed them repo-internal notes referencing `AGENTS.md` and `scripts/`. User-facing artifacts must not leak repo internals, so the table below plus the CI check are the *only* mechanism keeping these in sync. Don't reintroduce in-file markers.
 
 | # | Location | What it actually is | Consumed by |
 |---|---|---|---|
@@ -199,7 +201,7 @@ Four near-identical copies of the config content exist. Confusing them is the si
 | 3 | `docs/assets/configs/v9/config.template.yml` | **The generator template** — `{{TOKEN}}` placeholders, filled in by the wizard based on what the visitor chose. Never downloaded directly; its *output* is. | `docs/assets/configs/v9/generator.js` |
 | 4 | The `## Full config.yml` fenced code block inside `docs/config/v9/index.md` | **The doc-page embed** — the full file shown inline in prose, for people reading the docs who don't want to click through. Easiest of the four to forget since it lives inside Markdown, not a config file. | Rendered directly on the config docs page |
 
-**The rule:** 1, 2, and 4 must be **content-identical** — same real values, same comments, same banners — except each one's own trailer line (`SHIPPED WITH vX.Y.Z` vs `DOWNLOADED FROM WEBSITE`) and (for 1 and 2) identity header. `scripts/validate-config-generator.py` enforces this automatically in CI for both 1↔2 and 2↔4 — it will fail the build if any of them drift. File 3 isn't byte-compared (it has tokens instead of real values), but its `{{LOG_*}}`/`{{COLOR_*}}` tokens are cross-checked against `options.json` and the Java source by the same script.
+**The rule:** 1, 2, and 4 must be **content-identical** — same real values, same comments, same banners — except each one's own trailer line (`SHIPPED WITH vX.Y.Z` vs `DOWNLOADED FROM WEBSITE`). `scripts/validate-config-generator.py` enforces this automatically in CI for both 1↔2 and 2↔4 — it will fail the build if any of them drift. File 3 isn't byte-compared (it has tokens instead of real values), but its `{{LOG_*}}`/`{{COLOR_*}}` tokens are cross-checked against `options.json` and the Java source by the same script.
 
 **Practical consequence:** any edit to the real config content (webhook/format/embeds/log.\* structure or their comments, including the banners) touches file 1 first, then files 2 and 4 need the identical change, and file 3 needs the matching `{{TOKEN}}` version. Don't rely on memory for this — run `python3 scripts/validate-config-generator.py` locally before opening the PR; CI runs it too, but catching it before pushing is faster.
 

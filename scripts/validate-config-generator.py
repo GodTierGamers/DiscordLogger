@@ -42,20 +42,7 @@ SHIPPED_CONFIG = "src/main/resources/config.yml"
 DOC_PAGE_GLOB = "docs/config/v*/index.md"
 VERSION_RE = re.compile(r"CONFIG\s+VERSION\s+V(\d+)", re.IGNORECASE)
 FULL_CONFIG_HEADING_RE = re.compile(r"^#+\s*Full config\.yml", re.IGNORECASE | re.MULTILINE)
-IDENTITY_START = "# ---DL_FILE_IDENTITY_START---"
-IDENTITY_END = "# ---DL_FILE_IDENTITY_END---"
 
-
-def strip_identity_block(lines: list[str]) -> list[str]:
-    """Removes the per-file '[N of 3 ...]' header block (each file's identity
-    comment legitimately differs -- only the content below it must match)."""
-    if IDENTITY_START not in lines:
-        return lines
-    start = lines.index(IDENTITY_START)
-    if IDENTITY_END not in lines:
-        return lines
-    end = lines.index(IDENTITY_END, start)
-    return lines[:start] + lines[end + 1:]
 
 
 def check_version(options_path: str) -> list[str]:
@@ -133,10 +120,10 @@ def check_shipped_config_matches_mirror() -> list[str]:
     with open(mirror_path, encoding="utf-8") as f:
         mirror_lines = f.read().splitlines()
 
-    # Compare everything except each file's own trailer line (last line) and its
-    # per-file identity header -- those are the two things SUPPOSED to differ.
-    shipped_body = strip_identity_block(shipped_lines[:-1])
-    mirror_body = strip_identity_block(mirror_lines[:-1])
+    # Compare everything except each file's own trailer line (last line) --
+    # that's the one line that's SUPPOSED to differ between the two.
+    shipped_body = shipped_lines[:-1]
+    mirror_body = mirror_lines[:-1]
 
     if shipped_body != mirror_body:
         return [
@@ -179,10 +166,10 @@ def check_doc_page_embedded_configs() -> list[str]:
         with open(mirror_path, encoding="utf-8") as f:
             mirror_lines = f.read().splitlines()
 
-        # Drop each side's own trailer line (last line) and identity header before
-        # comparing -- same rule as check_shipped_config_matches_mirror.
-        mirror_body = strip_identity_block(mirror_lines[:-1])
-        embedded_body = strip_identity_block(embedded[:-1])
+        # Drop each side's own trailer line before comparing -- same rule as
+        # check_shipped_config_matches_mirror.
+        mirror_body = mirror_lines[:-1]
+        embedded_body = embedded[:-1]
 
         if mirror_body != embedded_body:
             errors.append(
