@@ -18,7 +18,7 @@ These rules apply to every contribution, whether written by a person or an AI ag
 1. **Trunk-based**: branch off `main` (`feat/<name>`, `fix/<name>`), PR into `main`. Never commit directly to `main`.
 2. **Conventional Commit PR titles** (`feat:` / `fix:` / `docs:` / `chore:` / `refactor:` / `ci:` / `test:` …) — `lint-pr.yml` rejects anything else. The title becomes the changelog entry verbatim. Squash-merge.
 3. **Verify before PR**: `mvn -B -ntp clean package` must pass; for listener/config changes, exercise on a real Paper server when practical.
-4. **Config changes travel in lockstep**: `config.yml` + listener + `EventRegistry` + `docs/assets/configs/v*/options.json` + `config.template.yml` in the same PR; run `python3 scripts/validate-config-generator.py` locally (CI runs it too).
+4. **Config changes travel in lockstep**: `config.yml` + listener + `EventRegistry` + `docs/assets/configs/v*/options.json` + `config.template.yml` **+ `docs/assets/configs/v*/config.yml`** (see "Config file dictionary" below — this one is easy to forget) in the same PR; run `python3 scripts/validate-config-generator.py` locally (CI runs it too).
 5. **Merging is a maintainer's call** — AI agents open PRs and stop there unless a maintainer explicitly says to merge. This goes double for the **release-please Release PR**: merging it *is* the release. It exists to accumulate merged features (the batching role the old `dev` branch served) and stays open until the maintainer decides a feature compilation is ready to ship. Never merge it without an explicit, current instruction to release — general "go" energy on other work does not extend to it.
 6. **Never hand-edit** `.release-please-manifest.json`, `CHANGELOG.md`, or `pom.xml`'s `<version>` — those belong to release-please.
 7. Keep this file current: workflow or architecture changes update AGENTS.md in the same PR.
@@ -42,7 +42,7 @@ mvn -B -ntp clean compile     # compile only (faster sanity check)
 pom.xml                                Maven build
 release-please-config.json             release-please: changelog sections, extra-files
 .release-please-manifest.json          release-please: current released version (state)
-scripts/validate-config-generator.py   CI check: options.json <-> template <-> Java source
+scripts/validate-config-generator.py   CI check: options.json <-> template <-> Java source <-> shipped config <-> mirror
 src/main/resources/
   plugin.yml                           Plugin descriptor (Maven-filtered)
   build-info.properties                Build channel/version/date, baked in at package time
@@ -173,6 +173,20 @@ log.server.{command,start,stop,explosion}
 log.moderation.{ban,unban,kick,op,deop,whitelist_toggle,whitelist_edit}
 ```
 All `log.*` toggles ship as `true` in the default file.
+
+### Config file dictionary — three files are named "config.yml", they are not the same thing
+
+This repo has three near-identical `config.yml`-shaped files. Confusing them is the single most common way this repo drifts (it already happened once: a hint-text reword landed on two of the three and nobody noticed the third for several sessions). Each file carries an identity comment block at the top (`DL_FILE_IDENTITY_START`/`END`) stating which of the three it is — read it before editing any of them.
+
+| # | File | What it actually is | Consumed by |
+|---|---|---|---|
+| 1 | `src/main/resources/config.yml` | **The shipped config** — the real source of truth. Bundled inside the plugin JAR; every server gets this on first run. | `DiscordLogger.onEnable` / `ConfigMigrator` (Java, at runtime) |
+| 2 | `docs/assets/configs/v9/config.yml` | **The download mirror** — a static copy served by the plain "Download" button on the config docs page. No wizard involved; just the file, verbatim. | A `<a download>` link in `docs/config/v9/index.md` |
+| 3 | `docs/assets/configs/v9/config.template.yml` | **The generator template** — `{{TOKEN}}` placeholders, filled in by the wizard based on what the visitor chose. Never downloaded directly; its *output* is. | `docs/assets/configs/v9/generator.js` |
+
+**The rule:** files 1 and 2 must be **byte-identical** except each one's own trailer line (`SHIPPED WITH vX.Y.Z` vs `DOWNLOADED FROM WEBSITE`) and identity header. `scripts/validate-config-generator.py` enforces this automatically in CI — it will fail the build if they drift, which is exactly the class of bug that motivated adding the check. File 3 isn't byte-compared (it has tokens instead of real values), but its `{{LOG_*}}`/`{{COLOR_*}}` tokens are cross-checked against `options.json` and the Java source by the same script.
+
+**Practical consequence:** any edit to the real config content (webhook/format/embeds/log.\* structure or their comments) touches file 1 first, then file 2 must get the identical change. File 3 needs the matching `{{TOKEN}}` version of the same edit. Don't rely on memory for this — run `python3 scripts/validate-config-generator.py` locally before opening the PR; CI runs it too, but catching it before pushing is faster.
 
 ### ⚠️ Known inconsistency (still open — don't propagate it)
 **Java fallback defaults don't all match config.yml.** `PlayerTeleport`, `PlayerGamemode`, and `Explosion` use `getBoolean(key, false)` while everything else uses `true` (and config.yml ships all `true`). The fallback only matters if the key is missing from a user's file, but the convention is *Java default == config.yml default* — fix toward `true` if you touch these. (Good first `fix:` PR.)
