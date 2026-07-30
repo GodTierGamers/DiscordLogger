@@ -8,9 +8,23 @@
    somewhere in the Java plugin source. This is the check that would have
    caught options.json advertising "log.moderation.whitelist" while the
    plugin only ever reads "log.moderation.whitelist_edit".
+3. The plugin's shipped default (src/main/resources/config.yml) matches
+   its website download-mirror copy (docs/assets/configs/v<N>/config.yml,
+   for whichever schema version is currently shipping) line-for-line,
+   except the trailer line (which legitimately differs -- one says "SHIPPED
+   WITH vX.Y.Z", the other says "DOWNLOADED FROM WEBSITE"). This is the
+   check that would have caught the shipped config still saying "(2.1.5)"
+   in its generator hint after the website copy had already been reworded
+   -- see the "Config file dictionary" in AGENTS.md for what each file is.
+4. Any docs/config/v<N>/index.md page that embeds the full config in a
+   "Full config.yml" code block matches that same mirror copy too. This is
+   a 4th place the same content lives -- easy to forget, and it HAD already
+   drifted (missing an entire banner block) before this check existed.
 
 Exits non-zero (and prints one ERROR line per problem) if anything's wrong.
 """
+from __future__ import annotations
+
 import glob
 import json
 import os
@@ -19,6 +33,24 @@ import subprocess
 import sys
 
 JAVA_SRC = "src/main/java"
+SHIPPED_CONFIG = "src/main/resources/config.yml"
+DOC_PAGE_GLOB = "docs/config/v*/index.md"
+VERSION_RE = re.compile(r"CONFIG\s+VERSION\s+V(\d+)", re.IGNORECASE)
+FULL_CONFIG_HEADING_RE = re.compile(r"^#+\s*Full config\.yml", re.IGNORECASE | re.MULTILINE)
+IDENTITY_START = "# ---DL_FILE_IDENTITY_START---"
+IDENTITY_END = "# ---DL_FILE_IDENTITY_END---"
+
+
+def strip_identity_block(lines: list[str]) -> list[str]:
+    """Removes the per-file '[N of 3 ...]' header block (each file's identity
+    comment legitimately differs -- only the content below it must match)."""
+    if IDENTITY_START not in lines:
+        return lines
+    start = lines.index(IDENTITY_START)
+    if IDENTITY_END not in lines:
+        return lines
+    end = lines.index(IDENTITY_END, start)
+    return lines[:start] + lines[end + 1:]
 
 
 def check_version(options_path: str) -> list[str]:
@@ -76,10 +108,91 @@ def check_version(options_path: str) -> list[str]:
     return errors
 
 
+def check_shipped_config_matches_mirror() -> list[str]:
+    if not os.path.exists(SHIPPED_CONFIG):
+        return [f"{SHIPPED_CONFIG} not found"]
+
+    with open(SHIPPED_CONFIG, encoding="utf-8") as f:
+        shipped_lines = f.read().splitlines()
+
+    trailer = shipped_lines[-1] if shipped_lines else ""
+    m = VERSION_RE.search(trailer)
+    if not m:
+        return [f"{SHIPPED_CONFIG}: last line doesn't match 'CONFIG VERSION V<n>' -- can't find its website mirror"]
+
+    schema = f"v{m.group(1)}"
+    mirror_path = f"docs/assets/configs/{schema}/config.yml"
+    if not os.path.exists(mirror_path):
+        return [f"{SHIPPED_CONFIG} is schema {schema} but {mirror_path} doesn't exist"]
+
+    with open(mirror_path, encoding="utf-8") as f:
+        mirror_lines = f.read().splitlines()
+
+    # Compare everything except each file's own trailer line (last line) and its
+    # per-file identity header -- those are the two things SUPPOSED to differ.
+    shipped_body = strip_identity_block(shipped_lines[:-1])
+    mirror_body = strip_identity_block(mirror_lines[:-1])
+
+    if shipped_body != mirror_body:
+        return [
+            f"{SHIPPED_CONFIG} and {mirror_path} have drifted apart. "
+            f"They must be identical except for their last line (the CONFIG VERSION trailer) -- "
+            f"run: diff <(sed '$d' {SHIPPED_CONFIG}) <(sed '$d' {mirror_path})"
+        ]
+    return []
+
+
+def extract_full_config_block(md_text: str) -> list[str] | None:
+    """Finds the fenced ```yaml block that follows a '## Full config.yml' heading
+    (any heading level). Returns None if the page doesn't have one -- not every
+    doc page is required to embed a full copy."""
+    heading = FULL_CONFIG_HEADING_RE.search(md_text)
+    if not heading:
+        return None
+    fence = re.search(r"```yaml\r?\n(.*?)```", md_text[heading.end():], re.DOTALL)
+    if not fence:
+        return None
+    lines = fence.group(1).splitlines()
+    while lines and lines[-1].strip() == "":
+        lines.pop()
+    return lines
+
+
+def check_doc_page_embedded_configs() -> list[str]:
+    errors = []
+    for doc_path in sorted(glob.glob(DOC_PAGE_GLOB)):
+        schema = os.path.basename(os.path.dirname(doc_path))  # "docs/config/v9/index.md" -> "v9"
+        mirror_path = f"docs/assets/configs/{schema}/config.yml"
+        if not os.path.exists(mirror_path):
+            continue  # no matching schema folder -- separate problem, not this check's job
+
+        with open(doc_path, encoding="utf-8") as f:
+            embedded = extract_full_config_block(f.read())
+        if embedded is None:
+            continue  # this page doesn't embed a full config -- nothing to check
+
+        with open(mirror_path, encoding="utf-8") as f:
+            mirror_lines = f.read().splitlines()
+
+        # Drop each side's own trailer line (last line) and identity header before
+        # comparing -- same rule as check_shipped_config_matches_mirror.
+        mirror_body = strip_identity_block(mirror_lines[:-1])
+        embedded_body = strip_identity_block(embedded[:-1])
+
+        if mirror_body != embedded_body:
+            errors.append(
+                f"{doc_path}'s embedded \"Full config.yml\" block has drifted from "
+                f"{mirror_path}. They must be identical except the trailer line."
+            )
+    return errors
+
+
 def main() -> int:
     all_errors = []
     for options_path in sorted(glob.glob("docs/assets/configs/v*/options.json")):
         all_errors.extend(check_version(options_path))
+    all_errors.extend(check_shipped_config_matches_mirror())
+    all_errors.extend(check_doc_page_embedded_configs())
 
     if all_errors:
         for e in all_errors:
