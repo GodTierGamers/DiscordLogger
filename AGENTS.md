@@ -174,19 +174,20 @@ log.moderation.{ban,unban,kick,op,deop,whitelist_toggle,whitelist_edit}
 ```
 All `log.*` toggles ship as `true` in the default file.
 
-### Config file dictionary — three files are named "config.yml", they are not the same thing
+### Config file dictionary — four places hold "the config", they are not the same thing
 
-This repo has three near-identical `config.yml`-shaped files. Confusing them is the single most common way this repo drifts (it already happened once: a hint-text reword landed on two of the three and nobody noticed the third for several sessions). Each file carries an identity comment block at the top (`DL_FILE_IDENTITY_START`/`END`) stating which of the three it is — read it before editing any of them.
+This repo has four near-identical copies of the config content. Confusing them is the single most common way this repo drifts — it already happened twice: a hint-text reword landed on two of four copies and nobody noticed the other two for several sessions (one of them, the doc-page embed, had *already* been silently missing an entire banner block before anyone caught it). The first three carry an identity comment block at the top (`DL_FILE_IDENTITY_START`/`END`) stating which one they are — read it before editing any of them.
 
-| # | File | What it actually is | Consumed by |
+| # | Location | What it actually is | Consumed by |
 |---|---|---|---|
 | 1 | `src/main/resources/config.yml` | **The shipped config** — the real source of truth. Bundled inside the plugin JAR; every server gets this on first run. | `DiscordLogger.onEnable` / `ConfigMigrator` (Java, at runtime) |
 | 2 | `docs/assets/configs/v9/config.yml` | **The download mirror** — a static copy served by the plain "Download" button on the config docs page. No wizard involved; just the file, verbatim. | A `<a download>` link in `docs/config/v9/index.md` |
 | 3 | `docs/assets/configs/v9/config.template.yml` | **The generator template** — `{{TOKEN}}` placeholders, filled in by the wizard based on what the visitor chose. Never downloaded directly; its *output* is. | `docs/assets/configs/v9/generator.js` |
+| 4 | The `## Full config.yml` fenced code block inside `docs/config/v9/index.md` | **The doc-page embed** — the full file shown inline in prose, for people reading the docs who don't want to click through. Easiest of the four to forget since it lives inside Markdown, not a config file. | Rendered directly on the config docs page |
 
-**The rule:** files 1 and 2 must be **byte-identical** except each one's own trailer line (`SHIPPED WITH vX.Y.Z` vs `DOWNLOADED FROM WEBSITE`) and identity header. `scripts/validate-config-generator.py` enforces this automatically in CI — it will fail the build if they drift, which is exactly the class of bug that motivated adding the check. File 3 isn't byte-compared (it has tokens instead of real values), but its `{{LOG_*}}`/`{{COLOR_*}}` tokens are cross-checked against `options.json` and the Java source by the same script.
+**The rule:** 1, 2, and 4 must be **content-identical** — same real values, same comments, same banners — except each one's own trailer line (`SHIPPED WITH vX.Y.Z` vs `DOWNLOADED FROM WEBSITE`) and (for 1 and 2) identity header. `scripts/validate-config-generator.py` enforces this automatically in CI for both 1↔2 and 2↔4 — it will fail the build if any of them drift, which is exactly the class of bug that motivated adding the check. File 3 isn't byte-compared (it has tokens instead of real values), but its `{{LOG_*}}`/`{{COLOR_*}}` tokens are cross-checked against `options.json` and the Java source by the same script.
 
-**Practical consequence:** any edit to the real config content (webhook/format/embeds/log.\* structure or their comments) touches file 1 first, then file 2 must get the identical change. File 3 needs the matching `{{TOKEN}}` version of the same edit. Don't rely on memory for this — run `python3 scripts/validate-config-generator.py` locally before opening the PR; CI runs it too, but catching it before pushing is faster.
+**Practical consequence:** any edit to the real config content (webhook/format/embeds/log.\* structure or their comments, including the banners) touches file 1 first, then files 2 and 4 need the identical change, and file 3 needs the matching `{{TOKEN}}` version. Don't rely on memory for this — run `python3 scripts/validate-config-generator.py` locally before opening the PR; CI runs it too, but catching it before pushing is faster.
 
 ### ⚠️ Known inconsistency (still open — don't propagate it)
 **Java fallback defaults don't all match config.yml.** `PlayerTeleport`, `PlayerGamemode`, and `Explosion` use `getBoolean(key, false)` while everything else uses `true` (and config.yml ships all `true`). The fallback only matters if the key is missing from a user's file, but the convention is *Java default == config.yml default* — fix toward `true` if you touch these. (Good first `fix:` PR.)
