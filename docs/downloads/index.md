@@ -13,6 +13,19 @@ Latest builds from **GitHub Releases**.
   Fetching releases from GitHub…
 </div>
 
+<div id="dl-nightly-controls" class="dl-nightly-controls" hidden>
+  <label class="dl-nightly-toggle">
+    <span class="dl-switch">
+      <input type="checkbox" id="dl-show-nightly" role="switch" aria-checked="false">
+      <span class="dl-switch__track"><span class="dl-switch__thumb"></span></span>
+    </span>
+    <span>Show nightly builds <span class="dl-badge dl-badge--nightly">Nightly</span></span>
+  </label>
+  <p class="dl-nightly-warning">
+    Nightly builds are automated previews of unreleased work. They may be unstable — use a stable release on production servers.
+  </p>
+</div>
+
 <div id="dl-releases" class="dl-releases-list" aria-live="polite"></div>
 
 <script>
@@ -23,6 +36,13 @@ Latest builds from **GitHub Releases**.
 
   const statusEl = document.getElementById('dl-downloads-status');
   const listEl = document.getElementById('dl-releases');
+  const controlsEl = document.getElementById('dl-nightly-controls');
+  const nightlyToggle = document.getElementById('dl-show-nightly');
+
+  // Nightly builds are the automated vX.Y.Z-BETA.N pre-releases produced by
+  // .github/workflows/nightly.yml. Any other pre-release is a manual one, so
+  // it keeps the generic "Pre-release" badge instead.
+  const isNightly = (r) => /-BETA\.\d+$/i.test(r.tag_name || '');
 
   function formatDate(iso) {
     if (!iso) return '';
@@ -97,7 +117,8 @@ Latest builds from **GitHub Releases**.
   }
 
   function renderRelease(r) {
-    const isPre = !!r.prerelease;
+    const nightly = isNightly(r);
+    const isPre = !!r.prerelease && !nightly;
     const isDraft = !!r.draft;
     const tag = r.tag_name || 'untagged';
     const name = r.name || tag;
@@ -109,12 +130,13 @@ Latest builds from **GitHub Releases**.
     const primaryJar = assets.find(a => a.name && a.name.endsWith('.jar'));
 
     return `
-      <article class="dl-release ${isPre ? 'is-pre' : ''} ${isDraft ? 'is-draft' : ''}">
+      <article class="dl-release ${isPre ? 'is-pre' : ''} ${nightly ? 'is-nightly' : ''} ${isDraft ? 'is-draft' : ''}">
         <header class="dl-release__header">
           <div class="dl-release__meta-block">
             <div class="dl-release__titleline">
               <h2 class="dl-release__title">${name}</h2>
               <span class="dl-release__tag">${tag}</span>
+              ${nightly ? '<span class="dl-badge dl-badge--nightly">Nightly</span>' : ''}
               ${isPre ? '<span class="dl-badge dl-badge--pre">Pre-release</span>' : ''}
               ${isDraft ? '<span class="dl-badge dl-badge--draft">Draft</span>' : ''}
             </div>
@@ -143,23 +165,59 @@ Latest builds from **GitHub Releases**.
     `;
   }
 
+  const STORAGE_KEY = 'dl-show-nightly';
+  let allReleases = [];
+
+  function paint() {
+    const showNightly = nightlyToggle.checked;
+    const shown = allReleases.filter(r => showNightly || !isNightly(r));
+
+    if (!shown.length) {
+      listEl.innerHTML = '';
+      statusEl.textContent = showNightly
+        ? 'No releases found on GitHub.'
+        : 'No stable releases yet — enable nightly builds above to see preview builds.';
+      return;
+    }
+
+    statusEl.textContent = '';
+    listEl.innerHTML = shown.map(renderRelease).join('');
+  }
+
+  nightlyToggle.addEventListener('change', () => {
+    nightlyToggle.setAttribute('aria-checked', String(nightlyToggle.checked));
+    try { localStorage.setItem(STORAGE_KEY, nightlyToggle.checked ? '1' : '0'); } catch (e) {}
+    paint();
+  });
+
   fetch(API)
     .then(r => {
       if (!r.ok) throw new Error('GitHub API error: ' + r.status);
       return r.json();
     })
     .then(data => {
-      const releases = (data || []).slice().sort((a, b) => {
+      allReleases = (data || []).slice().sort((a, b) => {
         return new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at);
       });
 
-      if (!releases.length) {
+      if (!allReleases.length) {
         statusEl.textContent = 'No releases found on GitHub.';
         return;
       }
 
-      statusEl.textContent = '';
-      listEl.innerHTML = releases.map(renderRelease).join('');
+      const nightlyCount = allReleases.filter(isNightly).length;
+      if (nightlyCount) {
+        controlsEl.hidden = false;
+        try {
+          // Opt-in and remembered: nightlies stay hidden unless asked for.
+          nightlyToggle.checked = localStorage.getItem(STORAGE_KEY) === '1';
+        } catch (e) {
+          nightlyToggle.checked = false;
+        }
+        nightlyToggle.setAttribute('aria-checked', String(nightlyToggle.checked));
+      }
+
+      paint();
     })
     .catch(err => {
       console.error(err);

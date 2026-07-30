@@ -579,6 +579,93 @@ html[data-theme="dark"] .dl-badge--draft {
     background: rgba(148, 163, 184, .08);
     color: #cbd5f5;
 }
+.dl-badge--nightly {
+    background: rgba(139, 92, 246, .14);
+    border: 1px solid rgba(139, 92, 246, .3);
+    color: #5b21b6;
+}
+html[data-theme="dark"] .dl-badge--nightly {
+    background: rgba(139, 92, 246, .12);
+    color: #c4b5fd;
+}
+
+/* Nightly / beta opt-in control (downloads page, generator, config docs) */
+.dl-nightly-controls {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .7rem .85rem;
+    margin: 0 0 1.25rem;
+}
+.dl-nightly-toggle {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: .85rem;
+}
+
+/* On/off slider switch. The native checkbox stays in the DOM (visually hidden)
+   so the control keeps keyboard focus and screen-reader semantics. */
+.dl-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    width: 38px;
+    height: 22px;
+}
+.dl-switch input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+.dl-switch__track {
+    position: relative;
+    width: 38px;
+    height: 22px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--fg) 18%, transparent);
+    border: 1px solid var(--border);
+    transition: background .18s ease, border-color .18s ease;
+    pointer-events: none;
+}
+.dl-switch__thumb {
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    transform: translateY(-50%);
+    transition: left .18s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+}
+.dl-switch input:checked + .dl-switch__track {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+.dl-switch input:checked + .dl-switch__track .dl-switch__thumb {
+    left: 19px;
+}
+.dl-switch input:focus-visible + .dl-switch__track {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+.dl-nightly-warning {
+    margin: .45rem 0 0;
+    font-size: .75rem;
+    color: var(--muted);
+}
+/* Nightly release cards get a subtle purple edge so they're obvious in the list */
+.dl-release.is-nightly {
+    border-left: 3px solid rgba(139, 92, 246, .55);
+}
 
 .dl-release__meta {
     margin: .35rem 0 0;
