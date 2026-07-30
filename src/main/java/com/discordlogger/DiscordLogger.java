@@ -8,6 +8,7 @@ import com.discordlogger.log.Log;
 import com.discordlogger.update.BuildInfo;
 import com.discordlogger.update.NightlyNotice;
 import com.discordlogger.update.UpdateChecker;
+import com.discordlogger.util.Platform;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -19,6 +20,15 @@ public final class DiscordLogger extends JavaPlugin {
     @Override
     public void onEnable() {
         BuildInfo.load(this);
+
+        // Bail out before touching the data folder — no point writing a config
+        // to a server that can't run the plugin anyway.
+        final String missing = Platform.missingRequirement();
+        if (missing != null) {
+            reportUnsupportedPlatform(missing);
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
 
         saveDefaultConfig();
         ConfigMigrator.migrateIfVersionChanged(this, "config.yml", new File(getDataFolder(), "config.yml"));
@@ -55,6 +65,22 @@ public final class DiscordLogger extends JavaPlugin {
     public void onDisable() {
         if (events != null) events.fireServerStop();
         getLogger().info("Disabled.");
+    }
+
+    /** Explain, in plain terms, why the plugin can't start on this server. */
+    private void reportUnsupportedPlatform(String missingClass) {
+        final String bar = "============================================================";
+        getLogger().severe(bar);
+        getLogger().severe("DiscordLogger requires Paper (or a Paper fork such as Purpur).");
+        getLogger().severe("This server does not provide the Paper API, so the plugin");
+        getLogger().severe("cannot start. Spigot and CraftBukkit are NOT supported.");
+        getLogger().severe("");
+        getLogger().severe("Missing: " + missingClass);
+        getLogger().severe("");
+        getLogger().severe("Download Paper from https://papermc.io/downloads — it is a");
+        getLogger().severe("drop-in replacement, so your worlds, plugins and configs");
+        getLogger().severe("keep working as they are.");
+        getLogger().severe(bar);
     }
 
     public boolean applyRuntimeConfig() {
