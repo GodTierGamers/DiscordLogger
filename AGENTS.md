@@ -250,7 +250,26 @@ docs/assets/configs/
   v9/config.yml                    reference copy of what shipped
 ```
 
-**The isolation rule (the whole point): once a newer schema folder exists, never edit an older one again.** Old plugin versions must keep generating exactly the config they always did. Fix bugs only in the newest schema; copy the folder forward instead of refactoring in place. The loader↔bundle contract is documented at the top of both files and is frozen — a bundle registers `window.DL_GENERATORS['v9'] = launch` and receives `ctx` (`mount`, `configVersion`, `pluginVersion`, `beta`, `proxyUrl`, `backToVersions`).
+**The isolation rule (the whole point): once a schema version has been *published*, never edit it again.** Old plugin versions must keep generating exactly the config they always did. Fix bugs only in the current unpublished schema; copy the folder forward instead of refactoring in place. The loader↔bundle contract is documented at the top of both files and is frozen — a bundle registers `window.DL_GENERATORS['v9'] = launch` and receives `ctx` (`mount`, `configVersion`, `pluginVersion`, `beta`, `proxyUrl`, `backToVersions`).
+
+### Schema version lifecycle — what opens a version, and when it freezes
+
+**Publication is what freezes a schema, not creation.** Get this wrong and you'll either freeze a version far too early (creating vN+1 for every small change) or edit one that real users already depend on.
+
+**A new version opens on the first change to the config's *keys* since the last published version.** Specifically, any of:
+
+- a key added
+- a key removed
+- a key renamed
+- **the order of keys changed** — reordering alone is enough
+
+**Comment-only changes never open a version.** If the text could be deleted without changing behaviour — the ASCII banners, explanatory comments, the generator hint, the trailer's `SHIPPED WITH …` suffix — it isn't a schema change. Rewording those against a published schema is fine and expected.
+
+**While a version is open, edit it freely.** Between opening and publication, `docs/assets/configs/v<N>/` (bundle, `options.json`, template, mirror), its docs page, and the shipped `config.yml` are all normal editable files. Multiple features landing in the same release all accumulate into that one open version — there is nothing to coordinate or batch deliberately, it happens by construction.
+
+**The release that ships it freezes it, permanently.** From then on the isolation rule above applies and the next key change opens vN+1.
+
+**Versions are never skipped.** v9 → v10 → v11. Don't jump numbers to "reserve" one.
 
 `registry.json` entries take `{ "config", "since", "generatorReady"? }`. **`since` is the first build shipping that schema and may itself be a nightly** (e.g. `"2.1.7-BETA.1"`) when a schema debuts in one — version comparison is BETA-aware, so `2.1.7-BETA.1 < 2.1.7-BETA.2 < 2.1.7`. Setting `"generatorReady": false` lists a schema *before* its bundle exists: the picker names it, explains it isn't available yet, and disables Continue rather than failing to load a missing script.
 
