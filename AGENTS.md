@@ -23,6 +23,17 @@ Everything below was verified against the actual source at the time of writing; 
 6. **Never hand-edit** `.release-please-manifest.json`, `CHANGELOG.md`, or `pom.xml`'s `<version>` — those belong to release-please.
 7. Keep this file current: workflow or architecture changes update AGENTS.md in the same PR. Update [ARCHITECTURE.md](ARCHITECTURE.md) too if the change is the kind a human contributor would want to know about narratively, not just as a reference fact.
 8. **AI attribution policy**: the README's *AI Disclosure* section is the single, project-level statement of AI involvement. Do **not** add per-commit or per-PR attribution — no `Co-Authored-By: Claude/AI` trailers, no "Generated with …" footers in commits or PR descriptions, no AI credits in code comments.
+9. **TODO.md is maintainer-owned** — see the protocol immediately below. Never write to it uninvited.
+
+### TODO.md protocol
+
+[TODO.md](TODO.md) is a reminder list owned by the maintainer, not a general backlog, not a scratchpad, and not a place to park your own observations.
+
+**Adding:** only when the maintainer *explicitly* asks — "remind me to X", "add X to TODO.md", or clearly equivalent. Noticing something worth doing is **not** grounds to add it; mention it in conversation instead and let them decide. If they don't say to write it down, it doesn't go in the file.
+
+**Removing:** the moment an item is genuinely done, **delete the line entirely**. No strikethrough, no "Completed" section, no dated archive — the file must only ever show what is still outstanding. Do this in the same PR that completes the work, so the file can't drift out of sync with reality.
+
+**Consequence to respect:** because entries are added only on request and deleted on completion, an empty TODO.md means "nothing outstanding" and can be trusted as such. Self-populating it — even with genuinely good ideas — destroys that guarantee and makes the file worthless. Don't.
 
 ## Build & test
 
@@ -237,7 +248,7 @@ docs/assets/configs/
   v9/config.yml                    reference copy of what shipped
 ```
 
-**The isolation rule (the whole point): once a newer schema folder exists, never edit an older one again.** Old plugin versions must keep generating exactly the config they always did. Fix bugs only in the newest schema; copy the folder forward instead of refactoring in place. The loader↔bundle contract is documented at the top of both files and is frozen — a bundle registers `window.DL_GENERATORS['v9'] = launch` and receives `ctx` (`mount`, `configVersion`, `pluginVersions`, `beta`, `proxyUrl`, `backToVersions`).
+**The isolation rule (the whole point): once a newer schema folder exists, never edit an older one again.** Old plugin versions must keep generating exactly the config they always did. Fix bugs only in the newest schema; copy the folder forward instead of refactoring in place. The loader↔bundle contract is documented at the top of both files and is frozen — a bundle registers `window.DL_GENERATORS['v9'] = launch` and receives `ctx` (`mount`, `configVersion`, `pluginVersion`, `beta`, `proxyUrl`, `backToVersions`).
 
 `registry.json` entries take `{ "config", "since", "generatorReady"? }`. **`since` is the first build shipping that schema and may itself be a nightly** (e.g. `"2.1.7-BETA.1"`) when a schema debuts in one — version comparison is BETA-aware, so `2.1.7-BETA.1 < 2.1.7-BETA.2 < 2.1.7`. Setting `"generatorReady": false` lists a schema *before* its bundle exists: the picker names it, explains it isn't available yet, and disables Continue rather than failing to load a missing script.
 
