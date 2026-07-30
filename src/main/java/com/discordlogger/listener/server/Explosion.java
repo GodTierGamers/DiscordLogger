@@ -44,7 +44,7 @@ public final class Explosion implements Listener {
     public Explosion(JavaPlugin plugin) { this.plugin = plugin; }
 
     private boolean enabled() {
-        return plugin.getConfig().getBoolean("log.server.explosion", false);
+        return plugin.getConfig().getBoolean("log.server.explosion", true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

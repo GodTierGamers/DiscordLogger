@@ -21,7 +21,7 @@ public final class PlayerGamemode implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onGamemodeChange(PlayerGameModeChangeEvent e) {
-        if (!plugin.getConfig().getBoolean("log.player.gamemode", false)) return;
+        if (!plugin.getConfig().getBoolean("log.player.gamemode", true)) return;
 
         final Player p = e.getPlayer();
         final GameMode from = p.getGameMode();      // old mode (event fires before apply)

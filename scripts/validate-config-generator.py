@@ -20,6 +20,11 @@
    "Full config.yml" code block matches that same mirror copy too. This is
    a 4th place the same content lives -- easy to forget, and it HAD already
    drifted (missing an entire banner block) before this check existed.
+5. Every getConfig().getBoolean("log.*", <fallback>) in the Java source uses
+   the SAME fallback as the value config.yml ships. These only diverge when a
+   user's config is missing the key (hand-edited, partial copy, pre-dating the
+   key), and a mismatch silently disables logging the docs promise is on --
+   which is exactly what happened to teleport/gamemode/explosion.
 
 Exits non-zero (and prints one ERROR line per problem) if anything's wrong.
 """
@@ -187,12 +192,62 @@ def check_doc_page_embedded_configs() -> list[str]:
     return errors
 
 
+def check_java_fallbacks_match_shipped_config() -> list[str]:
+    """Java's getBoolean fallback must equal what config.yml ships for that key.
+
+    The fallback only applies when a user's config is missing the key, so a
+    mismatch is invisible in normal use and silently contradicts the docs --
+    e.g. config.yml shipping `teleport: true` while the listener defaulted to
+    false, so a partial config meant teleport logging never fired.
+    """
+    if not os.path.exists(SHIPPED_CONFIG):
+        return [f"{SHIPPED_CONFIG} not found"]
+
+    # what config.yml ships: log.<category>.<event> -> true/false
+    shipped: dict[str, str] = {}
+    with open(SHIPPED_CONFIG, encoding="utf-8") as f:
+        text = f.read()
+    if "\nlog:" in text:
+        category = None
+        for line in text.split("\nlog:", 1)[1].split("\n"):
+            cat_m = re.match(r"^  (\w+):\s*(?:#.*)?$", line)
+            if cat_m:
+                category = cat_m.group(1)
+                continue
+            leaf_m = re.match(r"^    (\w+):\s*(true|false)\b", line)
+            if leaf_m and category:
+                shipped[f"log.{category}.{leaf_m.group(1)}"] = leaf_m.group(2)
+
+    if not shipped:
+        return [f"{SHIPPED_CONFIG}: could not parse any log.* toggles -- has the structure changed?"]
+
+    errors = []
+    pattern = re.compile(r'getBoolean\(\s*"(log\.[a-z._]+)"\s*,\s*(true|false)\s*\)')
+    for java_file in glob.glob(f"{JAVA_SRC}/**/*.java", recursive=True):
+        with open(java_file, encoding="utf-8") as f:
+            for lineno, line in enumerate(f, 1):
+                for key, fallback in pattern.findall(line):
+                    want = shipped.get(key)
+                    if want is None:
+                        errors.append(
+                            f"{java_file}:{lineno} reads '{key}', which {SHIPPED_CONFIG} doesn't ship"
+                        )
+                    elif want != fallback:
+                        errors.append(
+                            f"{java_file}:{lineno} defaults '{key}' to {fallback}, but "
+                            f"{SHIPPED_CONFIG} ships {want} -- they must match, or a config "
+                            f"missing this key silently behaves against the documented default"
+                        )
+    return errors
+
+
 def main() -> int:
     all_errors = []
     for options_path in sorted(glob.glob("docs/assets/configs/v*/options.json")):
         all_errors.extend(check_version(options_path))
     all_errors.extend(check_shipped_config_matches_mirror())
     all_errors.extend(check_doc_page_embedded_configs())
+    all_errors.extend(check_java_fallbacks_match_shipped_config())
 
     if all_errors:
         for e in all_errors:
