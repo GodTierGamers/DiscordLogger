@@ -62,10 +62,10 @@
             {% assign active_class = ' is-active' %}
             {% endif %}
             {% else %}
-            {% if current == item.url
-            or current == item.url | append: 'index.html'
-            or current == item.url | append: '/'
-            or current contains item.url %}
+            {# Liquid does not allow filters inside `if`, so no `| append:` here.
+               `contains` already covers the trailing-slash and /index.html forms,
+               plus nested pages like /config/v9/ under /config/. #}
+            {% if current == item.url or current contains item.url %}
             {% assign active_class = ' is-active' %}
             {% endif %}
             {% endif %}
