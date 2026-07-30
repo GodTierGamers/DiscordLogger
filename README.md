@@ -70,7 +70,7 @@ Every release includes a `.sha256` checksum for the JAR.
 Trunk-based: `main` is the only long-lived branch. Branch off `main`, open a PR with a [Conventional Commits](https://www.conventionalcommits.org/) title (`feat: ...`, `fix: ...`) — the title becomes the changelog entry. Versioning, changelogs, releases, and nightly builds are fully automated.
 
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — how to contribute, PR expectations, AI-assistance policy
-- **[AGENTS.md](AGENTS.md)** — full contributor guide: architecture, conventions, workflow, release process
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — how the project actually works: runtime architecture, the config system, the website, the release pipeline
 
 Build locally:
 ```bash
@@ -90,3 +90,5 @@ This project's license appears in the repository root.
 ## 🤖 AI Disclosure
 
 Parts of this project — including code, documentation, and the release automation — are developed with the assistance of AI tools. All AI-assisted changes go through the same pull-request review, CI checks, and testing as any other contribution, and a human maintainer reviews and approves everything that ships.
+
+This repo also maintains [AGENTS.md](AGENTS.md), a technical reference written specifically for AI coding agents working in the codebase. It's not intended as human-facing documentation — see [ARCHITECTURE.md](ARCHITECTURE.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for that.
