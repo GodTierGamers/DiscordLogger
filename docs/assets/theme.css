@@ -579,6 +579,43 @@ html[data-theme="dark"] .dl-badge--draft {
     background: rgba(148, 163, 184, .08);
     color: #cbd5f5;
 }
+.dl-badge--nightly {
+    background: rgba(139, 92, 246, .14);
+    border: 1px solid rgba(139, 92, 246, .3);
+    color: #5b21b6;
+}
+html[data-theme="dark"] .dl-badge--nightly {
+    background: rgba(139, 92, 246, .12);
+    color: #c4b5fd;
+}
+
+/* Nightly opt-in control on the downloads page */
+.dl-nightly-controls {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .7rem .85rem;
+    margin: 0 0 1.25rem;
+}
+.dl-nightly-toggle {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: .85rem;
+}
+.dl-nightly-toggle input {
+    cursor: pointer;
+}
+.dl-nightly-warning {
+    margin: .45rem 0 0;
+    font-size: .75rem;
+    color: var(--muted);
+}
+/* Nightly release cards get a subtle purple edge so they're obvious in the list */
+.dl-release.is-nightly {
+    border-left: 3px solid rgba(139, 92, 246, .55);
+}
 
 .dl-release__meta {
     margin: .35rem 0 0;

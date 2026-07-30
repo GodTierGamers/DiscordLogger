@@ -1,0 +1,7 @@
+{
+  "_comment": "Config generator registry. One entry per config SCHEMA — not per plugin release. 'since' is the first plugin version that ships that schema; coverage ranges and BETA status are derived automatically from the GitHub releases API at runtime (a schema is BETA while its 'since' version exists only in nightlies). New plugin releases need NO changes here. A new schema = add one entry + a new self-contained docs/assets/configs/v<N>/ folder. NEVER edit an older schema's folder after a newer one ships.",
+  "proxyUrl": "",
+  "schemas": [
+    { "config": "v9", "since": "2.1.5" }
+  ]
+}
