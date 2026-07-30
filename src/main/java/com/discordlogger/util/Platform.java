@@ -3,12 +3,12 @@ package com.discordlogger.util;
 /**
  * Startup guard for the Paper APIs this plugin genuinely requires.
  *
- * <p>Without this check, a Spigot/CraftBukkit server fails in a way that tells the
- * admin nothing useful: {@code EventRegistry.registerAll()} reflects over
+ * <p>Without this check, a server lacking the Paper API fails in a way that tells
+ * the admin nothing useful: {@code EventRegistry.registerAll()} reflects over
  * {@code PlayerChat}'s handler parameters, hits the missing
  * {@code AsyncChatEvent}, and throws {@link NoClassDefFoundError} out of
- * {@code onEnable()} — Bukkit then disables the plugin with a raw stack trace and
- * no explanation. Detecting it up front turns that into an answerable question.
+ * {@code onEnable()} — the server then disables the plugin with a raw stack trace
+ * and no explanation. Detecting it up front turns that into an answerable question.
  *
  * <p>Deliberately probes the exact classes we depend on rather than "is this
  * Paper?", so a fork missing one of them is reported accurately instead of being

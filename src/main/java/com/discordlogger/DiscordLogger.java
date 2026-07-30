@@ -71,9 +71,9 @@ public final class DiscordLogger extends JavaPlugin {
     private void reportUnsupportedPlatform(String missingClass) {
         final String bar = "============================================================";
         getLogger().severe(bar);
-        getLogger().severe("DiscordLogger requires Paper (or a Paper fork such as Purpur).");
+        getLogger().severe("DiscordLogger requires Paper, or a Paper fork such as Purpur.");
         getLogger().severe("This server does not provide the Paper API, so the plugin");
-        getLogger().severe("cannot start. Spigot and CraftBukkit are NOT supported.");
+        getLogger().severe("cannot start.");
         getLogger().severe("");
         getLogger().severe("Missing: " + missingClass);
         getLogger().severe("");
