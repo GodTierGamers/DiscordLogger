@@ -59,7 +59,7 @@ Every release includes a `.sha256` checksum for the JAR.
 
 ## 🔌 Compatibility
 
-- **Server:** Paper **1.21+** (or Paper forks such as Purpur). The plugin uses Paper-specific APIs and does not run on plain Spigot.
+- **Server:** Paper **1.21+**, or a Paper fork such as Purpur. The plugin uses Paper-specific APIs, so Paper is required — it will tell you clearly on startup if the server doesn't provide them.
 - **Java:** **21+**
 - **Cross-play:** Compatible with **Geyser/Floodgate** — death messages are server-generated for consistency across Java/Bedrock names/locales.
 
