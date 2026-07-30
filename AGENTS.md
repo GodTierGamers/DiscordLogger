@@ -67,6 +67,10 @@ src/main/java/com/discordlogger/
   listener/server/                     ServerCommand, Explosion
   listener/moderation/                 Ban, Unban, Kick, Op, Deop, Whitelist
 docs/                                  Jekyll website (GitHub Pages, deploys from main)
+  assets/js/versions.js                 Site-wide version awareness + BETA badges/gating
+  assets/js/generator.js                Config generator loader (schema picker)
+  assets/configs/registry.json          One entry per config schema
+  assets/configs/v9/                    Self-contained v9 generator bundle + data (frozen once v10 ships)
 .github/workflows/
   ci.yml                               Build + docs-validate on push/PR to main (path-filtered)
   lint-pr.yml                          Enforces Conventional Commit PR titles
@@ -178,27 +182,70 @@ All `log.*` toggles ship as `true` in the default file.
 Jekyll site (GitHub Pages gem stack) at `discordlogger.godtiergamers.xyz` (CNAME present). Pages use `_layouts/default.html` via `_config.yml` defaults; nav in `_data/nav.yml`. **Deploys from `main`** — docs changes go live on merge, independent of plugin releases.
 
 - **Local dev:** `cd docs && bundle install && bundle exec jekyll serve --livereload --watch` (`docs/test.sh` does the same). `docs/_site/` is gitignored build output — never edit, never trust.
-- **Config generator** (`/generator/`): vanilla-JS IIFE `docs/assets/js/generator.js`, mounted on `#cfg-gen`, fully **data-driven**:
-  - `generator.config.js`: `DL_VERSIONS` (plugin version → schema), `DL_CONFIGS` (schema → data URLs), `DL_PROXY_URL`, `DL_TEST_EMBED`. **Expected to be fully rewritten** in a future generator overhaul — don't build automation against its current shape.
-  - `docs/assets/configs/v9/options.json` drives the toggles/colors UI; `config.template.yml` is the `{{TOKEN}}` output template.
-  - New plugin version, same schema: one `DL_VERSIONS` entry. New schema: new `docs/assets/configs/v<n>/` + `DL_CONFIGS`/`DL_VERSIONS` entries + docs page. No generator.js changes needed.
-  - `scripts/validate-config-generator.py` cross-checks options ↔ template ↔ Java source (CI runs it; run locally after touching any of these).
-- **Beta/nightly display**: not implemented yet — the rewritten generator should fetch the GitHub releases API client-side (CORS-open) and badge `prerelease: true` entries as beta, deriving the badge from the API so it can never go stale.
-- **Webhook testing / CORS:** Discord webhooks allow simple browser POSTs; `docs/cloudflare/discord-proxy.js` is an optional Cloudflare Worker relay used when `DL_PROXY_URL` is set (currently `""`).
-- The plugin hot-links icons from the site (`/assets/icons/…`) — the site being up is a runtime dependency of embeds.
+- The plugin hot-links icons from the site (`/assets/icons/…`) — the site being up is a runtime dependency of embeds. The banner is self-hosted at `/assets/DiscordLogger-Banner.webp` (compressed; no external image host).
+
+### Version awareness — never hardcode a version number
+
+`docs/assets/js/versions.js` is loaded from `<head>` on every page and is the single source of truth. It reads the GitHub releases API once (cached per session), works out the newest stable and newest nightly, and exposes `window.DLVersions`.
+
+**A version is "beta" when it is newer than the newest stable release** — i.e. it exists only in nightly builds. This is *derived, never hand-flagged*: while 2.1.7 is nightly-only its docs show a BETA badge, and the moment 2.1.7 ships stable every badge and gate flips itself off with no edits. Never add a manual "is beta" flag anywhere.
+
+Use the declarative hooks rather than writing per-page JS or literal versions:
+
+| Markup | Behaviour |
+|---|---|
+| `data-dl-version="2.1.7"` | appends a BETA badge while that version is nightly-only |
+| `data-dl-beta-only="2.1.7"` | hides the element unless beta is enabled (normal content once it ships) |
+| `data-dl-latest` / `data-dl-latest-nightly` | filled with the current version |
+| `data-dl-beta-toggle="optional note"` | renders the beta opt-in checkbox |
+
+Beta content is **opt-in and remembered** (`localStorage`), so visitors never trip over unreleased features. After injecting markup dynamically, call `DLVersions.apply(root)`; to react to the toggle, listen for the `dl-beta-change` event. `DLVersions.ready()` resolves once release data is in.
+
+### Config generator — per-version frozen bundles
+
+The generator is keyed on **config schema versions (v9, v10…), not plugin versions**. Nightly builds do not create new generators; only a new schema does.
+
+```
+docs/assets/js/generator.js        LOADER — small, stable, shared
+docs/assets/configs/
+  registry.json                    one entry per SCHEMA: { config: "v9", since: "2.1.5" }
+  v9/generator.js                  SELF-CONTAINED bundle: steps, styles, webhook payload, YAML builder
+  v9/options.json                  toggles/colors UI data (incl. defaultColor per event)
+  v9/config.template.yml           {{TOKEN}} output template
+  v9/config.yml                    reference copy of what shipped
+```
+
+**The isolation rule (the whole point): once a newer schema folder exists, never edit an older one again.** Old plugin versions must keep generating exactly the config they always did. Fix bugs only in the newest schema; copy the folder forward instead of refactoring in place. The loader↔bundle contract is documented at the top of both files and is frozen — a bundle registers `window.DL_GENERATORS['v9'] = launch` and receives `ctx` (`mount`, `configVersion`, `pluginVersions`, `beta`, `proxyUrl`, `backToVersions`).
+
+**Adding a new config schema:**
+1. Copy `docs/assets/configs/v9/` → `v10/`, adapt the bundle, options, and template there.
+2. Add one line to `registry.json`: `{ "config": "v10", "since": "<first plugin version shipping it>" }`.
+3. Add a docs page at `docs/config/v10/`.
+4. Bump the `V<n>` trailer in `src/main/resources/config.yml`.
+
+Nothing else. The generator picker, the config-docs index list, plugin-coverage text ("used by plugin 2.1.5 – 2.1.6", stable releases only), and BETA gating all derive from that one registry line plus the releases API. `scripts/validate-config-generator.py` cross-checks options ↔ template ↔ Java source (CI runs it; run it locally after touching any of those).
+
+- **Webhook testing / CORS:** Discord webhooks allow simple browser POSTs; each bundle carries its own test payload. `docs/cloudflare/discord-proxy.js` is an optional Cloudflare Worker relay, used when `proxyUrl` is set in `registry.json` (currently `""`).
+
+### Downloads page
+
+Renders straight from the releases API. Nightly builds (tag matches `-BETA.N`) get a dedicated purple **"Nightly"** badge and a purple card edge; any *other* pre-release keeps the generic "Pre-release" badge. Nightlies are **hidden behind an opt-in toggle** (remembered per visitor) with a plain-language stability warning.
 
 ## Conventions
 
 - **Java 21, Paper API only**; Adventure preferred for anything new touching chat components (`ChatColor` lingers in command feedback).
 - Final classes, private constructors on static utility classes, `LinkedHashMap` where iteration order matters.
 - Config keys: lowercase snake_case, grouped `log.<category>.<event>`.
-- Every new logged event, in lockstep: listener (with live config gate) + `EventRegistry` registration + `log.*` key in `config.yml` + default color in `Log.init` + generator `options.json`/template entries + docs mention. The validator catches the generator-side half in CI.
+- Every new logged event, in lockstep: listener (with live config gate) + `EventRegistry` registration + `log.*` key in `config.yml` + default color in `Log.init` + generator `options.json` (including its `defaultColor`, which must match the plugin default) / template entries + docs mention. The validator catches the generator-side half in CI.
+- **Never hardcode a version number in the website.** Use the `data-dl-*` hooks from `versions.js`; if something genuinely can't be derived, that's a signal the data model needs the fact once, not the page needing a literal.
 - Escape user-visible strings via `Log.mdEscape`; prefer structured `Log.Field` embeds for multi-datum events.
 
 ## Things NOT in this repo (avoid confusion)
 
 - **No test suite**, no linter/formatter config (Java).
+- **No `generator.config.js`** — the old `DL_VERSIONS`/`DL_CONFIGS`/`DL_TEST_EMBED` globals are gone, replaced by `registry.json` plus per-bundle payloads.
+- **No committed AI/editor tooling config.** `CLAUDE.md`, `.claude/`, `.cursor*`, `.aider*`, `.windsurfrules`, `*.local.md` and friends are gitignored — they're local preference, not project state. `AGENTS.md` is the one tracked, tool-agnostic guide.
 - `dependency-reduced-pom.xml` is shade-plugin output that happens to be committed — don't edit by hand.
 - **No `release-spec.md` / `release-changelog-builder-config.json` / `release-on-merge.yml`** — replaced by release-please. Any reference to them (old docs, old issues, old habits) is stale.
 - **No `dev` branch** — retired in favor of trunk-based development on `main`.
-- In July 2026 an unreleased effort (v2.1.7 + website rewrite + "config v10" with nested sub-option toggles) was deliberately discarded to start fresh; the maintainer keeps an archive of it outside the repo. References to config **v10**, a modular generator rewrite, or nested sub-option toggles mean that discarded work, **not** the current codebase.
+- **Config v10 does not exist yet.** In July 2026 an unreleased effort (v2.1.7 + a website rewrite + a "config v10" with nested sub-option toggles) was deliberately discarded to start fresh; the maintainer keeps an archive of it outside the repo. References to config **v10** or nested sub-option toggles mean that discarded work, **not** the current codebase — v9 is the only schema that exists.
