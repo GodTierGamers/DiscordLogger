@@ -20,7 +20,7 @@ Everything after that is automated: merged work appears in the next **nightly bu
 
 - **Java 25** (Temurin recommended) and Maven.
 - `mvn -B -ntp clean package` must pass.
-- Test on a real **Paper 1.21+** server when your change touches runtime behavior — a clean compile is not a functional test.
+- Test on a real **Paper 26.x** server when your change touches runtime behavior — a clean compile is not a functional test.
 - **Config changes travel in lockstep**: if you add or change a `log.*` / `embeds.*` config key, the same PR must update the listener, `src/main/resources/config.yml`, and the website generator data (`docs/assets/configs/v*/options.json` + `config.template.yml`). Run the checker locally:
   ```bash
   python3 scripts/validate-config-generator.py

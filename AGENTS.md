@@ -10,7 +10,7 @@ Everything below was verified against the actual source at the time of writing; 
 
 - **Current plugin version:** tracked by `pom.xml` / `.release-please-manifest.json` — never hand-edit either, see **Releases** below.
 - **Current config schema:** **v9** (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V9, SHIPPED WITH v2.1.6 (x-release-please-version)`)
-- **Paper API:** `1.21.11-R0.1-SNAPSHOT` (`provided` scope), `api-version: 1.21`
+- **Paper API:** `26.2.build.87-stable` (`provided` scope), `api-version: 26.1`, compiled for **Java 25**
 - **GitHub:** `GodTierGamers/DiscordLogger`
 
 ## Working agreement (binding — not suggestions)
