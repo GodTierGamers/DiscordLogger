@@ -1,6 +1,8 @@
 # AGENTS.md — DiscordLogger
 
-**The contributor's guide to this repository — how the project is built, how it works internally, and how changes ship.** It's written for anyone picking up the codebase: human contributors and AI coding agents alike, with no prior context assumed. Everything below was verified against the actual source at the time of writing; when in doubt, the code wins — and if you find this file wrong, fix it in the same PR.
+**This file is written for AI coding agents working in this repository. It is not the human-facing docs.** If you're a person, read [ARCHITECTURE.md](ARCHITECTURE.md) (how the project works, narrative form) and [CONTRIBUTING.md](CONTRIBUTING.md) (how to submit a PR) instead — they cover the same ground with less density and no assumption you'll retain all of it in one pass. This file is optimized for the opposite: maximum accurate detail per token, safe to re-read in full every session, safe to grep.
+
+Everything below was verified against the actual source at the time of writing; when in doubt, the code wins — and if you find this file wrong, fix it in the same PR.
 
 ## What this project is
 
@@ -11,18 +13,16 @@
 - **Paper API:** `1.21.11-R0.1-SNAPSHOT` (`provided` scope), `api-version: 1.21`
 - **GitHub:** `GodTierGamers/DiscordLogger`
 
-## Working agreement (the short version)
-
-These rules apply to every contribution, whether written by a person or an AI agent:
+## Working agreement (binding — not suggestions)
 
 1. **Trunk-based**: branch off `main` (`feat/<name>`, `fix/<name>`), PR into `main`. Never commit directly to `main`.
 2. **Conventional Commit PR titles** (`feat:` / `fix:` / `docs:` / `chore:` / `refactor:` / `ci:` / `test:` …) — `lint-pr.yml` rejects anything else. The title becomes the changelog entry verbatim. Squash-merge.
 3. **Verify before PR**: `mvn -B -ntp clean package` must pass; for listener/config changes, exercise on a real Paper server when practical.
-4. **Config changes travel in lockstep**: `config.yml` + listener + `EventRegistry` + `docs/assets/configs/v*/options.json` + `config.template.yml` **+ `docs/assets/configs/v*/config.yml`** (see "Config file dictionary" below — this one is easy to forget) in the same PR; run `python3 scripts/validate-config-generator.py` locally (CI runs it too).
-5. **Merging is a maintainer's call** — AI agents open PRs and stop there unless a maintainer explicitly says to merge. This goes double for the **release-please Release PR**: merging it *is* the release. It exists to accumulate merged features (the batching role the old `dev` branch served) and stays open until the maintainer decides a feature compilation is ready to ship. Never merge it without an explicit, current instruction to release — general "go" energy on other work does not extend to it.
+4. **Config changes travel in lockstep**: `config.yml` + listener + `EventRegistry` + `docs/assets/configs/v*/options.json` + `config.template.yml` + `docs/assets/configs/v*/config.yml` + the embedded block in `docs/config/v*/index.md` (see "Config file dictionary" below — four places, not two) in the same PR; run `python3 scripts/validate-config-generator.py` locally (CI runs it too).
+5. **Merging is a maintainer's call — you open PRs and stop.** Do not merge without an explicit, current instruction. This goes double for the **release-please Release PR**: merging it *is* the release. It exists to accumulate merged features (the batching role the old `dev` branch served) and stays open until the maintainer decides a feature compilation is ready to ship. Never merge it on general "go" energy from other work — it requires its own fresh "ship it," every single time, no exceptions, even if you were just told to merge something else.
 6. **Never hand-edit** `.release-please-manifest.json`, `CHANGELOG.md`, or `pom.xml`'s `<version>` — those belong to release-please.
-7. Keep this file current: workflow or architecture changes update AGENTS.md in the same PR.
-8. **AI attribution policy**: the README's *AI Disclosure* section is the single, project-level statement of AI involvement. Do **not** add per-commit or per-PR attribution — no `Co-Authored-By: Claude/AI` trailers, no "Generated with …" footers in commits or PR descriptions, no AI credits in code comments. The project is transparent about AI assistance without implying any individual change was unreviewed or machine-owned.
+7. Keep this file current: workflow or architecture changes update AGENTS.md in the same PR. Update [ARCHITECTURE.md](ARCHITECTURE.md) too if the change is the kind a human contributor would want to know about narratively, not just as a reference fact.
+8. **AI attribution policy**: the README's *AI Disclosure* section is the single, project-level statement of AI involvement. Do **not** add per-commit or per-PR attribution — no `Co-Authored-By: Claude/AI` trailers, no "Generated with …" footers in commits or PR descriptions, no AI credits in code comments.
 
 ## Build & test
 
@@ -42,11 +42,11 @@ mvn -B -ntp clean compile     # compile only (faster sanity check)
 pom.xml                                Maven build
 release-please-config.json             release-please: changelog sections, extra-files
 .release-please-manifest.json          release-please: current released version (state)
-scripts/validate-config-generator.py   CI check: options.json <-> template <-> Java source <-> shipped config <-> mirror
+scripts/validate-config-generator.py   CI check: options.json <-> template <-> Java source <-> shipped config <-> mirror <-> doc embed
 src/main/resources/
   plugin.yml                           Plugin descriptor (Maven-filtered)
   build-info.properties                Build channel/version/date, baked in at package time
-  config.yml                           Default config, schema v9 (NOT filtered)
+  config.yml                           Default config, schema v9 (NOT filtered) — file 1 of 4, see dictionary
 src/main/java/com/discordlogger/
   DiscordLogger.java                   Plugin entry point (onEnable/onDisable)
   log/Log.java                         Static logging facade (the API everything calls)
@@ -67,6 +67,7 @@ src/main/java/com/discordlogger/
   listener/server/                     ServerCommand, Explosion
   listener/moderation/                 Ban, Unban, Kick, Op, Deop, Whitelist
 docs/                                  Jekyll website (GitHub Pages, deploys from main)
+  config/v9/index.md                    Config docs page — embeds file 4 of 4, see dictionary
   assets/js/versions.js                 Site-wide version awareness + BETA badges/gating
   assets/js/generator.js                Config generator loader (schema picker)
   assets/configs/registry.json          One entry per config schema
@@ -87,8 +88,9 @@ docs/                                  Jekyll website (GitHub Pages, deploys fro
 1. Conventional commits accumulate on `main` (squash-merged PR titles).
 2. `release-please.yml` maintains a rolling **Release PR**: version bump computed from commit types (`fix:` → patch, `feat:` → minor, `!`/BREAKING → major), `CHANGELOG.md` from commit titles, `pom.xml` bumped natively, and `config.yml`'s annotated trailer line rewritten (the `(x-release-please-version)` marker — `ConfigMigrator` ignores everything after the `V<n>` number, verified).
 3. **Merging the Release PR is the release.** The next `release-please.yml` run (triggered by that merge) tags `v<version>` and publishes the GitHub Release with the changelog as its body.
-4. The same workflow run's `build-artifact` job then checks out the tag, stamps `BUILT <DD-MM-YYYY>` onto the trailer, builds with `-Ddl.build.channel=stable`, and attaches `DiscordLogger-v<version>.jar` + `.sha256`. (The build lives in the same run rather than a `release: published` listener because events created with the built-in `GITHUB_TOKEN` don't trigger other workflows — a separate listener would never fire.)
+4. The same workflow run's `build-artifact` job then checks out the tag, stamps `BUILT <DD-MM-YYYY>` onto the trailer, builds with `-Ddl.build.channel=stable`, and attaches `DiscordLogger-v<version>.jar` + `.sha256`. (The build lives in the same run rather than a `release: published` listener because events created with the built-in `GITHUB_TOKEN` don't trigger other workflows — a separate listener would never fire. See Gotchas.)
 5. **Config schema revisions (v9 → v10) stay manual and deliberate** — bump the `V<n>` trailer, add `docs/assets/configs/v<n>/`, wire the generator config. Never inferred from commits.
+6. **Force a specific version:** a commit whose message has a `Release-As: X.Y.Z` footer retargets the Release PR (and `nightly.yml`'s version computation, which honors the same footer) to that exact version regardless of what the conventional-commit math would produce.
 
 ### Build channels (`BuildInfo`, baked in at package time — never inferred from the version string)
 
@@ -101,7 +103,7 @@ docs/                                  Jekyll website (GitHub Pages, deploys fro
 ### Nightly builds (`nightly.yml`)
 Cron (15:00 UTC — arbitrary, adjust freely) + `workflow_dispatch`, building from `main`:
 - **Skips** if `main`'s HEAD matches the last nightly tag or the last stable tag — no identical rebuilds, which also naturally bounds how many nightlies exist (they're all kept forever, never pruned).
-- Computes the **upcoming version** the same way release-please will (conventional commits since the last stable tag), so the beta's base version always matches the eventual stable release.
+- Computes the **upcoming version** the same way release-please will (conventional commits since the last stable tag, honoring `Release-As:` footers the same way), so the beta's base version always matches the eventual stable release.
 - Numbers builds `v<version>-BETA.1`, `.2`, … — derived from existing tags each run, self-resets when the base version moves (e.g. a `feat:` lands and `2.1.7-BETA.9` jumps to `2.2.0-BETA.1`).
 - Version injected via `mvn versions:set` (CI-local, never committed); trailer stamped `SHIPPED WITH v<version>-BETA.<n> BUILT <DD-MM-YYYY>` — every version string in the built JAR matches what was built, while the repo never contains a beta version string.
 - Publishes each nightly as its own pre-release (`prerelease: true`) with notes listing commits since the previous nightly, plus JAR + checksum.
@@ -112,7 +114,8 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 
 ### Repo settings that matter (configured, not in files)
 - "Allow GitHub Actions to create and approve pull requests" **must stay enabled** — release-please cannot open its Release PR without it.
-- Branch protection on `main` requires the CI + lint checks; merged branches auto-delete.
+- Branch protection on `main` requires the `build`, `validate-generator-data`, and `lint` checks; merged branches auto-delete.
+- **Squash-merge title source must be `PR_TITLE`, not the default `COMMIT_OR_PR_TITLE`.** With the default, a single-commit PR uses that commit's message instead of the (lint-checked) PR title when squashed — silently bypassing `lint-pr.yml`'s whole purpose. Verify with `gh api repos/OWNER/REPO --jq .squash_merge_commit_title`.
 
 ## Runtime architecture
 
@@ -174,9 +177,9 @@ log.moderation.{ban,unban,kick,op,deop,whitelist_toggle,whitelist_edit}
 ```
 All `log.*` toggles ship as `true` in the default file.
 
-### Config file dictionary — four places hold "the config", they are not the same thing
+### Config file dictionary — four places hold "the config," they are not the same thing
 
-This repo has four near-identical copies of the config content. Confusing them is the single most common way this repo drifts — it already happened twice: a hint-text reword landed on two of four copies and nobody noticed the other two for several sessions (one of them, the doc-page embed, had *already* been silently missing an entire banner block before anyone caught it). The first three carry an identity comment block at the top (`DL_FILE_IDENTITY_START`/`END`) stating which one they are — read it before editing any of them.
+Four near-identical copies of the config content exist. Confusing them is the single most common way this repo drifts — it already happened twice: a hint-text reword landed on two of four copies and nobody noticed the other two for several sessions (one of them, the doc-page embed, had *already* been silently missing an entire banner block before anyone caught it). Files 1–3 carry an identity comment block at the top (`DL_FILE_IDENTITY_START`/`END`) stating which one they are — read it before editing any of them.
 
 | # | Location | What it actually is | Consumed by |
 |---|---|---|---|
@@ -185,7 +188,7 @@ This repo has four near-identical copies of the config content. Confusing them i
 | 3 | `docs/assets/configs/v9/config.template.yml` | **The generator template** — `{{TOKEN}}` placeholders, filled in by the wizard based on what the visitor chose. Never downloaded directly; its *output* is. | `docs/assets/configs/v9/generator.js` |
 | 4 | The `## Full config.yml` fenced code block inside `docs/config/v9/index.md` | **The doc-page embed** — the full file shown inline in prose, for people reading the docs who don't want to click through. Easiest of the four to forget since it lives inside Markdown, not a config file. | Rendered directly on the config docs page |
 
-**The rule:** 1, 2, and 4 must be **content-identical** — same real values, same comments, same banners — except each one's own trailer line (`SHIPPED WITH vX.Y.Z` vs `DOWNLOADED FROM WEBSITE`) and (for 1 and 2) identity header. `scripts/validate-config-generator.py` enforces this automatically in CI for both 1↔2 and 2↔4 — it will fail the build if any of them drift, which is exactly the class of bug that motivated adding the check. File 3 isn't byte-compared (it has tokens instead of real values), but its `{{LOG_*}}`/`{{COLOR_*}}` tokens are cross-checked against `options.json` and the Java source by the same script.
+**The rule:** 1, 2, and 4 must be **content-identical** — same real values, same comments, same banners — except each one's own trailer line (`SHIPPED WITH vX.Y.Z` vs `DOWNLOADED FROM WEBSITE`) and (for 1 and 2) identity header. `scripts/validate-config-generator.py` enforces this automatically in CI for both 1↔2 and 2↔4 — it will fail the build if any of them drift. File 3 isn't byte-compared (it has tokens instead of real values), but its `{{LOG_*}}`/`{{COLOR_*}}` tokens are cross-checked against `options.json` and the Java source by the same script.
 
 **Practical consequence:** any edit to the real config content (webhook/format/embeds/log.\* structure or their comments, including the banners) touches file 1 first, then files 2 and 4 need the identical change, and file 3 needs the matching `{{TOKEN}}` version. Don't rely on memory for this — run `python3 scripts/validate-config-generator.py` locally before opening the PR; CI runs it too, but catching it before pushing is faster.
 
@@ -212,9 +215,9 @@ Use the declarative hooks rather than writing per-page JS or literal versions:
 | `data-dl-version="2.1.7"` | appends a BETA badge while that version is nightly-only |
 | `data-dl-beta-only="2.1.7"` | hides the element unless beta is enabled (normal content once it ships) |
 | `data-dl-latest` / `data-dl-latest-nightly` | filled with the current version |
-| `data-dl-beta-toggle="optional note"` | renders the beta opt-in checkbox |
+| `data-dl-beta-toggle="optional note"` | renders the beta opt-in slider (shared `DLVersions.switchEl()` — used by every beta toggle on the site, never a raw checkbox) |
 
-Beta content is **opt-in and remembered** (`localStorage`), so visitors never trip over unreleased features. After injecting markup dynamically, call `DLVersions.apply(root)`; to react to the toggle, listen for the `dl-beta-change` event. `DLVersions.ready()` resolves once release data is in.
+Beta content is **opt-in and remembered** (`localStorage`), so visitors never trip over unreleased features. After injecting markup dynamically, call `DLVersions.apply(root)`; to react to the toggle, listen for the `dl-beta-change` event. `DLVersions.ready()` resolves once release data is in. **A beta toggle must render in both its on and off states whenever beta content exists** — gating its own visibility on `!showBeta` removes the only control that could turn it back off (this shipped once, was reported, and was fixed — don't reintroduce it).
 
 ### Config generator — per-version frozen bundles
 
@@ -236,7 +239,7 @@ docs/assets/configs/
 
 **The isolation rule (the whole point): once a newer schema folder exists, never edit an older one again.** Old plugin versions must keep generating exactly the config they always did. Fix bugs only in the newest schema; copy the folder forward instead of refactoring in place. The loader↔bundle contract is documented at the top of both files and is frozen — a bundle registers `window.DL_GENERATORS['v9'] = launch` and receives `ctx` (`mount`, `configVersion`, `pluginVersions`, `beta`, `proxyUrl`, `backToVersions`).
 
-`registry.json` entries take `{ "config", "since", "generatorReady"? }`. **`since` is the first build shipping that schema and may itself be a nightly** (e.g. `"2.1.7-BETA.1"`) when a schema debuts in one — version comparison is BETA-aware, so `2.1.7-BETA.1 < 2.1.7-BETA.2 < 2.1.7`. Setting `"generatorReady": false` lists a schema *before* its bundle exists: the picker names it, explains it isn't available yet, and disables Continue rather than failing to load a missing script. **v10 currently sits in the registry this way** — reachable from `2.1.7-BETA.1`, deliberately not yet implemented.
+`registry.json` entries take `{ "config", "since", "generatorReady"? }`. **`since` is the first build shipping that schema and may itself be a nightly** (e.g. `"2.1.7-BETA.1"`) when a schema debuts in one — version comparison is BETA-aware, so `2.1.7-BETA.1 < 2.1.7-BETA.2 < 2.1.7`. Setting `"generatorReady": false` lists a schema *before* its bundle exists: the picker names it, explains it isn't available yet, and disables Continue rather than failing to load a missing script.
 
 **Adding a new config schema:**
 1. Copy `docs/assets/configs/v9/` → `v10/`, adapt the bundle, options, and template there.
@@ -250,7 +253,18 @@ Nothing else. The generator picker, the config-docs index list, and BETA gating 
 
 ### Downloads page
 
-Renders straight from the releases API. Nightly builds (tag matches `-BETA.N`) get a dedicated purple **"Nightly"** badge and a purple card edge; any *other* pre-release keeps the generic "Pre-release" badge. Nightlies are **hidden behind an opt-in toggle** (remembered per visitor) with a plain-language stability warning.
+Renders straight from the releases API. Nightly builds (tag matches `-BETA.N`) get a dedicated purple **"Nightly"** badge and a purple card edge; any *other* pre-release keeps the generic "Pre-release" badge. Nightlies are **hidden behind an opt-in toggle** (remembered per visitor, same shared slider component) with a plain-language stability warning.
+
+## Gotchas — learned the hard way, don't relearn these
+
+- **`X | None` union-type syntax in `scripts/*.py` needs `from __future__ import annotations`** at the top of the file, or it crashes at import time on Python < 3.10 (the local dev machine runs 3.9; don't assume CI's Python version is what you're testing against).
+- **Every new GitHub Actions workflow needs an explicit, minimal `permissions:` block.** A workflow without one trips CodeQL's "Workflow does not contain permissions" finding. Default to `contents: read` and add only what the workflow actually needs (`pull-requests: read`, `contents: write`, etc.).
+- **GITHUB_TOKEN-created events don't trigger other workflows.** A separate workflow listening for `release: published` will never fire for a release that release-please itself created — this is why the JAR-build step lives inside `release-please.yml`'s own run instead of a standalone listener.
+- **A required branch-protection check that can't yet report will block every PR forever.** If you add a new required status check (e.g. `lint-pr.yml`), it can only start reporting once its own workflow file exists on `main` — don't mark it required until after that first merge, or remove it from the required list temporarily while the workflow itself is mid-rollout.
+- **`squash_merge_commit_title` must be `PR_TITLE`, not the GitHub default `COMMIT_OR_PR_TITLE`.** Otherwise a single-commit PR's original (unvetted) commit message silently wins over the lint-checked PR title when squashed onto `main` — quietly defeating the whole point of `lint-pr.yml`.
+- **Bot-authored PRs (release-please's Release PR) will show no CI checks at all**, and that's expected, not broken — `pull_request_target` workflows don't execute against them the normal way. Merge with the admin/override option.
+- **`schedule`-triggered workflows only run using the copy of the workflow file on the repo's default branch.** If you edit `nightly.yml` on a feature branch, the cron won't pick up the change until that branch merges — use `workflow_dispatch` to test it in the meantime.
+- **A nightly's channel is a compiled-in fact (`BuildInfo`), never parsed from its own version string.** A version string is trivially renameable; don't add any logic anywhere that infers `stable`/`nightly`/`dev` by pattern-matching a version number instead of reading `BuildInfo`.
 
 ## Conventions
 
@@ -265,7 +279,7 @@ Renders straight from the releases API. Nightly builds (tag matches `-BETA.N`) g
 
 - **No test suite**, no linter/formatter config (Java).
 - **No `generator.config.js`** — the old `DL_VERSIONS`/`DL_CONFIGS`/`DL_TEST_EMBED` globals are gone, replaced by `registry.json` plus per-bundle payloads.
-- **No committed AI/editor tooling config.** `CLAUDE.md`, `.claude/`, `.cursor*`, `.aider*`, `.windsurfrules`, `*.local.md` and friends are gitignored — they're local preference, not project state. `AGENTS.md` is the one tracked, tool-agnostic guide.
+- **No committed AI/editor tooling config.** `CLAUDE.md`, `.claude/`, `.cursor*`, `.aider*`, `.windsurfrules`, `*.local.md` and friends are gitignored — they're local preference, not project state. `AGENTS.md` (this file) is the one tracked, AI-agent-facing reference; `ARCHITECTURE.md` and `CONTRIBUTING.md` serve that role for humans.
 - `dependency-reduced-pom.xml` is shade-plugin output that happens to be committed — don't edit by hand.
 - **No `release-spec.md` / `release-changelog-builder-config.json` / `release-on-merge.yml`** — replaced by release-please. Any reference to them (old docs, old issues, old habits) is stale.
 - **No `dev` branch** — retired in favor of trunk-based development on `main`.

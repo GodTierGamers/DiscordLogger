@@ -1,6 +1,6 @@
 # Contributing to DiscordLogger
 
-Thanks for helping improve **DiscordLogger**! This page covers the practical side of contributing. For the deep dive — architecture, code conventions, the release pipeline — see **[AGENTS.md](AGENTS.md)**.
+Thanks for helping improve **DiscordLogger**! This page covers the practical side of contributing. For the deep dive — architecture, code conventions, the release pipeline — see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ## How changes ship (the short version)
 
