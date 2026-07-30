@@ -8,4 +8,23 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 
 ---
 
-_Nothing outstanding._
+## Plugin
+
+- **Rate limiter and send queue** — Discord returns HTTP 429 when a busy server logs faster than the webhook allows. Queue outgoing messages and respect the rate limit rather than dropping them.
+- **Per-category webhook routing** — send different log categories to different Discord channels (e.g. moderation to a private staff channel, chat to a public one).
+- **Deeper logging modes** — option to relay the full server console rather than only the specific events currently supported.
+- **Log filtering (allow/deny lists)** — exclude specific entries within a category: e.g. don't log `/whisper` when command logging is on, or ignore a particular player by UUID.
+- **Bedrock vs Java indicator** — show which platform a player connected from.
+- **`lang.yml` with MiniMessage** — move every user-facing string into a language file so wording and formatting can be fully rewritten without touching code.
+
+## Config schema v10
+
+- **Move embed colour options to sub-options under their event toggles** — requires introducing nested sub-options, including in the config generator. This is the change that starts config schema **v10**.
+
+## Website & docs
+
+- **Discord OAuth webhook creation** — let the config generator create the webhook via Discord OAuth instead of making people copy a URL by hand.
+- **Complete website redesign.**
+- **Improve SEO.**
+- **Full docs quality pass** — review everything for accuracy and clarity.
+- **Verify every plugin-version reference is correct** across the site and repo.
