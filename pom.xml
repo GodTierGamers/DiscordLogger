@@ -92,6 +92,11 @@
                             </relocations>
                             <!-- Disable to avoid ASM parsing issues with Java 21 bytecode -->
                             <minimizeJar>false</minimizeJar>
+                            <!-- dependency-reduced-pom.xml only matters when publishing to a
+                                 Maven repo (so consumers don't inherit shaded deps). This
+                                 plugin ships as a JAR on GitHub Releases and is never consumed
+                                 as a Maven artifact, so don't generate it at all. -->
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
                             <filters>
                                 <!-- Exclude snakeyaml's META-INF to avoid MANIFEST.MF overlap warning.
                                      We only need the snakeyaml classes, not its manifest. -->

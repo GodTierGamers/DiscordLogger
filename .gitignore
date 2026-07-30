@@ -17,6 +17,11 @@ replay_pid*
 target/
 !.mvn/wrapper/maven-wrapper.jar
 .mvn/wrapper/maven-wrapper.properties
+# maven-shade-plugin output. Only useful when publishing to a Maven repo so
+# consumers don't inherit shaded deps — this plugin ships as a JAR on GitHub
+# Releases, so it serves no purpose. Generation is disabled in pom.xml
+# (createDependencyReducedPom), this entry just guards against it coming back.
+dependency-reduced-pom.xml
 
 ### Gradle ###
 .gradle/

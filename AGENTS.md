@@ -241,13 +241,20 @@ docs/assets/configs/
 
 `registry.json` entries take `{ "config", "since", "generatorReady"? }`. **`since` is the first build shipping that schema and may itself be a nightly** (e.g. `"2.1.7-BETA.1"`) when a schema debuts in one — version comparison is BETA-aware, so `2.1.7-BETA.1 < 2.1.7-BETA.2 < 2.1.7`. Setting `"generatorReady": false` lists a schema *before* its bundle exists: the picker names it, explains it isn't available yet, and disables Continue rather than failing to load a missing script.
 
-**Adding a new config schema:**
-1. Copy `docs/assets/configs/v9/` → `v10/`, adapt the bundle, options, and template there.
-2. Add one line to `registry.json`: `{ "config": "v10", "since": "<first build shipping it>" }` — and drop the `generatorReady: false` flag once the bundle works.
-3. Add a docs page at `docs/config/v10/`.
-4. Bump the `V<n>` trailer in `src/main/resources/config.yml`.
+**Adding a new config schema (worked example: v9 → v10).** The plugin ships exactly **one** config — the current one — so the shipped file is *replaced*, while every website artifact for the old schema is *kept forever*:
 
-Nothing else. The generator picker, the config-docs index list, and BETA gating all derive from that one registry line plus the releases API. `scripts/validate-config-generator.py` cross-checks options ↔ template ↔ Java source (CI runs it; run it locally after touching any of those).
+| Path | Action | Why |
+|---|---|---|
+| `src/main/resources/config.yml` | **REPLACE** with v10 content; trailer becomes `CONFIG VERSION V10` | The JAR only ever carries the current schema. `ConfigMigrator` migrates old user files forward at runtime. |
+| `docs/assets/configs/v9/**` | **DO NOT TOUCH — ever again** | Bundle, options, template, mirror. Someone still running a v9 plugin must keep generating exactly the config they always did. |
+| `docs/config/v9/index.md` | **KEEP FOREVER** | v9 users still need their docs. Old schema docs are never deleted, only superseded. |
+| `docs/assets/configs/v10/**` | **CREATE** — copy v9's folder, then adapt it | Copy forward; never refactor an old schema in place. |
+| `docs/config/v10/index.md` | **CREATE** | New docs page for the new schema. |
+| `registry.json` | **ADD** one line: `{ "config": "v10", "since": "<first build shipping it>" }` | The v9 entry stays untouched. |
+
+Nothing else. The generator picker, the config-docs index list, and BETA gating all derive from that one registry line plus the releases API.
+
+**How the drift guard follows the schema forward** (verified by simulating the whole v10 transition): `scripts/validate-config-generator.py` reads the *shipped* config's own trailer to decide which mirror to compare against. The moment that trailer says `V10`, it compares against `docs/assets/configs/v10/config.yml` and stops comparing v9 entirely — because v9 is frozen history, not a live copy. v9 doesn't go unchecked though: each docs page is validated against **its own** schema's mirror, so v9 stays internally consistent forever without ever being measured against a newer plugin config. In short: **live copies are checked against each other; frozen versions are checked only against themselves.**
 
 - **Webhook testing / CORS:** Discord webhooks allow simple browser POSTs; each bundle carries its own test payload. `docs/cloudflare/discord-proxy.js` is an optional Cloudflare Worker relay, used when `proxyUrl` is set in `registry.json` (currently `""`).
 
@@ -280,7 +287,7 @@ Renders straight from the releases API. Nightly builds (tag matches `-BETA.N`) g
 - **No test suite**, no linter/formatter config (Java).
 - **No `generator.config.js`** — the old `DL_VERSIONS`/`DL_CONFIGS`/`DL_TEST_EMBED` globals are gone, replaced by `registry.json` plus per-bundle payloads.
 - **No committed AI/editor tooling config.** `CLAUDE.md`, `.claude/`, `.cursor*`, `.aider*`, `.windsurfrules`, `*.local.md` and friends are gitignored — they're local preference, not project state. `AGENTS.md` (this file) is the one tracked, AI-agent-facing reference; `ARCHITECTURE.md` and `CONTRIBUTING.md` serve that role for humans.
-- `dependency-reduced-pom.xml` is shade-plugin output that happens to be committed — don't edit by hand.
+- **No `dependency-reduced-pom.xml`.** It was committed historically; it's gitignored and its generation is disabled (`<createDependencyReducedPom>false</createDependencyReducedPom>` in the shade plugin config). It only matters when publishing to a Maven repo so consumers don't inherit shaded deps — this plugin ships as a JAR on GitHub Releases and is never consumed as a Maven artifact. Don't re-add it.
 - **No `release-spec.md` / `release-changelog-builder-config.json` / `release-on-merge.yml`** — replaced by release-please. Any reference to them (old docs, old issues, old habits) is stale.
 - **No `dev` branch** — retired in favor of trunk-based development on `main`.
 - **Config v10 does not exist yet.** In July 2026 an unreleased effort (v2.1.7 + a website rewrite + a "config v10" with nested sub-option toggles) was deliberately discarded to start fresh; the maintainer keeps an archive of it outside the repo. References to config **v10** or nested sub-option toggles mean that discarded work, **not** the current codebase — v9 is the only schema that exists.
