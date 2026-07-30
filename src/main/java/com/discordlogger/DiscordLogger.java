@@ -9,6 +9,7 @@ import com.discordlogger.update.BuildInfo;
 import com.discordlogger.update.NightlyNotice;
 import com.discordlogger.update.UpdateChecker;
 import com.discordlogger.util.Platform;
+import com.discordlogger.webhook.WebhookQueue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -43,6 +44,9 @@ public final class DiscordLogger extends JavaPlugin {
             getLogger().warning("Set webhook.url and run /discordlogger reload to enable Discord posting.");
         }
 
+        // Start the webhook sender before any listener can produce a message.
+        WebhookQueue.start(this);
+
         // Register events/commands regardless, so reload works
         events = new EventRegistry(this);
         events.registerAll();
@@ -63,7 +67,10 @@ public final class DiscordLogger extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // Queue the stop message FIRST, then drain — shutdown() flushes what's
+        // pending, so anything queued after it would be lost.
         if (events != null) events.fireServerStop();
+        WebhookQueue.shutdown();
         getLogger().info("Disabled.");
     }
 
