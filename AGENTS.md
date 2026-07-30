@@ -203,7 +203,11 @@ Beta content is **opt-in and remembered** (`localStorage`), so visitors never tr
 
 ### Config generator — per-version frozen bundles
 
-The generator is keyed on **config schema versions (v9, v10…), not plugin versions**. Nightly builds do not create new generators; only a new schema does.
+**Users pick their plugin version; the config schema is resolved for them.** Nobody knows offhand which schema their build uses, but everyone knows what they downloaded — so the picker lists plugin builds and shows the detected schema as a confirmation note.
+
+Every published build is listed individually, **nightlies included** (`2.1.7-BETA.1`, `2.1.7-BETA.2`, …) — successive nightlies can carry different features, so they're genuinely different targets. Nightlies are hidden until the visitor enables beta, and the default selection is always the newest *stable* build.
+
+Internally the generator is still keyed on **config schema versions** (v9, v10…): a new schema means a new bundle, a new plugin release does not.
 
 ```
 docs/assets/js/generator.js        LOADER — small, stable, shared
@@ -217,13 +221,15 @@ docs/assets/configs/
 
 **The isolation rule (the whole point): once a newer schema folder exists, never edit an older one again.** Old plugin versions must keep generating exactly the config they always did. Fix bugs only in the newest schema; copy the folder forward instead of refactoring in place. The loader↔bundle contract is documented at the top of both files and is frozen — a bundle registers `window.DL_GENERATORS['v9'] = launch` and receives `ctx` (`mount`, `configVersion`, `pluginVersions`, `beta`, `proxyUrl`, `backToVersions`).
 
+`registry.json` entries take `{ "config", "since", "generatorReady"? }`. **`since` is the first build shipping that schema and may itself be a nightly** (e.g. `"2.1.7-BETA.1"`) when a schema debuts in one — version comparison is BETA-aware, so `2.1.7-BETA.1 < 2.1.7-BETA.2 < 2.1.7`. Setting `"generatorReady": false` lists a schema *before* its bundle exists: the picker names it, explains it isn't available yet, and disables Continue rather than failing to load a missing script. **v10 currently sits in the registry this way** — reachable from `2.1.7-BETA.1`, deliberately not yet implemented.
+
 **Adding a new config schema:**
 1. Copy `docs/assets/configs/v9/` → `v10/`, adapt the bundle, options, and template there.
-2. Add one line to `registry.json`: `{ "config": "v10", "since": "<first plugin version shipping it>" }`.
+2. Add one line to `registry.json`: `{ "config": "v10", "since": "<first build shipping it>" }` — and drop the `generatorReady: false` flag once the bundle works.
 3. Add a docs page at `docs/config/v10/`.
 4. Bump the `V<n>` trailer in `src/main/resources/config.yml`.
 
-Nothing else. The generator picker, the config-docs index list, plugin-coverage text ("used by plugin 2.1.5 – 2.1.6", stable releases only), and BETA gating all derive from that one registry line plus the releases API. `scripts/validate-config-generator.py` cross-checks options ↔ template ↔ Java source (CI runs it; run it locally after touching any of those).
+Nothing else. The generator picker, the config-docs index list, and BETA gating all derive from that one registry line plus the releases API. `scripts/validate-config-generator.py` cross-checks options ↔ template ↔ Java source (CI runs it; run it locally after touching any of those).
 
 - **Webhook testing / CORS:** Discord webhooks allow simple browser POSTs; each bundle carries its own test payload. `docs/cloudflare/discord-proxy.js` is an optional Cloudflare Worker relay, used when `proxyUrl` is set in `registry.json` (currently `""`).
 

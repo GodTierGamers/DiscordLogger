@@ -473,11 +473,11 @@
             });
 
             const notes = [
-                h('p', { class: 'cfg-note' }, `Config schema ${CONFIG_VERSION.toUpperCase()} (${ctx.pluginVersions}). Save this as plugins/DiscordLogger/config.yml, then restart or run /discordlogger reload.`),
+                h('p', { class: 'cfg-note' }, `For plugin ${ctx.pluginVersion} · config schema ${CONFIG_VERSION.toUpperCase()}. Save this as plugins/DiscordLogger/config.yml, then restart or run /discordlogger reload.`),
             ];
             if (ctx.beta) {
                 notes.push(h('p', { class: 'cfg-note cfg-note--beta' },
-                    '⚠️ This config version only exists in nightly builds so far — its format may change before it ships in a stable release.'));
+                    '⚠️ You generated this for a nightly build — its config format may change before it ships in a stable release.'));
             }
 
             return h('section', { class: 'cfg-panel' }, [

@@ -2,16 +2,22 @@
     ------------------------------------------------------------------
     Small and stable. It:
       1. reads /assets/configs/registry.json   (which config schemas exist)
-      2. asks DLVersions (versions.js) which of them are still beta
-      3. renders the CONFIG VERSION picker — not a plugin-version picker;
-         nightly builds do not create new generators, only new schemas do
-      4. injects the chosen schema's SELF-CONTAINED bundle:
+      2. reads DLVersions (versions.js) for the real release list + beta status
+      3. renders the PLUGIN VERSION picker — users know which plugin build they
+         downloaded, not which config schema it uses, so the schema is resolved
+         for them and only shown as a confirmation note
+      4. injects the resolved schema's SELF-CONTAINED bundle:
              /assets/configs/<vN>/generator.js
 
-    A schema is beta when the first plugin version that ships it hasn't had a
-    stable release yet (so it currently exists only in nightlies). That is
-    derived automatically — nothing here is hand-flagged, and a schema stops
-    being beta the moment its plugin version ships stable.
+    Every published build is listed individually, nightlies included
+    (2.1.7-BETA.1, 2.1.7-BETA.2, …) — successive nightlies can carry different
+    features, so they are genuinely different targets. Nightlies are hidden
+    until the visitor opts in via the beta toggle. "Beta" is derived from the
+    releases API, never hand-flagged.
+
+    A registry entry may set "generatorReady": false to appear in the list
+    before its bundle exists — the picker then says so instead of failing to
+    load a missing script.
 
     THE BUNDLE CONTRACT (frozen — never change once a schema folder ships):
       - Each bundle registers itself on load:
@@ -19,9 +25,9 @@
             window.DL_GENERATORS['v9'] = function launch(ctx) { ... };
       - ctx = {
           mount:          DOM node to render into (bundle owns it entirely),
-          configVersion:  e.g. "v9",
-          pluginVersions: human string of covered plugin versions, e.g. "2.1.5 – 2.1.6",
-          beta:           true when this schema is nightly-only so far,
+          configVersion:  resolved schema, e.g. "v9",
+          pluginVersion:  the build the user picked, e.g. "2.1.6" or "2.1.7-BETA.1",
+          beta:           true when that build is a nightly / pre-release,
           proxyUrl:       optional CORS relay for webhook tests ("" = direct),
           backToVersions: fn — bundle calls this for its "Back" on step 1
         }
@@ -52,26 +58,28 @@
         return n;
     };
 
-    const parseBase = raw => {
-        const m = String(raw || '').trim().match(/^v?(\d+)\.(\d+)\.(\d+)/);
-        return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+    /* ---- version parsing: understands 2.1.7 and 2.1.7-BETA.4 ---- */
+
+    const parseVer = raw => {
+        const m = String(raw || '').trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:-BETA\.(\d+))?$/i);
+        if (!m) return null;
+        return {
+            base: [Number(m[1]), Number(m[2]), Number(m[3])],
+            beta: m[4] !== undefined ? Number(m[4]) : null,
+        };
     };
     const cmpBase = (a, b) => {
         for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] - b[i];
         return 0;
     };
-
-    /* versions.js loads from <head> so it is normally ready first, but never
-       depend on script ordering — wait briefly for it, then carry on without
-       beta awareness rather than breaking the generator entirely. */
-    async function waitForVersions(timeoutMs = 5000) {
-        const started = Date.now();
-        while (!window.DLVersions) {
-            if (Date.now() - started > timeoutMs) return null;
-            await new Promise(r => setTimeout(r, 50));
-        }
-        return window.DLVersions.ready();
-    }
+    /* Full ordering: base, then stable outranks any beta of that base, then beta number.
+       So 2.1.7-BETA.1 < 2.1.7-BETA.2 < 2.1.7 */
+    const cmpVer = (a, b) => {
+        const c = cmpBase(a.base, b.base);
+        if (c !== 0) return c;
+        if ((a.beta === null) !== (b.beta === null)) return a.beta === null ? 1 : -1;
+        return (a.beta || 0) - (b.beta || 0);
+    };
 
     async function fetchJson(url, timeoutMs = 8000) {
         const ctl = new AbortController();
@@ -86,30 +94,51 @@
         }
     }
 
-    /* Human-readable plugin coverage for a schema, derived from real releases:
-       "2.1.5 – 2.1.6", "2.1.7 and newer", or just the since-version.
-       Only STABLE releases are listed — naming an unreleased version here
-       would imply it already shipped. */
-    function coverageText(schema, nextSchema, releases) {
-        const since = parseBase(schema.since);
-        if (!since) return '';
-        const nextSince = nextSchema ? parseBase(nextSchema.since) : null;
+    /* versions.js loads from <head> so it is normally ready first, but never
+       depend on script ordering — wait briefly, then carry on without beta
+       awareness rather than breaking the generator entirely. */
+    async function waitForVersions(timeoutMs = 5000) {
+        const started = Date.now();
+        while (!window.DLVersions) {
+            if (Date.now() - started > timeoutMs) return null;
+            await new Promise(r => setTimeout(r, 50));
+        }
+        return window.DLVersions.ready();
+    }
 
-        const inRange = (releases || [])
-            .filter(r => !r.prerelease)
-            .filter(r => {
-                const b = parseBase(r.version);
-                if (!b) return false;
-                if (cmpBase(b, since) < 0) return false;
-                if (nextSince && cmpBase(b, nextSince) >= 0) return false;
-                return true;
-            })
-            .map(r => r.version);
+    /* Resolve which config schema a build uses: the newest schema whose `since`
+       is <= that build. `since` may itself be a nightly (e.g. "2.1.7-BETA.1")
+       when a schema debuts in a nightly. Returns the schema entry, or null when
+       the build predates every generator we ship. */
+    function schemaFor(version, schemas) {
+        const v = parseVer(version);
+        if (!v) return null;
+        for (const s of schemas) {           // newest-first, so first match wins
+            const since = parseVer(s.since);
+            if (since && cmpVer(v, since) >= 0) return s;
+        }
+        return null;
+    }
 
-        const uniq = [...new Set(inRange)].sort((a, b) => cmpBase(parseBase(a), parseBase(b)));
-        if (!uniq.length) return `plugin ${schema.since} and newer`;
-        if (!nextSchema) return uniq.length === 1 ? `plugin ${uniq[0]} and newer` : `plugin ${uniq[0]} – ${uniq[uniq.length - 1]} and newer`;
-        return uniq.length === 1 ? `plugin ${uniq[0]}` : `plugin ${uniq[0]} – ${uniq[uniq.length - 1]}`;
+    /* Every published build that has a generator, newest first. Nightlies are
+       listed individually — consecutive nightlies can differ in features. */
+    function buildVersionList(releases, schemas, versionApi) {
+        const list = (releases || [])
+            .filter(r => parseVer(r.version))
+            .filter(r => schemaFor(r.version, schemas))
+            .map(r => ({
+                version: r.version,
+                beta: !!r.prerelease || (versionApi ? versionApi.isBeta(r.version) : false),
+            }));
+
+        // de-dupe identical tags, keeping the stabler entry
+        const byVersion = new Map();
+        list.forEach(e => {
+            const prev = byVersion.get(e.version);
+            if (!prev || (prev.beta && !e.beta)) byVersion.set(e.version, e);
+        });
+
+        return [...byVersion.values()].sort((a, b) => cmpVer(parseVer(b.version), parseVer(a.version)));
     }
 
     function launchBundle(ctx) {
@@ -130,65 +159,97 @@
         document.head.appendChild(tag);
     }
 
-    function render(registry, entries) {
+    function render(registry, schemas, versions) {
         const V = window.DLVersions;
         const showBeta = !!(V && V.showBeta);
-        const visible = entries.filter(e => !e.beta || showBeta);
+        const visible = versions.filter(v => !v.beta || showBeta);
 
         mount.innerHTML = '';
 
+        const panelBody = [
+            h('h2', { class: 'cfg-title' }, '1) Plugin version'),
+            h('p', { class: 'cfg-note' }, 'Pick the DiscordLogger version you downloaded — the matching config version is detected for you.'),
+        ];
+
+        if (!visible.length) {
+            panelBody.push(h('p', { class: 'cfg-note' },
+                'No supported versions found. Please refresh, or take a ready-made config from the config docs.'));
+            mount.appendChild(h('div', { class: 'cfg-wrap' }, [h('section', { class: 'cfg-panel' }, panelBody)]));
+            return;
+        }
+
         const select = h('select', { class: 'cfg-input cfg-input--select' });
-        visible.forEach((e, i) => {
-            const label = `${e.schema.config.toUpperCase()} — ${e.coverage}${e.beta ? '  (BETA)' : ''}`;
-            select.appendChild(h('option', { value: String(i) }, label));
+        visible.forEach((v, i) => {
+            select.appendChild(h('option', { value: String(i) }, v.beta ? `${v.version}  (BETA)` : v.version));
         });
+        // default to the newest stable build, never a nightly
+        const firstStable = visible.findIndex(v => !v.beta);
+        select.value = String(firstStable >= 0 ? firstStable : 0);
 
         const detail = h('p', { class: 'cfg-note' });
         const betaWarn = h('p', { class: 'cfg-note cfg-note--beta' },
-            '⚠️ This config version only exists in nightly builds so far. It may change before it ships in a stable release.');
+            '⚠️ Nightly build — its config format may still change before it ships in a stable release.');
+        const notReady = h('p', { class: 'cfg-note cfg-note--beta' });
+        const goBtn = h('button', { class: 'cfg-btn cfg-btn--primary', type: 'button' }, 'Continue');
+
+        const current = () => visible[Number(select.value)] || visible[0];
 
         const sync = () => {
-            const e = visible[Number(select.value)] || visible[0];
-            if (!e) return;
-            detail.textContent = `Config schema ${e.schema.config.toUpperCase()} · used by ${e.coverage}.`;
-            betaWarn.style.display = e.beta ? '' : 'none';
+            const v = current();
+            const schema = schemaFor(v.version, schemas);
+            const ready = schema && schema.generatorReady !== false;
+
+            detail.textContent = schema
+                ? `Uses config schema ${schema.config.toUpperCase()} — detected automatically.`
+                : 'No generator is available for that version.';
+            betaWarn.style.display = v.beta ? '' : 'none';
+
+            if (schema && !ready) {
+                notReady.textContent = `The generator for config ${schema.config.toUpperCase()} isn't available yet — this version is listed for reference only.`;
+                notReady.style.display = '';
+            } else {
+                notReady.style.display = 'none';
+            }
+            goBtn.disabled = !ready;
         };
         select.addEventListener('change', sync);
 
-        const goBtn = h('button', { class: 'cfg-btn cfg-btn--primary', type: 'button' }, 'Continue');
         goBtn.addEventListener('click', () => {
-            const e = visible[Number(select.value)] || visible[0];
-            if (!e) return;
+            const v = current();
+            const schema = schemaFor(v.version, schemas);
+            if (!schema || schema.generatorReady === false) return;
             launchBundle({
                 mount,
-                configVersion: e.schema.config,
-                pluginVersions: e.coverage,
-                beta: e.beta,
+                configVersion: schema.config,
+                pluginVersion: v.version,
+                beta: v.beta,
                 proxyUrl: (registry.proxyUrl || '').trim(),
-                backToVersions: () => render(registry, entries),
+                backToVersions: () => render(registry, schemas, versions),
             });
         });
 
-        const hiddenBeta = entries.filter(e => e.beta).length && !showBeta;
-        const body = [
-            h('h2', { class: 'cfg-title' }, '1) Config version'),
-            h('p', { class: 'cfg-note' }, 'Pick the config version your plugin build uses. Not sure? Check the last line of your existing config.yml, or match the plugin version shown below.'),
-            h('label', { class: 'cfg-label' }, 'Config version'),
+        panelBody.push(
+            h('label', { class: 'cfg-label' }, 'Plugin version'),
             select,
             detail,
             betaWarn,
-        ];
-        if (hiddenBeta) {
-            body.push(h('p', { class: 'cfg-note' },
-                'A newer config version exists in nightly builds. Enable beta content below to generate for it.'));
-            body.push(h('div', { 'data-dl-beta-toggle': 'Beta config versions only exist in nightly builds and may change before release.' }));
-        }
-        body.push(h('div', { class: 'cfg-actions' }, [goBtn]));
+            notReady,
+        );
 
-        mount.appendChild(h('div', { class: 'cfg-wrap' }, [h('section', { class: 'cfg-panel' }, body)]));
+        // The toggle stays visible in BOTH states whenever nightlies exist —
+        // otherwise turning it on would remove the only way to turn it back off.
+        if (versions.some(v => v.beta)) {
+            if (!showBeta) {
+                panelBody.push(h('p', { class: 'cfg-note' },
+                    'Running a nightly build? Enable beta versions below to generate a config for it.'));
+            }
+            panelBody.push(h('div', { 'data-dl-beta-toggle': 'Nightly builds are previews of unreleased work — their config format may change before release.' }));
+        }
+        panelBody.push(h('div', { class: 'cfg-actions' }, [goBtn]));
+
+        mount.appendChild(h('div', { class: 'cfg-wrap' }, [h('section', { class: 'cfg-panel' }, panelBody)]));
         sync();
-        // render the beta toggle if we just injected one
-        if (V) V.apply(mount);
+        if (V) V.apply(mount);   // renders the beta toggle if we just injected one
     }
 
     // minimal styles for the picker; each bundle ships its own full stylesheet
@@ -206,12 +267,12 @@
     #cfg-gen .cfg-actions { display: flex; gap: .5rem; margin-top: 1rem; flex-wrap: wrap; }
     #cfg-gen .cfg-btn { border: 1px solid var(--border); background: color-mix(in oklab, var(--fg) 4%, transparent); border-radius: 10px; padding: .5rem .85rem; cursor: pointer; color: var(--fg); font: inherit; }
     #cfg-gen .cfg-btn--primary { background: color-mix(in oklab, var(--accent) 14%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); color: var(--accent-fg); }
-    #cfg-gen .cfg-nightly-note { margin-top: .5rem; }
+    #cfg-gen .cfg-btn[disabled] { opacity: .5; cursor: not-allowed; }
     `;
     document.head.appendChild(style);
 
     (async () => {
-        mount.innerHTML = '<p class="cfg-note">Loading config versions…</p>';
+        mount.innerHTML = '<p class="cfg-note">Loading versions…</p>';
 
         const registry = await fetchJson(REGISTRY_URL);
         if (!registry || !Array.isArray(registry.schemas) || !registry.schemas.length) {
@@ -219,25 +280,16 @@
             return;
         }
 
-        // newest schema first
+        // newest schema first, so schemaFor() can take the first match
         const schemas = registry.schemas
-            .filter(s => parseBase(s.since))
-            .sort((a, b) => cmpBase(parseBase(b.since), parseBase(a.since)));
+            .filter(s => parseVer(s.since))
+            .sort((a, b) => cmpVer(parseVer(b.since), parseVer(a.since)));
 
         const versionApi = await waitForVersions();
         const releases = versionApi ? versionApi.releases : [];
+        const versions = buildVersionList(releases, schemas, versionApi);
 
-        const entries = schemas.map((schema, i) => {
-            // schemas are newest-first, so the "next" (newer) schema is at i-1
-            const newer = schemas[i - 1] || null;
-            return {
-                schema,
-                coverage: coverageText(schema, newer, releases),
-                beta: versionApi ? versionApi.isBeta(schema.since) : false,
-            };
-        });
-
-        render(registry, entries);
-        document.addEventListener('dl-beta-change', () => render(registry, entries));
+        render(registry, schemas, versions);
+        document.addEventListener('dl-beta-change', () => render(registry, schemas, versions));
     })();
 })();

@@ -15,7 +15,10 @@ Latest builds from **GitHub Releases**.
 
 <div id="dl-nightly-controls" class="dl-nightly-controls" hidden>
   <label class="dl-nightly-toggle">
-    <input type="checkbox" id="dl-show-nightly">
+    <span class="dl-switch">
+      <input type="checkbox" id="dl-show-nightly" role="switch" aria-checked="false">
+      <span class="dl-switch__track"><span class="dl-switch__thumb"></span></span>
+    </span>
     <span>Show nightly builds <span class="dl-badge dl-badge--nightly">Nightly</span></span>
   </label>
   <p class="dl-nightly-warning">
@@ -182,6 +185,7 @@ Latest builds from **GitHub Releases**.
   }
 
   nightlyToggle.addEventListener('change', () => {
+    nightlyToggle.setAttribute('aria-checked', String(nightlyToggle.checked));
     try { localStorage.setItem(STORAGE_KEY, nightlyToggle.checked ? '1' : '0'); } catch (e) {}
     paint();
   });
@@ -210,6 +214,7 @@ Latest builds from **GitHub Releases**.
         } catch (e) {
           nightlyToggle.checked = false;
         }
+        nightlyToggle.setAttribute('aria-checked', String(nightlyToggle.checked));
       }
 
       paint();

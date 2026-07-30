@@ -136,6 +136,36 @@
             return b;
         },
 
+        /**
+         * Build an on/off slider switch. Shared so every beta/nightly toggle on the
+         * site looks and behaves identically.
+         * @param {boolean} checked initial state
+         * @param {(on: boolean) => void} onChange
+         */
+        switchEl(checked, onChange) {
+            const wrap = document.createElement('span');
+            wrap.className = 'dl-switch';
+
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.checked = !!checked;
+            input.setAttribute('role', 'switch');
+            input.setAttribute('aria-checked', String(!!checked));
+            input.addEventListener('change', () => {
+                input.setAttribute('aria-checked', String(input.checked));
+                if (onChange) onChange(input.checked);
+            });
+
+            const track = document.createElement('span');
+            track.className = 'dl-switch__track';
+            const thumb = document.createElement('span');
+            thumb.className = 'dl-switch__thumb';
+            track.appendChild(thumb);
+
+            wrap.append(input, track);
+            return wrap;
+        },
+
         /** Re-scan a subtree — call after injecting markup that uses the data-dl-* hooks. */
         apply(root) {
             applyAll(root || document);
@@ -180,24 +210,24 @@
         root.querySelectorAll('[data-dl-beta-toggle]').forEach(host => {
             if (host.dataset.dlToggleReady === '1') {
                 const cb = host.querySelector('input[type=checkbox]');
-                if (cb) cb.checked = api.showBeta;
+                if (cb) {
+                    cb.checked = api.showBeta;
+                    cb.setAttribute('aria-checked', String(api.showBeta));
+                }
                 return;
             }
             host.dataset.dlToggleReady = '1';
             host.innerHTML = '';
             host.classList.add('dl-nightly-controls');
 
-            const cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.checked = api.showBeta;
-            cb.addEventListener('change', () => api.setShowBeta(cb.checked));
-
             const label = document.createElement('label');
             label.className = 'dl-nightly-toggle';
+            label.append(api.switchEl(api.showBeta, on => api.setShowBeta(on)));
+
             const text = document.createElement('span');
             text.append('Show beta content ');
             text.appendChild(api.badge());
-            label.append(cb, text);
+            label.append(text);
 
             const note = document.createElement('p');
             note.className = 'dl-nightly-warning';
