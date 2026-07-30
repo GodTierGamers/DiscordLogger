@@ -1,6 +1,5 @@
 package com.discordlogger.webhook;
 
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.net.URI;
@@ -138,24 +137,32 @@ public final class DiscordWebhook {
     // -------------------------------------------------------------------------
 
     /**
-     * Dispatches a JSON payload asynchronously.
-     * Falls back to a synchronous call if the plugin is disabled (e.g. server stop)
-     * so that shutdown embeds are not silently dropped.
+     * Hands the payload to {@link WebhookQueue}, which serialises sends, paces them
+     * against Discord's rate limits and retries transient failures. Returns
+     * immediately — callers may be on the main thread and must never wait on HTTP.
      */
     private static void dispatch(JavaPlugin plugin, String url, String json) {
-        Runnable task = () -> postJson(plugin, url, json);
-        try {
-            if (plugin.isEnabled()) {
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, task);
-            } else {
-                task.run();
-            }
-        } catch (org.bukkit.plugin.IllegalPluginAccessException ex) {
-            task.run();
-        }
+        WebhookQueue.enqueue(url, json);
     }
 
-    private static void postJson(JavaPlugin plugin, String url, String json) {
+    /** Outcome of a single POST, with the rate-limit facts the queue needs to pace itself. */
+    public record Response(
+            int status,
+            Long remaining,      // X-RateLimit-Remaining, null if absent
+            Long resetAfterMs,   // X-RateLimit-Reset-After, null if absent
+            long retryAfterMs    // from Retry-After on a 429; 0 otherwise
+    ) {
+        public boolean success()      { return status == 200 || status == 204; }
+        public boolean rateLimited()  { return status == 429; }
+        /** Transient: worth retrying the same payload. Network failures use status 0. */
+        public boolean retryable()    { return status == 0 || status >= 500; }
+    }
+
+    /**
+     * Performs one POST. Reports the outcome instead of logging it — the queue owns
+     * the decision to retry, wait or give up, and only it knows the surrounding context.
+     */
+    static Response post(String url, String json) {
         try {
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(TIMEOUT)
@@ -166,12 +173,39 @@ public final class DiscordWebhook {
                     .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
                     .build();
             HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
-            if (res.statusCode() != 204 && res.statusCode() != 200) {
-                plugin.getLogger().warning("[DiscordWebhook] Unexpected HTTP " + res.statusCode());
+
+            final int status = res.statusCode();
+            final Long remaining = headerAsLong(res, "x-ratelimit-remaining", 1.0);
+            final Long resetAfterMs = headerAsLong(res, "x-ratelimit-reset-after", 1000.0);
+
+            long retryAfterMs = 0L;
+            if (status == 429) {
+                // Retry-After is seconds (possibly fractional); reset-after is the same
+                // value under a different name. Fall back to a second if neither parses.
+                final Long fromRetryAfter = headerAsLong(res, "retry-after", 1000.0);
+                retryAfterMs = (fromRetryAfter != null) ? fromRetryAfter
+                        : (resetAfterMs != null ? resetAfterMs : 1000L);
             }
+
+            return new Response(status, remaining, resetAfterMs, retryAfterMs);
+
         } catch (Exception e) {
-            plugin.getLogger().warning("[DiscordWebhook] Request failed: " + e.getMessage());
+            // Status 0 = never reached Discord (DNS, timeout, TLS). Retryable.
+            return new Response(0, null, null, 0L);
         }
+    }
+
+    /** Reads a numeric header and scales it (headers are in seconds; we work in millis). */
+    private static Long headerAsLong(HttpResponse<String> res, String name, double scale) {
+        return res.headers().firstValue(name)
+                .map(v -> {
+                    try {
+                        return (long) Math.ceil(Double.parseDouble(v.trim()) * scale);
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                })
+                .orElse(null);
     }
 
     /** JSON string escaper. Handles all control characters correctly. */

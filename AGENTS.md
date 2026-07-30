@@ -61,7 +61,8 @@ src/main/resources/
 src/main/java/com/discordlogger/
   DiscordLogger.java                   Plugin entry point (onEnable/onDisable)
   log/Log.java                         Static logging facade (the API everything calls)
-  webhook/DiscordWebhook.java          Manual JSON building + HTTP POST to Discord
+  webhook/DiscordWebhook.java          Manual JSON building + one HTTP POST, reports outcome
+  webhook/WebhookQueue.java            Single-threaded send queue: rate limiting, retries, ordering
   config/ConfigMigrator.java           Comment-preserving config version migration
   event/EventRegistry.java             Registers all listeners; fires start/stop
   event/ServerStart.java               Static handler (not a Listener)
@@ -148,7 +149,16 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 
 ### `DiscordWebhook`
 - JSON built **by hand with StringBuilder** (no JSON library); `escape()` handles quotes/backslashes/control chars — keep escaping every interpolated string.
-- `dispatch()` posts async via the Bukkit scheduler but **falls back to synchronous when the plugin is disabled** (so the Server Stop embed isn't dropped at shutdown). Don't "fix" that away.
+- `dispatch()` hands off to `WebhookQueue` and returns immediately — callers may be on the main thread and must never block on HTTP.
+- `post()` performs one request and **returns a `Response`** (status + rate-limit headers) rather than logging; the queue owns retry/wait/give-up decisions.
+
+### `WebhookQueue` (rate limiting)
+- **One worker thread**, which is also the ordering guarantee — logs are a narrative, so out-of-order delivery is its own bug.
+- **Proactive pacing:** reads `X-RateLimit-Remaining` / `X-RateLimit-Reset-After` from each response and waits out a spent budget *before* sending, so 429s are usually avoided rather than handled. A 429 is still handled (honours `Retry-After`, retries the same payload without consuming an attempt).
+- Transient failures (5xx, network — status `0`) retry with exponential backoff, max 4 attempts. Other 4xx aren't retried; a 404 says the webhook URL is gone.
+- **Not a Bukkit scheduler task** — it must keep draining during `onDisable`, and the scheduler refuses tasks once disabled.
+- Bounded at 1000 messages; beyond that it drops and warns once per outage rather than growing until the server dies.
+- `onDisable` order matters: `fireServerStop()` queues the stop message, *then* `WebhookQueue.shutdown()` drains (5s budget). Reversing that loses the message.
 - HTTP 200/204 = success; 10-second timeouts; footer icon hard-coded to the website-hosted logo.
 
 ### `ConfigMigrator`
