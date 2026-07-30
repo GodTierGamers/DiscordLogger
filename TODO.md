@@ -1,11 +1,10 @@
 # TODO
 
-Things the maintainer has explicitly asked to be reminded about. Nothing else belongs here.
+Planned work that hasn't been done yet.
 
-**Rules (see AGENTS.md → "TODO.md protocol"):**
-- An item is added **only** when the maintainer explicitly says so — "remind me to…", "add this to TODO.md", or equivalent. Never self-populated.
-- When an item is done it is **deleted outright**. No strikethrough, no "completed" section, no history — the file only ever shows what is still outstanding.
-- An empty list below is the normal, healthy state.
+This list is deliberately short. Items land here when work is actually committed to — it isn't a wishlist or an idea dump — and they're deleted the moment they're finished. So everything listed is genuinely outstanding, and an empty list means nothing is pending.
+
+Got an idea that isn't here? Open a [feature request](https://github.com/GodTierGamers/DiscordLogger/issues/new?template=feature-request.yml) — that's where proposals get discussed, and it keeps this file trustworthy as a picture of committed work.
 
 ---
 
