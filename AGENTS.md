@@ -135,15 +135,15 @@ docs/                                  Jekyll website (GitHub Pages, deploys fro
 
 | Channel | Set by | Version format | Behavior |
 |---|---|---|---|
-| `stable` | `release-please.yml` (`build-artifact` job) | `2.1.7` | Normal update checks; `NightlyNotice` inert. |
-| `nightly` | `nightly.yml` | `2.1.7-BETA.3` | Console warning **every start**; ops get an in-game chat notice **once per nightly version** (marker file `.nightly-notice`); update checks notify on **every** new stable and when **more than 2** nightlies behind. |
+| `stable` | `release-please.yml` (`build-artifact` job) | `1.2.3` | Normal update checks; `NightlyNotice` inert. |
+| `nightly` | `nightly.yml` | `1.2.3-BETA.3` | Console warning **every start**; ops get an in-game chat notice **once per nightly version** (marker file `.nightly-notice`); update checks notify on **every** new stable and when **more than 2** nightlies behind. |
 | `dev` | default (local build) | whatever `pom.xml` says | Update checks skipped entirely. |
 
 ### Nightly builds (`nightly.yml`)
 Cron (15:00 UTC — arbitrary, adjust freely) + `workflow_dispatch`, building from `main`:
 - **Skips** if `main`'s HEAD matches the last nightly tag or the last stable tag — no identical rebuilds, which also naturally bounds how many nightlies exist (they're all kept forever, never pruned).
 - Computes the **upcoming version** the same way release-please will (conventional commits since the last stable tag, honoring `Release-As:` footers the same way), so the beta's base version always matches the eventual stable release.
-- Numbers builds `v<version>-BETA.1`, `.2`, … — derived from existing tags each run, self-resets when the base version moves (e.g. a `feat:` lands and `2.1.7-BETA.9` jumps to `2.2.0-BETA.1`).
+- Numbers builds `v<version>-BETA.1`, `.2`, … — derived from existing tags each run, self-resets when the base version moves (e.g. a `feat:` lands and `1.2.3-BETA.9` jumps to `2.2.0-BETA.1`).
 - Version injected via `mvn versions:set` (CI-local, never committed); trailer stamped `SHIPPED WITH v<version>-BETA.<n> BUILT <DD-MM-YYYY>` — every version string in the built JAR matches what was built, while the repo never contains a beta version string.
 - Publishes each nightly as its own pre-release (`prerelease: true`) with notes listing commits since the previous nightly, plus JAR + checksum.
 - Stable servers never see nightlies: the stable-channel update check skips pre-releases entirely.
@@ -256,14 +256,14 @@ Jekyll site (GitHub Pages gem stack) at `discordlogger.godtiergamers.xyz` (CNAME
 
 `docs/assets/js/versions.js` is loaded from `<head>` on every page and is the single source of truth. It reads the GitHub releases API once (cached per session), works out the newest stable and newest nightly, and exposes `window.DLVersions`.
 
-**A version is "beta" when it is newer than the newest stable release** — i.e. it exists only in nightly builds. This is *derived, never hand-flagged*: while 2.1.7 is nightly-only its docs show a BETA badge, and the moment 2.1.7 ships stable every badge and gate flips itself off with no edits. Never add a manual "is beta" flag anywhere.
+**A version is "beta" when it is newer than the newest stable release** — i.e. it exists only in nightly builds. This is *derived, never hand-flagged*: while 1.2.3 is nightly-only its docs show a BETA badge, and the moment 1.2.3 ships stable every badge and gate flips itself off with no edits. Never add a manual "is beta" flag anywhere.
 
 Use the declarative hooks rather than writing per-page JS or literal versions:
 
 | Markup | Behaviour |
 |---|---|
-| `data-dl-version="2.1.7"` | appends a BETA badge while that version is nightly-only |
-| `data-dl-beta-only="2.1.7"` | hides the element unless beta is enabled (normal content once it ships) |
+| `data-dl-version="1.2.3"` | appends a BETA badge while that version is nightly-only |
+| `data-dl-beta-only="1.2.3"` | hides the element unless beta is enabled (normal content once it ships) |
 | `data-dl-latest` / `data-dl-latest-nightly` | filled with the current version |
 | `data-dl-beta-toggle="optional note"` | renders the beta opt-in slider (shared `DLVersions.switchEl()` — used by every beta toggle on the site, never a raw checkbox) |
 
@@ -273,7 +273,7 @@ Beta content is **opt-in and remembered** (`localStorage`), so visitors never tr
 
 **Users pick their plugin version; the config schema is resolved for them.** Nobody knows offhand which schema their build uses, but everyone knows what they downloaded — so the picker lists plugin builds and shows the detected schema as a confirmation note.
 
-Every published build is listed individually, **nightlies included** (`2.1.7-BETA.1`, `2.1.7-BETA.2`, …) — successive nightlies can carry different features, so they're genuinely different targets. Nightlies are hidden until the visitor enables beta, and the default selection is always the newest *stable* build.
+Every published build is listed individually, **nightlies included** (`1.2.3-BETA.1`, `1.2.3-BETA.2`, …) — successive nightlies can carry different features, so they're genuinely different targets. Nightlies are hidden until the visitor enables beta, and the default selection is always the newest *stable* build.
 
 Internally the generator is still keyed on **config schema versions** (v9, v10…): a new schema means a new bundle, a new plugin release does not.
 
@@ -308,7 +308,7 @@ docs/assets/configs/
 
 **Versions are never skipped.** v9 → v10 → v11. Don't jump numbers to "reserve" one.
 
-`registry.json` entries take `{ "config", "since", "generatorReady"? }`. **`since` is the first build shipping that schema and may itself be a nightly** (e.g. `"2.1.7-BETA.1"`) when a schema debuts in one — version comparison is BETA-aware, so `2.1.7-BETA.1 < 2.1.7-BETA.2 < 2.1.7`. Setting `"generatorReady": false` lists a schema *before* its bundle exists: the picker names it, explains it isn't available yet, and disables Continue rather than failing to load a missing script.
+`registry.json` entries take `{ "config", "since", "generatorReady"? }`. **`since` is the first build shipping that schema and may itself be a nightly** (e.g. `"1.2.3-BETA.1"`) when a schema debuts in one — version comparison is BETA-aware, so `1.2.3-BETA.1 < 1.2.3-BETA.2 < 1.2.3`. Setting `"generatorReady": false` lists a schema *before* its bundle exists: the picker names it, explains it isn't available yet, and disables Continue rather than failing to load a missing script.
 
 **Adding a new config schema (worked example: v9 → v10).** The plugin ships exactly **one** config — the current one — so the shipped file is *replaced*, while every website artifact for the old schema is *kept forever*:
 

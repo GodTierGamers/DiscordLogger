@@ -25,7 +25,7 @@ body:
     id: channel
     attributes:
       label: Release channel
-      description: "Nightly builds show a version like 2.3.0-BETA.4 and warn in console on startup."
+      description: "Nightly builds have a -BETA.N suffix in their version and warn in the console on startup."
       options:
         - Stable release
         - Nightly (BETA pre-release)
@@ -49,7 +49,7 @@ body:
     id: mcversion
     attributes:
       label: Minecraft version
-      placeholder: "e.g., 26.2"
+      placeholder: "the Minecraft version your server runs"
     validations:
       required: true
 
@@ -58,7 +58,7 @@ body:
     attributes:
       label: DiscordLogger version (exact)
       description: "From the console startup log or the JAR name. For nightlies include the full BETA number."
-      placeholder: "e.g., 2.2.0 or 2.3.0-BETA.4"
+      placeholder: "the exact version from your console on startup, including any -BETA.N suffix"
     validations:
       required: true
 
@@ -66,7 +66,7 @@ body:
     id: javaver
     attributes:
       label: Java version
-      placeholder: "e.g., 25 (Temurin)"
+      placeholder: "the Java version your server runs, and the vendor if you know it"
     validations:
       required: true
 
