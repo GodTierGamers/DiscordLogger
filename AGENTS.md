@@ -318,7 +318,7 @@ docs/assets/configs/
   v9/config.yml                    reference copy of what shipped
 ```
 
-**The isolation rule (the whole point): once a schema version has been *published*, never edit it again.** Old plugin versions must keep generating exactly the config they always did. Fix bugs only in the current unpublished schema; copy the folder forward instead of refactoring in place. The loader↔bundle contract is documented at the top of both files and is frozen — a bundle registers `window.DL_GENERATORS['v9'] = launch` and receives `ctx` (`mount`, `configVersion`, `pluginVersion`, `beta`, `proxyUrl`, `backToVersions`).
+**The isolation rule (the whole point): once a schema version has been *published*, never edit it again.** Old plugin versions must keep generating exactly the config they always did. Fix bugs only in the current unpublished schema; copy the folder forward instead of refactoring in place. The loader↔bundle contract is documented at the top of both files and is frozen — a bundle registers `window.DL_GENERATORS['v9'] = launch` and receives `ctx` (`mount`, `configVersion`, `pluginVersion`, `beta`, `backToVersions`; `proxyUrl` is still passed for the frozen v9 bundle but is always `""`).
 
 ### Schema version lifecycle — what opens a version, and when it freezes
 
@@ -356,7 +356,7 @@ Nothing else. The generator picker, the config-docs index list, and BETA gating 
 
 **How the drift guard follows the schema forward** (verified by simulating the whole v10 transition): `scripts/validate-config-generator.py` reads the *shipped* config's own trailer to decide which mirror to compare against. The moment that trailer says `V10`, it compares against `docs/assets/configs/v10/config.yml` and stops comparing v9 entirely — because v9 is frozen history, not a live copy. v9 doesn't go unchecked though: each docs page is validated against **its own** schema's mirror, so v9 stays internally consistent forever without ever being measured against a newer plugin config. In short: **live copies are checked against each other; frozen versions are checked only against themselves.**
 
-- **Webhook testing / CORS:** Discord webhooks allow simple browser POSTs; each bundle carries its own test payload. `docs/cloudflare/discord-proxy.js` is an optional Cloudflare Worker relay, used when `proxyUrl` is set in `registry.json` (currently `""`).
+- **Webhook testing / CORS:** Discord webhooks allow simple browser POSTs; each bundle carries its own test payload. Tests go browser → Discord directly. A Cloudflare Worker relay used to exist for this and was deleted — it was never deployed and never needed. The **frozen** v9 bundle still contains the dormant `proxyUrl` branch in its `sendTest`; it is inert (the key no longer exists in `registry.json`, so the value is `""`) and must not be edited, because publication froze that schema. Newer bundles should simply omit it.
 
 ### Downloads page
 
