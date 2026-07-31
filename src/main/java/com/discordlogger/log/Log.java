@@ -39,6 +39,13 @@ public final class Log {
     // colorMap is replaced atomically: a fully-built map is assigned in one
     // volatile write, so async threads never see a half-populated map.
     private static volatile Map<String, Integer> colorMap = new HashMap<>();
+
+    /**
+     * Category key -> the webhook that category posts to, when it overrides the
+     * global one. Built and swapped atomically alongside colorMap, for the same
+     * reason: async senders must never observe a half-populated map.
+     */
+    private static volatile Map<String, String> webhookMap = new HashMap<>();
     private static volatile int defaultColor = 0x5865F2;
 
     private Log() {}
@@ -116,6 +123,7 @@ public final class Log {
         // the event is a plain boolean with no section, and the built-in default
         // above stands.
         int currentDefault = cm.getOrDefault("server", baseDefaultColor);
+        Map<String, String> wm = new HashMap<>();
         ConfigurationSection logSec = plugin.getConfig().getConfigurationSection("log");
         if (logSec != null) {
             for (String group : logSec.getKeys(false)) {
@@ -129,6 +137,19 @@ public final class Log {
                     int c = hex(v, currentDefault);
 
                     cm.put(normalizeKey(group + "_" + event), c);
+
+                    final String hook = eventSec.getString("webhook");
+                    if (hook != null && !hook.isBlank() && isValidWebhookUrl(hook.trim())) {
+                        wm.put(normalizeKey(group + "_" + event), hook.trim());
+                        if ("moderation".equals(group)) {
+                            wm.put(normalizeKey(event), hook.trim());
+                            if ("whitelist_edit".equals(event)) wm.put("whitelist", hook.trim());
+                        }
+                    } else if (hook != null && !hook.isBlank()) {
+                        plugin.getLogger().warning("log." + group + "." + event
+                                + ".webhook is not a valid Discord webhook URL — that event will "
+                                + "use the main webhook instead.");
+                    }
 
                     // Moderation listeners pass bare categories ("ban", "kick"),
                     // unlike player/server which pass "<group> <event>". Only
@@ -147,6 +168,12 @@ public final class Log {
         // new complete map — never a half-built one.
         defaultColor = cm.getOrDefault("server", baseDefaultColor);
         colorMap = cm;
+        webhookMap = wm;
+
+        if (!wm.isEmpty()) {
+            plugin.getLogger().info("Per-event webhook routing active for "
+                    + wm.size() + " categor" + (wm.size() == 1 ? "y" : "ies") + ".");
+        }
     }
 
     // ---- Public helpers (used by other components like UpdateChecker) ----
@@ -186,6 +213,22 @@ public final class Log {
                 .replace('-', '_')
                 .replace('/', '_');
     }
+
+    /**
+     * Where this category posts. Falls back to the main webhook, so an event with
+     * no override behaves exactly as it did before routing existed.
+     */
+    private static String webhookFor(String categoryKey) {
+        final String routed = webhookMap.get(normalizeKey(categoryKey));
+        return (routed != null && !routed.isBlank()) ? routed : webhookUrl;
+    }
+
+    // NOTE: webhookUrl must be read ONLY through webhookFor above. Every send site
+    // resolves its destination that way, including the ones that always want the
+    // main webhook (they pass null). This is enforced by
+    // LogRoutingTest.everySendSiteResolvesARoute, because the first version of
+    // routing missed exactly one send site — the fields embed — and the result was
+    // that quit routed correctly while death and gamemode silently did not.
 
     private static int colorFor(String categoryKey) {
         return colorMap.getOrDefault(normalizeKey(categoryKey), defaultColor);
@@ -230,12 +273,15 @@ public final class Log {
 
     // ---- Public logging API ----
 
-    /** Plain one-off line (keeps prefix for consistency). */
+    /**
+     * Plain one-off line (keeps prefix for consistency). Belongs to no event, so it
+     * always goes to the main webhook rather than any per-event route.
+     */
     public static void plain(String message) {
         String line = "`" + ts() + "`" + nameSegment() + " " + message;
         plugin.getLogger().info(line);
         if (ready) {
-            DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+            DiscordWebhook.sendAsync(plugin, webhookFor(null), line);
         }
     }
 
@@ -246,7 +292,7 @@ public final class Log {
             plugin.getLogger().info("[" + now + "] " + category + ": " + message);
             if (ready) {
                 DiscordWebhook.sendEmbed(
-                        plugin, webhookUrl,
+                        plugin, webhookFor(category),
                         /*title*/        category,
                         /*description*/  message,
                         /*color*/        colorFor(category),
@@ -259,7 +305,7 @@ public final class Log {
         } else {
             String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
             plugin.getLogger().info(line);
-            if (ready) DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+            if (ready) DiscordWebhook.sendAsync(plugin, webhookFor(category), line);
         }
     }
 
@@ -270,7 +316,7 @@ public final class Log {
             plugin.getLogger().info("[" + now + "] " + category + ": " + message);
             if (ready) {
                 DiscordWebhook.sendEmbed(
-                        plugin, webhookUrl,
+                        plugin, webhookFor(category),
                         /*title*/        category,
                         /*description*/  message,
                         /*color*/        colorFor(category),
@@ -283,7 +329,7 @@ public final class Log {
         } else {
             String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
             plugin.getLogger().info(line);
-            if (ready) DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+            if (ready) DiscordWebhook.sendAsync(plugin, webhookFor(category), line);
         }
     }
 
@@ -358,7 +404,7 @@ public final class Log {
         if (embedsEnabledFlag) {
             DiscordWebhook.sendEmbedWithFields(
                     plugin,
-                    webhookUrl,
+                    webhookFor(category),
                     /*title*/        (title == null || title.isBlank()) ? category : title,
                     /*description*/  description == null ? "" : description,
                     /*color*/        colorFor(category),
@@ -383,7 +429,7 @@ public final class Log {
                             .append("\n");
                 }
             }
-            DiscordWebhook.sendAsync(plugin, webhookUrl, sb.toString().trim());
+            DiscordWebhook.sendAsync(plugin, webhookFor(category), sb.toString().trim());
         }
     }
 
@@ -425,7 +471,7 @@ public final class Log {
 
         DiscordWebhook.sendEmbedWithFields(
                 plugin,
-                webhookUrl,
+                webhookFor(null),
                 title,
                 description,
                 color,

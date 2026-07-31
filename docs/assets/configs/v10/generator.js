@@ -116,6 +116,7 @@
             template: null,
             toggles: {},
             extras: {},
+            hooks: {},
             colors: {},
         };
 
@@ -125,6 +126,7 @@
             { id: 'style',   title: 'Log style' },
             { id: 'events',  title: 'Events to log' },
             { id: 'colors',  title: 'Embed colors' },
+            { id: 'routing', title: 'Per-event channels' },
             { id: 'result',  title: 'Your config.yml' },
         ];
 
@@ -164,6 +166,8 @@
                 for (const extra of (item.extras || [])) {
                     state.extras[extra.key] = !!extra.default;
                 }
+                // Empty means "use the main webhook", which is what almost everyone wants.
+                if (item.webhookKey) state.hooks[item.webhookKey] = '';
             }
         }
 
@@ -460,6 +464,55 @@
                 h('h2', { class: 'cfg-title' }, '5) Embed colors'),
                 h('p', { class: 'cfg-note' }, 'These default to the plugin\'s own colors — adjust any you like.'),
                 wrap,
+                actions('Back', h('button', { class: 'cfg-btn cfg-btn--primary', type: 'button', onclick: next }, 'Next')),
+            ]);
+        };
+
+        renderers.routing = () => {
+            const wrap = h('div', {});
+            let any = false;
+
+            for (const cat of (state.options.categories || [])) {
+                const rows = (cat.items || []).filter(item => {
+                    const k = toggleKey(item.configKey);
+                    // Only offer routing for events actually being logged — a channel
+                    // for an event you turned off is a setting that does nothing.
+                    return item.webhookKey && k && state.toggles[k];
+                });
+                if (!rows.length) continue;
+                any = true;
+
+                const box = h('div', { class: 'cfg-colgroup' }, [
+                    h('h3', { class: 'cfg-sub' }, cat.label || cat.id),
+                ]);
+                rows.forEach(item => {
+                    const input = h('input', {
+                        class: 'cfg-input', type: 'url', placeholder: 'Leave empty for the main webhook',
+                        value: state.hooks[item.webhookKey] || '',
+                    });
+                    const warn = h('span', { class: 'cfg-note cfg-note--sub', style: 'display:none' },
+                        'That does not look like a Discord webhook URL.');
+                    input.addEventListener('input', () => {
+                        const v = input.value.trim();
+                        state.hooks[item.webhookKey] = v;
+                        warn.style.display = (v && !isWebhookUrl(v)) ? '' : 'none';
+                    });
+                    box.appendChild(h('div', { class: 'cfg-colrow' }, [
+                        h('label', { class: 'cfg-label', style: 'margin:0' }, item.label || item.id),
+                        input,
+                    ]));
+                    box.appendChild(warn);
+                });
+                wrap.appendChild(box);
+            }
+
+            return h('section', { class: 'cfg-panel' }, [
+                h('h2', { class: 'cfg-title' }, '6) Per-event channels'),
+                h('p', { class: 'cfg-note' },
+                    'Optional. Send individual events to their own Discord channel — moderation '
+                    + 'to a private staff channel, chat to a public one. Anything left empty uses '
+                    + 'the main webhook from step 2.'),
+                any ? wrap : h('p', { class: 'cfg-note' }, 'No events are enabled, so there is nothing to route.'),
                 actions('Back', h('button', { class: 'cfg-btn cfg-btn--primary', type: 'button', onclick: next }, 'Generate config')),
             ]);
         };
@@ -561,6 +614,12 @@
                 }
                 for (const extra of (item.extras || [])) {
                     tokens[`EXTRA_${extra.key}`] = state.extras[extra.key] ? 'true' : 'false';
+                }
+                if (item.webhookKey) {
+                    const v = (state.hooks[item.webhookKey] || '').trim();
+                    // Only emit a URL that would actually work; a typo would otherwise
+                    // ship a config that silently drops that event's messages.
+                    tokens[`HOOK_${item.webhookKey}`] = isWebhookUrl(v) ? yamlQuote(v) : '';
                 }
             }
         }

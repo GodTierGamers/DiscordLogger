@@ -108,6 +108,36 @@ class ConfigMigratorUpgradeTest {
     }
 
     @Test
+    @DisplayName("per-event webhooks default to empty, meaning the main webhook")
+    void routingDefaultsToTheMainWebhook() {
+        // A v9 user had one webhook and expects to keep having one. Every event must
+        // arrive with an empty route rather than anything inherited or invented.
+        Map<?, ?> r = upgradeFromV9();
+        Map<?, ?> log = (Map<?, ?>) r.get("log");
+        for (Object groupName : log.keySet()) {
+            Map<?, ?> group = (Map<?, ?>) log.get(groupName);
+            for (Object eventName : group.keySet()) {
+                Map<?, ?> ev = (Map<?, ?>) group.get(eventName);
+                assertTrue(ev.containsKey("webhook"),
+                        groupName + "." + eventName + " should carry a webhook key");
+                assertEquals("", ev.get("webhook"),
+                        groupName + "." + eventName + " must default to the main webhook");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("a configured per-event webhook survives a migration")
+    void routingChoiceSurvives() {
+        String routed = shipped.replaceFirst(
+                "      webhook: \"\"",
+                "      webhook: \"https://discord.com/api/webhooks/1/STAFF\"");
+        String out = ConfigMigrator.migrateText(shipped, routed, current, current);
+        assertTrue(out.contains("https://discord.com/api/webhooks/1/STAFF"),
+                "a channel someone deliberately routed must not be reset by an upgrade");
+    }
+
+    @Test
     @DisplayName("settings outside the log tree survive untouched")
     void unrelatedSettingsSurvive() {
         Map<?, ?> r = upgradeFromV9();

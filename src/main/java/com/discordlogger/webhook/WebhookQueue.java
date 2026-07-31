@@ -2,7 +2,9 @@ package com.discordlogger.webhook;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -17,8 +19,13 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>Design notes worth preserving:
  * <ul>
- *   <li><b>One worker thread</b> — also the ordering guarantee. Logs are a
- *       narrative; delivering them out of order is its own bug.</li>
+ *   <li><b>One worker per destination</b> — also the ordering guarantee. Logs are
+ *       a narrative; delivering them out of order is its own bug. Ordering only
+ *       means anything <i>within</i> a channel, though, so destinations are
+ *       independent: a channel being throttled must not hold up a different one.
+ *       With a single shared worker, one slow or dead webhook stalled every
+ *       other, which per-event routing turns from a corner case into the normal
+ *       case.</li>
  *   <li><b>Proactive pacing.</b> Discord reports how many requests remain in the
  *       current window ({@code X-RateLimit-Remaining}) and when it resets. When
  *       the budget is spent we wait for the reset rather than earning a 429.</li>
@@ -43,49 +50,76 @@ public final class WebhookQueue {
     /** How long {@link #shutdown} will keep draining before abandoning the rest. */
     private static final long SHUTDOWN_DRAIN_MS = 5_000L;
 
-    private static final BlockingQueue<Message> QUEUE = new ArrayBlockingQueue<>(CAPACITY);
+    /**
+     * One per distinct webhook URL. Discord's rate limits are per webhook, so the
+     * pacing state has to be too — a shared counter would throttle a quiet channel
+     * because a busy one spent its budget.
+     */
+    private static final Map<String, Destination> DESTINATIONS = new ConcurrentHashMap<>();
 
     private static volatile JavaPlugin plugin;
-    private static volatile Thread worker;
     private static volatile boolean running;
-
-    /** Epoch millis before which the next request must not be sent. */
-    private static volatile long nextSendAt = 0L;
-
-    /** Warn once per outage rather than once per dropped message. */
-    private static volatile boolean warnedFull = false;
 
     private WebhookQueue() {}
 
-    private record Message(String url, String json) {}
+    private static final class Destination {
+        final String url;
+        final BlockingQueue<String> queue = new ArrayBlockingQueue<>(CAPACITY);
+        final Thread worker;
 
-    /** Start the worker. Safe to call again on reload; a second call is ignored. */
+        /** Epoch millis before which the next request to THIS webhook must not be sent. */
+        volatile long nextSendAt = 0L;
+
+        /** Warn once per outage rather than once per dropped message. */
+        volatile boolean warnedFull = false;
+
+        Destination(String url) {
+            this.url = url;
+            this.worker = new Thread(() -> runLoop(this), "DiscordLogger-Webhook-" + shortId(url));
+            // Not a daemon: a queued message should still get its chance if the JVM
+            // is winding down. shutdown() bounds how long that can take.
+            this.worker.setDaemon(false);
+            this.worker.start();
+        }
+    }
+
+    /**
+     * The webhook id, for a readable thread name. Never the token — thread names
+     * show up in stack traces and thread dumps, which get pasted into issues.
+     */
+    private static String shortId(String url) {
+        final String[] parts = url.split("/");
+        return parts.length >= 2 ? parts[parts.length - 2] : "unknown";
+    }
+
+    /**
+     * Accept work. Safe to call again on reload.
+     *
+     * <p>Workers are created per destination on first use rather than here, because
+     * which webhooks exist is a config question that can change on reload.
+     */
     public static synchronized void start(JavaPlugin pl) {
         plugin = pl;
-        if (running && worker != null && worker.isAlive()) return;
-
         running = true;
-        worker = new Thread(WebhookQueue::runLoop, "DiscordLogger-Webhook");
-        // Not a daemon: a queued message should still get its chance if the JVM
-        // is winding down. shutdown() bounds how long that can take.
-        worker.setDaemon(false);
-        worker.start();
     }
 
     /** Queue a payload. Never blocks the caller — the main thread must not wait on Discord. */
     public static void enqueue(String url, String json) {
         if (url == null || url.isBlank() || json == null) return;
 
-        if (!QUEUE.offer(new Message(url, json))) {
-            if (!warnedFull) {
-                warnedFull = true;
-                log().warning("[DiscordWebhook] Send queue is full (" + CAPACITY + " pending) — "
-                        + "dropping messages until it drains. Discord may be unreachable, "
-                        + "or this server is logging faster than the webhook allows.");
+        final Destination dest = DESTINATIONS.computeIfAbsent(url, Destination::new);
+
+        if (!dest.queue.offer(json)) {
+            if (!dest.warnedFull) {
+                dest.warnedFull = true;
+                log().warning("[DiscordWebhook] Send queue for webhook ..." + shortId(url)
+                        + " is full (" + CAPACITY + " pending) — dropping messages until it "
+                        + "drains. Discord may be unreachable, or this server is logging "
+                        + "faster than that webhook allows.");
             }
             return;
         }
-        warnedFull = false;
+        dest.warnedFull = false;
     }
 
     /**
@@ -95,41 +129,49 @@ public final class WebhookQueue {
     public static void shutdown() {
         running = false;
 
-        final Thread w = worker;
-        if (w == null) return;
-
-        // Let the worker finish the backlog on its own; it exits once drained.
-        try {
-            w.join(SHUTDOWN_DRAIN_MS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        if (w.isAlive()) {
-            final int left = QUEUE.size();
-            if (left > 0) {
-                log().warning("[DiscordWebhook] Shutting down with " + left
-                        + " message(s) still queued — they will not be delivered.");
+        // The drain budget is shared, not per destination: destinations drain in
+        // parallel, so waiting SHUTDOWN_DRAIN_MS on each in turn would multiply the
+        // shutdown delay by however many webhooks are configured.
+        final long deadline = System.currentTimeMillis() + SHUTDOWN_DRAIN_MS;
+        for (Destination dest : DESTINATIONS.values()) {
+            final long left = deadline - System.currentTimeMillis();
+            if (left <= 0) break;
+            try {
+                dest.worker.join(left);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
-            w.interrupt();
         }
-        worker = null;
+
+        for (Destination dest : DESTINATIONS.values()) {
+            if (dest.worker.isAlive()) {
+                final int pending = dest.queue.size();
+                if (pending > 0) {
+                    log().warning("[DiscordWebhook] Shutting down with " + pending
+                            + " message(s) still queued for webhook ..." + shortId(dest.url)
+                            + " — they will not be delivered.");
+                }
+                dest.worker.interrupt();
+            }
+        }
+        DESTINATIONS.clear();
     }
 
     // -------------------------------------------------------------------------
 
-    private static void runLoop() {
+    private static void runLoop(Destination dest) {
         while (true) {
-            final Message msg;
+            final String json;
             try {
                 if (running) {
                     // Poll rather than take() so a stopped queue can notice and exit.
-                    msg = QUEUE.poll(250, TimeUnit.MILLISECONDS);
-                    if (msg == null) continue;
+                    json = dest.queue.poll(250, TimeUnit.MILLISECONDS);
+                    if (json == null) continue;
                 } else {
                     // Draining: leave as soon as the backlog is clear.
-                    msg = QUEUE.poll();
-                    if (msg == null) return;
+                    json = dest.queue.poll();
+                    if (json == null) return;
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -137,7 +179,7 @@ public final class WebhookQueue {
             }
 
             try {
-                deliver(msg);
+                deliver(dest, json);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
@@ -149,25 +191,26 @@ public final class WebhookQueue {
     }
 
     /** Send one message, retrying transient failures and honouring rate limits. */
-    private static void deliver(Message msg) throws InterruptedException {
+    private static void deliver(Destination dest, String json) throws InterruptedException {
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-            waitUntilAllowed();
+            waitUntilAllowed(dest);
 
-            final DiscordWebhook.Response res = DiscordWebhook.post(msg.url(), msg.json());
+            final DiscordWebhook.Response res = DiscordWebhook.post(dest.url, json);
 
             if (res.rateLimited()) {
                 // Told to back off explicitly — wait it out and retry the SAME message
                 // without consuming an attempt, since nothing was wrong with it.
                 final long waitMs = clampWait(res.retryAfterMs());
-                log().warning("[DiscordWebhook] Rate limited by Discord — retrying in "
-                        + waitMs + "ms (" + QUEUE.size() + " queued).");
+                log().warning("[DiscordWebhook] Rate limited by Discord on webhook ..."
+                        + shortId(dest.url) + " — retrying in " + waitMs + "ms ("
+                        + dest.queue.size() + " queued for it).");
                 sleep(waitMs);
                 attempt--;
                 continue;
             }
 
             if (res.success()) {
-                applyRateLimitHints(res);
+                applyRateLimitHints(dest, res);
                 return;
             }
 
@@ -186,15 +229,16 @@ public final class WebhookQueue {
             // can't help, so say something actionable and move on.
             log().warning("[DiscordWebhook] Discord rejected a message with HTTP " + res.status()
                     + (res.status() == 404
-                        ? " — the webhook URL no longer exists. Check webhook.url in config.yml."
+                        ? " — webhook ..." + shortId(dest.url) + " no longer exists. Check the"
+                          + " webhook URLs in config.yml."
                         : " — not retrying."));
             return;
         }
     }
 
     /** Respect the pacing derived from the previous response's rate-limit headers. */
-    private static void waitUntilAllowed() throws InterruptedException {
-        final long delay = nextSendAt - System.currentTimeMillis();
+    private static void waitUntilAllowed(Destination dest) throws InterruptedException {
+        final long delay = dest.nextSendAt - System.currentTimeMillis();
         if (delay > 0) sleep(Math.min(delay, MAX_WAIT_MS));
     }
 
@@ -202,11 +246,11 @@ public final class WebhookQueue {
      * If Discord says this window's budget is spent, hold the next send until it resets.
      * This is what keeps us from earning a 429 in the first place.
      */
-    private static void applyRateLimitHints(DiscordWebhook.Response res) {
+    private static void applyRateLimitHints(Destination dest, DiscordWebhook.Response res) {
         if (res.remaining() != null && res.remaining() <= 0 && res.resetAfterMs() != null) {
-            nextSendAt = System.currentTimeMillis() + clampWait(res.resetAfterMs());
+            dest.nextSendAt = System.currentTimeMillis() + clampWait(res.resetAfterMs());
         } else {
-            nextSendAt = 0L;
+            dest.nextSendAt = 0L;
         }
     }
 
