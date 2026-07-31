@@ -11,7 +11,16 @@
           "configKey": "log.player.join.enabled",
           "colorKey": "player.join",
           "defaultColor": "#57F287",
-          "default": true
+          "default": true,
+          "extras": [
+            {
+              "key": "player.join.show_platform",
+              "configKey": "log.player.join.show_platform",
+              "label": "Flag Bedrock players on join",
+              "note": "Only appears for Bedrock players, and only when the server runs Geyser with Floodgate.",
+              "default": true
+            }
+          ]
         },
         {
           "id": "quit",

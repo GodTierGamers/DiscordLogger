@@ -79,6 +79,7 @@ log:
     join: # Player Join
       enabled: {{LOG_player.join.enabled}}
       color: "{{COLOR_player.join}}" # green
+      show_platform: {{EXTRA_player.join.show_platform}} # Flags players who joined from Bedrock (needs Geyser + Floodgate)
     quit: # Player Quit
       enabled: {{LOG_player.quit.enabled}}
       color: "{{COLOR_player.quit}}" # red

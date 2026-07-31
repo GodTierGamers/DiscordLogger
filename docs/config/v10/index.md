@@ -99,6 +99,13 @@ Some events carry extra sub-options alongside `enabled` and `color`:
 | Key | Default | What it does |
 |---|---|---|
 | `log.player.death.show_coords` | `false` | Appends where the player died, as `x, y, z in world`. |
+| `log.player.join.show_platform` | `true` | Adds a **Platform: Bedrock** field when the joining player came from Bedrock. |
+
+> **`show_platform` only ever flags Bedrock.** Nothing can prove a player *is* Java —
+> with Geyser standalone, Bedrock players authenticate as ordinary Java accounts and are
+> indistinguishable even to Floodgate. So the field appears only when something positively
+> indicates Bedrock, and its absence means "no indication", not "definitely Java". On a
+> server without Geyser it never appears at all.
 
 > **`show_coords` is off by default on purpose.** A death message with coordinates tells
 > everyone who can read the channel exactly where the body — and the inventory it
@@ -237,6 +244,7 @@ log:
     join: # Player Join
       enabled: true
       color: "#57F287" # green
+      show_platform: true # Flags players who joined from Bedrock (needs Geyser + Floodgate)
     quit: # Player Quit
       enabled: true
       color: "#ED4245" # red
