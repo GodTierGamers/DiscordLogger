@@ -37,6 +37,7 @@ Usage:
     publish-listings.py --jar target/DiscordLogger-v2.2.0.jar --tag v2.2.0
     publish-listings.py --jar ... --tag ... --dry-run   # no network writes
     publish-listings.py --badge                         # refresh the badge only
+    publish-listings.py --check-auth                    # verify both tokens
 """
 from __future__ import annotations
 
@@ -358,6 +359,45 @@ def write_badge(counts: dict[str, int], path: Path) -> None:
     )
 
 
+# ------------------------------------------------------------------ auth check
+
+
+def check_auth() -> int:
+    """Proves both credentials still work, without publishing anything.
+
+    Worth having as its own mode: --dry-run makes no authenticated call at all,
+    so the first thing that ever exercises these tokens would otherwise be a
+    release that has already tagged. Tokens also expire — Modrinth PATs carry an
+    explicit expiry date — and an expired one is indistinguishable from a
+    missing one until something tries to use it.
+    """
+    problems: list[str] = []
+
+    token = os.environ.get("MODRINTH_TOKEN", "").strip()
+    if not token:
+        problems.append("MODRINTH_TOKEN is not set")
+    else:
+        try:
+            user = request(f"{MODRINTH_API}/user", headers={"Authorization": token})
+            log(f"Modrinth: authenticated as {user['username']}")
+        except Exception as exc:  # noqa: BLE001
+            problems.append(f"Modrinth token rejected: {exc}")
+
+    key = os.environ.get("HANGAR_API_KEY", "").strip()
+    if not key:
+        problems.append("HANGAR_API_KEY is not set")
+    else:
+        try:
+            request(f"{HANGAR_API}/authenticate?apiKey={key}", method="POST")
+            log("Hangar: API key accepted")
+        except Exception as exc:  # noqa: BLE001
+            problems.append(f"Hangar key rejected: {exc}")
+
+    for problem in problems:
+        print(f"::error::{problem}", flush=True)
+    return 1 if problems else 0
+
+
 # ---------------------------------------------------------------------- main
 
 
@@ -365,6 +405,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--jar", type=Path, help="the built stable JAR")
     parser.add_argument("--tag", help="release tag, e.g. v2.2.0")
+    parser.add_argument(
+        "--check-auth",
+        action="store_true",
+        help="verify both API credentials still work, publish nothing, then exit",
+    )
     parser.add_argument(
         "--badge",
         action="store_true",
@@ -376,6 +421,9 @@ def main() -> int:
         help="resolve and validate everything, but make no network writes",
     )
     args = parser.parse_args()
+
+    if args.check_auth:
+        return check_auth()
 
     if args.badge:
         write_badge(download_counts(), BADGE_PATH)

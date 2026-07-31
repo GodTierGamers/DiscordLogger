@@ -145,7 +145,9 @@ Stable releases are mirrored onto two listings, because that is where server own
 
 **Download counting.** The count spans two hosts, so the README badge is a shields.io *endpoint* badge reading `docs/assets/badges/downloads.json`, written by `publish-listings.py --badge`: GitHub asset downloads (excluding `.sha256` files) **+** Modrinth's total. Hangar is deliberately not added — its traffic is already inside the GitHub number, and adding it would double-count. `downloads-badge.yml` refreshes it daily; releases refresh it inline.
 
-**Two secrets must exist** or the corresponding platform is skipped with a notice (a lagging listing is recoverable; a release job dying after tagging is not): `MODRINTH_TOKEN` (PAT, "Create versions" scope) and `HANGAR_API_KEY` (create_version permission).
+**Two secrets must exist** or the corresponding platform is skipped with a notice (a lagging listing is recoverable; a release job dying after tagging is not): `MODRINTH_TOKEN` (PAT, "Create versions" scope) and `HANGAR_API_KEY` (create_version permission). Both are repository **Actions** secrets — the job declares no `environment:`, so environment secrets would not resolve.
+
+Modrinth PATs expire. `check-listing-credentials.yml` runs `publish-listings.py --check-auth` weekly so a dead token is caught by a failed scheduled run rather than by a release that has already tagged. Note that `--dry-run` makes no authenticated call at all and proves nothing about the tokens; `--check-auth` is the mode that does.
 
 `<dl.game.versions>` in `pom.xml` is the Minecraft version list both listings advertise. It's the one value that can't be derived — `api-version` is a floor, not a list — so it's validated against Modrinth's known-version API before publishing; a typo fails the release rather than mislabelling it.
 
