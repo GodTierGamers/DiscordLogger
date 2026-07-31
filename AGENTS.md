@@ -46,12 +46,14 @@ Everything below was verified against the actual source at the time of writing; 
 | `<dl.api.version>` | minimum Paper; becomes `plugin.yml`'s `api-version` |
 | `<dl.paper.display>` | how Paper is written in prose, e.g. `26.x` |
 
+The sync script also derives two values it doesn't own: **`plugin`** (the released version, from `<version>`) and **`schema`** (the config schema, read from `config.yml`'s trailer). Docs examples of the config trailer use these, so they can't go stale when a release ships or the schema moves.
+
 How each destination gets its value — all automatic, none needs remembering:
 
 - **`plugin.yml`, `build-info.properties`** — Maven resource filtering resolves `${project.version}` / `${dl.api.version}` at package time.
 - **CI workflows** — each reads `<maven.compiler.release>` out of `pom.xml` at runtime into a step output, so the JDK installed always matches the compile target. No `java-version:` literal exists anywhere.
 - **README.md, CONTRIBUTING.md** — values sit between `<!-- dl:sync:KEY -->…<!-- /dl:sync -->` markers, rewritten by `scripts/sync-versions.py`. Edit the surrounding prose freely; never the value between markers.
-- **Docs pages** — read `{{ site.data.versions.* }}` from `docs/_data/versions.yml`, which the same script generates. That file is generated: **do not edit it**.
+- **Docs pages** — read `{{ site.data.versions.* }}` from `docs/_data/versions.yml`, which the same script generates. That file is generated: **do not edit it**. Liquid resolves inside fenced code blocks too, which is how the config-trailer examples stay current.
 - **Anything showing the *latest release*** on the site (`data-dl-latest`, the downloads list, the generator's version picker) — reads the GitHub releases API live, so it covers nightlies and stable without any file to update.
 
 `sync-versions.yml` runs the script on every push to `main` that touches `pom.xml` — including release-please's own release commits — and commits the result. So bumping a version in `pom.xml` is genuinely the only edit required.

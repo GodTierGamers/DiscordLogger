@@ -69,8 +69,8 @@ embeds:
 ```
 
 > The last line of your file records which config schema it uses, e.g.  
-> `# CONFIG VERSION V9, SHIPPED WITH v2.1.6 BUILT 30-07-2026`  
-> The `V9` part is what matters — that's how the plugin knows whether your
+> `# CONFIG VERSION {{ site.data.versions.schema }}, SHIPPED WITH v{{ site.data.versions.plugin }} BUILT DD-MM-YYYY`  
+> The `{{ site.data.versions.schema }}` part is what matters — that's how the plugin knows whether your
 > config needs migrating, and how the docs map versions. The version and build
 > date after it are just there to tell you which build wrote the file.
 

@@ -11,7 +11,7 @@ Pick the **config schema version** your server is using.
 If you're not sure, open your `config.yml` and check the **last line**; it will look like:
 
 ```text
-# CONFIG VERSION V9, SHIPPED WITH v2.1.6
+# CONFIG VERSION {{ site.data.versions.schema }}, SHIPPED WITH v{{ site.data.versions.plugin }}
 ```
 
 <div id="cfg-version-list" class="cfg-version-list">
