@@ -223,6 +223,13 @@ public final class Log {
         return (routed != null && !routed.isBlank()) ? routed : webhookUrl;
     }
 
+    // NOTE: webhookUrl must be read ONLY through webhookFor above. Every send site
+    // resolves its destination that way, including the ones that always want the
+    // main webhook (they pass null). This is enforced by
+    // LogRoutingTest.everySendSiteResolvesARoute, because the first version of
+    // routing missed exactly one send site — the fields embed — and the result was
+    // that quit routed correctly while death and gamemode silently did not.
+
     private static int colorFor(String categoryKey) {
         return colorMap.getOrDefault(normalizeKey(categoryKey), defaultColor);
     }
@@ -274,7 +281,7 @@ public final class Log {
         String line = "`" + ts() + "`" + nameSegment() + " " + message;
         plugin.getLogger().info(line);
         if (ready) {
-            DiscordWebhook.sendAsync(plugin, webhookUrl, line);
+            DiscordWebhook.sendAsync(plugin, webhookFor(null), line);
         }
     }
 
@@ -397,7 +404,7 @@ public final class Log {
         if (embedsEnabledFlag) {
             DiscordWebhook.sendEmbedWithFields(
                     plugin,
-                    webhookUrl,
+                    webhookFor(category),
                     /*title*/        (title == null || title.isBlank()) ? category : title,
                     /*description*/  description == null ? "" : description,
                     /*color*/        colorFor(category),
@@ -464,7 +471,7 @@ public final class Log {
 
         DiscordWebhook.sendEmbedWithFields(
                 plugin,
-                webhookUrl,
+                webhookFor(null),
                 title,
                 description,
                 color,
