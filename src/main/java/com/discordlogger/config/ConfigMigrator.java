@@ -53,6 +53,35 @@ public final class ConfigMigrator {
         return shipped > installed ? Status.UPGRADED : Status.AHEAD;
     }
 
+    /**
+     * Rewrites one scalar in config.yml in place, leaving every other byte alone.
+     *
+     * <p>Deliberately not {@code plugin.getConfig().set(...)} + {@code saveConfig()}:
+     * that re-serialises the whole file through Bukkit's YAML writer, which drops
+     * every comment — the banners, the per-option explanations, and, fatally, the
+     * {@code CONFIG VERSION V<n>} trailer this class reads to decide whether to
+     * migrate. A config saved that way would look like it had no schema at all.
+     *
+     * @return true if the key was found and rewritten
+     */
+    public static boolean setScalar(File configFile, String path, Object value) {
+        try {
+            List<String> lines = new ArrayList<>(
+                    Arrays.asList(Files.readString(configFile.toPath(), StandardCharsets.UTF_8)
+                            .split("\r?\n", -1)));
+            List<String> reference = List.copyOf(lines);
+            if (findLeafLine(reference, path) == null) return false;
+
+            replaceLeafValueInDefault(lines, reference, path, value);
+            Files.writeString(configFile.toPath(), String.join("\n", lines),
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            return true;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
     /** The config schema number baked into this JAR. Null if the trailer is missing. */
     public static Integer shippedVersion(JavaPlugin plugin, String resourcePath) {
         try (InputStream in = plugin.getResource(resourcePath)) {

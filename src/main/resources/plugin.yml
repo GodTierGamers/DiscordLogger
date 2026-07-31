@@ -8,12 +8,15 @@ description: Logs server events to a Discord channel via webhooks.
 commands:
   discordlogger:
     description: DiscordLogger reload command
-    usage: "/discordlogger <reload|regen>"
+    usage: "/discordlogger <reload|webhook|regen>"
     aliases: [dlogger, dlog]
 
 permissions:
   discordlogger.reload:
     description: Allows reloading DiscordLogger config
+    default: op
+  discordlogger.webhook:
+    description: Allows setting the Discord webhook URL in-game
     default: op
   discordlogger.regen:
     description: Allows rebuilding config.yml from the version bundled with this build

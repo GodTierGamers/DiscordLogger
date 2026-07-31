@@ -19,7 +19,7 @@ public final class PlayerCommand implements Listener {
         if (!plugin.getConfig().getBoolean("log.player.command.enabled", true)) return;
 
         String who = Names.display(e.getPlayer(), plugin);
-        String cmd = Log.mdEscape(e.getMessage()); // includes leading '/'
+        String cmd = Log.mdEscape(Log.redactWebhooks(e.getMessage())); // includes leading '/'
         String msg = who + " ran: " + cmd;
         Log.eventWithThumb("Player Command", msg, Log.playerAvatarUrl(e.getPlayer().getUniqueId()));
     }
