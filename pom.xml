@@ -46,6 +46,16 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Anonymous usage metrics (bstats.org). Shaded + relocated below:
+             bStats REQUIRES relocation so copies bundled by different plugins
+             don't collide at runtime. -->
+        <dependency>
+            <groupId>org.bstats</groupId>
+            <artifactId>bstats-bukkit</artifactId>
+            <version>3.2.1</version>
+            <scope>compile</scope>
+        </dependency>
+
         <!-- YAML parsing for config migration (parsing-only) -->
         <dependency>
             <groupId>org.yaml</groupId>
@@ -95,6 +105,10 @@
                                 <relocation>
                                     <pattern>org.yaml.snakeyaml</pattern>
                                     <shadedPattern>com.discordlogger.shaded.snakeyaml</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.bstats</pattern>
+                                    <shadedPattern>com.discordlogger.shaded.bstats</shadedPattern>
                                 </relocation>
                             </relocations>
                             <!-- Disable to avoid ASM parsing issues with modern bytecode -->
