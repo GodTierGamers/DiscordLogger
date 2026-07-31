@@ -1,0 +1,47 @@
+name: Downloads Badge
+
+# The README's download count spans two hosts: GitHub Releases (which also
+# receives every Hangar download, because Hangar versions are external links to
+# the GitHub asset) and Modrinth, which hosts its own copy and keeps its own
+# tally. shields.io cannot add those together, so this writes the total into a
+# shields "endpoint" JSON served from the docs site, and the badge reads that.
+#
+# Releases refresh it themselves (see release-please.yml); this keeps it moving
+# on days when nothing ships.
+
+on:
+  schedule:
+    # 04:00 UTC daily — off-peak, and well clear of the nightly build.
+    - cron: "0 4 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: downloads-badge
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  badge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Recount downloads
+        run: python3 scripts/publish-listings.py --badge
+
+      - name: Commit if the total changed
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- docs/assets/badges/downloads.json; then
+            echo "Download total unchanged — nothing to commit."
+            exit 0
+          fi
+          git add docs/assets/badges/downloads.json
+          git commit -m "chore: refresh downloads badge [skip ci]"
+          git push origin main

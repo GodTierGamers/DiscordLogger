@@ -81,6 +81,7 @@ release-please-config.json             release-please: changelog sections, extra
 .release-please-manifest.json          release-please: current released version (state)
 scripts/validate-config-generator.py   CI check: options.json <-> template <-> Java source <-> shipped config <-> mirror <-> doc embed
 scripts/sync-versions.py               Propagates pom.xml's version values into README/CONTRIBUTING/docs
+scripts/publish-listings.py            Mirrors stable releases to Modrinth/Hangar; writes the combined downloads badge
 src/main/resources/
   plugin.yml                           Plugin descriptor (Maven-filtered)
   build-info.properties                Build channel/version/date, baked in at package time
@@ -130,6 +131,23 @@ docs/                                  Jekyll website (GitHub Pages, deploys fro
 4. The same workflow run's `build-artifact` job then checks out the tag, stamps `BUILT <DD-MM-YYYY>` onto the trailer, builds with `-Ddl.build.channel=stable`, and attaches `DiscordLogger-v<version>.jar` + `.sha256`. (The build lives in the same run rather than a `release: published` listener because events created with the built-in `GITHUB_TOKEN` don't trigger other workflows — a separate listener would never fire. See Gotchas.)
 5. **Config schema revisions (v9 → v10) stay manual and deliberate** — bump the `V<n>` trailer, add `docs/assets/configs/v<n>/`, wire the generator config. Never inferred from commits.
 6. **Force a specific version:** a commit whose message has a `Release-As: X.Y.Z` footer retargets the Release PR (and `nightly.yml`'s version computation, which honors the same footer) to that exact version regardless of what the conventional-commit math would produce.
+
+### Distribution — GitHub is the only host that serves a JAR (almost)
+
+Stable releases are mirrored onto two listings, because that is where server owners look:
+
+| Listing | Slug | How the version is registered |
+|---|---|---|
+| Modrinth | `discordlogger` | The JAR is **uploaded**. Modrinth's API has no external-URL field — checked against its OpenAPI spec — so this is the one place a second copy of the file exists. |
+| Hangar | `LVCHLANN/DiscordLogger` | Registered with `externalUrl` pointing at the GitHub Release asset. No copy is hosted, and Hangar's download button increments **GitHub's** counter. |
+
+`scripts/publish-listings.py`, run by `release-please.yml`'s `publish-listings` job, does both. It is idempotent (re-running skips versions that already exist), refuses to publish if `pom.xml`'s version doesn't match the release tag, and refuses nightly tags outright — nightlies are GitHub-only, as the downloads page states.
+
+**Download counting.** The count spans two hosts, so the README badge is a shields.io *endpoint* badge reading `docs/assets/badges/downloads.json`, written by `publish-listings.py --badge`: GitHub asset downloads (excluding `.sha256` files) **+** Modrinth's total. Hangar is deliberately not added — its traffic is already inside the GitHub number, and adding it would double-count. `downloads-badge.yml` refreshes it daily; releases refresh it inline.
+
+**Two secrets must exist** or the corresponding platform is skipped with a notice (a lagging listing is recoverable; a release job dying after tagging is not): `MODRINTH_TOKEN` (PAT, "Create versions" scope) and `HANGAR_API_KEY` (create_version permission).
+
+`<dl.game.versions>` in `pom.xml` is the Minecraft version list both listings advertise. It's the one value that can't be derived — `api-version` is a floor, not a list — so it's validated against Modrinth's known-version API before publishing; a typo fails the release rather than mislabelling it.
 
 ### Build channels (`BuildInfo`, baked in at package time — never inferred from the version string)
 
