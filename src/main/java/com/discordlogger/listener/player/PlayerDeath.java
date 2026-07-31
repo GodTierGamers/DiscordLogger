@@ -17,6 +17,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class PlayerDeath implements Listener {
     private final Plugin plugin;
 
@@ -28,19 +31,42 @@ public final class PlayerDeath implements Listener {
 
         final Player victim = e.getEntity();
         final String vName = Names.display(victim, (JavaPlugin) plugin);
-        final String thumb = Log.playerAvatarUrl(victim.getUniqueId());
 
-        // Prefer killer context (player)
+        final List<Log.Field> fields = new ArrayList<>();
+        fields.add(new Log.Field("Cause of Death", describeCause(victim)));
+
+        // Only present when asked for. Off by default: a death message with
+        // coordinates tells everyone who can read the channel where the body — and
+        // the inventory it dropped — is.
+        if (plugin.getConfig().getBoolean("log.player.death.show_coords", false)) {
+            fields.add(new Log.Field("Coords", coordsOf(victim)));
+        }
+
+        Log.eventFieldsWithThumb(
+                "Player Death",
+                "Player Death",
+                vName + " died",
+                null,                       // null -> use embeds.author from config
+                fields,
+                Log.playerAvatarUrl(victim.getUniqueId())
+        );
+    }
+
+    /**
+     * How the player died, as a standalone phrase for a field value.
+     *
+     * <p>Each branch used to send its own complete message, so the wording was
+     * mid-sentence ("was slain by X"). As a field value it stands on its own, so it
+     * reads "Slain by X".
+     */
+    private String describeCause(Player victim) {
         final Player killer = victim.getKiller();
         if (killer != null) {
             String kName = Names.display(killer, (JavaPlugin) plugin);
             String weapon = weaponName(killer.getInventory().getItemInMainHand());
-            String suffix = weapon.isEmpty() ? "" : " [" + weapon + "]";
-            send(victim, vName + " was slain by " + kName + suffix, thumb);
-            return;
+            return "Slain by " + kName + (weapon.isEmpty() ? "" : " [" + weapon + "]");
         }
 
-        // Last damage cause
         EntityDamageEvent last = victim.getLastDamageCause();
         if (last instanceof EntityDamageByEntityEvent byEntity) {
             Entity damager = byEntity.getDamager();
@@ -48,43 +74,25 @@ public final class PlayerDeath implements Listener {
             if (damager instanceof Projectile proj) {
                 Object shooter = proj.getShooter();
                 if (shooter instanceof Player pShooter) {
-                    String kName = Names.display(pShooter, (JavaPlugin) plugin);
-                    send(victim, vName + " was shot by " + kName, thumb);
-                    return;
-                } else if (shooter instanceof Entity eShooter) {
-                    send(victim, vName + " was shot by " + mobName(eShooter), thumb);
-                    return;
-                } else {
-                    send(victim, vName + " was shot", thumb);
-                    return;
+                    return "Shot by " + Names.display(pShooter, (JavaPlugin) plugin);
                 }
+                if (shooter instanceof Entity eShooter) {
+                    return "Shot by " + mobName(eShooter);
+                }
+                return "Shot";
             }
-
-            send(victim, vName + " was slain by " + mobName(damager), thumb);
-            return;
+            return "Slain by " + mobName(damager);
         }
 
-        // Environmental causes
-        String cause = causeText(last == null ? null : last.getCause());
-        send(victim, vName + " " + cause, thumb);
+        return causeText(last == null ? null : last.getCause());
     }
 
-    /**
-     * Single send point for every death, so the coordinates suffix is appended in
-     * one place rather than repeated across the five ways a death is described.
-     *
-     * <p>Off by default: a death message tells everyone who can read the channel
-     * exactly where the body — and the dropped inventory — is. That is a fine
-     * thing on a private server and a griefing tool on a public one, so it is
-     * opt-in rather than something an admin discovers after the fact.
-     */
-    private void send(Player victim, String message, String thumb) {
-        if (plugin.getConfig().getBoolean("log.player.death.show_coords", false)) {
-            final Location at = victim.getLocation();
-            message += " at " + at.getBlockX() + ", " + at.getBlockY() + ", " + at.getBlockZ()
-                    + " in " + Log.mdEscape(at.getWorld() == null ? "unknown" : at.getWorld().getName());
-        }
-        Log.eventWithThumb("Player Death", message, thumb);
+    /** Block coordinates and world, e.g. "128, 71, -344 in world". */
+    private String coordsOf(Player victim) {
+        final Location at = victim.getLocation();
+        final String world = at.getWorld() == null ? "unknown" : at.getWorld().getName();
+        return at.getBlockX() + ", " + at.getBlockY() + ", " + at.getBlockZ()
+                + " in " + Log.mdEscape(world);
     }
 
     private String weaponName(ItemStack item) {
@@ -103,29 +111,29 @@ public final class PlayerDeath implements Listener {
     }
 
     private String causeText(EntityDamageEvent.DamageCause cause) {
-        if (cause == null) return "died";
+        if (cause == null) return "Died";
         switch (cause) {
-            case FALL: return "fell from a high place";
-            case LAVA: return "tried to swim in lava";
+            case FALL: return "Fell from a high place";
+            case LAVA: return "Tried to swim in lava";
             case FIRE:
-            case FIRE_TICK: return "burned to death";
-            case DROWNING: return "drowned";
-            case SUFFOCATION: return "suffocated in a wall";
-            case VOID: return "fell into the void";
-            case CONTACT: return "was pricked to death";
+            case FIRE_TICK: return "Burned to death";
+            case DROWNING: return "Drowned";
+            case SUFFOCATION: return "Suffocated in a wall";
+            case VOID: return "Fell into the void";
+            case CONTACT: return "Was pricked to death";
             case BLOCK_EXPLOSION:
-            case ENTITY_EXPLOSION: return "blew up";
-            case MAGIC: return "was killed by magic";
-            case POISON: return "was poisoned";
-            case WITHER: return "withered away";
-            case STARVATION: return "starved to death";
-            case FREEZE: return "froze to death";
-            case LIGHTNING: return "was struck by lightning";
-            case HOT_FLOOR: return "discovered the floor was lava";
-            case CRAMMING: return "was squished too much";
-            case DRAGON_BREATH: return "was roasted by dragon breath";
-            case THORNS: return "was killed by thorns";
-            default: return "died";
+            case ENTITY_EXPLOSION: return "Blew up";
+            case MAGIC: return "Was killed by magic";
+            case POISON: return "Was poisoned";
+            case WITHER: return "Withered away";
+            case STARVATION: return "Starved to death";
+            case FREEZE: return "Froze to death";
+            case LIGHTNING: return "Was struck by lightning";
+            case HOT_FLOOR: return "Discovered the floor was lava";
+            case CRAMMING: return "Was squished too much";
+            case DRAGON_BREATH: return "Was roasted by dragon breath";
+            case THORNS: return "Was killed by thorns";
+            default: return "Died";
         }
     }
 }

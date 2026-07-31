@@ -316,12 +316,32 @@ public final class Log {
                                             String author,
                                             List<Field> fields,
                                             String thumbnailUrl) {
+        eventFieldsWithThumb(category, title, "", author, fields, thumbnailUrl);
+    }
+
+    /**
+     * As above, with a description line between the title and the fields.
+     *
+     * <p>Overload rather than a sixth parameter on the original: every existing
+     * caller wants an empty description, and threading a null through thirteen
+     * call sites to say "unchanged" is noise.
+     */
+    public static void eventFieldsWithThumb(String category,
+                                            String title,
+                                            String description,
+                                            String author,
+                                            List<Field> fields,
+                                            String thumbnailUrl) {
         final String now = ts();
 
         // Console echo
         StringBuilder console = new StringBuilder();
         console.append("[").append(now).append("] ")
                 .append(title == null || title.isBlank() ? category : title).append(": ");
+        if (description != null && !description.isBlank()) {
+            console.append(description);
+            if (fields != null && !fields.isEmpty()) console.append(" | ");
+        }
         if (fields != null && !fields.isEmpty()) {
             boolean first = true;
             for (Field f : fields) {
@@ -340,7 +360,7 @@ public final class Log {
                     plugin,
                     webhookUrl,
                     /*title*/        (title == null || title.isBlank()) ? category : title,
-                    /*description*/  "",
+                    /*description*/  description == null ? "" : description,
                     /*color*/        colorFor(category),
                     /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
                     /*author*/       (author == null || author.isBlank()) ? embedAuthorName : author,
@@ -353,6 +373,9 @@ public final class Log {
             sb.append("`").append(now).append("`").append(nameSegment())
                     .append(" - **").append(category).append("**: ")
                     .append(title == null || title.isBlank() ? "" : title + "\n");
+            if (description != null && !description.isBlank()) {
+                sb.append(description).append("\n");
+            }
             if (fields != null) {
                 for (Field f : fields) {
                     sb.append("- ").append(f.name).append(" ")
