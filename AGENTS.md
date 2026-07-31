@@ -145,7 +145,9 @@ Stable releases are mirrored onto two listings, because that is where server own
 
 **Download counting.** The count spans two hosts, so the README badge is a shields.io *endpoint* badge reading `docs/assets/badges/downloads.json`, written by `publish-listings.py --badge`: GitHub asset downloads (excluding `.sha256` files) **+** Modrinth's total. Hangar is deliberately not added — its traffic is already inside the GitHub number, and adding it would double-count. `downloads-badge.yml` refreshes it daily; releases refresh it inline.
 
-**Two secrets must exist** or the corresponding platform is skipped with a notice (a lagging listing is recoverable; a release job dying after tagging is not): `MODRINTH_TOKEN` (PAT, "Create versions" scope) and `HANGAR_API_KEY` (create_version permission). Both are repository **Actions** secrets — the job declares no `environment:`, so environment secrets would not resolve.
+**Two secrets must exist** or the corresponding platform is skipped with a notice (a lagging listing is recoverable; a release job dying after tagging is not): `MODRINTH_TOKEN` (PAT, "Create versions" **and** "Read user info" scopes) and `HANGAR_API_KEY` (create_version permission). Both are repository **Actions** secrets — the job declares no `environment:`, so environment secrets would not resolve.
+
+Modrinth's `VERSION_CREATE` scope covers exactly one endpoint — the publish call — so a token holding only that scope cannot be verified without actually publishing. `USER_READ` is therefore required in addition, purely so `--check-auth` has a harmless authenticated endpoint to hit. Modrinth answers both "expired" and "wrong scopes" with a bare 401, so the script's error names both possibilities.
 
 Modrinth PATs expire. `check-listing-credentials.yml` runs `publish-listings.py --check-auth` weekly so a dead token is caught by a failed scheduled run rather than by a release that has already tagged. Note that `--dry-run` makes no authenticated call at all and proves nothing about the tokens; `--check-auth` is the mode that does.
 

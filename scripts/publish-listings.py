@@ -26,7 +26,8 @@ Everything it needs comes from pom.xml and the GitHub Release:
 
 Credentials come from the environment and are never logged:
 
-    MODRINTH_TOKEN   a Modrinth PAT with "Create versions" scope
+    MODRINTH_TOKEN   a Modrinth PAT with the "Create versions" scope, plus
+                     "Read user info" so --check-auth can verify it
     HANGAR_API_KEY   a Hangar API key with the create_version permission
 
 If a token is missing that platform is skipped with a notice rather than failing
@@ -381,7 +382,19 @@ def check_auth() -> int:
             user = request(f"{MODRINTH_API}/user", headers={"Authorization": token})
             log(f"Modrinth: authenticated as {user['username']}")
         except Exception as exc:  # noqa: BLE001
-            problems.append(f"Modrinth token rejected: {exc}")
+            # Modrinth returns a bare 401 for both "this token is dead" and "this
+            # token lacks USER_READ", so the message has to name both. There is no
+            # read-only endpoint a VERSION_CREATE-only token can reach — that scope
+            # appears on exactly one endpoint, the publish call — so USER_READ is
+            # required purely to make the token checkable without publishing.
+            hint = (
+                " — a 401 here means either the token has expired/been revoked, or "
+                "it is missing the USER_READ scope. Publishing needs VERSION_CREATE; "
+                "this check needs USER_READ as well."
+                if "401" in str(exc)
+                else ""
+            )
+            problems.append(f"Modrinth token rejected: {exc}{hint}")
 
     key = os.environ.get("HANGAR_API_KEY", "").strip()
     if not key:
