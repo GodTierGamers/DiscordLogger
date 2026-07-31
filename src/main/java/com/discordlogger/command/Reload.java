@@ -24,9 +24,24 @@ public final class Reload implements Subcommand {
 
         long start = System.currentTimeMillis();
 
-        ConfigMigrator.migrateIfVersionChanged(plugin, "config.yml", new java.io.File(plugin.getDataFolder(), "config.yml"));
+        ConfigMigrator.Result configState = ConfigMigrator.migrateIfVersionChanged(
+                plugin, "config.yml", new java.io.File(plugin.getDataFolder(), "config.yml"));
         plugin.reloadConfig();
         boolean ok = plugin.applyRuntimeConfig();
+
+        // A reload is exactly when someone has just swapped a config in, so the
+        // same schema check that runs at startup has to run here too.
+        if (configState.status() == ConfigMigrator.Status.AHEAD) {
+            sender.sendMessage(ChatColor.RED + "Your config.yml (schema v" + configState.installed()
+                    + ") is newer than this build (v" + configState.shipped()
+                    + "). Keys it doesn't recognise are ignored.");
+            sender.sendMessage(ChatColor.RED + "Update the plugin, or run "
+                    + ChatColor.WHITE + "/discordlogger regen" + ChatColor.RED + " to start fresh.");
+        } else if (configState.migrated()) {
+            sender.sendMessage(ChatColor.GREEN + "config.yml upgraded from schema v"
+                    + configState.installed() + " to v" + configState.shipped()
+                    + " (previous file saved as config.old.yml).");
+        }
 
         if (ok) {
             long ms = System.currentTimeMillis() - start;
