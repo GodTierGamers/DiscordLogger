@@ -81,31 +81,38 @@ log:
       color: "{{COLOR_player.join}}" # green
       webhook: "{{HOOK_player.join}}" # Send just this event elsewhere. Empty = use webhook.url above
       show_platform: {{EXTRA_player.join.show_platform}} # Flags players who joined from Bedrock (needs Geyser + Floodgate)
+
     quit: # Player Quit
       enabled: {{LOG_player.quit.enabled}}
       color: "{{COLOR_player.quit}}" # red
       webhook: "{{HOOK_player.quit}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     chat: # Player Chat
       enabled: {{LOG_player.chat.enabled}}
       color: "{{COLOR_player.chat}}" # blurple
       webhook: "{{HOOK_player.chat}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     command: # Commands executed by a player in-game
       enabled: {{LOG_player.command.enabled}}
       color: "{{COLOR_player.command}}" # yellow
       webhook: "{{HOOK_player.command}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     death: # Player Death (with death message)
       enabled: {{LOG_player.death.enabled}}
       color: "{{COLOR_player.death}}" # red
       webhook: "{{HOOK_player.death}}" # Send just this event elsewhere. Empty = use webhook.url above
       show_coords: {{EXTRA_player.death.show_coords}} # Adds where the player died. Anyone who can see the channel can find the body
+
     advancement: # Logs when a player gets an advancement
       enabled: {{LOG_player.advancement.enabled}}
       color: "{{COLOR_player.advancement}}" # green
       webhook: "{{HOOK_player.advancement}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     teleport: # Logs when a player teleports
       enabled: {{LOG_player.teleport.enabled}}
       color: "{{COLOR_player.teleport}}" # blue
       webhook: "{{HOOK_player.teleport}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     gamemode: # Logs when a players gamemode changes
       enabled: {{LOG_player.gamemode.enabled}}
       color: "{{COLOR_player.gamemode}}" # purple
@@ -116,14 +123,17 @@ log:
       enabled: {{LOG_server.command.enabled}}
       color: "{{COLOR_server.command}}" # pink
       webhook: "{{HOOK_server.command}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     start: # Logged when the plugin/server starts
       enabled: {{LOG_server.start.enabled}}
       color: "{{COLOR_server.start}}" # green
       webhook: "{{HOOK_server.start}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     stop: # Logged on /stop / clean shutdown
       enabled: {{LOG_server.stop.enabled}}
       color: "{{COLOR_server.stop}}" # red
       webhook: "{{HOOK_server.stop}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     explosion: # Log when an explosion occurs
       enabled: {{LOG_server.explosion.enabled}}
       color: "{{COLOR_server.explosion}}" # red
@@ -134,29 +144,34 @@ log:
       enabled: {{LOG_moderation.ban.enabled}}
       color: "{{COLOR_moderation.ban}}" # red
       webhook: "{{HOOK_moderation.ban}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     unban: # Logs when a player has been unbanned
       enabled: {{LOG_moderation.unban.enabled}}
       color: "{{COLOR_moderation.unban}}" # red
       webhook: "{{HOOK_moderation.unban}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     kick: # Logs when a player has been kicked
       enabled: {{LOG_moderation.kick.enabled}}
       color: "{{COLOR_moderation.kick}}" # red
       webhook: "{{HOOK_moderation.kick}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     op: # Logs when a player is granted op premissions
       enabled: {{LOG_moderation.op.enabled}}
       color: "{{COLOR_moderation.op}}" # red
       webhook: "{{HOOK_moderation.op}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     deop: # Logs when a players op permissions are revoked
       enabled: {{LOG_moderation.deop.enabled}}
       color: "{{COLOR_moderation.deop}}" # red
       webhook: "{{HOOK_moderation.deop}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     whitelist_toggle: # Logs when the whitelist is enabled/disabled
       enabled: {{LOG_moderation.whitelist_toggle.enabled}}
       color: "{{COLOR_moderation.whitelist_toggle}}" # teal
       webhook: "{{HOOK_moderation.whitelist_toggle}}" # Send just this event elsewhere. Empty = use webhook.url above
+
     whitelist_edit: # Logs when players are added/removed from the whitelist
       enabled: {{LOG_moderation.whitelist_edit.enabled}}
       color: "{{COLOR_moderation.whitelist_edit}}" # dark teal
       webhook: "{{HOOK_moderation.whitelist_edit}}" # Send just this event elsewhere. Empty = use webhook.url above
-
 # CONFIG VERSION V10, GENERATED ON WEBSITE ON {{GENERATED_AT}}
