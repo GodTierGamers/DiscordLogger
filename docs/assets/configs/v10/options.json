@@ -43,7 +43,16 @@
           "configKey": "log.player.death.enabled",
           "colorKey": "player.death",
           "defaultColor": "#ED4245",
-          "default": true
+          "default": true,
+          "extras": [
+            {
+              "key": "player.death.show_coords",
+              "configKey": "log.player.death.show_coords",
+              "label": "Include coordinates in death messages",
+              "note": "Anyone who can read the channel can find the body and its dropped items.",
+              "default": false
+            }
+          ]
         },
         {
           "id": "advancement",

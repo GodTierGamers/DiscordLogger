@@ -13,7 +13,7 @@
 (() => {
     'use strict';
 
-    const CONFIG_VERSION = 'v9';
+    const CONFIG_VERSION = 'v10';
 
     window.DL_GENERATORS = window.DL_GENERATORS || {};
     window.DL_GENERATORS[CONFIG_VERSION] = launch;
@@ -115,6 +115,7 @@
             options: null,
             template: null,
             toggles: {},
+            extras: {},
             colors: {},
         };
 
@@ -158,6 +159,11 @@
                 const k = toggleKey(item.configKey);
                 if (k) state.toggles[k] = item.default !== undefined ? !!item.default : true;
                 if (item.colorKey) state.colors[item.colorKey] = item.defaultColor || FALLBACK_COLOR;
+                // Per-event sub-options (e.g. death coordinates). Driven entirely by
+                // options.json, so adding another needs no change to this file.
+                for (const extra of (item.extras || [])) {
+                    state.extras[extra.key] = !!extra.default;
+                }
             }
         }
 
@@ -374,11 +380,24 @@
                     const cb = h('input', { type: 'checkbox', ...(state.toggles[k] ? { checked: true } : {}) });
                     cb.addEventListener('change', () => { state.toggles[k] = cb.checked; });
                     list.appendChild(h('label', { class: 'cfg-check' }, [cb, h('span', {}, item.label || k)]));
+
+                    for (const extra of (item.extras || [])) {
+                        const sub = h('input', {
+                            type: 'checkbox',
+                            ...(state.extras[extra.key] ? { checked: true } : {}),
+                        });
+                        sub.addEventListener('change', () => { state.extras[extra.key] = sub.checked; });
+                        list.appendChild(h('label', { class: 'cfg-check cfg-check--sub' },
+                            [sub, h('span', {}, extra.label || extra.key)]));
+                        if (extra.note) {
+                            list.appendChild(h('p', { class: 'cfg-note cfg-note--sub' }, extra.note));
+                        }
+                    }
                 }
             }
 
             const setAll = on => () => {
-                for (const cb of list.querySelectorAll('input[type=checkbox]')) {
+                for (const cb of list.querySelectorAll('.cfg-check:not(.cfg-check--sub) input[type=checkbox]')) {
                     if (cb.checked !== on) { cb.checked = on; cb.dispatchEvent(new Event('change')); }
                 }
             };
@@ -540,6 +559,9 @@
                 if (item.colorKey) {
                     tokens[`COLOR_${item.colorKey}`] = state.colors[item.colorKey] || FALLBACK_COLOR;
                 }
+                for (const extra of (item.extras || [])) {
+                    tokens[`EXTRA_${extra.key}`] = state.extras[extra.key] ? 'true' : 'false';
+                }
             }
         }
 
@@ -579,6 +601,11 @@
     #cfg-gen .cfg-status.is-ok { background: rgba(22,163,74,.08); border-color: rgba(22,163,74,.2); }
     #cfg-gen .cfg-status.is-error { background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.2); }
     #cfg-gen .cfg-radio, #cfg-gen .cfg-check { display: flex; align-items: center; gap: .45rem; margin: .3rem 0; }
+    /* Sub-options sit indented under the event they belong to. Scoped and placed
+       after the base rule because that rule uses the margin shorthand, which
+       would otherwise reset the indent back to zero. */
+    #cfg-gen .cfg-check--sub { margin-left: 1.75rem; opacity: .92; }
+    #cfg-gen .cfg-note--sub { margin: .1rem 0 .5rem 1.75rem; font-size: .85em; opacity: .75; }
     #cfg-gen .cfg-sub { margin: .9rem 0 .3rem; }
     #cfg-gen .cfg-colgroup { border: 1px solid var(--border); border-radius: 10px; padding: .65rem .7rem; margin-bottom: .9rem; }
     #cfg-gen .cfg-colrow { display: flex; align-items: center; justify-content: space-between; gap: .7rem; margin: .35rem 0; }

@@ -394,6 +394,7 @@ Compare that against the newest entry in `docs/assets/configs/registry.json`. If
 #### Phase 2 — the website generator (the part with the isolation rule)
 
 5. **`cp -r docs/assets/configs/v<N-1> docs/assets/configs/v<N>`** — copy forward, then adapt the copy. Never refactor the old folder in place.
+   - **Immediately change `const CONFIG_VERSION` at the top of the copied `generator.js`.** It drives three things at once: the key the bundle registers under (`window.DL_GENERATORS[...]`), the directory it fetches `options.json` and the template from, and the version shown to the user. Left at the old value, the new bundle registers as the *previous* schema and serves the previous schema's data — so the new generator silently emits the **old** config. Valid YAML, wrong file, no error anywhere. `validate-config-generator.py` now checks this (it was missed once and only surfaced by driving the UI).
 6. **Adapt the new bundle**: `generator.js` (registers `window.DL_GENERATORS['v<N>']`), `options.json`, the template, and the `config.yml` mirror. The mirror must match `src/main/resources/config.yml` byte for byte apart from the trailer's `BUILT` suffix.
 7. **DO NOT TOUCH `docs/assets/configs/v<N-1>/**` ever again.** Someone still running the older plugin must keep generating exactly the config they always did.
 
@@ -440,6 +441,24 @@ mvn -B -ntp -DskipTests clean package && unzip -p target/*.jar config.yml | tail
 
 14. Merging the Release PR ships the schema and **freezes it permanently**. From that moment `docs/assets/configs/v<N>/` and the shipped keys are history: the next key change opens `v<N+1>`.
 15. **Versions are never skipped**, and a schema that was opened but never published is not "used up" — it stays open and keeps accumulating changes until a release ships it.
+
+#### Per-event sub-options (`extras`)
+
+An event can carry extra keys beside `enabled` and `color` — `log.player.death.show_coords` is the first. The generator handles these generically, so **adding another needs no JavaScript**: declare it in `options.json` under the item's `extras`, add a matching `{{EXTRA_<key>}}` slot to the template, ship the key in `config.yml`, and read it in Java.
+
+```json
+"extras": [
+  { "key": "player.death.show_coords",
+    "configKey": "log.player.death.show_coords",
+    "label": "Include coordinates in death messages",
+    "note": "Anyone who can read the channel can find the body and its dropped items.",
+    "default": false }
+]
+```
+
+Two behaviours worth preserving: **"Select all"/"Select none" deliberately skip sub-options** (the selector excludes `.cfg-check--sub`), because turning every event on should never silently start broadcasting death locations; and the CSS must stay scoped `#cfg-gen .cfg-check--sub` *after* the base rule, since `#cfg-gen .cfg-check` uses the `margin` shorthand and would otherwise reset the indent.
+
+The validator checks each `extras` entry the same way as `configKey`: the template must have the slot, and for the live schema some Java must read it.
 
 #### What each of the four config copies is for
 

@@ -2,6 +2,7 @@ package com.discordlogger.listener.player;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -16,6 +17,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class PlayerDeath implements Listener {
     private final Plugin plugin;
 
@@ -27,19 +31,42 @@ public final class PlayerDeath implements Listener {
 
         final Player victim = e.getEntity();
         final String vName = Names.display(victim, (JavaPlugin) plugin);
-        final String thumb = Log.playerAvatarUrl(victim.getUniqueId());
 
-        // Prefer killer context (player)
+        final List<Log.Field> fields = new ArrayList<>();
+        fields.add(new Log.Field("Cause of Death", describeCause(victim)));
+
+        // Only present when asked for. Off by default: a death message with
+        // coordinates tells everyone who can read the channel where the body — and
+        // the inventory it dropped — is.
+        if (plugin.getConfig().getBoolean("log.player.death.show_coords", false)) {
+            fields.add(new Log.Field("Coords", coordsOf(victim)));
+        }
+
+        Log.eventFieldsWithThumb(
+                "Player Death",
+                "Player Death",
+                vName + " died",
+                null,                       // null -> use embeds.author from config
+                fields,
+                Log.playerAvatarUrl(victim.getUniqueId())
+        );
+    }
+
+    /**
+     * How the player died, as a standalone phrase for a field value.
+     *
+     * <p>Each branch used to send its own complete message, so the wording was
+     * mid-sentence ("was slain by X"). As a field value it stands on its own, so it
+     * reads "Slain by X".
+     */
+    private String describeCause(Player victim) {
         final Player killer = victim.getKiller();
         if (killer != null) {
             String kName = Names.display(killer, (JavaPlugin) plugin);
             String weapon = weaponName(killer.getInventory().getItemInMainHand());
-            String suffix = weapon.isEmpty() ? "" : " [" + weapon + "]";
-            Log.eventWithThumb("Player Death", vName + " was slain by " + kName + suffix, thumb);
-            return;
+            return "Slain by " + kName + (weapon.isEmpty() ? "" : " [" + weapon + "]");
         }
 
-        // Last damage cause
         EntityDamageEvent last = victim.getLastDamageCause();
         if (last instanceof EntityDamageByEntityEvent byEntity) {
             Entity damager = byEntity.getDamager();
@@ -47,25 +74,28 @@ public final class PlayerDeath implements Listener {
             if (damager instanceof Projectile proj) {
                 Object shooter = proj.getShooter();
                 if (shooter instanceof Player pShooter) {
-                    String kName = Names.display(pShooter, (JavaPlugin) plugin);
-                    Log.eventWithThumb("Player Death", vName + " was shot by " + kName, thumb);
-                    return;
-                } else if (shooter instanceof Entity eShooter) {
-                    Log.eventWithThumb("Player Death", vName + " was shot by " + mobName(eShooter), thumb);
-                    return;
-                } else {
-                    Log.eventWithThumb("Player Death", vName + " was shot", thumb);
-                    return;
+                    return "Shot by " + Names.display(pShooter, (JavaPlugin) plugin);
                 }
+                if (shooter instanceof Entity eShooter) {
+                    return "Shot by " + mobName(eShooter);
+                }
+                return "Shot";
             }
-
-            Log.eventWithThumb("Player Death", vName + " was slain by " + mobName(damager), thumb);
-            return;
+            return "Slain by " + mobName(damager);
         }
 
-        // Environmental causes
-        String cause = causeText(last == null ? null : last.getCause());
-        Log.eventWithThumb("Player Death", vName + " " + cause, thumb);
+        final String text = last == null ? null : causeText(last.getCause());
+        // Only reached when there is no damage cause at all, or Paper has added one
+        // we do not know yet. causeTextIsExhaustive() in the tests fails on the latter.
+        return text == null ? "Died" : text;
+    }
+
+    /** Block coordinates and world, e.g. "128, 71, -344 in world". */
+    private String coordsOf(Player victim) {
+        final Location at = victim.getLocation();
+        final String world = at.getWorld() == null ? "unknown" : at.getWorld().getName();
+        return at.getBlockX() + ", " + at.getBlockY() + ", " + at.getBlockZ()
+                + " in " + Log.mdEscape(world);
     }
 
     private String weaponName(ItemStack item) {
@@ -83,30 +113,58 @@ public final class PlayerDeath implements Listener {
         return "a " + type;
     }
 
-    private String causeText(EntityDamageEvent.DamageCause cause) {
-        if (cause == null) return "died";
+    /**
+     * Phrasing for each damage cause, or null if this one is not handled.
+     *
+     * <p>Returning null rather than a generic string is what makes the gap
+     * detectable: a test walks every {@code DamageCause} the API declares and fails
+     * on any that returns null, so a cause added by a future Paper release is caught
+     * in CI instead of surfacing as "Cause of Death: Died" on someone's server.
+     */
+    static String causeText(EntityDamageEvent.DamageCause cause) {
+        if (cause == null) return null;
         switch (cause) {
-            case FALL: return "fell from a high place";
-            case LAVA: return "tried to swim in lava";
+            case FALL: return "Fell from a high place";
+            case LAVA: return "Tried to swim in lava";
             case FIRE:
-            case FIRE_TICK: return "burned to death";
-            case DROWNING: return "drowned";
-            case SUFFOCATION: return "suffocated in a wall";
-            case VOID: return "fell into the void";
-            case CONTACT: return "was pricked to death";
+            case FIRE_TICK: return "Burned to death";
+            case DROWNING: return "Drowned";
+            case SUFFOCATION: return "Suffocated in a wall";
+            case VOID: return "Fell into the void";
+            case CONTACT: return "Was pricked to death";
             case BLOCK_EXPLOSION:
-            case ENTITY_EXPLOSION: return "blew up";
-            case MAGIC: return "was killed by magic";
-            case POISON: return "was poisoned";
-            case WITHER: return "withered away";
-            case STARVATION: return "starved to death";
-            case FREEZE: return "froze to death";
-            case LIGHTNING: return "was struck by lightning";
-            case HOT_FLOOR: return "discovered the floor was lava";
-            case CRAMMING: return "was squished too much";
-            case DRAGON_BREATH: return "was roasted by dragon breath";
-            case THORNS: return "was killed by thorns";
-            default: return "died";
+            case ENTITY_EXPLOSION: return "Blew up";
+            case MAGIC: return "Was killed by magic";
+            case POISON: return "Was poisoned";
+            case WITHER: return "Withered away";
+            case STARVATION: return "Starved to death";
+            case FREEZE: return "Froze to death";
+            case LIGHTNING: return "Was struck by lightning";
+            case HOT_FLOOR: return "Discovered the floor was lava";
+            case CRAMMING: return "Was squished too much";
+            case DRAGON_BREATH: return "Was roasted by dragon breath";
+            case THORNS: return "Was killed by thorns";
+
+            // Reachable via /kill, and the twelve others that previously fell through
+            // to a bare "Died".
+            case KILL: return "Killed by command";
+            case SUICIDE: return "Killed by command";
+            case WORLD_BORDER: return "Left the world border";
+            case SONIC_BOOM: return "Hit by a warden's sonic boom";
+            case CAMPFIRE: return "Burned on a campfire";
+            case FALLING_BLOCK: return "Squashed by a falling block";
+            case FLY_INTO_WALL: return "Flew into a wall";
+            case DRYOUT: return "Dried out";
+            case MELTING: return "Melted";
+            // These normally resolve through the damager branch above; they only reach
+            // here when the attacker is already gone by the time the death is read.
+            case ENTITY_ATTACK: return "Slain";
+            case ENTITY_SWEEP_ATTACK: return "Slain";
+            case PROJECTILE: return "Shot";
+            // Inflicted by a plugin, so there is nothing truthful to say beyond this.
+            case CUSTOM: return "Died";
+
+            default: return null;
         }
     }
 }

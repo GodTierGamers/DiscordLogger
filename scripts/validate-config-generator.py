@@ -56,6 +56,33 @@ def shipped_schema() -> str | None:
     return f"v{m.group(1)}" if m else None
 
 
+def check_bundle_declares_its_own_version(version_dir: str) -> list[str]:
+    """Each bundle's generator.js must declare the schema it *is*.
+
+    CONFIG_VERSION drives three things: the key it registers under
+    (window.DL_GENERATORS[...]), the directory it fetches options.json and the
+    template from, and the version shown to the user. A copy-forward that leaves
+    the previous value behind therefore produces a generator that silently emits
+    the OLD schema's config -- valid YAML, wrong file, and no error anywhere.
+    """
+    schema = os.path.basename(version_dir)
+    js_path = os.path.join(version_dir, "generator.js")
+    if not os.path.exists(js_path):
+        return [f"{js_path} missing"]
+
+    with open(js_path, encoding="utf-8") as f:
+        m = re.search(r"const\s+CONFIG_VERSION\s*=\s*['\"]([^'\"]+)['\"]", f.read())
+    if not m:
+        return [f"{js_path}: no CONFIG_VERSION declaration found"]
+    if m.group(1) != schema:
+        return [
+            f"{js_path} declares CONFIG_VERSION '{m.group(1)}' but lives in {schema}/. "
+            f"It would register as '{m.group(1)}' and load {m.group(1)}'s data, so the "
+            f"{schema} generator would emit a {m.group(1)} config."
+        ]
+    return []
+
+
 def check_version(options_path: str, live_schema: str | None = None) -> list[str]:
     errors = []
     version_dir = os.path.dirname(options_path)
@@ -77,9 +104,10 @@ def check_version(options_path: str, live_schema: str | None = None) -> list[str
         for item in cat.get("items", []):
             item_id = item.get("id", "?")
 
+            is_live = os.path.basename(version_dir) == live_schema
+
             config_key = item.get("configKey", "")
             if config_key.startswith("log."):
-                is_live = os.path.basename(version_dir) == live_schema
                 token = "LOG_" + config_key[len("log."):]
                 if token not in template_tokens:
                     errors.append(
@@ -110,6 +138,28 @@ def check_version(options_path: str, live_schema: str | None = None) -> list[str
                         f"{options_path}: item '{item_id}' references config key "
                         f"'{config_key}', which no Java source under {JAVA_SRC} reads"
                     )
+
+            # Per-event sub-options: same contract as configKey -- the template must
+            # have a slot for it, and (for the live schema) some Java must read it.
+            # Without this a sub-option silently generates nothing.
+            for extra in item.get("extras", []):
+                extra_token = "EXTRA_" + extra.get("key", "")
+                if extra_token not in template_tokens:
+                    errors.append(
+                        f"{options_path}: item '{item_id}' sub-option expects "
+                        f"{{{{{extra_token}}}}} in {template_path}, not found"
+                    )
+                extra_config_key = extra.get("configKey", "")
+                if extra_config_key and is_live:
+                    grep = subprocess.run(
+                        ["grep", "-rl", "-F", f'"{extra_config_key}"', JAVA_SRC],
+                        capture_output=True, text=True,
+                    )
+                    if not grep.stdout.strip():
+                        errors.append(
+                            f"{options_path}: item '{item_id}' sub-option references "
+                            f"'{extra_config_key}', which no Java source reads"
+                        )
 
             color_key = item.get("colorKey")
             if color_key:
@@ -230,15 +280,17 @@ def check_java_fallbacks_match_shipped_config() -> list[str]:
             if leaf_m and category:
                 shipped[f"log.{category}.{leaf_m.group(1)}"] = leaf_m.group(2)
                 continue
-            # Schema v10 shape: the event is a section, the toggle is its
-            # "enabled" child, and "color" sits alongside it.
+            # Schema v10 shape: the event is a section whose boolean children are
+            # its toggles -- "enabled", plus any sub-option such as "show_coords".
+            # Capturing all of them (rather than "enabled" alone) is what lets a new
+            # sub-option be checked against its Java fallback like any other key.
             event_m = re.match(r"^    (\w+):\s*(?:#.*)?$", line)
             if event_m and category:
                 event = event_m.group(1)
                 continue
-            enabled_m = re.match(r"^      enabled:\s*(true|false)\b", line)
-            if enabled_m and category and event:
-                shipped[f"log.{category}.{event}.enabled"] = enabled_m.group(1)
+            child_m = re.match(r"^      (\w+):\s*(true|false)\b", line)
+            if child_m and category and event:
+                shipped[f"log.{category}.{event}.{child_m.group(1)}"] = child_m.group(2)
 
     if not shipped:
         return [f"{SHIPPED_CONFIG}: could not parse any log.* toggles -- has the structure changed?"]
@@ -268,6 +320,7 @@ def main() -> int:
     live = shipped_schema()
     for options_path in sorted(glob.glob("docs/assets/configs/v*/options.json")):
         all_errors.extend(check_version(options_path, live))
+        all_errors.extend(check_bundle_declares_its_own_version(os.path.dirname(options_path)))
     all_errors.extend(check_shipped_config_matches_mirror())
     all_errors.extend(check_doc_page_embedded_configs())
     all_errors.extend(check_java_fallbacks_match_shipped_config())

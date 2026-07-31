@@ -81,7 +81,25 @@ public final class DiscordWebhook {
             String[][] fields // each element: { name, value, inline("true"/"false") }
     ) {
         if (url == null || url.isBlank()) return;
+        dispatch(plugin, url, buildEmbedJson(title, description, color, timestampIso,
+                author, footer, thumbnailUrl, fields));
+    }
 
+    /**
+     * Builds the embed payload. Split from the send so the exact JSON that reaches
+     * Discord can be asserted in a test — it is the user-visible output format, and
+     * a silent change to it is not something a compiler catches.
+     */
+    static String buildEmbedJson(
+            String title,
+            String description,
+            int color,
+            String timestampIso,
+            String author,
+            String footer,
+            String thumbnailUrl,
+            String[][] fields
+    ) {
         StringBuilder sb = new StringBuilder(512);
         sb.append("{\"content\":null,\"embeds\":[{");
 
@@ -128,8 +146,7 @@ public final class DiscordWebhook {
 
         trimComma(sb);
         sb.append("}],\"attachments\":[]}");
-
-        dispatch(plugin, url, sb.toString());
+        return sb.toString();
     }
 
     // -------------------------------------------------------------------------
