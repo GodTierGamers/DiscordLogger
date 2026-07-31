@@ -14,8 +14,8 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 - **Deeper logging modes** — option to relay the full server console rather than only the specific events currently supported.
 - **Log filtering (allow/deny lists)** — exclude specific entries within a category: e.g. don't log `/whisper` when command logging is on, or ignore a particular player by UUID.
 - **Bedrock vs Java indicator** — show which platform a player connected from.
+- **Automated tests for config migration** — the repo has no test framework, so `ConfigMigrator` is unprotected despite now spanning five schema versions of branching logic (`decide`, the `step` chain, `resolvePath`, `setScalar`). A silent break there resets or destroys real users' settings on upgrade, which is the worst failure the plugin has. Needs JUnit added to `pom.xml`, CI switched off `-DskipTests`, and the existing throwaway harnesses landed as real tests: the v9→v10 end-to-end transplant, v6→v10 stepping, the forward-only guard, and `setScalar` leaving comments and the schema trailer intact.
 - **`lang.yml` with MiniMessage** — move every user-facing string into a language file so wording and formatting can be fully rewritten without touching code.
-
 
 ## Website & docs
 
