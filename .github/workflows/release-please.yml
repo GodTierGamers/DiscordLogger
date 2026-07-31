@@ -133,3 +133,52 @@ jobs:
             "${{ steps.jar.outputs.file }}" \
             "${{ steps.jar.outputs.file }}.sha256" \
             --clobber
+
+  # Mirrors the stable release onto the Modrinth and Hangar listings, which is
+  # where most server owners actually look. Runs after build-artifact so the JAR
+  # is already attached to the GitHub Release: Hangar links straight to that
+  # asset, so its downloads land on GitHub's counter.
+  publish-listings:
+    needs: [release-please, build-artifact]
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Download the released JAR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p target
+          gh release download "$TAG" --pattern '*.jar' --dir target
+          ls -l target
+
+      - name: Publish to Modrinth and Hangar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          HANGAR_API_KEY: ${{ secrets.HANGAR_API_KEY }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          jar="$(ls -1 target/*.jar | head -n1)"
+          python3 scripts/publish-listings.py --jar "$jar" --tag "$TAG"
+
+      - name: Commit the refreshed downloads badge
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- docs/assets/badges/downloads.json; then
+            echo "Badge unchanged."
+            exit 0
+          fi
+          git add docs/assets/badges/downloads.json
+          git commit -m "chore: refresh downloads badge [skip ci]"
+          git push origin main

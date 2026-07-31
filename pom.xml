@@ -22,6 +22,15 @@
         <dl.api.version>26.1</dl.api.version>
         <dl.paper.display>26.x</dl.paper.display>
 
+        <!-- Minecraft versions advertised on the Modrinth and Hangar listings when a
+             stable release is published. This is the one value that cannot be derived
+             from anything else in the build: api-version sets the *minimum* a server
+             must implement, but which concrete Minecraft releases to list is an
+             editorial call. Keep it in step with dl.api.version. Every entry is
+             checked against Modrinth's known-version list before publishing, so a
+             typo or an invented version fails the release rather than mislabelling it. -->
+        <dl.game.versions>26.1,26.1.1,26.1.2,26.2</dl.game.versions>
+
         <!-- Build channel/date are stamped by CI (-Ddl.build.channel=stable|nightly,
              -Ddl.build.date=DD-MM-YYYY). A plain local `mvn package` gets "dev",
              so a hand-built JAR is never mistaken for a release artifact. -->
