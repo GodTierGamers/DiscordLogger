@@ -94,6 +94,17 @@ log:
       color: "#ED4245"
 ```
 
+Some events carry extra sub-options alongside `enabled` and `color`:
+
+| Key | Default | What it does |
+|---|---|---|
+| `log.player.death.show_coords` | `false` | Appends where the player died, as `x, y, z in world`. |
+
+> **`show_coords` is off by default on purpose.** A death message with coordinates tells
+> everyone who can read the channel exactly where the body — and the inventory it
+> dropped — is. That is useful on a private server and a griefing tool on a public one,
+> so it is opt-in rather than something you discover after the fact.
+
 `color` is read whether or not the event is enabled, so turning something off and
 back on keeps the colour you chose. Colours are hex, with or without the leading `#`;
 an unreadable value falls back to the built-in default rather than failing to load.
@@ -238,6 +249,7 @@ log:
     death: # Player Death (with death message)
       enabled: true
       color: "#ED4245" # red
+      show_coords: false # Adds where the player died. Anyone who can see the channel can find the body
     advancement: # Logs when a player gets an advancement
       enabled: true
       color: "#2ECC71" # green

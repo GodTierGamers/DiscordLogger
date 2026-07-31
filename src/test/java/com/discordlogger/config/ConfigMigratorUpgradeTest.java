@@ -88,6 +88,26 @@ class ConfigMigratorUpgradeTest {
     }
 
     @Test
+    @DisplayName("a sub-option added to the open schema takes its default, not a stale value")
+    void newSubOptionsDefaultSafely() {
+        // show_coords did not exist in v9, so an upgrading user must land on the
+        // shipped default. It defaults to false because a death message with
+        // coordinates tells the whole channel where the body and its loot are.
+        Map<?, ?> r = upgradeFromV9();
+        assertEquals(false, event(r, "player", "death").get("show_coords"));
+    }
+
+    @Test
+    @DisplayName("an existing sub-option choice is preserved across a migration")
+    void subOptionChoiceSurvives() {
+        String opted = shipped.replace("      show_coords: false", "      show_coords: true");
+        String out = ConfigMigrator.migrateText(shipped, opted, current, current);
+        Map<?, ?> r = (Map<?, ?>) new Yaml().load(out);
+        assertEquals(true, event(r, "player", "death").get("show_coords"),
+                "a user who opted in must not be silently opted back out");
+    }
+
+    @Test
     @DisplayName("settings outside the log tree survive untouched")
     void unrelatedSettingsSurvive() {
         Map<?, ?> r = upgradeFromV9();

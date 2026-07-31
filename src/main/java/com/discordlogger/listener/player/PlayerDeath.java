@@ -2,6 +2,7 @@ package com.discordlogger.listener.player;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -35,7 +36,7 @@ public final class PlayerDeath implements Listener {
             String kName = Names.display(killer, (JavaPlugin) plugin);
             String weapon = weaponName(killer.getInventory().getItemInMainHand());
             String suffix = weapon.isEmpty() ? "" : " [" + weapon + "]";
-            Log.eventWithThumb("Player Death", vName + " was slain by " + kName + suffix, thumb);
+            send(victim, vName + " was slain by " + kName + suffix, thumb);
             return;
         }
 
@@ -48,24 +49,42 @@ public final class PlayerDeath implements Listener {
                 Object shooter = proj.getShooter();
                 if (shooter instanceof Player pShooter) {
                     String kName = Names.display(pShooter, (JavaPlugin) plugin);
-                    Log.eventWithThumb("Player Death", vName + " was shot by " + kName, thumb);
+                    send(victim, vName + " was shot by " + kName, thumb);
                     return;
                 } else if (shooter instanceof Entity eShooter) {
-                    Log.eventWithThumb("Player Death", vName + " was shot by " + mobName(eShooter), thumb);
+                    send(victim, vName + " was shot by " + mobName(eShooter), thumb);
                     return;
                 } else {
-                    Log.eventWithThumb("Player Death", vName + " was shot", thumb);
+                    send(victim, vName + " was shot", thumb);
                     return;
                 }
             }
 
-            Log.eventWithThumb("Player Death", vName + " was slain by " + mobName(damager), thumb);
+            send(victim, vName + " was slain by " + mobName(damager), thumb);
             return;
         }
 
         // Environmental causes
         String cause = causeText(last == null ? null : last.getCause());
-        Log.eventWithThumb("Player Death", vName + " " + cause, thumb);
+        send(victim, vName + " " + cause, thumb);
+    }
+
+    /**
+     * Single send point for every death, so the coordinates suffix is appended in
+     * one place rather than repeated across the five ways a death is described.
+     *
+     * <p>Off by default: a death message tells everyone who can read the channel
+     * exactly where the body — and the dropped inventory — is. That is a fine
+     * thing on a private server and a griefing tool on a public one, so it is
+     * opt-in rather than something an admin discovers after the fact.
+     */
+    private void send(Player victim, String message, String thumb) {
+        if (plugin.getConfig().getBoolean("log.player.death.show_coords", false)) {
+            final Location at = victim.getLocation();
+            message += " at " + at.getBlockX() + ", " + at.getBlockY() + ", " + at.getBlockZ()
+                    + " in " + Log.mdEscape(at.getWorld() == null ? "unknown" : at.getWorld().getName());
+        }
+        Log.eventWithThumb("Player Death", message, thumb);
     }
 
     private String weaponName(ItemStack item) {
