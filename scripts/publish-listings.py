@@ -336,13 +336,13 @@ def download_counts() -> dict[str, int]:
 
 def write_badge(counts: dict[str, int], path: Path) -> None:
     total = counts["total"]
-    # Match shields' own abbreviation so the badge doesn't grow without bound.
-    if total >= 1_000_000:
-        label = f"{total / 1_000_000:.1f}M".replace(".0M", "M")
-    elif total >= 1_000:
-        label = f"{total / 1_000:.1f}k".replace(".0k", "k")
-    else:
-        label = str(total)
+    # Exact, with thousands separators, rather than shields' "1k" abbreviation.
+    # This number is committed to the repo rather than computed by shields at
+    # request time, and a rounded committed number reads as a placeholder someone
+    # typed — it never moves between refreshes, so nothing tells a reader it is
+    # real. The exact figure changes on every refresh and is self-evidently
+    # measured. It is also simply more information, for no cost.
+    label = f"{total:,}"
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
