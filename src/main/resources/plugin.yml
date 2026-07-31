@@ -5,6 +5,12 @@ api-version: ${dl.api.version}
 author: LVCHLANN
 description: Logs server events to a Discord channel via webhooks.
 
+# Optional. Paper gives each plugin its own classloader, so without naming
+# Floodgate here, Class.forName for its API fails even when it IS installed --
+# and Bedrock detection silently drops to the undocumented UUID fallback.
+# softdepend, not depend: the plugin runs perfectly well without it.
+softdepend: [floodgate, Geyser-Spigot]
+
 commands:
   discordlogger:
     description: DiscordLogger reload command

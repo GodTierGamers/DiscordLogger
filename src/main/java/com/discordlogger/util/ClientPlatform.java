@@ -35,29 +35,50 @@ public final class ClientPlatform {
 
     private static final String FLOODGATE_API = "org.geysermc.floodgate.api.FloodgateApi";
 
-    /** Resolved once: the API instance and its isFloodgatePlayer method, or null. */
-    private static final Object API_INSTANCE;
-    private static final Method IS_BEDROCK;
+    /**
+     * Whether Floodgate's API class exists at all. Fixed for the JVM's lifetime —
+     * a plugin cannot appear after startup — so this is safe to cache either way.
+     */
+    private static final boolean FLOODGATE_PRESENT = classExists(FLOODGATE_API);
 
-    static {
-        Object instance = null;
-        Method method = null;
+    /**
+     * The resolved method, cached only once it is actually found.
+     *
+     * <p>A negative result is deliberately NOT cached. {@code FloodgateApi.getInstance()}
+     * returns null until Floodgate has finished initialising, and this class may load
+     * before that; caching that null would disable detection permanently for the rest
+     * of the session, on exactly the servers the feature exists for.
+     */
+    private static volatile Object apiInstance;
+    private static volatile Method isBedrockMethod;
+
+    private static boolean classExists(String name) {
+        try {
+            Class.forName(name);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** @return true if the API is usable right now. Retries until it is. */
+    private static boolean resolveApi() {
+        if (isBedrockMethod != null) return true;
+        if (!FLOODGATE_PRESENT) return false;
         try {
             Class<?> api = Class.forName(FLOODGATE_API);
-            instance = api.getMethod("getInstance").invoke(null);
-            if (instance != null) {
-                method = api.getMethod("isFloodgatePlayer", UUID.class);
-            }
-        } catch (ClassNotFoundException | LinkageError e) {
-            // Floodgate isn't installed. Normal on most servers.
-        } catch (Exception e) {
-            // Installed but the API doesn't look how we expect — fall back rather
-            // than let an optional integration break joins.
-            instance = null;
-            method = null;
+            Object instance = api.getMethod("getInstance").invoke(null);
+            if (instance == null) return false;   // not initialised yet; try again later
+            Method method = api.getMethod("isFloodgatePlayer", UUID.class);
+            apiInstance = instance;
+            isBedrockMethod = method;
+            return true;
+        } catch (Throwable t) {
+            // Floodgate present but unusable — resolving the interface can pull in a
+            // Cumulus class this plugin's classloader cannot see (observed in testing,
+            // which is why this catches Throwable, not Exception).
+            return false;
         }
-        API_INSTANCE = instance;
-        IS_BEDROCK = method;
     }
 
     private ClientPlatform() {}
@@ -66,10 +87,10 @@ public final class ClientPlatform {
     public static boolean isBedrock(UUID uuid) {
         if (uuid == null) return false;
 
-        if (API_INSTANCE != null && IS_BEDROCK != null) {
+        if (resolveApi()) {
             try {
-                return Boolean.TRUE.equals(IS_BEDROCK.invoke(API_INSTANCE, uuid));
-            } catch (Exception e) {
+                return Boolean.TRUE.equals(isBedrockMethod.invoke(apiInstance, uuid));
+            } catch (Throwable t) {
                 // Fall through to the shape check rather than failing the join.
             }
         }
@@ -86,6 +107,6 @@ public final class ClientPlatform {
 
     /** Whether Floodgate's API was found — for diagnostics, not for callers to branch on. */
     public static boolean floodgateApiAvailable() {
-        return API_INSTANCE != null && IS_BEDROCK != null;
+        return resolveApi();
     }
 }
