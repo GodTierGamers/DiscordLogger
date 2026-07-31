@@ -132,11 +132,15 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Read Java version from pom.xml
+        id: javaver
+        run: echo "version=$(grep -oE '<maven.compiler.release>[0-9]+' pom.xml | grep -oE '[0-9]+')" >> "$GITHUB_OUTPUT"
+
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "25"
+          java-version: ${{ steps.javaver.outputs.version }}
           cache: maven
 
       - name: Set version (uncommitted, build-local only)

@@ -1,0 +1,51 @@
+name: Sync Versions
+
+# pom.xml is the single source of truth for the Java version, the minimum Paper
+# version and how Paper is written in prose. This workflow propagates those into
+# every file that displays them and commits the result, so changing pom.xml is
+# genuinely the only edit required — nothing has to be remembered or checked.
+#
+# Runs after a push to main touches pom.xml (which includes release-please's own
+# release commits, so a version bump propagates on its own) and can be triggered
+# by hand.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pom.xml"
+      - "scripts/sync-versions.py"
+      - ".github/workflows/sync-versions.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: sync-versions
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Propagate versions from pom.xml
+        run: python3 scripts/sync-versions.py
+
+      - name: Commit if anything changed
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Already in sync — nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: sync version references from pom.xml"
+          git push origin HEAD:main
+          echo "Propagated version changes to main."

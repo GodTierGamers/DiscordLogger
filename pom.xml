@@ -15,6 +15,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <paper.api.version>26.2.build.87-stable</paper.api.version>
 
+        <!-- SINGLE SOURCE OF TRUTH for the versions humans would otherwise retype.
+             Everything downstream derives from these: plugin.yml via Maven
+             filtering, the CI workflows by reading this file, and the website +
+             README via scripts/sync-versions.py. Change them here, nowhere else. -->
+        <dl.api.version>26.1</dl.api.version>
+        <dl.paper.display>26.x</dl.paper.display>
+
         <!-- Build channel/date are stamped by CI (-Ddl.build.channel=stable|nightly,
              -Ddl.build.date=DD-MM-YYYY). A plain local `mvn package` gets "dev",
              so a hand-built JAR is never mistaken for a release artifact. -->
