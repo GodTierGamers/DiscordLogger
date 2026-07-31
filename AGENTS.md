@@ -448,6 +448,19 @@ Phases 1–3 touch three different files that all look like "the config". They a
 | **newer** | `AHEAD` | **File left untouched.** Console warning every start; ops warned on join; `/discordlogger reload` warns too. |
 | trailer missing either side | `UNKNOWN` | Warns that the trailer can't be read. No migration. |
 
+**Migration runs one schema at a time.** `resolvePath(path, defMap, from, to)` walks `from`→`to` applying each step's renames in turn, rather than jumping straight to the target. This matters because renames compose: colours were flat (`embeds.colors.player_join`) until v7 nested them, and moved beside their toggle in v10. A v6 config jumping straight to v10 would match only the v9→v10 renames, so every colour the user had set would match nothing and be silently replaced by a default. Stepping 6→7→8→9→10 renames the key at each hop so it arrives in a shape the target recognises.
+
+Schema history, recovered from the shipped config's git history — **update this when adding a step**:
+
+| Step | What moved |
+|---|---|
+| v2→v3, v3→v4, v4→v5, v5→v6 | nothing; pure additions |
+| **v6→v7** | colours flat → nested (`embeds.colors.player_join` → `embeds.colors.player.join`); moderation colours gained their group; `embeds.colors.server` (a scalar fallback) became a section and has no successor |
+| v7→v8, v8→v9 | nothing; pure additions |
+| **v9→v10** | colours moved to `log.<group>.<event>.color`; toggles became `log.<group>.<event>.enabled` |
+
+**A step that only adds keys needs no entry** — existing paths carry over untouched, which is why `step()` defaults to identity. **A step that moves or renames a key MUST get a `case` in `step()`**, or every upgrade from before it silently loses those settings. That is the single easiest way to break this quietly.
+
 **Migration only ever runs forward.** This is the important invariant: before, migration fired whenever the two numbers *differed*, so a config from a newer install — a rollback, or a file copied between servers — was silently rewritten against the older shipped default, deleting every key the newer schema had added. It now refuses, because the plugin cannot know what those keys mean.
 
 `AHEAD` is the only state needing a human, so it is the only one that registers a join listener (`ConfigVersionNotice`). The escape hatch is **`/discordlogger regen confirm`** (`discordlogger.regen`, op by default): it replaces `config.yml` with this build's default and renames the old file to `config.backup-<timestamp>.yml`. It requires the literal `confirm` argument because `regen` and `reload` are one keystroke apart and one of them is destructive. It deliberately does **not** merge or preserve settings — the entire point is to land on a file this build fully understands.

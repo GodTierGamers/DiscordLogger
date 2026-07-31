@@ -112,8 +112,11 @@ public final class ConfigMigrator {
             // the old path is absent from the new defaults, so the value is dropped
             // and the default wins. That is indistinguishable, to the user, from the
             // plugin ignoring their config.
+            plugin.getLogger().info("Migrating config schema v" + oldVer + " -> v" + newVer
+                    + " (one step at a time, so renames from every intermediate version apply)");
+
             for (Map.Entry<String, Object> e : usrMap.entrySet()) {
-                String target = resolvePath(e.getKey(), defMap);
+                String target = resolvePath(e.getKey(), defMap, oldVer, newVer);
                 if (target == null) continue;  // genuinely removed -> keep the default
                 replaceLeafValueInDefault(newLines, defLines, target, e.getValue());
             }
@@ -143,42 +146,90 @@ public final class ConfigMigrator {
     }
 
     /**
-     * Maps a path from the user's (older) config onto its equivalent in the new
-     * defaults, or null if the key is genuinely gone.
+     * Maps a path from the user's config onto its equivalent in the new defaults,
+     * applying each schema step in turn rather than jumping straight to the target.
      *
-     * <p>Rule 1 is generic and covers the common shape change of a plain toggle
-     * growing sub-options: {@code log.player.join: true} becoming
-     * {@code log.player.join.enabled: true}. Any future schema doing the same thing
-     * is handled with no further code.
+     * <p>Stepping matters because renames compose. Going v6 to v10 in one hop, only
+     * the v9-to-v10 renames would be recognised, and a v6 user's colours — which were
+     * flat ({@code embeds.colors.player_join}) before v7 nested them — would match
+     * nothing and be silently replaced by defaults. Walking 6→7→8→9→10 renames the
+     * key at each step, so it arrives in a shape the final schema recognises.
      *
-     * <p>Rule 2 is the explicit v9 to v10 relocation of the embed colours, which
-     * moved from a separate {@code embeds.colors} tree to sitting beside the toggle
-     * they apply to. That one cannot be derived, so it is spelled out.
+     * <p>Schema history, from the shipped config's own git history:
+     * <pre>
+     *   v2→v3, v3→v4, v4→v5, v5→v6   pure additions, nothing moved
+     *   v6→v7   colours went flat → nested, moderation colours gained their group
+     *   v7→v8, v8→v9                 pure additions, nothing moved
+     *   v9→v10  colours moved beside their toggle; toggles gained ".enabled"
+     * </pre>
+     *
+     * @return the path in the target schema, or null if the key is genuinely gone
      */
-    private static String resolvePath(String path, Map<String, Object> defMap) {
-        if (defMap.containsKey(path)) return path;
+    static String resolvePath(String path, Map<String, Object> defMap, int from, int to) {
+        String current = path;
+        for (int v = from; v < to; v++) {
+            current = step(v, current);
+            if (current == null) return null;   // dropped by that step
+        }
+        return defMap.containsKey(current) ? current : null;
+    }
 
-        // 1. toggle -> section with an "enabled" child
-        String enabled = path + ".enabled";
-        if (defMap.containsKey(enabled)) return enabled;
+    /** One schema step: a path as written in schema {@code from}, renamed for {@code from + 1}. */
+    private static String step(int from, String path) {
+        switch (from) {
+            case 6:  return v6ToV7(path);
+            case 9:  return v9ToV10(path);
+            // Every other step only ADDED keys, so existing paths carry over as-is.
+            // A step that starts moving keys must get a case here, or upgrades from
+            // before it will quietly lose those settings.
+            default: return path;
+        }
+    }
 
-        // 2. v9 embeds.colors.<group>.<event>  ->  v10 log.<group>.<event>.color
+    /** v6→v7: embed colours went from flat keys to a nested tree grouped by category. */
+    private static String v6ToV7(String path) {
+        if (!path.startsWith("embeds.colors.")) return path;
+        String key = path.substring("embeds.colors.".length());
+
+        // "player_join" -> "player.join"  (also server_command, etc.)
+        int us = key.indexOf('_');
+        if (us > 0) {
+            String group = key.substring(0, us);
+            if (group.equals("player") || group.equals("server")) {
+                return "embeds.colors." + group + "." + key.substring(us + 1);
+            }
+        }
+        // Moderation colours were bare in v6: "ban" -> "moderation.ban".
+        if (key.equals("ban") || key.equals("unban") || key.equals("kick")) {
+            return "embeds.colors.moderation." + key;
+        }
+        // v6's "embeds.colors.server" was a single fallback colour; v7 turned that
+        // name into a section, so the scalar has no successor.
+        if (key.equals("server")) return null;
+        return path;
+    }
+
+    /** v9→v10: each event became a section holding its own toggle and colour. */
+    private static String v9ToV10(String path) {
+        // log.<group>.<event>  ->  log.<group>.<event>.enabled
+        if (path.startsWith("log.") && path.chars().filter(ch -> ch == '.').count() == 2) {
+            return path + ".enabled";
+        }
+        // embeds.colors.<group>.<event>  ->  log.<group>.<event>.color
         if (path.startsWith("embeds.colors.")) {
             String rest = path.substring("embeds.colors.".length());
             int dot = rest.indexOf('.');
-            if (dot > 0) {
-                String group = rest.substring(0, dot);
-                String event = rest.substring(dot + 1);
-                // v9 called the whitelist-entries colour "whitelist"; the toggle it
-                // now lives under is "whitelist_edit".
-                if ("moderation".equals(group) && "whitelist".equals(event)) {
-                    event = "whitelist_edit";
-                }
-                String moved = "log." + group + "." + event + ".color";
-                if (defMap.containsKey(moved)) return moved;
+            if (dot <= 0) return null;
+            String group = rest.substring(0, dot);
+            String event = rest.substring(dot + 1);
+            // v9 called the whitelist-entries colour "whitelist"; the toggle it now
+            // lives under is "whitelist_edit".
+            if ("moderation".equals(group) && "whitelist".equals(event)) {
+                event = "whitelist_edit";
             }
+            return "log." + group + "." + event + ".color";
         }
-        return null;
+        return path;
     }
 
     // ------- helpers -------
