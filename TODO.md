@@ -16,7 +16,6 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 - **Bedrock vs Java indicator** — show which platform a player connected from.
 - **`lang.yml` with MiniMessage** — move every user-facing string into a language file so wording and formatting can be fully rewritten without touching code.
 
-
 ## Website & docs
 
 - **Discord OAuth webhook creation** — let the config generator create the webhook via Discord's own channel picker instead of making people copy a URL by hand. Design settled, not yet built:

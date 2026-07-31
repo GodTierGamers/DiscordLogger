@@ -63,6 +63,13 @@ To add a new synced location: wrap the value in `<!-- dl:sync:KEY -->` markers (
 
 ## Build & test
 
+**Tests exist and gate CI** (JUnit 5 + surefire; `ci.yml` runs `mvn clean package` with tests on). `mvn test` runs them in ~10s.
+
+They cover `ConfigMigrator` and webhook redaction specifically, because those are the two places a silent bug destroys something the user cannot get back: their settings, or their webhook's secrecy. When touching either, **add the case to the test rather than only checking by hand** — all five suites are written against the genuinely shipped `config.yml` and read the schema number from its trailer, so they keep testing the real thing across schema bumps without edits.
+
+Verified to actually fail: reintroducing bidirectional migration, dropping the v6→v7 step, letting the config writer strip comments, and disabling redaction each break the suite.
+
+
 ```bash
 mvn -B -ntp clean package     # compile + shade → target/discordlogger-<version>.jar
 mvn -B -ntp clean compile     # compile only (faster sanity check)

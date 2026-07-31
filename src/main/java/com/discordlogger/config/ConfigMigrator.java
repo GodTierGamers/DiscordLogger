@@ -54,6 +54,41 @@ public final class ConfigMigrator {
     }
 
     /**
+     * Produces the migrated config text: the new schema's file, with the user's
+     * values transplanted onto it.
+     *
+     * <p>Split out from {@link #migrateIfVersionChanged} so the part that can lose
+     * someone's settings is a pure function of two strings — no server, no files.
+     * What remains around it is only I/O and file rotation.
+     *
+     * @param defaultText the config bundled with this build (the target schema)
+     * @param userText    the config currently on disk
+     * @param fromVersion the schema {@code userText} is written in
+     * @param toVersion   the schema {@code defaultText} is written in
+     */
+    static String migrateText(String defaultText, String userText, int fromVersion, int toVersion) {
+        Map<String, Object> defMap = flattenYaml(new Yaml().load(defaultText));
+        Map<String, Object> usrMap = flattenYaml(new Yaml().load(userText));
+
+        // Start from the default's lines and replace values in place, which is what
+        // preserves the comments, banners and trailer.
+        List<String> defLines = Arrays.asList(defaultText.split("\r?\n", -1));
+        List<String> newLines = new ArrayList<>(defLines);
+
+        // Follow any rename the new schema introduced. Without this a schema that
+        // relocates keys silently resets every setting the user ever changed: the old
+        // path is absent from the new defaults, so the value is dropped and the
+        // default wins — indistinguishable, to the user, from the plugin ignoring
+        // their config.
+        for (Map.Entry<String, Object> e : usrMap.entrySet()) {
+            String target = resolvePath(e.getKey(), defMap, fromVersion, toVersion);
+            if (target == null) continue;  // genuinely removed -> keep the default
+            replaceLeafValueInDefault(newLines, defLines, target, e.getValue());
+        }
+        return String.join("\n", newLines);
+    }
+
+    /**
      * Rewrites one scalar in config.yml in place, leaving every other byte alone.
      *
      * <p>Deliberately not {@code plugin.getConfig().set(...)} + {@code saveConfig()}:
@@ -127,32 +162,14 @@ public final class ConfigMigrator {
                 return new Result(decision, oldVer, newVer);
             }
 
-            // Parse both YAMLs to find scalar leaves to transplant
-            Map<String, Object> defMap = flattenYaml(new Yaml().load(defaultText));
-            Map<String, Object> usrMap = flattenYaml(new Yaml().load(userText));
-
-            // Start from default lines; we will replace values in-place (preserves comments)
-            List<String> defLines = Arrays.asList(defaultText.split("\r?\n", -1));
-            List<String> newLines = new ArrayList<>(defLines);
-
-            // Transplant user values for keys that still exist in defaults, following
-            // any rename the new schema introduced. Without this step a schema that
-            // relocates keys silently resets every setting the user ever changed:
-            // the old path is absent from the new defaults, so the value is dropped
-            // and the default wins. That is indistinguishable, to the user, from the
-            // plugin ignoring their config.
             plugin.getLogger().info("Migrating config schema v" + oldVer + " -> v" + newVer
                     + " (one step at a time, so renames from every intermediate version apply)");
 
-            for (Map.Entry<String, Object> e : usrMap.entrySet()) {
-                String target = resolvePath(e.getKey(), defMap, oldVer, newVer);
-                if (target == null) continue;  // genuinely removed -> keep the default
-                replaceLeafValueInDefault(newLines, defLines, target, e.getValue());
-            }
+            final String merged = migrateText(defaultText, userText, oldVer, newVer);
 
             // Write config.new.yml
             File newFile = new File(userFile.getParentFile(), "config.new.yml");
-            Files.writeString(newFile.toPath(), String.join("\n", newLines), StandardCharsets.UTF_8,
+            Files.writeString(newFile.toPath(), merged, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
             // Rotate: config.yml -> config.old.yml, new -> config.yml
@@ -264,7 +281,7 @@ public final class ConfigMigrator {
     // ------- helpers -------
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> flattenYaml(Object root) {
+    static Map<String, Object> flattenYaml(Object root) {
         Map<String, Object> out = new LinkedHashMap<>();
         if (!(root instanceof Map)) return out;
         walk("", (Map<String, Object>) root, out);
@@ -397,7 +414,7 @@ public final class ConfigMigrator {
         int i = 0; while (i < s.length() && s.charAt(i) == ' ') i++; return i;
     }
 
-    private static Integer extractVersion(String text) {
+    static Integer extractVersion(String text) {
         if (text == null) return null;
         Matcher m = VERSION_RE.matcher(text);
         return m.find() ? Integer.parseInt(m.group(1)) : null;
