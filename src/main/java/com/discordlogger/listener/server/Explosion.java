@@ -1,5 +1,6 @@
 package com.discordlogger.listener.server;
 
+import com.discordlogger.filter.Filters;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.Location;
@@ -47,9 +48,20 @@ public final class Explosion implements Listener {
         return plugin.getConfig().getBoolean("log.server.explosion.enabled", true);
     }
 
+    /**
+     * Explosions have no player, but they do have a world, so the world filter still
+     * applies — otherwise "don't log anything in creative_plot" would silently leak
+     * every TNT blast from it.
+     */
+    private static boolean filteredWorld(org.bukkit.Location loc) {
+        final org.bukkit.World w = (loc == null) ? null : loc.getWorld();
+        return w != null && Filters.blocksWorld(w.getName());
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
         if (!enabled()) return;
+        if (filteredWorld(e.getLocation())) return;
 
         final EntityType type = (e.getEntity() == null) ? null : e.getEntity().getType();
         final String source = (type == null) ? "Unknown" : toTitle(type.name());
@@ -82,6 +94,7 @@ public final class Explosion implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockExplode(BlockExplodeEvent e) {
         if (!enabled()) return;
+        if (filteredWorld(e.getBlock() == null ? null : e.getBlock().getLocation())) return;
 
         final Block b = e.getBlock();
         final Material mat = (b == null) ? null : b.getType();

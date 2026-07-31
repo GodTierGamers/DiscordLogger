@@ -1,5 +1,6 @@
 package com.discordlogger.listener.player;
 
+import com.discordlogger.filter.Filters;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.Location;
@@ -26,6 +27,7 @@ public final class PlayerTeleport implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.teleport.enabled", true)) return;
+        if (Filters.blocksPlayer(e.getPlayer()) || Filters.blocksWorld(e.getPlayer().getWorld().getName())) return;
 
         final Player p = e.getPlayer();
         final String playerName = Names.display(p, plugin);

@@ -1,5 +1,6 @@
 package com.discordlogger.listener.server;
 
+import com.discordlogger.filter.Filters;
 import com.discordlogger.log.Log;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,6 +18,8 @@ public final class ServerCommand implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onServerCommand(ServerCommandEvent e) {
         if (!plugin.getConfig().getBoolean("log.server.command.enabled", true)) return;
+        // Console has no player, so only the command filter applies.
+        if (Filters.blocksCommand(e.getCommand())) return;
         final String who = Log.mdEscape(e.getSender().getName()); // "Server" for console
         final String cmd = Log.mdEscape(Log.redactWebhooks("/" + e.getCommand()));
         Log.eventWithThumb("Server Command", who + " ran: " + cmd, THUMB_SERVER);

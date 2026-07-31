@@ -1,5 +1,6 @@
 package com.discordlogger.listener.player;
 
+import com.discordlogger.filter.Filters;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.ClientPlatform;
 import com.discordlogger.util.Names;
@@ -17,6 +18,7 @@ public final class PlayerJoin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onJoin(PlayerJoinEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.join.enabled", true)) return;
+        if (Filters.blocksPlayer(e.getPlayer()) || Filters.blocksWorld(e.getPlayer().getWorld().getName())) return;
 
         // Delay slightly so nickname plugins can set displayName
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {

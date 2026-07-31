@@ -74,6 +74,34 @@ format:
 
 ---
 
+### `filters`
+Applied on top of the event toggles: an event that is **enabled** can still be skipped
+if it matches a filter. This is how you exclude specific things without turning a whole
+category off.
+
+| Key | What it does |
+|---|---|
+| `filters.ignored_commands` | Commands never logged, matched on the command word. Arguments and a plugin prefix are ignored, so `/essentials:msg hi` matches `msg`. |
+| `filters.ignored_players` | Players never logged. Accepts **names or UUIDs**, mixed freely. |
+| `filters.exempt_permission` | Players holding this permission are never logged. Empty disables the check. |
+| `filters.ignored_worlds` | Worlds whose events are never logged. |
+| `filters.ignored_chat_containing` | Chat messages containing any of these (case-insensitive) are skipped. |
+
+> **`ignored_commands` ships non-empty, on purpose.** Command logging posts the full
+> line as typed, so `/login` and `/register` would publish passwords in plain text and
+> `/msg` would publish private messages. The defaults cover the common auth and
+> messaging commands. Removing them is a decision, not a tidy-up.
+
+> **Moderation events are not filtered by player.** `ignored_players` means "this
+> account's own activity isn't logged" — its joins, chat, commands, deaths. A ban or
+> kick is a record of *staff* action, not that player's activity, and hiding it is how
+> an audit trail loses the entries that matter most.
+
+The command match is on the command word only, so a filter cannot be dodged by
+qualifying it: `/msg`, `/MSG` and `/essentials:msg` all match an entry of `msg`.
+
+---
+
 ### `log`
 Each event is a section with two keys: **`enabled`** (whether to log it) and
 **`color`** (the embed colour for that event). v10 supports:
@@ -248,6 +276,48 @@ format:
 embeds:
   enabled: true
   author: "Server Logs" # Can be modified for proxy servers (e.g. Survival, Creative)
+
+####################################################################################
+#                                                                                  #
+#     ___  _  _  _                                                                 #
+#    | __|(_)| || |_  ___  _ _  ___                                                #
+#    | _| | || ||  _|/ -_)| '_|(_-<                                                #
+#    |_|  |_||_| \__|\___||_|  /__/                                                #
+#                                                                                  #
+####################################################################################
+
+# Filters apply on top of the toggles below: an event that is enabled can still be
+# skipped if it matches something here.
+
+filters:
+  # Never log these commands, whoever runs them. Matched on the command word, so
+  # arguments and a plugin prefix are ignored -- "/essentials:msg hi" matches "msg".
+  # The defaults exist because these leak: login commands carry passwords in plain
+  # text, and private messages are private.
+  ignored_commands:
+    - login
+    - register
+    - changepassword
+    - unregister
+    - msg
+    - tell
+    - whisper
+    - w
+    - r
+    - reply
+
+  # Never log anything from these players. Accepts names or UUIDs, mixed freely.
+  ignored_players: []
+
+  # Players with this permission are never logged -- useful for staff alts, or a bot
+  # account whose activity would drown everything else. Empty disables the check.
+  exempt_permission: ""
+
+  # Never log events that happen in these worlds.
+  ignored_worlds: []
+
+  # Skip chat messages containing any of these (case-insensitive).
+  ignored_chat_containing: []
 
 ####################################################################################
 #                                                                                  #

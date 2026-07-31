@@ -80,12 +80,124 @@ public final class ConfigMigrator {
         // path is absent from the new defaults, so the value is dropped and the
         // default wins — indistinguishable, to the user, from the plugin ignoring
         // their config.
+        // Two passes. Scalars are replaced in place, which keeps every line index
+        // aligned with defLines. Lists change the line count, so they are collected
+        // and spliced afterwards from the bottom up — applying them top-down would
+        // invalidate every index after the first splice.
+        record ListEdit(int from, int to, List<String> block) {}
+        final List<ListEdit> listEdits = new ArrayList<>();
+
         for (Map.Entry<String, Object> e : usrMap.entrySet()) {
             String target = resolvePath(e.getKey(), defMap, fromVersion, toVersion);
             if (target == null) continue;  // genuinely removed -> keep the default
+
+            if (e.getValue() instanceof List<?> userList) {
+                final int[] span = listSpanInDefault(defLines, target);
+                if (span != null) {
+                    listEdits.add(new ListEdit(span[0], span[1],
+                            renderList(defLines.get(span[0]), userList)));
+                }
+                continue;
+            }
             replaceLeafValueInDefault(newLines, defLines, target, e.getValue());
         }
+
+        listEdits.sort((a, b) -> Integer.compare(b.from(), a.from()));
+        for (ListEdit edit : listEdits) {
+            newLines.subList(edit.from(), edit.to()).clear();
+            newLines.addAll(edit.from(), edit.block());
+        }
+
         return String.join("\n", newLines);
+    }
+
+    /**
+     * The line range a list value occupies in the defaults, as {@code [from, toExclusive)}.
+     *
+     * <p>Handles both forms the config uses: an inline empty list ({@code key: []}),
+     * which is one line, and a block list whose items follow on their own lines.
+     *
+     * @return the span, or null if the key is not a list here
+     */
+    private static int[] listSpanInDefault(List<String> lines, String path) {
+        final LeafPos pos = findLeafLine(lines, path);
+        if (pos == null) return null;
+
+        final String keyLine = lines.get(pos.index());
+        final int colon = keyLine.indexOf(':', pos.keyIndent());
+        if (colon < 0) return null;
+
+        final String after = stripInlineComment(keyLine.substring(colon + 1)).trim();
+        if (!after.isEmpty()) {
+            // Inline: "key: []" or "key: [a, b]". One line either way.
+            return after.startsWith("[") ? new int[]{pos.index(), pos.index() + 1} : null;
+        }
+
+        int end = pos.index() + 1;
+        while (end < lines.size()) {
+            final String line = lines.get(end);
+            if (line.isBlank()) break;
+            if (leadingSpaces(line) <= pos.keyIndent()) break;
+            if (!line.strip().startsWith("-")) break;
+            end++;
+        }
+        return new int[]{pos.index(), end};
+    }
+
+    /** The user's list, written under the default's own key line and indentation. */
+    private static List<String> renderList(String keyLine, List<?> values) {
+        final int keyIndent = leadingSpaces(keyLine);
+        final int colon = keyLine.indexOf(':', keyIndent);
+        final String comment = inlineCommentOf(keyLine.substring(colon + 1));
+        final String key = keyLine.substring(0, colon + 1);
+
+        final List<String> out = new ArrayList<>();
+        if (values.isEmpty()) {
+            out.add(key + " []" + comment);
+            return out;
+        }
+        out.add(key + comment);
+        final String indent = " ".repeat(keyIndent + 2);
+        for (Object v : values) {
+            out.add(indent + "- " + renderListItem(v));
+        }
+        return out;
+    }
+
+    /**
+     * A list item, quoted only when YAML would otherwise read it as something else.
+     *
+     * <p>{@code renderScalar} quotes every string, which is right for a value being
+     * substituted into an existing line but wrong here: it would rewrite a hand-
+     * written {@code - login} as {@code - "login"} on every migration, producing a
+     * diff for a file nobody edited. Quoting stays for the cases that need it — an
+     * entry like {@code no} or {@code 3} would otherwise come back as a boolean or a
+     * number rather than the command name someone typed.
+     */
+    private static String renderListItem(Object v) {
+        if (!(v instanceof String s)) return renderScalar(v);
+        if (s.isEmpty() || !s.equals(s.strip())) return renderScalar(s);
+        if (PLAIN_SAFE.matcher(s).matches() && !YAML_RESERVED.matcher(s).matches()) return s;
+        return renderScalar(s);
+    }
+
+    /** Conservative: letters, digits and the punctuation a command or name actually uses. */
+    private static final Pattern PLAIN_SAFE = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_.:@/-]*");
+
+    /** Words YAML 1.1 resolves to a boolean or null, plus anything numeric. */
+    private static final Pattern YAML_RESERVED = Pattern.compile(
+            "(?i)y|n|yes|no|true|false|on|off|null|~|[+-]?\\d+(\\.\\d+)?");
+
+    /** Everything before an unquoted '#', or the whole string when there is none. */
+    private static String stripInlineComment(String s) {
+        final int hash = findUnquotedHash(s, 0);
+        return hash < 0 ? s : s.substring(0, hash);
+    }
+
+    /** The inline comment including its leading space, or "" when absent. */
+    private static String inlineCommentOf(String s) {
+        final int hash = findUnquotedHash(s, 0);
+        return hash < 0 ? "" : " " + s.substring(hash).trim();
     }
 
     /**

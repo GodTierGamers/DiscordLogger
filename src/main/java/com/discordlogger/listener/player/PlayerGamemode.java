@@ -1,5 +1,6 @@
 package com.discordlogger.listener.player;
 
+import com.discordlogger.filter.Filters;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.GameMode;
@@ -22,6 +23,7 @@ public final class PlayerGamemode implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onGamemodeChange(PlayerGameModeChangeEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.gamemode.enabled", true)) return;
+        if (Filters.blocksPlayer(e.getPlayer()) || Filters.blocksWorld(e.getPlayer().getWorld().getName())) return;
 
         final Player p = e.getPlayer();
         final GameMode from = p.getGameMode();      // old mode (event fires before apply)

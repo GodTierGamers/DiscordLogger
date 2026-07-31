@@ -217,6 +217,16 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 - `dispatch()` hands off to `WebhookQueue` and returns immediately — callers may be on the main thread and must never block on HTTP.
 - `post()` performs one request and **returns a `Response`** (status + rate-limit headers) rather than logging; the queue owns retry/wait/give-up decisions.
 
+### Log filtering (`filters:`)
+
+Applied in the **listener**, not in `Log` — that is where the player, world and raw command still exist; by the time a message reaches `Log` it is rendered prose. `Filters` holds an immutable snapshot swapped atomically on reload, and `applyRuntimeConfig` reloads it *before* `Log.init` so a reload cannot briefly log something the new config filters.
+
+`filters.ignored_commands` **ships non-empty**, which is unusual for this project and deliberate: command logging posts the line as typed, so `/login` published passwords in plain text and `/msg` published private messages. Matching is on the command word after stripping the slash, arguments and any plugin qualifier — without that last step `/essentials:msg` would bypass an entry of `msg`, which would make a security-flavoured filter worthless.
+
+**Moderation events are deliberately not filtered by player.** `ignored_players` means "this account's own activity", not "everything mentioning this account"; a ban is a record of staff action and hiding it guts the audit trail.
+
+**Lists in config are a migration hazard.** `ConfigMigrator` replaced scalars only, and every value was a scalar until `filters:` existed. A list hitting that path wrote `key:"[a, b]"` — invalid YAML, original items orphaned. It now splices list blocks bottom-up (top-down would invalidate later indices) and quotes an item only when YAML would otherwise read it as a boolean or number. `ConfigMigratorListTest` pins this.
+
 ### Per-event webhook routing
 
 Every event takes an optional `log.<group>.<event>.webhook`. Empty means the main `webhook.url`, which is the overwhelmingly common case. `Log.webhookFor(category)` resolves it from a map built alongside `colorMap` — same walk, same key normalisation, same atomic swap. An invalid URL is rejected at load with a console warning and that event falls back, rather than posting into the void.
