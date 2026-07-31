@@ -83,18 +83,38 @@ public final class ClientPlatform {
 
     private ClientPlatform() {}
 
-    /** True when this player is known to have connected from Bedrock. */
+    /**
+     * True when anything indicates this player connected from Bedrock.
+     *
+     * <p>The signals are OR'd, deliberately. An earlier version returned the API's
+     * answer directly whenever the API was available, which made a {@code false}
+     * from it override a UUID that was plainly Floodgate's. That is wrong: the API
+     * is authoritative when it says <i>yes</i>, but a <i>no</i> only means "not in
+     * my player registry", and behind a Velocity proxy the backend's registry does
+     * not necessarily contain a player whose handshake the proxy handled. A
+     * Floodgate-shaped UUID is positive evidence in its own right.
+     */
     public static boolean isBedrock(UUID uuid) {
         if (uuid == null) return false;
+        return Boolean.TRUE.equals(apiVerdict(uuid))
+                || Boolean.TRUE.equals(floodgateIdVerdict(uuid))
+                || looksLikeFloodgateUuid(uuid);
+    }
 
-        if (resolveApi()) {
-            try {
-                return Boolean.TRUE.equals(isBedrockMethod.invoke(apiInstance, uuid));
-            } catch (Throwable t) {
-                // Fall through to the shape check rather than failing the join.
-            }
+    /**
+     * Floodgate's own {@code isFloodgateId} — a shape check rather than a registry
+     * lookup, so it answers for a player the local registry has never seen. Preferred
+     * over our fallback because it is Floodgate's definition of its own UUID format,
+     * not our reading of it.
+     */
+    public static Boolean floodgateIdVerdict(UUID uuid) {
+        if (uuid == null || !resolveApi()) return null;
+        try {
+            Method m = apiInstance.getClass().getMethod("isFloodgateId", UUID.class);
+            return Boolean.TRUE.equals(m.invoke(apiInstance, uuid));
+        } catch (Throwable t) {
+            return null;
         }
-        return looksLikeFloodgateUuid(uuid);
     }
 
     /**

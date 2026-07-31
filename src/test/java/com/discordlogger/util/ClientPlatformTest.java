@@ -56,6 +56,21 @@ class ClientPlatformTest {
     }
 
     @Test
+    @DisplayName("a Floodgate-shaped UUID counts even when the API disagrees")
+    void shapeIsPositiveEvidenceOnItsOwn() {
+        // The regression this exists for: isBedrock used to return the API's answer
+        // directly whenever the API was reachable, so a "no" from it overrode a UUID
+        // that was plainly Floodgate's. Behind a Velocity proxy the backend's player
+        // registry does not necessarily know a player the proxy handshook, so that
+        // combination is normal rather than contradictory -- and it made real Bedrock
+        // players go unflagged.
+        UUID floodgateShaped = new UUID(0L, 0x0901f2a3b4c5d6L);
+        assertTrue(ClientPlatform.looksLikeFloodgateUuid(floodgateShaped));
+        assertTrue(ClientPlatform.isBedrock(floodgateShaped),
+                "a Floodgate-shaped UUID must be enough on its own; the signals are OR'd");
+    }
+
+    @Test
     @DisplayName("with no Floodgate present, detection still answers without throwing")
     void worksWithoutFloodgateInstalled() {
         // The static initialiser must survive Floodgate being absent — it is absent

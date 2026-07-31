@@ -74,8 +74,11 @@ public final class PlatformInfo implements Subcommand {
                     + (id.getMostSignificantBits() == 0L
                         ? ChatColor.GREEN + "0 (Floodgate shape)"
                         : ChatColor.GRAY + "non-zero (ordinary Java UUID)"));
-            sender.sendMessage(ChatColor.GRAY + "  Floodgate API says: "
-                    + (api == null ? "unavailable" : (api ? ChatColor.GREEN + "Bedrock" : "not Bedrock")));
+            final Boolean shape = ClientPlatform.floodgateIdVerdict(id);
+            sender.sendMessage(ChatColor.GRAY + "  API isFloodgatePlayer (registry): "
+                    + (api == null ? "unavailable" : (api ? ChatColor.GREEN + "Bedrock" : "no")));
+            sender.sendMessage(ChatColor.GRAY + "  API isFloodgateId (uuid shape): "
+                    + (shape == null ? "unavailable" : (shape ? ChatColor.GREEN + "Bedrock" : "no")));
             sender.sendMessage(ChatColor.GRAY + "  verdict: "
                     + (ClientPlatform.isBedrock(id)
                         ? ChatColor.GREEN + "Bedrock — the join field would show"
