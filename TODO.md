@@ -16,9 +16,6 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 - **Bedrock vs Java indicator** — show which platform a player connected from.
 - **`lang.yml` with MiniMessage** — move every user-facing string into a language file so wording and formatting can be fully rewritten without touching code.
 
-## Config schema v10
-
-- **Move embed colour options to sub-options under their event toggles** — requires introducing nested sub-options, including in the config generator. This is the change that starts config schema **v10**.
 
 ## Website & docs
 

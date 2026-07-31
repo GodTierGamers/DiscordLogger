@@ -16,7 +16,7 @@ public final class PlayerQuit implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onQuit(PlayerQuitEvent e) {
-        if (!plugin.getConfig().getBoolean("log.player.quit", true)) return;
+        if (!plugin.getConfig().getBoolean("log.player.quit.enabled", true)) return;
 
         String who = Names.display(e.getPlayer(), plugin);
         String msg = who + " left the server";

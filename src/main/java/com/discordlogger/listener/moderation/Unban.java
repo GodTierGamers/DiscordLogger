@@ -24,13 +24,13 @@ public final class Unban implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
-        if (!plugin.getConfig().getBoolean("log.moderation.unban", true)) return;
+        if (!plugin.getConfig().getBoolean("log.moderation.unban.enabled", true)) return;
         handle(e.getPlayer(), e.getMessage()); // includes leading "/"
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onServerCommand(ServerCommandEvent e) {
-        if (!plugin.getConfig().getBoolean("log.moderation.unban", true)) return;
+        if (!plugin.getConfig().getBoolean("log.moderation.unban.enabled", true)) return;
         final String raw = "/" + e.getCommand();
         handle(null, raw);
     }

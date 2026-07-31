@@ -39,13 +39,13 @@ public final class EventRegistry {
     }
 
     public void fireServerStart() {
-        if (plugin.getConfig().getBoolean("log.server.start", true)) {
+        if (plugin.getConfig().getBoolean("log.server.start.enabled", true)) {
             ServerStart.handle(plugin);
         }
     }
 
     public void fireServerStop() {
-        if (plugin.getConfig().getBoolean("log.server.stop", true)) {
+        if (plugin.getConfig().getBoolean("log.server.stop.enabled", true)) {
             ServerStop.handle(plugin);
         }
     }

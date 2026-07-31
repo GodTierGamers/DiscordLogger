@@ -1,3 +1,150 @@
+---
+layout: default
+title: Config Docs — v10
+description: Full documentation for config.yml schema v10 — defaults, per-key explanations, and a downloadable config file.
+---
+
+![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
+
+# config.yml Docs — v10
+
+**_Supported Plugin Versions:_ v2.2.0 and newer**
+
+<div style="margin:1rem 0 1.25rem;">
+  <a class="btn" href="/assets/configs/v10/config.yml" download>
+    Download v10 config.yml
+  </a>
+</div>
+
+> The docs below explain **every key** in v10.
+
+---
+
+## Top-level keys
+
+### `webhook`
+**Required.** Discord webhook target for all logs.
+
+- `webhook.url` — a Discord webhook URL
+    - Must be a valid Discord endpoint (the plugin verifies formatting).
+    - If empty/invalid, logs **won’t** post to Discord.
+
+**Example:**
+```yaml
+webhook:
+  url: "https://discord.com/api/webhooks/XXXX/XXXXXXXXXXXXXXXX"
+```
+
+---
+
+### `embeds`
+Controls whether logs are sent as **Discord embeds** (recommended) or as plain text, and the embed **author** label.
+
+- `embeds.enabled` — `true` to send rich embeds (defaults to **true** in the v10 shipped file).
+- `embeds.author` — Small label at the top of embeds (default: **"Server Logs"**).
+
+> **Changed in v10:** `embeds.colors` no longer exists. Each event's colour now sits
+> directly under that event, beside its toggle — see [`log`](#log) below. Upgrading from
+> v9 moves your existing colours across automatically.
+
+```yaml
+embeds:
+  enabled: true
+  author: "Server Logs"
+```
+
+---
+
+### `format`
+Visual formatting for timestamps and an optional server label.
+
+- `format.name` — Optional short label shown in plain text mode (e.g., proxy name).
+    - Appears as ` [YourName]` after the timestamp in non-embed messages.
+- `format.time` — Timestamp pattern used in both console echo and Discord text (embeds show an ISO timestamp field but still echo to console with this pattern).
+    - Default used if invalid: `"[HH:mm:ss dd:MM:yyyy]"`
+    - Must use the Java `DateTimeFormatter` pattern.
+        - HH: Hours, mm: Minutes, ss: Seconds, dd: Day of month, MM: Month, yyyy: Year. (Case-sensitive)
+
+**Example:**
+```yaml
+format:
+  name: ""                          # e.g., "SMP-1" (optional)
+  time: "[HH:mm:ss dd:MM:yyyy]"     # Java DateTimeFormatter pattern
+```
+
+---
+
+### `log`
+Each event is a section with two keys: **`enabled`** (whether to log it) and
+**`color`** (the embed colour for that event). v10 supports:
+
+- `log.player.*` — `join`, `quit`, `chat`, `command`, `death`, `advancement`, `teleport`, `gamemode`
+- `log.server.*` — `command`, `start`, `stop`, `explosion`
+- `log.moderation.*` — `ban`, `unban`, `kick`, `op`, `deop`, `whitelist_toggle`, `whitelist_edit`
+
+**Example (structure):**
+```yaml
+log:
+  player:
+    join:
+      enabled: true
+      color: "#57F287"
+    quit:
+      enabled: false      # this event won't be logged
+      color: "#ED4245"
+```
+
+`color` is read whether or not the event is enabled, so turning something off and
+back on keeps the colour you chose. Colours are hex, with or without the leading `#`;
+an unreadable value falls back to the built-in default rather than failing to load.
+
+> **Upgrading from v9:** every `log.<group>.<event>: true` becomes
+> `log.<group>.<event>.enabled: true`, and each colour moves from `embeds.colors.*`
+> to its event's `color`. The plugin does this automatically on first start and
+> keeps your previous file as `config.old.yml`.
+
+---
+
+## Event details & behaviors
+
+### Player events
+- **Join / Quit** — Includes player name; color-coded (green/red).
+- **Chat** — Player chat messages; uses the player color set under `embeds.colors.player.chat`.
+- **Command** — Player-initiated commands (excludes commands blocked by other plugins if cancelled).
+- **Death** — Player death message.
+- **Teleport** — Logs teleporter & cause when available (e.g., plugin/command/end gateway).
+- **Gamemode** — Logs previous → new mode, who changed it (self/other/console).
+
+### Server events
+- **Start / Stop** — Separated events with their own colors.
+- **Command** — Console commands (with actor `CONSOLE`).
+- **Explosion** — Logs cause (TNT, creeper, bed, respawn anchor, etc.) and a short list of **nearby players**.
+
+### Moderation events
+All moderation logs require the **action to succeed**:
+- **Ban / Tempban / Unban / Kick** — Only logs when the ban/kick actually took effect (permission & result checked).
+- **Op / Deop** — Only logs if permission changed.
+- **Whitelist toggle / entries** — Toggling whitelist or adding/removing players.
+
+> This prevents false-positive logs if a non-op attempts a command that fails.
+
+---
+
+## Colors (defaults recap)
+
+The defaults shipped with v10. Each is set under its own event's `color` key:
+
+- **Player** — `join` `#57F287` • `quit` `#ED4245` • `chat` `#5865F2` • `command` `#FEE75C` • `death` `#ED4245` • `advancement` `#2ECC71` • `teleport` `#3498DB` • `gamemode` `#9B59B6`
+- **Server** — `command` `#EB459E` • `start` `#43B581` • `stop` `#ED4245` • `explosion` `#E74C3C`
+- **Moderation** — `ban`/`unban`/`kick`/`op`/`deop` `#FF0000` • `whitelist_toggle` `#1ABC9C` • `whitelist_edit` `#16A085`
+
+---
+
+## Full config.yml (v10)
+
+> This is the exact file that ships with v10. Download above, or copy the block below.
+
+```yaml
 ####################################################################################################################################
 #                                                                                                                                  #
 #    /$$$$$$$  /$$                                               /$$ /$$                                                           #
@@ -138,4 +285,5 @@ log:
       enabled: true
       color: "#16A085" # dark teal
 
-# CONFIG VERSION V10, SHIPPED WITH v2.1.6 (x-release-please-version)
+# CONFIG VERSION V10, DOWNLOADED FROM WEBSITE
+```

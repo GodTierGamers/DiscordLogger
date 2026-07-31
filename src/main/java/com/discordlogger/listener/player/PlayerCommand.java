@@ -16,7 +16,7 @@ public final class PlayerCommand implements Listener {
 
     @EventHandler
     public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
-        if (!plugin.getConfig().getBoolean("log.player.command", true)) return;
+        if (!plugin.getConfig().getBoolean("log.player.command.enabled", true)) return;
 
         String who = Names.display(e.getPlayer(), plugin);
         String cmd = Log.mdEscape(e.getMessage()); // includes leading '/'

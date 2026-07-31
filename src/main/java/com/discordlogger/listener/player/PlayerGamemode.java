@@ -21,7 +21,7 @@ public final class PlayerGamemode implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onGamemodeChange(PlayerGameModeChangeEvent e) {
-        if (!plugin.getConfig().getBoolean("log.player.gamemode", true)) return;
+        if (!plugin.getConfig().getBoolean("log.player.gamemode.enabled", true)) return;
 
         final Player p = e.getPlayer();
         final GameMode from = p.getGameMode();      // old mode (event fires before apply)
@@ -38,7 +38,7 @@ public final class PlayerGamemode implements Listener {
         fields.add(new Log.Field("From:", pretty(from), true));
         fields.add(new Log.Field("To:", pretty(to), true));
 
-        // category key -> "player_gamemode" (embeds.colors.player.gamemode)
+        // category key -> "player_gamemode" (colour: log.player.gamemode.color)
         Log.eventFieldsWithThumb(
                 "player_gamemode",
                 "Gamemode Changed",

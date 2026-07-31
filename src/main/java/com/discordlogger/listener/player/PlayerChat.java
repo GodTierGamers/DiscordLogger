@@ -17,7 +17,7 @@ public final class PlayerChat implements Listener {
 
     @EventHandler
     public void onChat(AsyncChatEvent e) {
-        if (!plugin.getConfig().getBoolean("log.player.chat", true)) return;
+        if (!plugin.getConfig().getBoolean("log.player.chat.enabled", true)) return;
 
         String who  = Names.display(e.getPlayer(), plugin);
         String text = Log.mdEscape(PlainTextComponentSerializer.plainText().serialize(e.message()));

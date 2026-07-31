@@ -23,16 +23,16 @@ public final class Whitelist implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
-        boolean logToggle = plugin.getConfig().getBoolean("log.moderation.whitelist_toggle", true);
-        boolean logEdit   = plugin.getConfig().getBoolean("log.moderation.whitelist_edit",   true);
+        boolean logToggle = plugin.getConfig().getBoolean("log.moderation.whitelist_toggle.enabled", true);
+        boolean logEdit   = plugin.getConfig().getBoolean("log.moderation.whitelist_edit.enabled",   true);
         if (!logToggle && !logEdit) return;
         handle(e.getPlayer(), e.getMessage()); // includes leading "/"
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onServerCommand(ServerCommandEvent e) {
-        boolean logToggle = plugin.getConfig().getBoolean("log.moderation.whitelist_toggle", true);
-        boolean logEdit   = plugin.getConfig().getBoolean("log.moderation.whitelist_edit",   true);
+        boolean logToggle = plugin.getConfig().getBoolean("log.moderation.whitelist_toggle.enabled", true);
+        boolean logEdit   = plugin.getConfig().getBoolean("log.moderation.whitelist_edit.enabled",   true);
         if (!logToggle && !logEdit) return;
         final String raw = "/" + e.getCommand(); // ServerCommandEvent lacks leading "/"
         handle(null, raw);
@@ -59,26 +59,26 @@ public final class Whitelist implements Listener {
             case "on":
             case "enable":
             case "true":
-                if (!plugin.getConfig().getBoolean("log.moderation.whitelist_toggle", true)) return;
+                if (!plugin.getConfig().getBoolean("log.moderation.whitelist_toggle.enabled", true)) return;
                 toggleWhitelist(actorPlayer, true);
                 break;
 
             case "off":
             case "disable":
             case "false":
-                if (!plugin.getConfig().getBoolean("log.moderation.whitelist_toggle", true)) return;
+                if (!plugin.getConfig().getBoolean("log.moderation.whitelist_toggle.enabled", true)) return;
                 toggleWhitelist(actorPlayer, false);
                 break;
 
             case "add":
-                if (!plugin.getConfig().getBoolean("log.moderation.whitelist_edit", true)) return;
+                if (!plugin.getConfig().getBoolean("log.moderation.whitelist_edit.enabled", true)) return;
                 if (parts.length < 3) return;
                 editWhitelist(actorPlayer, parts[2], true);
                 break;
 
             case "remove":
             case "rm":
-                if (!plugin.getConfig().getBoolean("log.moderation.whitelist_edit", true)) return;
+                if (!plugin.getConfig().getBoolean("log.moderation.whitelist_edit.enabled", true)) return;
                 if (parts.length < 3) return;
                 editWhitelist(actorPlayer, parts[2], false);
                 break;

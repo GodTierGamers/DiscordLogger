@@ -1,8 +1,10 @@
 package com.discordlogger;
 
 import com.discordlogger.command.Commands;
+import com.discordlogger.command.Regen;
 import com.discordlogger.command.Reload;
 import com.discordlogger.config.ConfigMigrator;
+import com.discordlogger.config.ConfigVersionNotice;
 import com.discordlogger.event.EventRegistry;
 import com.discordlogger.log.Log;
 import com.discordlogger.metrics.PluginMetrics;
@@ -33,8 +35,13 @@ public final class DiscordLogger extends JavaPlugin {
         }
 
         saveDefaultConfig();
-        ConfigMigrator.migrateIfVersionChanged(this, "config.yml", new File(getDataFolder(), "config.yml"));
+        ConfigMigrator.Result configState = ConfigMigrator.migrateIfVersionChanged(
+                this, "config.yml", new File(getDataFolder(), "config.yml"));
         reloadConfig();
+
+        // Reported after reloadConfig so the AHEAD warning describes the config
+        // actually in effect. Registers a join listener only in that one case.
+        ConfigVersionNotice.report(this, configState);
 
         new NightlyNotice(this).activate(this);
 
@@ -53,7 +60,7 @@ public final class DiscordLogger extends JavaPlugin {
         events.registerAll();
 
         if (getCommand("discordlogger") != null) {
-            Commands router = new Commands(new Reload(this));
+            Commands router = new Commands(new Reload(this), new Regen(this));
             getCommand("discordlogger").setExecutor(router);
             getCommand("discordlogger").setTabCompleter(router);
         }

@@ -100,7 +100,14 @@ public final class PluginMetrics {
             final ConfigurationSection section = log.getConfigurationSection(category);
             if (section == null) continue;
             for (String event : section.getKeys(false)) {
-                if (section.getBoolean(event, false)) {
+                // Schema v10 made each event a section (enabled + color); older
+                // shapes stored a bare boolean. Read both so a config that failed
+                // to migrate still reports something truthful.
+                final ConfigurationSection eventSec = section.getConfigurationSection(event);
+                final boolean on = eventSec != null
+                        ? eventSec.getBoolean("enabled", false)
+                        : section.getBoolean(event, false);
+                if (on) {
                     counts.put(category + "." + event, 1);
                 }
             }

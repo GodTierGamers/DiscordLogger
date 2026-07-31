@@ -233,14 +233,15 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 - Notable: `PlayerJoin` delays 2 ticks for nickname plugins; `PlayerQuit` defers cache eviction 1 tick; `PlayerChat` uses Paper `AsyncChatEvent` + Adventure serializer (why Paper API is required); `PlayerAdvancement` skips `recipes/*` and `*/root`; `PlayerDeath` builds Geyser-friendly messages from damage context; `Explosion` handles entity+block explosions with CDN icons and a 20-block nearby-player list; `ServerStart`/`ServerStop` are static handlers called by `EventRegistry`, not listeners.
 
 ### Commands
-- Root `/discordlogger` (aliases `/dlogger`, `/dlog`), permission `discordlogger.reload` (default op). `Commands` routes `Subcommand` implementations (LinkedHashMap, permission-filtered help/tab-complete). Only subcommand today: `reload`.
+- Root `/discordlogger` (aliases `/dlogger`, `/dlog`). The **command itself is deliberately ungated** — it used to require `discordlogger.reload`, which would have locked a `regen`-only admin out of the whole command once a second subcommand existed. `Commands` routes `Subcommand` implementations (LinkedHashMap) and filters both help and tab-complete by each subcommand's own permission, so an unprivileged sender sees nothing and can run nothing.
+- Subcommands: `reload` (`discordlogger.reload`) and `regen` (`discordlogger.regen`), both default op. `regen` requires a literal `confirm` argument — it is destructive and one keystroke from `reload`.
 - Adding one: implement `Subcommand`, add to the `new Commands(...)` varargs in `onEnable`, register any new permission in `plugin.yml`.
 
 ### `UpdateChecker`
 - Async on startup; skips for `dev` channel. Fetches the **releases list** (`/releases?per_page=50`) — not `/releases/latest` — because nightly builds need to see pre-releases. Parses `tag_name`/`prerelease` pairs by regex (no JSON library, intentional; see `parseReleases` for why it's safe) and ranks with a `SemVer` record where stable > any `-BETA.N` of the same version, higher N > lower.
 - Stable channel: notify on any newer stable, pre-releases invisible. Nightly channel: notify on **every** newer stable, and on nightlies only when **more than 2** behind (`NIGHTLY_LAG_THRESHOLD`). Notifications = console banner + Discord webhook notice (embed or plain per config).
 
-## Config reference (schema v9)
+## Config reference (schema v10)
 
 ```yaml
 webhook.url            ""            # plugin is console-only until valid
@@ -267,7 +268,7 @@ Four near-identical copies of the config content exist. Confusing them is the si
 | 1 | `src/main/resources/config.yml` | **The shipped config** — the real source of truth. Bundled inside the plugin JAR; every server gets this on first run. | `DiscordLogger.onEnable` / `ConfigMigrator` (Java, at runtime) |
 | 2 | `docs/assets/configs/v9/config.yml` | **The download mirror** — a static copy served by the plain "Download" button on the config docs page. No wizard involved; just the file, verbatim. | A `<a download>` link in `docs/config/v9/index.md` |
 | 3 | `docs/assets/configs/v9/config.template.yml` | **The generator template** — `{{TOKEN}}` placeholders, filled in by the wizard based on what the visitor chose. Never downloaded directly; its *output* is. | `docs/assets/configs/v9/generator.js` |
-| 4 | The `## Full config.yml` fenced code block inside `docs/config/v9/index.md` | **The doc-page embed** — the full file shown inline in prose, for people reading the docs who don't want to click through. Easiest of the four to forget since it lives inside Markdown, not a config file. | Rendered directly on the config docs page |
+| 4 | The `## Full config.yml` fenced code block inside `docs/config/v<N>/index.md` | **The doc-page embed** — the full file shown inline in prose, for people reading the docs who don't want to click through. Easiest of the four to forget since it lives inside Markdown, not a config file. | Rendered directly on the config docs page |
 
 **The rule:** 1, 2, and 4 must be **content-identical** — same real values, same comments, same banners — except each one's own trailer line (`SHIPPED WITH vX.Y.Z` vs `DOWNLOADED FROM WEBSITE`). `scripts/validate-config-generator.py` enforces this automatically in CI for both 1↔2 and 2↔4 — it will fail the build if any of them drift. File 3 isn't byte-compared (it has tokens instead of real values), but its `{{LOG_*}}`/`{{COLOR_*}}` tokens are cross-checked against `options.json` and the Java source by the same script.
 
@@ -354,7 +355,115 @@ docs/assets/configs/
 
 Nothing else. The generator picker, the config-docs index list, and BETA gating all derive from that one registry line plus the releases API.
 
+**Only the live schema is checked against Java.** `check_version` takes the shipped schema and skips the Java-source cross-check for every frozen bundle. A frozen schema's `configKey`s describe the plugin that shipped *it* — v9 reads `log.player.join`, v10 reads `log.player.join.enabled`, and neither is wrong. Checking a frozen bundle against current Java would demand an edit to a file that must never change again. This was found the first time two schemas coexisted; before that the distinction could not surface.
+
 **How the drift guard follows the schema forward** (verified by simulating the whole v10 transition): `scripts/validate-config-generator.py` reads the *shipped* config's own trailer to decide which mirror to compare against. The moment that trailer says `V10`, it compares against `docs/assets/configs/v10/config.yml` and stops comparing v9 entirely — because v9 is frozen history, not a live copy. v9 doesn't go unchecked though: each docs page is validated against **its own** schema's mirror, so v9 stays internally consistent forever without ever being measured against a newer plugin config. In short: **live copies are checked against each other; frozen versions are checked only against themselves.**
+
+### 🚨 RUNBOOK — launching a new config schema version
+
+Follow this in order. It is the complete list; anything missed here shows up either as a broken generator for real users or as a config the plugin silently misreads. Read the lifecycle rules above first — this is the *how*, those are the *when*.
+
+**Terminology.** `V<N>` (the trailer, uppercase) and `v<N>` (paths and registry, lowercase) are the same number in different casings. Both appear below exactly as they must be typed.
+
+#### Phase 0 — confirm a new version is actually warranted
+
+Do not start until the change genuinely opens a version: a key **added, removed, renamed, or reordered** since the last *published* schema. Comment-only edits do not count. If the current schema is still **open** (opened since the last release and not yet shipped), there is no new version to launch — just edit the open one and stop here.
+
+```bash
+grep -n "CONFIG VERSION" src/main/resources/config.yml   # what the JAR currently ships
+```
+
+Compare that against the newest entry in `docs/assets/configs/registry.json`. If the trailer is **ahead** of the newest registry entry, the schema is already open and unpublished.
+
+#### Phase 1 — the plugin side (what the JAR ships)
+
+1. **Edit `src/main/resources/config.yml`** — the new keys, in their final order. This file is *replaced*, not copied; the JAR only ever carries the current schema.
+2. **Update its trailer** to `# CONFIG VERSION V<N>, SHIPPED WITH v<x.y.z> (x-release-please-version)`. Leave the `SHIPPED WITH` version alone — release-please rewrites it, and `build-artifact` appends `BUILT <date>`. Only the `V<N>` is yours to change.
+3. **Add matching `getBoolean`/`getString` defaults in the Java** for every new key. The fallback in code must equal the default in `config.yml`; `validate-config-generator.py` fails the build if they disagree, because a mismatch means the documented default is a lie for anyone who deletes the line.
+4. **Nothing else in the plugin needs the number.** `ConfigMigrator` reads the trailer at runtime, and `ConfigVersionNotice` derives everything from it — see *Config version enforcement* below. Never hardcode a schema number in Java.
+
+#### Phase 2 — the website generator (the part with the isolation rule)
+
+5. **`cp -r docs/assets/configs/v<N-1> docs/assets/configs/v<N>`** — copy forward, then adapt the copy. Never refactor the old folder in place.
+6. **Adapt the new bundle**: `generator.js` (registers `window.DL_GENERATORS['v<N>']`), `options.json`, the template, and the `config.yml` mirror. The mirror must match `src/main/resources/config.yml` byte for byte apart from the trailer's `BUILT` suffix.
+7. **DO NOT TOUCH `docs/assets/configs/v<N-1>/**` ever again.** Someone still running the older plugin must keep generating exactly the config they always did.
+
+#### Phase 3 — the docs page
+
+8. **Create `docs/config/v<N>/index.md`** by copying the previous version's page, then updating: the heading, the option tables, and the `## Full config.yml` fenced block (which must match the shipped file — the validator checks this too).
+9. **Keep `docs/config/v<N-1>/index.md` forever.** Old schema docs are superseded, never deleted.
+10. **The config-docs index needs no edit** — it renders from `registry.json` at runtime.
+
+#### Phase 4 — the registry (one line, and the invariant that bites)
+
+11. **Add one entry** to `docs/assets/configs/registry.json`:
+
+    ```json
+    { "config": "v<N>", "since": "<first build that ships it>" }
+    ```
+
+    Leave every older entry untouched.
+
+12. **`since` must be a build that actually ships this schema.** It may be a nightly (`"2.3.0-BETA.1"`) when a schema debuts in one; comparison is BETA-aware. **The invariant:** the newest registry entry must match the trailer in `src/main/resources/config.yml`. Listing a schema the plugin isn't shipping yet captures newer releases and sends them to a generator that doesn't exist. This has bitten before — a speculative v10 entry was added and had to be removed because it would have broken 2.2.0.
+13. If the bundle isn't finished yet, set `"generatorReady": false` — the picker names the schema, says it isn't available, and disables Continue instead of failing on a missing script.
+
+#### Phase 5 — verify before opening the PR
+
+```bash
+python3 scripts/validate-config-generator.py
+```
+
+That cross-checks `options.json` ↔ template ↔ Java source ↔ shipped config ↔ mirror ↔ doc embed, and the Java fallbacks against the config defaults. It follows the *shipped* trailer, so the moment it says `V<N>` it compares against `v<N>` and stops checking `v<N-1>` — frozen versions are only ever checked against themselves.
+
+```bash
+python3 scripts/sync-versions.py && git diff docs/_data/versions.yml
+```
+
+`versions.yml`'s `schema` key is derived from the shipped trailer, so it should flip to `V<N>` on its own. If it doesn't, the trailer is malformed. Never hand-edit that file.
+
+Then build and confirm the JAR carries the right schema:
+
+```bash
+mvn -B -ntp -DskipTests clean package && unzip -p target/*.jar config.yml | tail -1
+```
+
+#### Phase 6 — publication freezes it
+
+14. Merging the Release PR ships the schema and **freezes it permanently**. From that moment `docs/assets/configs/v<N>/` and the shipped keys are history: the next key change opens `v<N+1>`.
+15. **Versions are never skipped**, and a schema that was opened but never published is not "used up" — it stays open and keeps accumulating changes until a release ships it.
+
+#### What each of the four config copies is for
+
+Phases 1–3 touch three different files that all look like "the config". They are not interchangeable — see *Config file dictionary* above for the full breakdown, and check all four before claiming a schema change is done.
+
+### Config version enforcement (plugin side)
+
+`ConfigMigrator` compares the trailer in the user's `config.yml` against the one baked into the running JAR and returns a `Result(status, installed, shipped)`. The decision is `ConfigMigrator.decide(installed, shipped)`, deliberately split out as a pure function so it can be tested without a running server:
+
+| On disk vs JAR | Status | Behaviour |
+|---|---|---|
+| no config yet | `FRESH_INSTALL` | Shipped default written out. Silent. |
+| same | `UP_TO_DATE` | Nothing. Silent. |
+| **older** | `UPGRADED` | Migrated forward automatically, user values transplanted, previous file kept as `config.old.yml`. |
+| **newer** | `AHEAD` | **File left untouched.** Console warning every start; ops warned on join; `/discordlogger reload` warns too. |
+| trailer missing either side | `UNKNOWN` | Warns that the trailer can't be read. No migration. |
+
+**Migration runs one schema at a time.** `resolvePath(path, defMap, from, to)` walks `from`→`to` applying each step's renames in turn, rather than jumping straight to the target. This matters because renames compose: colours were flat (`embeds.colors.player_join`) until v7 nested them, and moved beside their toggle in v10. A v6 config jumping straight to v10 would match only the v9→v10 renames, so every colour the user had set would match nothing and be silently replaced by a default. Stepping 6→7→8→9→10 renames the key at each hop so it arrives in a shape the target recognises.
+
+Schema history, recovered from the shipped config's git history — **update this when adding a step**:
+
+| Step | What moved |
+|---|---|
+| v2→v3, v3→v4, v4→v5, v5→v6 | nothing; pure additions |
+| **v6→v7** | colours flat → nested (`embeds.colors.player_join` → `embeds.colors.player.join`); moderation colours gained their group; `embeds.colors.server` (a scalar fallback) became a section and has no successor |
+| v7→v8, v8→v9 | nothing; pure additions |
+| **v9→v10** | colours moved to `log.<group>.<event>.color`; toggles became `log.<group>.<event>.enabled` |
+
+**A step that only adds keys needs no entry** — existing paths carry over untouched, which is why `step()` defaults to identity. **A step that moves or renames a key MUST get a `case` in `step()`**, or every upgrade from before it silently loses those settings. That is the single easiest way to break this quietly.
+
+**Migration only ever runs forward.** This is the important invariant: before, migration fired whenever the two numbers *differed*, so a config from a newer install — a rollback, or a file copied between servers — was silently rewritten against the older shipped default, deleting every key the newer schema had added. It now refuses, because the plugin cannot know what those keys mean.
+
+`AHEAD` is the only state needing a human, so it is the only one that registers a join listener (`ConfigVersionNotice`). The escape hatch is **`/discordlogger regen confirm`** (`discordlogger.regen`, op by default): it replaces `config.yml` with this build's default and renames the old file to `config.backup-<timestamp>.yml`. It requires the literal `confirm` argument because `regen` and `reload` are one keystroke apart and one of them is destructive. It deliberately does **not** merge or preserve settings — the entire point is to land on a file this build fully understands.
 
 - **Webhook testing / CORS:** Discord webhooks allow simple browser POSTs; each bundle carries its own test payload. Tests go browser → Discord directly. A Cloudflare Worker relay used to exist for this and was deleted — it was never deployed and never needed. The **frozen** v9 bundle still contains the dormant `proxyUrl` branch in its `sendTest`; it is inert (the key no longer exists in `registry.json`, so the value is `""`) and must not be edited, because publication froze that schema. Newer bundles should simply omit it.
 

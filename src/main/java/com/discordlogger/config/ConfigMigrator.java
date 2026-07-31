@@ -18,8 +18,52 @@ public final class ConfigMigrator {
     private static final Pattern VERSION_RE =
             Pattern.compile("CONFIG\\s+VERSION\\s+V(\\d+)", Pattern.CASE_INSENSITIVE);
 
-    /** Returns true if a migration happened (files rotated). */
-    public static boolean migrateIfVersionChanged(JavaPlugin plugin, String resourcePath, File userFile) {
+    /** What the on-disk config turned out to be, relative to the one in this JAR. */
+    public enum Status {
+        /** No config existed; the shipped default was written out. */
+        FRESH_INSTALL,
+        /** On-disk schema matches this build. Nothing to do. */
+        UP_TO_DATE,
+        /** On-disk schema was older and has been migrated forward. */
+        UPGRADED,
+        /**
+         * On-disk schema is NEWER than this build understands — the server was
+         * downgraded, or a config was copied from a newer install. Deliberately
+         * left untouched: migrating "forward" to an older schema would silently
+         * throw away settings the user wrote against the newer one.
+         */
+        AHEAD,
+        /** A version trailer was missing or unparseable at one end. */
+        UNKNOWN
+    }
+
+    /** Outcome plus the two schema numbers, for messaging. Either may be null when UNKNOWN. */
+    public record Result(Status status, Integer installed, Integer shipped) {
+        public boolean migrated() { return status == Status.UPGRADED; }
+    }
+
+    /**
+     * The migrate/leave-alone/complain decision, as a pure function of the two
+     * schema numbers. Split out from the file handling so it can be exercised
+     * directly — the surrounding method needs a running server, this does not.
+     */
+    public static Status decide(Integer installed, Integer shipped) {
+        if (installed == null || shipped == null) return Status.UNKNOWN;
+        if (installed.equals(shipped)) return Status.UP_TO_DATE;
+        return shipped > installed ? Status.UPGRADED : Status.AHEAD;
+    }
+
+    /** The config schema number baked into this JAR. Null if the trailer is missing. */
+    public static Integer shippedVersion(JavaPlugin plugin, String resourcePath) {
+        try (InputStream in = plugin.getResource(resourcePath)) {
+            if (in == null) return null;
+            return extractVersion(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    public static Result migrateIfVersionChanged(JavaPlugin plugin, String resourcePath, File userFile) {
         try {
             if (userFile == null) userFile = new File(plugin.getDataFolder(), "config.yml");
 
@@ -28,7 +72,7 @@ public final class ConfigMigrator {
             try (InputStream in = plugin.getResource(resourcePath)) {
                 if (in == null) {
                     plugin.getLogger().warning("Default resource not found: " + resourcePath);
-                    return false;
+                    return new Result(Status.UNKNOWN, null, null);
                 }
                 defaultText = new String(in.readAllBytes(), StandardCharsets.UTF_8);
             }
@@ -39,17 +83,19 @@ public final class ConfigMigrator {
                 Files.createDirectories(userFile.getParentFile().toPath());
                 Files.writeString(userFile.toPath(), defaultText, StandardCharsets.UTF_8,
                         StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-                return false;
+                return new Result(Status.FRESH_INSTALL, newVer, newVer);
             }
 
             // Read user's current config (verbatim)
             final String userText = Files.readString(userFile.toPath(), StandardCharsets.UTF_8);
             final Integer oldVer = extractVersion(userText);
 
-            // Guard: migrate ONLY when both versions exist and differ
-            if (newVer == null || oldVer == null || newVer.equals(oldVer)) {
-                // Do nothing if versions are the same or if we can’t detect either version
-                return false;
+            // Migrate ONLY forward. A config newer than this build is left exactly as
+            // it is: rewriting it against an older shipped default would drop whatever
+            // keys the newer schema added, which is data loss, not a migration.
+            final Status decision = decide(oldVer, newVer);
+            if (decision != Status.UPGRADED) {
+                return new Result(decision, oldVer, newVer);
             }
 
             // Parse both YAMLs to find scalar leaves to transplant
@@ -60,11 +106,19 @@ public final class ConfigMigrator {
             List<String> defLines = Arrays.asList(defaultText.split("\r?\n", -1));
             List<String> newLines = new ArrayList<>(defLines);
 
-            // Transplant user values for keys that still exist in defaults
+            // Transplant user values for keys that still exist in defaults, following
+            // any rename the new schema introduced. Without this step a schema that
+            // relocates keys silently resets every setting the user ever changed:
+            // the old path is absent from the new defaults, so the value is dropped
+            // and the default wins. That is indistinguishable, to the user, from the
+            // plugin ignoring their config.
+            plugin.getLogger().info("Migrating config schema v" + oldVer + " -> v" + newVer
+                    + " (one step at a time, so renames from every intermediate version apply)");
+
             for (Map.Entry<String, Object> e : usrMap.entrySet()) {
-                String path = e.getKey();
-                if (!defMap.containsKey(path)) continue; // key removed/renamed in new defaults -> keep default
-                replaceLeafValueInDefault(newLines, defLines, path, e.getValue());
+                String target = resolvePath(e.getKey(), defMap, oldVer, newVer);
+                if (target == null) continue;  // genuinely removed -> keep the default
+                replaceLeafValueInDefault(newLines, defLines, target, e.getValue());
             }
 
             // Write config.new.yml
@@ -83,12 +137,99 @@ public final class ConfigMigrator {
 
             plugin.getLogger().info("Config updated automatically from version " + oldVer + " to " + newVer);
             plugin.getLogger().info("Previous file saved as config.old.yml");
-            return true;
+            return new Result(Status.UPGRADED, oldVer, newVer);
 
         } catch (Exception ex) {
             plugin.getLogger().severe("Config migration failed: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
-            return false;
+            return new Result(Status.UNKNOWN, null, null);
         }
+    }
+
+    /**
+     * Maps a path from the user's config onto its equivalent in the new defaults,
+     * applying each schema step in turn rather than jumping straight to the target.
+     *
+     * <p>Stepping matters because renames compose. Going v6 to v10 in one hop, only
+     * the v9-to-v10 renames would be recognised, and a v6 user's colours — which were
+     * flat ({@code embeds.colors.player_join}) before v7 nested them — would match
+     * nothing and be silently replaced by defaults. Walking 6→7→8→9→10 renames the
+     * key at each step, so it arrives in a shape the final schema recognises.
+     *
+     * <p>Schema history, from the shipped config's own git history:
+     * <pre>
+     *   v2→v3, v3→v4, v4→v5, v5→v6   pure additions, nothing moved
+     *   v6→v7   colours went flat → nested, moderation colours gained their group
+     *   v7→v8, v8→v9                 pure additions, nothing moved
+     *   v9→v10  colours moved beside their toggle; toggles gained ".enabled"
+     * </pre>
+     *
+     * @return the path in the target schema, or null if the key is genuinely gone
+     */
+    static String resolvePath(String path, Map<String, Object> defMap, int from, int to) {
+        String current = path;
+        for (int v = from; v < to; v++) {
+            current = step(v, current);
+            if (current == null) return null;   // dropped by that step
+        }
+        return defMap.containsKey(current) ? current : null;
+    }
+
+    /** One schema step: a path as written in schema {@code from}, renamed for {@code from + 1}. */
+    private static String step(int from, String path) {
+        switch (from) {
+            case 6:  return v6ToV7(path);
+            case 9:  return v9ToV10(path);
+            // Every other step only ADDED keys, so existing paths carry over as-is.
+            // A step that starts moving keys must get a case here, or upgrades from
+            // before it will quietly lose those settings.
+            default: return path;
+        }
+    }
+
+    /** v6→v7: embed colours went from flat keys to a nested tree grouped by category. */
+    private static String v6ToV7(String path) {
+        if (!path.startsWith("embeds.colors.")) return path;
+        String key = path.substring("embeds.colors.".length());
+
+        // "player_join" -> "player.join"  (also server_command, etc.)
+        int us = key.indexOf('_');
+        if (us > 0) {
+            String group = key.substring(0, us);
+            if (group.equals("player") || group.equals("server")) {
+                return "embeds.colors." + group + "." + key.substring(us + 1);
+            }
+        }
+        // Moderation colours were bare in v6: "ban" -> "moderation.ban".
+        if (key.equals("ban") || key.equals("unban") || key.equals("kick")) {
+            return "embeds.colors.moderation." + key;
+        }
+        // v6's "embeds.colors.server" was a single fallback colour; v7 turned that
+        // name into a section, so the scalar has no successor.
+        if (key.equals("server")) return null;
+        return path;
+    }
+
+    /** v9→v10: each event became a section holding its own toggle and colour. */
+    private static String v9ToV10(String path) {
+        // log.<group>.<event>  ->  log.<group>.<event>.enabled
+        if (path.startsWith("log.") && path.chars().filter(ch -> ch == '.').count() == 2) {
+            return path + ".enabled";
+        }
+        // embeds.colors.<group>.<event>  ->  log.<group>.<event>.color
+        if (path.startsWith("embeds.colors.")) {
+            String rest = path.substring("embeds.colors.".length());
+            int dot = rest.indexOf('.');
+            if (dot <= 0) return null;
+            String group = rest.substring(0, dot);
+            String event = rest.substring(dot + 1);
+            // v9 called the whitelist-entries colour "whitelist"; the toggle it now
+            // lives under is "whitelist_edit".
+            if ("moderation".equals(group) && "whitelist".equals(event)) {
+                event = "whitelist_edit";
+            }
+            return "log." + group + "." + event + ".color";
+        }
+        return path;
     }
 
     // ------- helpers -------

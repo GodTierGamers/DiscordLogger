@@ -45,7 +45,18 @@ FULL_CONFIG_HEADING_RE = re.compile(r"^#+\s*Full config\.yml", re.IGNORECASE | r
 
 
 
-def check_version(options_path: str) -> list[str]:
+def shipped_schema() -> str | None:
+    """The schema dir name (e.g. "v10") the plugin currently ships."""
+    try:
+        with open(SHIPPED_CONFIG, encoding="utf-8") as f:
+            trailer = f.read().splitlines()[-1]
+    except (OSError, IndexError):
+        return None
+    m = VERSION_RE.search(trailer)
+    return f"v{m.group(1)}" if m else None
+
+
+def check_version(options_path: str, live_schema: str | None = None) -> list[str]:
     errors = []
     version_dir = os.path.dirname(options_path)
     template_path = os.path.join(version_dir, "config.template.yml")
@@ -68,12 +79,24 @@ def check_version(options_path: str) -> list[str]:
 
             config_key = item.get("configKey", "")
             if config_key.startswith("log."):
+                is_live = os.path.basename(version_dir) == live_schema
                 token = "LOG_" + config_key[len("log."):]
                 if token not in template_tokens:
                     errors.append(
                         f"{options_path}: item '{item_id}' expects "
                         f"{{{{{token}}}}} in {template_path}, not found"
                     )
+
+                # Only the schema the plugin currently ships is checked against the
+                # Java source. A frozen schema's keys describe the plugin that
+                # shipped IT -- v9 read "log.player.join", today's plugin reads
+                # "log.player.join.enabled", and neither is wrong. Checking a frozen
+                # bundle against current Java would force an edit to a file that must
+                # never change again. Same principle as the mirror comparison:
+                # live copies are checked against each other, frozen versions only
+                # against themselves.
+                if not is_live:
+                    continue
 
                 # Match the fully-quoted literal ("log.moderation.whitelist") so
                 # e.g. "...whitelist" doesn't false-positive against the Java
@@ -196,14 +219,26 @@ def check_java_fallbacks_match_shipped_config() -> list[str]:
         text = f.read()
     if "\nlog:" in text:
         category = None
+        event = None
         for line in text.split("\nlog:", 1)[1].split("\n"):
             cat_m = re.match(r"^  (\w+):\s*(?:#.*)?$", line)
             if cat_m:
                 category = cat_m.group(1)
                 continue
+            # Schema v9 shape: "    join: true"
             leaf_m = re.match(r"^    (\w+):\s*(true|false)\b", line)
             if leaf_m and category:
                 shipped[f"log.{category}.{leaf_m.group(1)}"] = leaf_m.group(2)
+                continue
+            # Schema v10 shape: the event is a section, the toggle is its
+            # "enabled" child, and "color" sits alongside it.
+            event_m = re.match(r"^    (\w+):\s*(?:#.*)?$", line)
+            if event_m and category:
+                event = event_m.group(1)
+                continue
+            enabled_m = re.match(r"^      enabled:\s*(true|false)\b", line)
+            if enabled_m and category and event:
+                shipped[f"log.{category}.{event}.enabled"] = enabled_m.group(1)
 
     if not shipped:
         return [f"{SHIPPED_CONFIG}: could not parse any log.* toggles -- has the structure changed?"]
@@ -230,8 +265,9 @@ def check_java_fallbacks_match_shipped_config() -> list[str]:
 
 def main() -> int:
     all_errors = []
+    live = shipped_schema()
     for options_path in sorted(glob.glob("docs/assets/configs/v*/options.json")):
-        all_errors.extend(check_version(options_path))
+        all_errors.extend(check_version(options_path, live))
     all_errors.extend(check_shipped_config_matches_mirror())
     all_errors.extend(check_doc_page_embedded_configs())
     all_errors.extend(check_java_fallbacks_match_shipped_config())
