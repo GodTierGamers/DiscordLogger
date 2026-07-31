@@ -26,7 +26,9 @@ Everything it needs comes from pom.xml and the GitHub Release:
 
 Credentials come from the environment and are never logged:
 
-    MODRINTH_TOKEN   a Modrinth PAT with "Create versions" scope
+    MODRINTH_TOKEN   a Modrinth PAT with the "Create versions" scope, plus either
+                     "Read analytics" or "Read user info" so --check-auth can
+                     verify it without publishing anything
     HANGAR_API_KEY   a Hangar API key with the create_version permission
 
 If a token is missing that platform is skipped with a notice rather than failing
@@ -49,6 +51,7 @@ import re
 import subprocess
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -57,6 +60,8 @@ POM = Path("pom.xml")
 UA = "GodTierGamers/DiscordLogger (release automation)"
 
 MODRINTH_API = "https://api.modrinth.com/v2"
+# Analytics only exists on v3; v2 returns 404 for it. Used solely by --check-auth.
+MODRINTH_API_V3 = "https://api.modrinth.com/v3"
 MODRINTH_PROJECT = "discordlogger"
 
 HANGAR_API = "https://hangar.papermc.io/api/v1"
@@ -377,11 +382,40 @@ def check_auth() -> int:
     if not token:
         problems.append("MODRINTH_TOKEN is not set")
     else:
-        try:
-            user = request(f"{MODRINTH_API}/user", headers={"Authorization": token})
-            log(f"Modrinth: authenticated as {user['username']}")
-        except Exception as exc:  # noqa: BLE001
-            problems.append(f"Modrinth token rejected: {exc}")
+        # VERSION_CREATE covers exactly one endpoint — the publish call — so the
+        # token cannot be verified without an additional read scope. Either of
+        # these will do, so whichever scope the PAT was granted, the check works:
+        #   /v3/analytics/downloads   "Read analytics"
+        #   /v2/user                  "Read user info"
+        # Only if BOTH are rejected is the token genuinely dead or unscoped.
+        probes = (
+            (
+                "analytics",
+                f"{MODRINTH_API_V3}/analytics/downloads?"
+                + urllib.parse.urlencode(
+                    {"project_ids": json.dumps([MODRINTH_PROJECT])}
+                ),
+            ),
+            ("user", f"{MODRINTH_API}/user"),
+        )
+        errors: list[str] = []
+        for name, url in probes:
+            try:
+                request(url, headers={"Authorization": token})
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"{name}: {exc}")
+                continue
+            log(f"Modrinth: token accepted ({name} scope)")
+            break
+        else:
+            problems.append(
+                "Modrinth token rejected on every probe. This means the token has "
+                "expired or been revoked, OR it holds neither the 'Read analytics' "
+                "nor the 'Read user info' scope — Modrinth answers both cases with a "
+                "bare 401. Publishing itself only needs 'Create versions'; one read "
+                "scope exists purely so the token can be checked without publishing. "
+                + " | ".join(errors)
+            )
 
     key = os.environ.get("HANGAR_API_KEY", "").strip()
     if not key:
