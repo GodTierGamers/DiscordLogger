@@ -25,7 +25,7 @@ public final class PlayerTeleport implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent e) {
-        if (!plugin.getConfig().getBoolean("log.player.teleport", true)) return;
+        if (!plugin.getConfig().getBoolean("log.player.teleport.enabled", true)) return;
 
         final Player p = e.getPlayer();
         final String playerName = Names.display(p, plugin);

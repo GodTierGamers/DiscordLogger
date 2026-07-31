@@ -41,7 +41,7 @@
 ###################
 
 webhook:
-  url: "" # Discord webhook URL goes here, plugin will not function until present
+  url: "{{WEBHOOK_URL}}" # Discord webhook URL goes here, plugin will not function until present
 
 ##################
 # FORMAT OPTIONS #
@@ -50,19 +50,19 @@ webhook:
 format:
   # ONLY USED FOR PLAIN TEXT MESSAGES (EMBEDS DISABLED)
   # Usage (case-sensitive): HH=hours, mm=minutes, ss=seconds, dd=day, MM=month, yyyy=year
-  time: "[HH:mm:ss, dd:MM:yyyy]"
+  time: "{{TIME_FORMAT}}"
   # Only used for plain text, for embeds edit author name
-  name: ""
+  name: "{{PLAIN_NAME}}"
   # Show nicknames (if set) as "Nickname (RealName)" in all player-related logs
-  nicknames: true
+  nicknames: {{NICKNAMES}}
 
 #################
 # EMBED OPTIONS #
 #################
 
 embeds:
-  enabled: true
-  author: "Server Logs" # Can be modified for proxy servers (e.g. Survival, Creative)
+  enabled: {{EMBEDS_ENABLED}}
+  author: "{{EMBEDS_AUTHOR}}" # Can be modified for proxy servers (e.g. Survival, Creative)
 
 ####################################################################################
 #                                                                                  #
@@ -77,65 +77,65 @@ embeds:
 log:
   player:
     join: # Player Join
-      enabled: true
-      color: "#57F287" # green
+      enabled: {{LOG_player.join.enabled}}
+      color: "{{COLOR_player.join}}" # green
     quit: # Player Quit
-      enabled: true
-      color: "#ED4245" # red
+      enabled: {{LOG_player.quit.enabled}}
+      color: "{{COLOR_player.quit}}" # red
     chat: # Player Chat
-      enabled: true
-      color: "#5865F2" # blurple
+      enabled: {{LOG_player.chat.enabled}}
+      color: "{{COLOR_player.chat}}" # blurple
     command: # Commands executed by a player in-game
-      enabled: true
-      color: "#FEE75C" # yellow
+      enabled: {{LOG_player.command.enabled}}
+      color: "{{COLOR_player.command}}" # yellow
     death: # Player Death (with death message)
-      enabled: true
-      color: "#ED4245" # red
+      enabled: {{LOG_player.death.enabled}}
+      color: "{{COLOR_player.death}}" # red
     advancement: # Logs when a player gets an advancement
-      enabled: true
-      color: "#2ECC71" # green
+      enabled: {{LOG_player.advancement.enabled}}
+      color: "{{COLOR_player.advancement}}" # green
     teleport: # Logs when a player teleports
-      enabled: true
-      color: "#3498DB" # blue
+      enabled: {{LOG_player.teleport.enabled}}
+      color: "{{COLOR_player.teleport}}" # blue
     gamemode: # Logs when a players gamemode changes
-      enabled: true
-      color: "#9B59B6" # purple
+      enabled: {{LOG_player.gamemode.enabled}}
+      color: "{{COLOR_player.gamemode}}" # purple
 
   server:
     command: # Commands executed via the server console/terminal
-      enabled: true
-      color: "#EB459E" # pink
+      enabled: {{LOG_server.command.enabled}}
+      color: "{{COLOR_server.command}}" # pink
     start: # Logged when the plugin/server starts
-      enabled: true
-      color: "#43B581" # green
+      enabled: {{LOG_server.start.enabled}}
+      color: "{{COLOR_server.start}}" # green
     stop: # Logged on /stop / clean shutdown
-      enabled: true
-      color: "#ED4245" # red
+      enabled: {{LOG_server.stop.enabled}}
+      color: "{{COLOR_server.stop}}" # red
     explosion: # Log when an explosion occurs
-      enabled: true
-      color: "#E74C3C" # red
+      enabled: {{LOG_server.explosion.enabled}}
+      color: "{{COLOR_server.explosion}}" # red
 
   moderation:
     ban: # Logs when a player has been banned
-      enabled: true
-      color: "#FF0000" # red
+      enabled: {{LOG_moderation.ban.enabled}}
+      color: "{{COLOR_moderation.ban}}" # red
     unban: # Logs when a player has been unbanned
-      enabled: true
-      color: "#FF0000" # red
+      enabled: {{LOG_moderation.unban.enabled}}
+      color: "{{COLOR_moderation.unban}}" # red
     kick: # Logs when a player has been kicked
-      enabled: true
-      color: "#FF0000" # red
+      enabled: {{LOG_moderation.kick.enabled}}
+      color: "{{COLOR_moderation.kick}}" # red
     op: # Logs when a player is granted op premissions
-      enabled: true
-      color: "#FF0000" # red
+      enabled: {{LOG_moderation.op.enabled}}
+      color: "{{COLOR_moderation.op}}" # red
     deop: # Logs when a players op permissions are revoked
-      enabled: true
-      color: "#FF0000" # red
+      enabled: {{LOG_moderation.deop.enabled}}
+      color: "{{COLOR_moderation.deop}}" # red
     whitelist_toggle: # Logs when the whitelist is enabled/disabled
-      enabled: true
-      color: "#1ABC9C" # teal
+      enabled: {{LOG_moderation.whitelist_toggle.enabled}}
+      color: "{{COLOR_moderation.whitelist_toggle}}" # teal
     whitelist_edit: # Logs when players are added/removed from the whitelist
-      enabled: true
-      color: "#16A085" # dark teal
+      enabled: {{LOG_moderation.whitelist_edit.enabled}}
+      color: "{{COLOR_moderation.whitelist_edit}}" # dark teal
 
-# CONFIG VERSION V10, SHIPPED WITH v2.1.6 (x-release-please-version)
+# CONFIG VERSION V10, GENERATED ON WEBSITE ON {{GENERATED_AT}}

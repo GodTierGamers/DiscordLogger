@@ -15,7 +15,7 @@ public final class PlayerJoin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onJoin(PlayerJoinEvent e) {
-        if (!plugin.getConfig().getBoolean("log.player.join", true)) return;
+        if (!plugin.getConfig().getBoolean("log.player.join.enabled", true)) return;
 
         // Delay slightly so nickname plugins can set displayName
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {

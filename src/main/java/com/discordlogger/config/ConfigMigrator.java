@@ -106,11 +106,16 @@ public final class ConfigMigrator {
             List<String> defLines = Arrays.asList(defaultText.split("\r?\n", -1));
             List<String> newLines = new ArrayList<>(defLines);
 
-            // Transplant user values for keys that still exist in defaults
+            // Transplant user values for keys that still exist in defaults, following
+            // any rename the new schema introduced. Without this step a schema that
+            // relocates keys silently resets every setting the user ever changed:
+            // the old path is absent from the new defaults, so the value is dropped
+            // and the default wins. That is indistinguishable, to the user, from the
+            // plugin ignoring their config.
             for (Map.Entry<String, Object> e : usrMap.entrySet()) {
-                String path = e.getKey();
-                if (!defMap.containsKey(path)) continue; // key removed/renamed in new defaults -> keep default
-                replaceLeafValueInDefault(newLines, defLines, path, e.getValue());
+                String target = resolvePath(e.getKey(), defMap);
+                if (target == null) continue;  // genuinely removed -> keep the default
+                replaceLeafValueInDefault(newLines, defLines, target, e.getValue());
             }
 
             // Write config.new.yml
@@ -135,6 +140,45 @@ public final class ConfigMigrator {
             plugin.getLogger().severe("Config migration failed: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
             return new Result(Status.UNKNOWN, null, null);
         }
+    }
+
+    /**
+     * Maps a path from the user's (older) config onto its equivalent in the new
+     * defaults, or null if the key is genuinely gone.
+     *
+     * <p>Rule 1 is generic and covers the common shape change of a plain toggle
+     * growing sub-options: {@code log.player.join: true} becoming
+     * {@code log.player.join.enabled: true}. Any future schema doing the same thing
+     * is handled with no further code.
+     *
+     * <p>Rule 2 is the explicit v9 to v10 relocation of the embed colours, which
+     * moved from a separate {@code embeds.colors} tree to sitting beside the toggle
+     * they apply to. That one cannot be derived, so it is spelled out.
+     */
+    private static String resolvePath(String path, Map<String, Object> defMap) {
+        if (defMap.containsKey(path)) return path;
+
+        // 1. toggle -> section with an "enabled" child
+        String enabled = path + ".enabled";
+        if (defMap.containsKey(enabled)) return enabled;
+
+        // 2. v9 embeds.colors.<group>.<event>  ->  v10 log.<group>.<event>.color
+        if (path.startsWith("embeds.colors.")) {
+            String rest = path.substring("embeds.colors.".length());
+            int dot = rest.indexOf('.');
+            if (dot > 0) {
+                String group = rest.substring(0, dot);
+                String event = rest.substring(dot + 1);
+                // v9 called the whitelist-entries colour "whitelist"; the toggle it
+                // now lives under is "whitelist_edit".
+                if ("moderation".equals(group) && "whitelist".equals(event)) {
+                    event = "whitelist_edit";
+                }
+                String moved = "log." + group + "." + event + ".color";
+                if (defMap.containsKey(moved)) return moved;
+            }
+        }
+        return null;
     }
 
     // ------- helpers -------

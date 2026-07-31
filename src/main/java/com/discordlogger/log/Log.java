@@ -109,28 +109,35 @@ public final class Log {
         // Fallback base category
         cm.put("server", hex("#43B581", baseDefaultColor));
 
-        // Allow overrides via embeds.colors.*
-        // Supports both:
-        // - flat:   embeds.colors.player_join: "#...."
-        // - nested: embeds.colors.player.join: "#...."
+        // Overrides now live beside the toggle they belong to, as
+        //     log.<group>.<event>.color
+        // rather than the separate embeds.colors tree v9 used (schema v10).
+        // A v9-shaped config reaches here only if migration failed, in which case
+        // the event is a plain boolean with no section, and the built-in default
+        // above stands.
         int currentDefault = cm.getOrDefault("server", baseDefaultColor);
-        ConfigurationSection base = plugin.getConfig().getConfigurationSection("embeds.colors");
-        if (base != null) {
-            for (String k : base.getKeys(false)) {
-                Object child = base.get(k);
-                if (child instanceof ConfigurationSection) {
-                    ConfigurationSection group = (ConfigurationSection) child;
-                    for (String sk : group.getKeys(false)) {
-                        String v = group.getString(sk);
-                        if (v != null && !v.isBlank()) {
-                            cm.put(normalizeKey(k + "_" + sk), hex(v, currentDefault));
-                            cm.put(normalizeKey(sk), hex(v, currentDefault));
-                        }
-                    }
-                } else {
-                    String v = base.getString(k);
-                    if (v != null && !v.isBlank()) {
-                        cm.put(normalizeKey(k), hex(v, currentDefault));
+        ConfigurationSection logSec = plugin.getConfig().getConfigurationSection("log");
+        if (logSec != null) {
+            for (String group : logSec.getKeys(false)) {
+                ConfigurationSection groupSec = logSec.getConfigurationSection(group);
+                if (groupSec == null) continue;
+                for (String event : groupSec.getKeys(false)) {
+                    ConfigurationSection eventSec = groupSec.getConfigurationSection(event);
+                    if (eventSec == null) continue;   // v9-shaped boolean
+                    String v = eventSec.getString("color");
+                    if (v == null || v.isBlank()) continue;
+                    int c = hex(v, currentDefault);
+
+                    cm.put(normalizeKey(group + "_" + event), c);
+
+                    // Moderation listeners pass bare categories ("ban", "kick"),
+                    // unlike player/server which pass "<group> <event>". Only
+                    // moderation gets the unqualified alias, so that player.command
+                    // and server.command cannot overwrite each other under "command".
+                    if ("moderation".equals(group)) {
+                        cm.put(normalizeKey(event), c);
+                        // The whitelist-edit listener's category is "whitelist".
+                        if ("whitelist_edit".equals(event)) cm.put("whitelist", c);
                     }
                 }
             }

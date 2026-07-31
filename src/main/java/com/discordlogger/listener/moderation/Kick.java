@@ -39,13 +39,13 @@ public final class Kick implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
-        if (!plugin.getConfig().getBoolean("log.moderation.kick", true)) return;
+        if (!plugin.getConfig().getBoolean("log.moderation.kick.enabled", true)) return;
         handleCommand(e.getPlayer(), e.getMessage());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onServerCommand(ServerCommandEvent e) {
-        if (!plugin.getConfig().getBoolean("log.moderation.kick", true)) return;
+        if (!plugin.getConfig().getBoolean("log.moderation.kick.enabled", true)) return;
         handleCommand(null, "/" + e.getCommand());
     }
 
@@ -88,7 +88,7 @@ public final class Kick implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onKick(PlayerKickEvent e) {
-        if (!plugin.getConfig().getBoolean("log.moderation.kick", true)) return;
+        if (!plugin.getConfig().getBoolean("log.moderation.kick.enabled", true)) return;
 
         final UUID uuid = e.getPlayer().getUniqueId();
         final KickData data = pendingKicks.remove(uuid);

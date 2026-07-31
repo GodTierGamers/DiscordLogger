@@ -23,7 +23,7 @@ public final class PlayerDeath implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(PlayerDeathEvent e) {
-        if (!plugin.getConfig().getBoolean("log.player.death", true)) return;
+        if (!plugin.getConfig().getBoolean("log.player.death.enabled", true)) return;
 
         final Player victim = e.getEntity();
         final String vName = Names.display(victim, (JavaPlugin) plugin);
