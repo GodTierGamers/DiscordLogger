@@ -1,7 +1,6 @@
 package com.discordlogger;
 
 import com.discordlogger.command.Commands;
-import com.discordlogger.command.PlatformInfo;
 import com.discordlogger.command.Regen;
 import com.discordlogger.command.Reload;
 import com.discordlogger.command.Webhook;
@@ -62,7 +61,7 @@ public final class DiscordLogger extends JavaPlugin {
         events.registerAll();
 
         if (getCommand("discordlogger") != null) {
-            Commands router = new Commands(new Reload(this), new Webhook(this), new Regen(this), new PlatformInfo(this));
+            Commands router = new Commands(new Reload(this), new Webhook(this), new Regen(this));
             getCommand("discordlogger").setExecutor(router);
             getCommand("discordlogger").setTabCompleter(router);
         }
