@@ -234,7 +234,9 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 
 ### Commands
 - Root `/discordlogger` (aliases `/dlogger`, `/dlog`). The **command itself is deliberately ungated** — it used to require `discordlogger.reload`, which would have locked a `regen`-only admin out of the whole command once a second subcommand existed. `Commands` routes `Subcommand` implementations (LinkedHashMap) and filters both help and tab-complete by each subcommand's own permission, so an unprivileged sender sees nothing and can run nothing.
-- Subcommands: `reload` (`discordlogger.reload`) and `regen` (`discordlogger.regen`), both default op. `regen` requires a literal `confirm` argument — it is destructive and one keystroke from `reload`.
+- Subcommands, all default op: `reload` (`discordlogger.reload`), `webhook <url>` (`discordlogger.webhook`), `regen confirm` (`discordlogger.regen`). `regen` requires the literal `confirm` — it is destructive and one keystroke from `reload`.
+- **`webhook` never echoes the URL.** It is a bearer credential, so confirmation names the channel id only, tab-complete returns nothing, and `Log.redactWebhooks` masks the token in command logging — without which running the command would publish the new URL to the channel currently configured, i.e. the old webhook. Redacting rather than suppressing keeps the audit trail: you still see that someone changed it.
+- **Never write config with `saveConfig()`.** Bukkit's YAML writer re-serialises the whole file and drops every comment, including the `CONFIG VERSION V<n>` trailer `ConfigMigrator` reads — a config saved that way looks like it has no schema at all. Use `ConfigMigrator.setScalar(file, path, value)`, which rewrites exactly one line (verified: one line changed, comment and line counts unchanged, trailer intact).
 - Adding one: implement `Subcommand`, add to the `new Commands(...)` varargs in `onEnable`, register any new permission in `plugin.yml`.
 
 ### `UpdateChecker`

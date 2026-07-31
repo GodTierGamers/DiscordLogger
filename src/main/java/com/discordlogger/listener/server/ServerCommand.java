@@ -18,7 +18,7 @@ public final class ServerCommand implements Listener {
     public void onServerCommand(ServerCommandEvent e) {
         if (!plugin.getConfig().getBoolean("log.server.command.enabled", true)) return;
         final String who = Log.mdEscape(e.getSender().getName()); // "Server" for console
-        final String cmd = Log.mdEscape("/" + e.getCommand());
+        final String cmd = Log.mdEscape(Log.redactWebhooks("/" + e.getCommand()));
         Log.eventWithThumb("Server Command", who + " ran: " + cmd, THUMB_SERVER);
     }
 }

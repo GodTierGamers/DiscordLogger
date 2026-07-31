@@ -3,6 +3,7 @@ package com.discordlogger;
 import com.discordlogger.command.Commands;
 import com.discordlogger.command.Regen;
 import com.discordlogger.command.Reload;
+import com.discordlogger.command.Webhook;
 import com.discordlogger.config.ConfigMigrator;
 import com.discordlogger.config.ConfigVersionNotice;
 import com.discordlogger.event.EventRegistry;
@@ -49,7 +50,7 @@ public final class DiscordLogger extends JavaPlugin {
         boolean ok = applyRuntimeConfig();
         if (!ok) {
             getLogger().warning("No valid Discord webhook URL in config.yml. Please add the webhook URL.");
-            getLogger().warning("Set webhook.url and run /discordlogger reload to enable Discord posting.");
+            getLogger().warning("Set it with /discordlogger webhook <url>, or edit config.yml and run /discordlogger reload.");
         }
 
         // Start the webhook sender before any listener can produce a message.
@@ -60,7 +61,7 @@ public final class DiscordLogger extends JavaPlugin {
         events.registerAll();
 
         if (getCommand("discordlogger") != null) {
-            Commands router = new Commands(new Reload(this), new Regen(this));
+            Commands router = new Commands(new Reload(this), new Webhook(this), new Regen(this));
             getCommand("discordlogger").setExecutor(router);
             getCommand("discordlogger").setTabCompleter(router);
         }

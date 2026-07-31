@@ -156,7 +156,7 @@ public final class Log {
 
     // ---- Internal utilities ----
 
-    private static boolean isValidWebhookUrl(String url) {
+    public static boolean isValidWebhookUrl(String url) {
         if (url == null || url.isBlank()) return false;
         return url.startsWith("https://discord.com/api/webhooks/")
                 || url.startsWith("https://discordapp.com/api/webhooks/")
@@ -200,6 +200,25 @@ public final class Log {
     }
 
     /** Minimal Markdown escape for names/messages. */
+    /**
+     * Masks the secret half of any Discord webhook URL in text bound for Discord.
+     *
+     * <p>A webhook URL is a bearer credential: anyone holding it can post to that
+     * channel. Command logging echoes whatever was typed, so without this,
+     * {@code /discordlogger webhook <url>} would publish the new URL to the
+     * channel — quite possibly the OLD webhook, i.e. the one being moved away
+     * from. Redacting the token rather than suppressing the command keeps the
+     * audit trail: you still see that someone changed it, just not to what.
+     */
+    public static String redactWebhooks(String s) {
+        if (s == null || s.isEmpty()) return s;
+        return WEBHOOK_URL_RE.matcher(s).replaceAll("$1/***");
+    }
+
+    private static final java.util.regex.Pattern WEBHOOK_URL_RE =
+            java.util.regex.Pattern.compile(
+                    "(https://(?:ptb\\.|canary\\.)?discord(?:app)?\\.com/api/webhooks/\\d+)/\\S+");
+
     public static String mdEscape(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\")
