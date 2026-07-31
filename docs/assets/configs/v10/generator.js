@@ -107,6 +107,7 @@
             step: 0,
             webhookUrl: '',
             webhookConfirmed: false,
+            webhookSkipped: false,
             embedsEnabled: true,
             embedAuthor: 'Server Logs',
             plainName: '',
@@ -216,6 +217,16 @@
             const status = h('div', { class: 'cfg-status', style: 'display:none' });
             const testBtn = h('button', { class: 'cfg-btn', type: 'button' }, 'Send test message');
             const nextBtn = h('button', { class: 'cfg-btn cfg-btn--primary', type: 'button', onclick: next }, 'Next');
+            // Not everyone has the URL to hand when they build a config -- someone
+            // setting a server up in advance, or generating for a channel they do not
+            // administer. The rest of the wizard is useful without it, so skipping
+            // leaves webhook.url empty and the plugin says so on startup.
+            const skipBtn = h('button', { class: 'cfg-btn cfg-btn--ghost', type: 'button', onclick: () => {
+                state.webhookUrl = '';
+                state.webhookSkipped = true;
+                state.webhookConfirmed = false;
+                next();
+            } }, 'Skip for now');
 
             const confirm = h('div', { style: 'display:none' }, [
                 h('p', { class: 'cfg-note', style: 'margin-top:.6rem' }, 'Did the test message appear in your Discord channel?'),
@@ -244,6 +255,7 @@
 
             input.addEventListener('input', () => {
                 state.webhookUrl = input.value.trim();
+                state.webhookSkipped = false;
                 state.webhookConfirmed = false;
                 confirm.style.display = 'none';
                 setStatus('', '');
@@ -273,7 +285,11 @@
                 h('p', { class: 'cfg-note' }, 'Paste the webhook URL for the channel you want logs posted to. Testing it now avoids a broken config later.'),
                 h('label', { class: 'cfg-label' }, 'Webhook URL'),
                 input,
-                h('div', { class: 'cfg-actions-inline' }, [testBtn]),
+                h('div', { class: 'cfg-actions-inline' }, [testBtn, skipBtn]),
+                h('p', { class: 'cfg-note cfg-note--footnote' },
+                    'No webhook yet? Skip it — everything else still works, and you can '
+                    + 'paste the URL into config.yml later or set it in-game with '
+                    + '/discordlogger webhook <url>.'),
                 status,
                 confirm,
                 actions('Back', nextBtn),

@@ -159,7 +159,40 @@
         document.head.appendChild(tag);
     }
 
+    /**
+     * ?schema=v10 loads that bundle directly, bypassing the version picker.
+     *
+     * <p>A schema is not offered until a stable release ships it, which leaves no
+     * way to look at the next one while it is still being designed. This is that
+     * way: explicit, opt-in via the URL, and never reached by an ordinary visitor.
+     * It does not change what the picker offers.
+     */
+    function previewSchema() {
+        try {
+            const want = new URLSearchParams(location.search).get('schema');
+            return want && /^v\d+$/.test(want) ? want : null;
+        } catch {
+            return null;
+        }
+    }
+
     function render(registry, schemas, versions) {
+        const preview = previewSchema();
+        if (preview) {
+            mount.innerHTML = '';
+            mount.appendChild(h('p', { class: 'cfg-note' },
+                `Previewing config schema ${preview.toUpperCase()}. This is not the picker — `
+                + 'remove ?schema= from the URL to choose a released version normally.'));
+            launchBundle({
+                mount,
+                configVersion: preview,
+                pluginVersion: 'preview',
+                beta: false,
+                proxyUrl: (registry.proxyUrl || '').trim(),
+                backToVersions: () => { location.search = ''; },
+            });
+            return;
+        }
         const V = window.DLVersions;
         const showBeta = !!(V && V.showBeta);
         const visible = versions.filter(v => !v.beta || showBeta);
