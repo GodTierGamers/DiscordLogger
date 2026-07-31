@@ -24,5 +24,4 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 
 - **Discord OAuth webhook creation** — let the config generator create the webhook via Discord OAuth instead of making people copy a URL by hand.
 - **Complete website redesign.**
-- **Improve SEO.**
 - **Full docs quality pass** — review everything for accuracy and clarity.

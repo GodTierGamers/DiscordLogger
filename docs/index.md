@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Home
+description: Post Minecraft server events to Discord — joins, quits, chat, deaths and moderation actions, as rich embeds or plain text. Free, open source, and configurable per event.
 ---
 
 ![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
