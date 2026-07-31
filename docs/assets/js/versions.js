@@ -11,10 +11,10 @@
 
     DECLARATIVE MARKUP (no per-page JS needed):
 
-      <span data-dl-version="2.1.7">2.1.7</span>
-          -> gets a BETA badge appended automatically while 2.1.7 is nightly-only
+      <span data-dl-version="1.2.3">1.2.3</span>
+          -> gets a BETA badge appended automatically while 1.2.3 is nightly-only
 
-      <div data-dl-beta-only="2.1.7"> … </div>
+      <div data-dl-beta-only="1.2.3"> … </div>
           -> hidden entirely unless that version is beta AND the visitor
              enabled beta content (shown normally once it ships stable)
 

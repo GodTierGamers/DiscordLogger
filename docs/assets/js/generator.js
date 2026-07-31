@@ -10,7 +10,7 @@
              /assets/configs/<vN>/generator.js
 
     Every published build is listed individually, nightlies included
-    (2.1.7-BETA.1, 2.1.7-BETA.2, …) — successive nightlies can carry different
+    (1.2.3-BETA.1, 1.2.3-BETA.2, …) — successive nightlies can carry different
     features, so they are genuinely different targets. Nightlies are hidden
     until the visitor opts in via the beta toggle. "Beta" is derived from the
     releases API, never hand-flagged.
@@ -26,7 +26,7 @@
       - ctx = {
           mount:          DOM node to render into (bundle owns it entirely),
           configVersion:  resolved schema, e.g. "v9",
-          pluginVersion:  the build the user picked, e.g. "2.1.6" or "2.1.7-BETA.1",
+          pluginVersion:  the build the user picked, e.g. "1.2.3" or "1.2.3-BETA.1",
           beta:           true when that build is a nightly / pre-release,
           proxyUrl:       optional CORS relay for webhook tests ("" = direct),
           backToVersions: fn — bundle calls this for its "Back" on step 1
@@ -58,7 +58,7 @@
         return n;
     };
 
-    /* ---- version parsing: understands 2.1.7 and 2.1.7-BETA.4 ---- */
+    /* ---- version parsing: understands 1.2.3 and 1.2.3-BETA.4 ---- */
 
     const parseVer = raw => {
         const m = String(raw || '').trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:-BETA\.(\d+))?$/i);
@@ -73,7 +73,7 @@
         return 0;
     };
     /* Full ordering: base, then stable outranks any beta of that base, then beta number.
-       So 2.1.7-BETA.1 < 2.1.7-BETA.2 < 2.1.7 */
+       So 1.2.3-BETA.1 < 1.2.3-BETA.2 < 1.2.3 */
     const cmpVer = (a, b) => {
         const c = cmpBase(a.base, b.base);
         if (c !== 0) return c;
@@ -107,7 +107,7 @@
     }
 
     /* Resolve which config schema a build uses: the newest schema whose `since`
-       is <= that build. `since` may itself be a nightly (e.g. "2.1.7-BETA.1")
+       is <= that build. `since` may itself be a nightly (e.g. "1.2.3-BETA.1")
        when a schema debuts in a nightly. Returns the schema entry, or null when
        the build predates every generator we ship. */
     function schemaFor(version, schemas) {

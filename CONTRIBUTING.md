@@ -47,7 +47,7 @@ Use the issue templates — they collect the details that make issues actionable
 - [Docs update](https://github.com/GodTierGamers/DiscordLogger/issues/new?template=docs_update.yml)
 - [Support / question](https://github.com/GodTierGamers/DiscordLogger/issues/new?template=support.yml)
 
-For bugs on **nightly builds**: please include the full version (e.g. `2.3.0-BETA.4`) — it identifies the exact build. Nightly bug reports are especially valuable; catching things before a stable release is the whole point of the channel.
+For bugs on **nightly builds**: please include the full version, including the `-BETA.N` suffix — it identifies the exact build. Nightly bug reports are especially valuable; catching things before a stable release is the whole point of the channel.
 
 ## Website / docs
 
