@@ -19,12 +19,15 @@ If you're not sure, open your `config.yml` and check the **last line**; it will 
   <p class="dl-nightly-warning">Loading config versions…</p>
 </div>
 
-<div id="cfg-version-beta-toggle" hidden data-dl-beta-toggle="Beta config versions only exist in nightly builds and may change before they ship in a stable release."></div>
+<p id="cfg-version-nightly-note" class="dl-nightly-warning" hidden>
+  Config versions that only exist in nightly builds are not listed. Their format can
+  still change before it ships, so only schemas from stable releases appear here.
+</p>
 
 <script>
 (function () {
   const listEl = document.getElementById('cfg-version-list');
-  const toggleHost = document.getElementById('cfg-version-beta-toggle');
+  const nightlyNote = document.getElementById('cfg-version-nightly-note');
 
   const parseBase = raw => {
     const m = String(raw || '').trim().match(/^v?(\d+)\.(\d+)\.(\d+)/);
@@ -76,22 +79,24 @@ If you're not sure, open your `config.yml` and check the **last line**; it will 
       .sort((a, b) => cmpBase(parseBase(b.since), parseBase(a.since)));
 
     function render() {
-      const showBeta = !!(api && api.showBeta);
+      // Stable schemas only, with no opt-in. A schema that has only ever shipped in
+      // a nightly can still change before release, so documenting it as a choice
+      // invites someone to write a config against a format that then moves. The
+      // page for it still exists and is reachable by URL; it is simply not offered
+      // until a stable release carries it.
       let anyBeta = false;
       const rows = [];
 
       schemas.forEach((s, i) => {
         const newer = schemas[i - 1] || null;
         const beta = api ? api.isBeta(s.since) : false;
-        if (beta) anyBeta = true;
-        if (beta && !showBeta) return;
+        if (beta) { anyBeta = true; return; }
 
         const label = s.config.toUpperCase();
         rows.push(
           `<li>
              <a href="/config/${s.config}/"><strong>${label}</strong></a>
              — ships with DiscordLogger ${coverage(s, newer, releases)}
-             ${beta ? '<span class="dl-badge dl-badge--nightly" title="Only in nightly builds so far">BETA</span>' : ''}
            </li>`
         );
       });
@@ -100,12 +105,10 @@ If you're not sure, open your `config.yml` and check the **last line**; it will 
         ? `<ul>${rows.join('')}</ul>`
         : '<p class="dl-nightly-warning">No stable config versions found.</p>';
 
-      toggleHost.hidden = !anyBeta;
-      if (V) V.apply(toggleHost);
+      nightlyNote.hidden = !anyBeta;
     }
 
     render();
-    document.addEventListener('dl-beta-change', render);
   }
 
   boot();

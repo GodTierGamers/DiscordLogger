@@ -476,6 +476,14 @@ Schema history, recovered from the shipped config's git history — **update thi
 
 - **Webhook testing / CORS:** Discord webhooks allow simple browser POSTs; each bundle carries its own test payload. Tests go browser → Discord directly. A Cloudflare Worker relay used to exist for this and was deleted — it was never deployed and never needed. The **frozen** v9 bundle still contains the dormant `proxyUrl` branch in its `sendTest`; it is inert (the key no longer exists in `registry.json`, so the value is `""`) and must not be edited, because publication froze that schema. Newer bundles should simply omit it.
 
+### Config generator and config docs — stable schemas only
+
+Neither offers a config version that has only ever shipped in a nightly, and there is **no opt-in**. A nightly's schema can still change before release, so a config generated against one can be silently wrong by the time the stable build lands — worse than not offering it at all. Both carry a footnote explaining the absence instead of a toggle.
+
+The beta opt-in in `versions.js` still exists and still drives the **downloads page**, which is a different question: choosing which *build* to install is the user's call, choosing a config format that may still move is not. `window.DLVersions.showBeta` is deliberately ignored by both the generator and the config-docs picker — setting it true does not surface beta schemas.
+
+A schema's docs page stays reachable by URL the whole time; it is simply not listed until a stable release carries it. This is what makes `registry.json`'s `since` pointing at a stable version the safe default.
+
 ### Downloads page
 
 Renders straight from the releases API. Nightly builds (tag matches `-BETA.N`) get a dedicated purple **"Nightly"** badge and a purple card edge; any *other* pre-release keeps the generic "Pre-release" badge. Nightlies are **hidden behind an opt-in toggle** (remembered per visitor, same shared slider component) with a plain-language stability warning.

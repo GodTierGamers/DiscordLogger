@@ -160,9 +160,12 @@
     }
 
     function render(registry, schemas, versions) {
-        const V = window.DLVersions;
-        const showBeta = !!(V && V.showBeta);
-        const visible = versions.filter(v => !v.beta || showBeta);
+        // Stable releases only, always. A nightly's config schema can still change
+        // before it ships, so a config generated against one can be wrong by the
+        // time the stable release lands — and it would be wrong silently, which is
+        // worse than not offering it. Deliberately not behind a toggle: the beta
+        // opt-in elsewhere on the site is for downloading builds, not for configs.
+        const visible = versions.filter(v => !v.beta);
 
         mount.innerHTML = '';
 
@@ -173,7 +176,7 @@
 
         if (!visible.length) {
             panelBody.push(h('p', { class: 'cfg-note' },
-                'No supported versions found. Please refresh, or take a ready-made config from the config docs.'));
+                'No stable releases found. Please refresh, or take a ready-made config from the config docs.'));
             mount.appendChild(h('div', { class: 'cfg-wrap' }, [h('section', { class: 'cfg-panel' }, panelBody)]));
             return;
         }
@@ -187,9 +190,10 @@
         select.value = String(firstStable >= 0 ? firstStable : 0);
 
         const detail = h('p', { class: 'cfg-note' });
-        const betaWarn = h('p', { class: 'cfg-note cfg-note--beta' },
-            '⚠️ Nightly build — its config format may still change before it ships in a stable release.');
         const notReady = h('p', { class: 'cfg-note cfg-note--beta' });
+        const nightlyFootnote = h('p', { class: 'cfg-note cfg-note--footnote' },
+            'Nightly builds are not supported here. Their config format can still change '
+            + 'before it ships, so only stable releases are listed.');
         const goBtn = h('button', { class: 'cfg-btn cfg-btn--primary', type: 'button' }, 'Continue');
 
         const current = () => visible[Number(select.value)] || visible[0];
@@ -202,7 +206,6 @@
             detail.textContent = schema
                 ? `Uses config schema ${schema.config.toUpperCase()} — detected automatically.`
                 : 'No generator is available for that version.';
-            betaWarn.style.display = v.beta ? '' : 'none';
 
             if (schema && !ready) {
                 notReady.textContent = `The generator for config ${schema.config.toUpperCase()} isn't available yet — this version is listed for reference only.`;
@@ -232,18 +235,14 @@
             h('label', { class: 'cfg-label' }, 'Plugin version'),
             select,
             detail,
-            betaWarn,
             notReady,
         );
 
-        // The toggle stays visible in BOTH states whenever nightlies exist —
-        // otherwise turning it on would remove the only way to turn it back off.
+        // A plain footnote replaces what used to be an opt-in toggle. Someone on a
+        // nightly needs to know why their build is absent; they do not need a way
+        // to generate a config against a schema that may still change.
         if (versions.some(v => v.beta)) {
-            if (!showBeta) {
-                panelBody.push(h('p', { class: 'cfg-note' },
-                    'Running a nightly build? Enable beta versions below to generate a config for it.'));
-            }
-            panelBody.push(h('div', { 'data-dl-beta-toggle': 'Nightly builds are previews of unreleased work — their config format may change before release.' }));
+            panelBody.push(nightlyFootnote);
         }
         panelBody.push(h('div', { class: 'cfg-actions' }, [goBtn]));
 
