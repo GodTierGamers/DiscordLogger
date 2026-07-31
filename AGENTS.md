@@ -217,8 +217,14 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 - `dispatch()` hands off to `WebhookQueue` and returns immediately — callers may be on the main thread and must never block on HTTP.
 - `post()` performs one request and **returns a `Response`** (status + rate-limit headers) rather than logging; the queue owns retry/wait/give-up decisions.
 
+### Per-event webhook routing
+
+Every event takes an optional `log.<group>.<event>.webhook`. Empty means the main `webhook.url`, which is the overwhelmingly common case. `Log.webhookFor(category)` resolves it from a map built alongside `colorMap` — same walk, same key normalisation, same atomic swap. An invalid URL is rejected at load with a console warning and that event falls back, rather than posting into the void.
+
+`Log.plain` and the update notices deliberately stay on the main webhook: they belong to no event.
+
 ### `WebhookQueue` (rate limiting)
-- **One worker thread**, which is also the ordering guarantee — logs are a narrative, so out-of-order delivery is its own bug.
+- **One worker per destination**, which is also the ordering guarantee — logs are a narrative, so out-of-order delivery is its own bug.
 - **Proactive pacing:** reads `X-RateLimit-Remaining` / `X-RateLimit-Reset-After` from each response and waits out a spent budget *before* sending, so 429s are usually avoided rather than handled. A 429 is still handled (honours `Retry-After`, retries the same payload without consuming an attempt).
 - Transient failures (5xx, network — status `0`) retry with exponential backoff, max 4 attempts. Other 4xx aren't retried; a 404 says the webhook URL is gone.
 - **Not a Bukkit scheduler task** — it must keep draining during `onDisable`, and the scheduler refuses tasks once disabled.

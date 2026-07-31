@@ -161,6 +161,17 @@ def check_version(options_path: str, live_schema: str | None = None) -> list[str
                             f"'{extra_config_key}', which no Java source reads"
                         )
 
+            # Per-event webhook routing: the template must have a slot, or the key
+            # silently never appears in a generated config.
+            webhook_key = item.get("webhookKey")
+            if webhook_key:
+                token = "HOOK_" + webhook_key
+                if token not in template_tokens:
+                    errors.append(
+                        f"{options_path}: item '{item_id}' expects "
+                        f"{{{{{token}}}}} in {template_path}, not found"
+                    )
+
             color_key = item.get("colorKey")
             if color_key:
                 token = "COLOR_" + color_key
