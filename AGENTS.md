@@ -53,6 +53,7 @@ How each destination gets its value — all automatic, none needs remembering:
 - **`plugin.yml`, `build-info.properties`** — Maven resource filtering resolves `${project.version}` / `${dl.api.version}` at package time.
 - **CI workflows** — each reads `<maven.compiler.release>` out of `pom.xml` at runtime into a step output, so the JDK installed always matches the compile target. No `java-version:` literal exists anywhere.
 - **README.md, CONTRIBUTING.md** — values sit between `<!-- dl:sync:KEY -->…<!-- /dl:sync -->` markers, rewritten by `scripts/sync-versions.py`. Edit the surrounding prose freely; never the value between markers.
+  - **Inline markers only work in prose.** They cannot go inside Markdown syntax — an HTML comment within a `![badge](url)` breaks the image and GitHub renders the raw `![Java](` as text. Anything of that shape uses a **block** marker instead: `<!-- dl:sync-block:NAME -->` on its own line, with the whole block regenerated from a template in the script (`BLOCK_TEMPLATES`). The shields.io badges use this.
 - **Docs pages** — read `{{ site.data.versions.* }}` from `docs/_data/versions.yml`, which the same script generates. That file is generated: **do not edit it**. Liquid resolves inside fenced code blocks too, which is how the config-trailer examples stay current.
 - **Anything showing the *latest release*** on the site (`data-dl-latest`, the downloads list, the generator's version picker) — reads the GitHub releases API live, so it covers nightlies and stable without any file to update.
 

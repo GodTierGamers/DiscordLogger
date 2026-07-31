@@ -7,8 +7,10 @@
 ![Downloads](https://img.shields.io/github/downloads/GodTierGamers/DiscordLogger/total)
 ![Issues](https://img.shields.io/github/issues/GodTierGamers/DiscordLogger)
 ![License](https://img.shields.io/github/license/GodTierGamers/DiscordLogger)
-![Java](https://img.shields.io/badge/Java-<!-- dl:sync:java -->25<!-- /dl:sync -->%2B-orange)
-![Paper](https://img.shields.io/badge/Paper-<!-- dl:sync:paper_display -->26.x<!-- /dl:sync -->-blue)
+<!-- dl:sync-block:badges -->
+![Java](https://img.shields.io/badge/Java-25%2B-orange)
+![Paper](https://img.shields.io/badge/Paper-26.x-blue)
+<!-- /dl:sync-block -->
 ![Discord Webhooks](https://img.shields.io/badge/Discord-Webhooks-5865F2)
 
 A minimal, reliable Minecraft server **logging plugin** that posts clean messages to a **Discord webhook** — in Markdown **or rich embeds**.

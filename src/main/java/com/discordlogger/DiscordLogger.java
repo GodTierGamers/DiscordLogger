@@ -5,6 +5,7 @@ import com.discordlogger.command.Reload;
 import com.discordlogger.config.ConfigMigrator;
 import com.discordlogger.event.EventRegistry;
 import com.discordlogger.log.Log;
+import com.discordlogger.metrics.PluginMetrics;
 import com.discordlogger.update.BuildInfo;
 import com.discordlogger.update.NightlyNotice;
 import com.discordlogger.update.UpdateChecker;
@@ -56,6 +57,10 @@ public final class DiscordLogger extends JavaPlugin {
             getCommand("discordlogger").setExecutor(router);
             getCommand("discordlogger").setTabCompleter(router);
         }
+
+        // Anonymous usage metrics (bstats.org). Opt out via plugins/bStats/config.yml.
+        // Started after the config is loaded so its charts can read live values.
+        PluginMetrics.start(this);
 
         // Async update check (console + Discord notice if newer version available)
         UpdateChecker.checkAsync(this);

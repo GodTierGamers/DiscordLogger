@@ -40,6 +40,21 @@ DATA = Path("docs/_data/versions.yml")
 #     <!-- dl:sync:java -->25<!-- /dl:sync -->
 MARKER = re.compile(r"(<!-- dl:sync:(\w+) -->)(.*?)(<!-- /dl:sync -->)", re.DOTALL)
 
+# Some values sit inside Markdown syntax that can't contain HTML comments — a
+# shields.io badge URL is the case in point: `![Java](...<!-- -->25<!-- -->...)`
+# breaks the image entirely and GitHub renders the raw text. Those use a
+# BLOCK marker on its own lines instead, and the whole block is regenerated.
+BLOCK = re.compile(
+    r"(<!-- dl:sync-block:(\w+) -->\n)(.*?)(<!-- /dl:sync-block -->)", re.DOTALL
+)
+
+BLOCK_TEMPLATES = {
+    "badges": lambda v: (
+        f"![Java](https://img.shields.io/badge/Java-{v['java']}%2B-orange)\n"
+        f"![Paper](https://img.shields.io/badge/Paper-{v['paper_display']}-blue)\n"
+    ),
+}
+
 
 def pom_values() -> dict[str, str]:
     text = POM.read_text(encoding="utf-8")
@@ -104,7 +119,15 @@ def fill_markers(path: Path, v: dict[str, str]) -> bool:
             sys.exit(f"{path}: unknown sync key '{key}' (known: {', '.join(sorted(v))})")
         return f"{open_tag}{v[key]}{close_tag}"
 
-    updated = MARKER.sub(repl, original)
+    def repl_block(m: re.Match) -> str:
+        open_tag, name, _old, close_tag = m.groups()
+        if name not in BLOCK_TEMPLATES:
+            sys.exit(f"{path}: unknown sync block '{name}' "
+                     f"(known: {', '.join(sorted(BLOCK_TEMPLATES))})")
+        return f"{open_tag}{BLOCK_TEMPLATES[name](v)}{close_tag}"
+
+    updated = BLOCK.sub(repl_block, original)
+    updated = MARKER.sub(repl, updated)
     if updated != original:
         path.write_text(updated, encoding="utf-8")
         return True
