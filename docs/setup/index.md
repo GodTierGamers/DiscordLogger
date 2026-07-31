@@ -16,8 +16,8 @@ This guide walks you through installing **DiscordLogger** and getting logs into 
 
 ## 1) Requirements
 
-- **Server:** Paper 26.x, or a Paper fork such as Purpur
-- **Java:** 25 or newer (Minecraft 26.x requires it)
+- **Server:** Paper {{ site.data.versions.paper_display }}, or a Paper fork such as Purpur
+- **Java:** {{ site.data.versions.java }} or newer (Minecraft {{ site.data.versions.paper_display }} requires it)
 - **Discord:** A channel where you can create a webhook
 - **Permissions:**
     - Discord:
@@ -69,8 +69,8 @@ embeds:
 ```
 
 > The last line of your file records which config schema it uses, e.g.  
-> `# CONFIG VERSION V9, SHIPPED WITH v2.1.6 BUILT 30-07-2026`  
-> The `V9` part is what matters — that's how the plugin knows whether your
+> `# CONFIG VERSION {{ site.data.versions.schema }}, SHIPPED WITH v{{ site.data.versions.plugin }} BUILT DD-MM-YYYY`  
+> The `{{ site.data.versions.schema }}` part is what matters — that's how the plugin knows whether your
 > config needs migrating, and how the docs map versions. The version and build
 > date after it are just there to tell you which build wrote the file.
 

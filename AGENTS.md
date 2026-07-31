@@ -35,6 +35,31 @@ Everything below was verified against the actual source at the time of writing; 
 
 **Consequence to respect:** because entries are added only on request and deleted on completion, an empty TODO.md means "nothing outstanding" and can be trusted as such. Self-populating it — even with genuinely good ideas — destroys that guarantee and makes the file worthless. Don't.
 
+## Version values — pom.xml is the single source of truth
+
+**Never hand-type a Java version, Paper version or api-version anywhere except `pom.xml`.** Four properties there feed everything else:
+
+| Property | Meaning |
+|---|---|
+| `<version>` | the plugin version — **release-please owns it**, never hand-edit |
+| `<maven.compiler.release>` | Java the plugin is built for |
+| `<dl.api.version>` | minimum Paper; becomes `plugin.yml`'s `api-version` |
+| `<dl.paper.display>` | how Paper is written in prose, e.g. `26.x` |
+
+The sync script also derives two values it doesn't own: **`plugin`** (the released version, from `<version>`) and **`schema`** (the config schema, read from `config.yml`'s trailer). Docs examples of the config trailer use these, so they can't go stale when a release ships or the schema moves.
+
+How each destination gets its value — all automatic, none needs remembering:
+
+- **`plugin.yml`, `build-info.properties`** — Maven resource filtering resolves `${project.version}` / `${dl.api.version}` at package time.
+- **CI workflows** — each reads `<maven.compiler.release>` out of `pom.xml` at runtime into a step output, so the JDK installed always matches the compile target. No `java-version:` literal exists anywhere.
+- **README.md, CONTRIBUTING.md** — values sit between `<!-- dl:sync:KEY -->…<!-- /dl:sync -->` markers, rewritten by `scripts/sync-versions.py`. Edit the surrounding prose freely; never the value between markers.
+- **Docs pages** — read `{{ site.data.versions.* }}` from `docs/_data/versions.yml`, which the same script generates. That file is generated: **do not edit it**. Liquid resolves inside fenced code blocks too, which is how the config-trailer examples stay current.
+- **Anything showing the *latest release*** on the site (`data-dl-latest`, the downloads list, the generator's version picker) — reads the GitHub releases API live, so it covers nightlies and stable without any file to update.
+
+`sync-versions.yml` runs the script on every push to `main` that touches `pom.xml` — including release-please's own release commits — and commits the result. So bumping a version in `pom.xml` is genuinely the only edit required.
+
+To add a new synced location: wrap the value in `<!-- dl:sync:KEY -->` markers (Markdown) or reference `site.data.versions.KEY` (Jekyll). Unknown keys make the script fail loudly rather than silently skip.
+
 ## Build & test
 
 ```bash
@@ -54,6 +79,7 @@ pom.xml                                Maven build
 release-please-config.json             release-please: changelog sections, extra-files
 .release-please-manifest.json          release-please: current released version (state)
 scripts/validate-config-generator.py   CI check: options.json <-> template <-> Java source <-> shipped config <-> mirror <-> doc embed
+scripts/sync-versions.py               Propagates pom.xml's version values into README/CONTRIBUTING/docs
 src/main/resources/
   plugin.yml                           Plugin descriptor (Maven-filtered)
   build-info.properties                Build channel/version/date, baked in at package time
