@@ -18,6 +18,9 @@
           -> hidden entirely unless that version is beta AND the visitor
              enabled beta content (shown normally once it ships stable)
 
+      <span data-dl-schema-versions="v10"></span>
+                                            -> filled with the stable releases that
+                                               actually ship that config schema
       <span data-dl-latest></span>          -> filled with the newest stable version
       <span data-dl-latest-nightly></span>  -> filled with the newest nightly version
 
@@ -206,6 +209,57 @@
         }
     }
 
+    /**
+     * Fills an element with the stable releases that actually ship a given config
+     * schema, e.g. "v2.1.5, v2.1.6".
+     *
+     * <p>Deliberately never says "and newer": a schema is only known to be shipped
+     * by the releases that have shipped it. The next release may open a new schema,
+     * so claiming future coverage would eventually be a lie on a page nobody
+     * revisits. Until a stable release carries it, the honest answer is that none
+     * does yet.
+     */
+    async function applySchemaCoverage(root) {
+        const hosts = root.querySelectorAll('[data-dl-schema-versions]');
+        if (!hosts.length) return;
+
+        let schemas;
+        try {
+            const res = await fetch('/assets/configs/registry.json');
+            if (!res.ok) return;
+            schemas = (await res.json()).schemas || [];
+        } catch { return; }
+
+        schemas = schemas
+            .filter(s => parseVer(s.since))
+            .sort((a, b) => cmpVer(parseVer(a.since), parseVer(b.since)));
+
+        hosts.forEach(el => {
+            const want = el.getAttribute('data-dl-schema-versions');
+            const idx = schemas.findIndex(s => s.config === want);
+            if (idx < 0) return;
+
+            const since = parseVer(schemas[idx].since);
+            const nextSince = schemas[idx + 1] ? parseVer(schemas[idx + 1].since) : null;
+
+            const hits = (api.releases || [])
+                .filter(r => !r.prerelease)
+                .filter(r => {
+                    const v = parseVer(r.version);
+                    if (!v) return false;
+                    if (cmpVer(v, since) < 0) return false;
+                    if (nextSince && cmpVer(v, nextSince) >= 0) return false;
+                    return true;
+                })
+                .map(r => r.version);
+
+            const uniq = [...new Set(hits)].sort((a, b) => cmpVer(parseVer(a), parseVer(b)));
+            el.textContent = uniq.length
+                ? uniq.map(v => 'v' + v).join(', ')
+                : 'none yet — this schema has not shipped in a stable release';
+        });
+    }
+
     function renderToggles(root) {
         root.querySelectorAll('[data-dl-beta-toggle]').forEach(host => {
             if (host.dataset.dlToggleReady === '1') {
@@ -243,6 +297,7 @@
         applyBetaOnly(root);
         applyFills(root);
         renderToggles(root);
+        applySchemaCoverage(root);
     }
 
     /* ---- boot ---- */

@@ -8,7 +8,7 @@ description: Full documentation for config.yml schema v10 — defaults, per-key 
 
 # config.yml Docs — v10
 
-**_Supported Plugin Versions:_ v2.2.0 and newer**
+**_Supported Plugin Versions:_ <span data-dl-schema-versions="v10">…</span>**
 
 <div style="margin:1rem 0 1.25rem;">
   <a class="btn" href="/assets/configs/v10/config.yml" download>

@@ -53,7 +53,9 @@ If you're not sure, open your `config.yml` and check the **last line**; it will 
       })
       .map(r => r.version);
     const uniq = [...new Set(hits)].sort((a, b) => cmpBase(parseBase(a), parseBase(b)));
-    if (!uniq.length) return `v${schema.since} and newer`;
+    // Never claim "and newer": the next release may open a new schema, so future
+    // coverage is not ours to promise. Until a stable release ships it, none does.
+    if (!uniq.length) return 'no stable release yet';
     return uniq.map(v => 'v' + v).join(', ');
   }
 
