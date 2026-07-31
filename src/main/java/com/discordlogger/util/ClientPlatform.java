@@ -109,4 +109,19 @@ public final class ClientPlatform {
     public static boolean floodgateApiAvailable() {
         return resolveApi();
     }
+
+    /** Whether the Floodgate API class is on the classpath at all. */
+    public static boolean floodgateClassVisible() {
+        return FLOODGATE_PRESENT;
+    }
+
+    /** The API's own verdict, or null when the API isn't usable. */
+    public static Boolean apiVerdict(UUID uuid) {
+        if (uuid == null || !resolveApi()) return null;
+        try {
+            return Boolean.TRUE.equals(isBedrockMethod.invoke(apiInstance, uuid));
+        } catch (Throwable t) {
+            return null;
+        }
+    }
 }
