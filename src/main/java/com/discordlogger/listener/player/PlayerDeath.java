@@ -84,7 +84,10 @@ public final class PlayerDeath implements Listener {
             return "Slain by " + mobName(damager);
         }
 
-        return causeText(last == null ? null : last.getCause());
+        final String text = last == null ? null : causeText(last.getCause());
+        // Only reached when there is no damage cause at all, or Paper has added one
+        // we do not know yet. causeTextIsExhaustive() in the tests fails on the latter.
+        return text == null ? "Died" : text;
     }
 
     /** Block coordinates and world, e.g. "128, 71, -344 in world". */
@@ -110,8 +113,16 @@ public final class PlayerDeath implements Listener {
         return "a " + type;
     }
 
-    private String causeText(EntityDamageEvent.DamageCause cause) {
-        if (cause == null) return "Died";
+    /**
+     * Phrasing for each damage cause, or null if this one is not handled.
+     *
+     * <p>Returning null rather than a generic string is what makes the gap
+     * detectable: a test walks every {@code DamageCause} the API declares and fails
+     * on any that returns null, so a cause added by a future Paper release is caught
+     * in CI instead of surfacing as "Cause of Death: Died" on someone's server.
+     */
+    static String causeText(EntityDamageEvent.DamageCause cause) {
+        if (cause == null) return null;
         switch (cause) {
             case FALL: return "Fell from a high place";
             case LAVA: return "Tried to swim in lava";
@@ -133,7 +144,27 @@ public final class PlayerDeath implements Listener {
             case CRAMMING: return "Was squished too much";
             case DRAGON_BREATH: return "Was roasted by dragon breath";
             case THORNS: return "Was killed by thorns";
-            default: return "Died";
+
+            // Reachable via /kill, and the twelve others that previously fell through
+            // to a bare "Died".
+            case KILL: return "Killed by command";
+            case SUICIDE: return "Killed by command";
+            case WORLD_BORDER: return "Left the world border";
+            case SONIC_BOOM: return "Hit by a warden's sonic boom";
+            case CAMPFIRE: return "Burned on a campfire";
+            case FALLING_BLOCK: return "Squashed by a falling block";
+            case FLY_INTO_WALL: return "Flew into a wall";
+            case DRYOUT: return "Dried out";
+            case MELTING: return "Melted";
+            // These normally resolve through the damager branch above; they only reach
+            // here when the attacker is already gone by the time the death is read.
+            case ENTITY_ATTACK: return "Slain";
+            case ENTITY_SWEEP_ATTACK: return "Slain";
+            case PROJECTILE: return "Shot";
+            // Inflicted by a plugin, so there is nothing truthful to say beyond this.
+            case CUSTOM: return "Died";
+
+            default: return null;
         }
     }
 }
