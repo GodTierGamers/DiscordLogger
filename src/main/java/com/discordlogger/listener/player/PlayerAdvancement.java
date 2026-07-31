@@ -41,7 +41,7 @@ public final class PlayerAdvancement implements Listener {
         fields.add(new Log.Field("Advancement:", pretty));
         fields.add(new Log.Field("Key:", ns + ":" + path, true));
 
-        // Category key -> "player_advancement" (matches embeds.colors.player.advancement)
+        // Category key -> "player_advancement" (colour: log.player.advancement.color)
         Log.eventFieldsWithThumb(
                 "player_advancement",
                 "Advancement Unlocked",

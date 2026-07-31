@@ -69,7 +69,7 @@ public final class Deop implements Listener {
                 fields.add(new Log.Field("Deopped by:", moderatorName));
 
                 Log.eventFieldsWithThumb(
-                        "deop",               // color key from embeds.colors.deop
+                        "deop",               // colour from log.moderation.deop.color
                         "Player Deopped",     // title to mirror your style
                         null,                 // author -> default (embeds.author)
                         fields,

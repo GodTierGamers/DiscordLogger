@@ -286,7 +286,7 @@ public final class Log {
 
     /**
      * General-purpose event sender for structured embeds with fields.
-     * - category: used for color lookup (embeds.colors.<category>)
+     * - category: used for color lookup (log.<group>.<event>.color)
      * - title: embed title (e.g. "Player Ban")
      * - author: author name (null -> use embeds.author from config)
      * - fields: list of field name/value pairs (inline respected)

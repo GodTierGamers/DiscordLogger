@@ -71,7 +71,7 @@ public final class Explosion implements Listener {
         fields.add(new Log.Field("Players Nearby:", playersNearbyString(w, loc)));
 
         Log.eventFieldsWithThumb(
-                "server_explosion",  // resolves to embeds.colors.server.explosion
+                "server_explosion",  // colour comes from log.server.explosion.color
                 "Explosion",
                 null,                // author -> default embeds.author
                 fields,

@@ -38,7 +38,7 @@ public final class PlayerGamemode implements Listener {
         fields.add(new Log.Field("From:", pretty(from), true));
         fields.add(new Log.Field("To:", pretty(to), true));
 
-        // category key -> "player_gamemode" (embeds.colors.player.gamemode)
+        // category key -> "player_gamemode" (colour: log.player.gamemode.color)
         Log.eventFieldsWithThumb(
                 "player_gamemode",
                 "Gamemode Changed",

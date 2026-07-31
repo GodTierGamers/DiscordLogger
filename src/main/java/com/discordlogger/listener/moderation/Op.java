@@ -69,7 +69,7 @@ public final class Op implements Listener {
                 fields.add(new Log.Field("Opped by:", moderatorName)); // shows CONSOLE when applicable
 
                 Log.eventFieldsWithThumb(
-                        "op",                 // color key from embeds.colors.op
+                        "op",                 // colour from log.moderation.op.color
                         "Player Opped",       // title per your design
                         null,                 // author -> default (embeds.author)
                         fields,

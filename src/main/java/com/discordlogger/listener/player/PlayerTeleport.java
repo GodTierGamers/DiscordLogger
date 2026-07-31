@@ -61,7 +61,7 @@ public final class PlayerTeleport implements Listener {
         fields.add(new Log.Field("World Change:", worldChange ? "Yes" : "No", true));
         fields.add(new Log.Field("Distance:", distStr, true));
 
-        // Category key -> "player_teleport" (embeds.colors.player.teleport)
+        // Category key -> "player_teleport" (colour: log.player.teleport.color)
         Log.eventFieldsWithThumb(
                 "player_teleport",
                 "Player Teleport",
