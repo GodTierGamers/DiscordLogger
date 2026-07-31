@@ -36,6 +36,9 @@
              so a hand-built JAR is never mistaken for a release artifact. -->
         <dl.build.channel>dev</dl.build.channel>
         <dl.build.date>unknown</dl.build.date>
+
+        <junit.version>5.11.4</junit.version>
+        <surefire.version>3.5.2</surefire.version>
     </properties>
 
     <repositories>
@@ -46,6 +49,17 @@
     </repositories>
 
     <dependencies>
+        <!-- Tests. ConfigMigrator is the reason this exists: it decides whether a
+             user's settings survive an upgrade, and a silent break there is the
+             worst failure this plugin has. CI runs `mvn clean package` with tests
+             on, so these gate every PR. -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Paper API provided by the server at runtime; paper-api is required
              for Paper-specific events such as AsyncChatEvent. -->
         <dependency>
@@ -141,6 +155,12 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.version}</version>
+            </plugin>
+
             <!-- maven.compiler.release in <properties> drives the compiler; no
                  override here. Targeting 25 to match Minecraft 26.x, which requires
                  a Java 25 runtime — so the emitted bytecode can't load on older
