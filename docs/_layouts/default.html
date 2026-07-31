@@ -12,6 +12,45 @@
     {%- endcomment -%}
     {% seo %}
 
+    {%- comment -%}
+      jekyll-seo-tag only describes the site as a generic WebSite/WebPage. This
+      block additionally declares what the site is actually about — a free
+      Minecraft server plugin — so search engines can surface it as software
+      rather than as an unclassified page. Homepage only: duplicating the same
+      entity on every page adds nothing.
+    {%- endcomment -%}
+    {%- if page.url == '/' -%}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "DiscordLogger",
+      "url": {{ site.url | append: site.baseurl | append: '/' | jsonify }},
+      "applicationCategory": "GameApplication",
+      "applicationSubCategory": "Minecraft server plugin",
+      "operatingSystem": "Any (Java {{ site.data.versions.java | default: '25' }}+)",
+      "softwareVersion": {{ site.data.versions.plugin | default: '' | jsonify }},
+      "softwareRequirements": "PaperMC {{ site.data.versions.min_paper | default: '' }} or newer",
+      "description": {{ site.description | strip_newlines | strip | jsonify }},
+      "image": {{ site.url | append: site.baseurl | append: site.social_image | jsonify }},
+      "license": "https://github.com/GodTierGamers/DiscordLogger/blob/main/LICENSE",
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "downloadUrl": "https://github.com/GodTierGamers/DiscordLogger/releases",
+      "installUrl": {{ site.url | append: site.baseurl | append: '/setup/' | jsonify }},
+      "codeRepository": "https://github.com/GodTierGamers/DiscordLogger",
+      "author": {
+        "@type": "Person",
+        "name": {{ site.author | jsonify }}
+      }
+    }
+    </script>
+    {%- endif -%}
+
     <!-- GitHub Markdown CSS (keeps the original look) -->
     <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5.5.1/github-markdown.css">
 
@@ -68,9 +107,11 @@
             {% assign active_class = ' is-active' %}
             {% endif %}
             {% else %}
-            {# Liquid does not allow filters inside `if`, so no `| append:` here.
-               `contains` already covers the trailing-slash and /index.html forms,
-               plus nested pages like /config/v9/ under /config/. #}
+            {%- comment -%}
+              Liquid does not allow filters inside `if`, so no `| append:` here.
+              `contains` already covers the trailing-slash and /index.html forms,
+              plus nested pages like /config/v9/ under /config/.
+            {%- endcomment -%}
             {% if current == item.url or current contains item.url %}
             {% assign active_class = ' is-active' %}
             {% endif %}
