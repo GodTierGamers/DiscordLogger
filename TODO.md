@@ -24,5 +24,5 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 
 - **Discord OAuth webhook creation** — let the config generator create the webhook via Discord OAuth instead of making people copy a URL by hand.
 - **Complete website redesign.**
-- **Improve SEO.**
+- **Search visibility (ongoing)** — the technical groundwork is in place (sitemap, canonicals, structured data, per-page titles and descriptions). What's left is the slow part: content people actually search for (troubleshooting and comparison pages), listings on the sites Minecraft admins browse, and monitoring real queries in Search Console. This item stays open indefinitely; it isn't a task with a finish line.
 - **Full docs quality pass** — review everything for accuracy and clarity.

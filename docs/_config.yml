@@ -1,7 +1,49 @@
 title: DiscordLogger
-# When using a custom domain, baseurl is empty at runtime. relative_url handles both cases.
+tagline: Minecraft Server Logging to Discord
+description: >-
+  A Paper plugin that posts Minecraft server events to a Discord channel over a
+  webhook — joins, quits, chat, deaths, moderation actions and more, as rich
+  embeds or plain text. Configurable per event, with a browser-based config
+  generator.
+
+# Absolute site URL. Required for canonical links, Open Graph tags and sitemap
+# entries to be absolute rather than relative — without it, link previews and
+# search results point nowhere useful.
+url: "https://discordlogger.godtiergamers.xyz"
+baseurl: ""
+
+lang: en_GB
+
+# Used by jekyll-seo-tag for structured data and Open Graph attribution.
+author: LVCHLANN
+logo: /assets/icons/android-chrome-512x512.png
+
+# Default social preview image. This is what renders when the site is shared in
+# Discord — which, for a Discord plugin, is the single most likely place a link
+# gets posted.
+social_image: /assets/DiscordLogger-Banner.webp
+
+twitter:
+  card: summary_large_image
+
+github:
+  repository_url: https://github.com/GodTierGamers/DiscordLogger
 
 markdown: kramdown
+
+# Both ship with the github-pages gem, so they run on GitHub Pages unmodified.
+#   jekyll-seo-tag  -> <title>, canonical, Open Graph, Twitter cards, JSON-LD
+#   jekyll-sitemap  -> /sitemap.xml
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Build output and tooling that must never be published or indexed.
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - test.sh
+  - cloudflare/
 
 # Apply the default layout to all Markdown pages under docs/
 defaults:
@@ -10,3 +52,4 @@ defaults:
       type: "pages"
     values:
       layout: "default"
+      image: /assets/DiscordLogger-Banner.webp

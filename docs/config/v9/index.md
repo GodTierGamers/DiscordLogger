@@ -5,6 +5,7 @@ description: Full documentation for config.yml schema v9 — defaults, per-key e
 ---
 
 ![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
+
 # config.yml Docs — v9
 
 **_Supported Plugin Versions:_ v2.1.5, v2.1.6**

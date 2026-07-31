@@ -1,11 +1,17 @@
 ---
 layout: default
-title: Home
+title: DiscordLogger
+description: Post Minecraft server events to Discord — joins, quits, chat, deaths and moderation actions, as rich embeds or plain text. Free, open source, and configurable per event.
 ---
 
-![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
+![DiscordLogger — Minecraft server logging to Discord](/assets/DiscordLogger-Banner.webp)
 
-Minecraft → Discord logging that’s clean, configurable, and production-ready.
+# Minecraft server logging to Discord
+
+**DiscordLogger** is a free, open-source Paper plugin that sends your Minecraft server's
+events straight to a Discord channel over a webhook — player joins and quits, chat,
+deaths, advancements, and moderation actions like bans, kicks and whitelist changes.
+Every event is individually configurable, and messages arrive as rich embeds or plain text.
 
 > **Latest plugin:** v<span data-dl-latest>…</span>  
 > **Latest config version:** v9

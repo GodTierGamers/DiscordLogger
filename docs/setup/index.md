@@ -1,10 +1,11 @@
 ---
 layout: default
-title: Setup / Install
-description: Install DiscordLogger, set your webhook, and verify everything is working.
+title: "How to Set Up Minecraft Discord Logging"
+description: Step-by-step guide to installing DiscordLogger on a Paper server, creating a Discord webhook, and checking that events are reaching your channel.
 ---
 
 ![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
+
 # Setup / Install
 
 This guide walks you through installing **DiscordLogger** and getting logs into Discord in minutes.
