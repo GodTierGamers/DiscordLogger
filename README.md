@@ -45,6 +45,8 @@ Built for **Paper <!-- dl:sync:paper_display -->26.x<!-- /dl:sync -->** (and Pap
 
 Every release includes a `.sha256` checksum for the JAR.
 
+Stable releases are also published to [Modrinth](https://modrinth.com/plugin/discordlogger) and [Hangar](https://hangar.papermc.io/LVCHLANN/DiscordLogger), which is where most server hosts and plugin managers will find it. Nightly builds are GitHub-only.
+
 ---
 
 ## 🚀 Installation

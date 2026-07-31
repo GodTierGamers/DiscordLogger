@@ -8,7 +8,10 @@ description: Download the latest DiscordLogger release for PaperMC, or opt in to
 
 # Downloads
 
-Latest builds from **GitHub Releases**.
+Latest builds from **GitHub Releases**. Stable releases are also on
+[Modrinth](https://modrinth.com/plugin/discordlogger) and
+[Hangar](https://hangar.papermc.io/LVCHLANN/DiscordLogger) — use either if your host
+or plugin manager installs from them. Nightly builds are only published here.
 
 <div id="dl-downloads-status" class="dl-downloads-status">
   Fetching releases from GitHub…
