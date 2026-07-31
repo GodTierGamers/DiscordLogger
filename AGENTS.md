@@ -295,6 +295,8 @@ Jekyll site (GitHub Pages gem stack) at `discordlogger.godtiergamers.xyz` (CNAME
 
 ### Version awareness — never hardcode a version number
 
+**Never write "and newer" about schema coverage.** A schema is only known to be shipped by the releases that have actually shipped it — the next release may open a new one, so promising future coverage eventually becomes a lie on a page nobody revisits. `<span data-dl-schema-versions="v10">` fills itself from the releases API plus `registry.json`, listing only real releases, and says so plainly when none exists yet. The config-docs index uses the same rule.
+
 `docs/assets/js/versions.js` is loaded from `<head>` on every page and is the single source of truth. It reads the GitHub releases API once (cached per session), works out the newest stable and newest nightly, and exposes `window.DLVersions`.
 
 **A version is "beta" when it is newer than the newest stable release** — i.e. it exists only in nightly builds. This is *derived, never hand-flagged*: while 1.2.3 is nightly-only its docs show a BETA badge, and the moment 1.2.3 ships stable every badge and gate flips itself off with no edits. Never add a manual "is beta" flag anywhere.
@@ -494,6 +496,14 @@ Schema history, recovered from the shipped config's git history — **update thi
 `AHEAD` is the only state needing a human, so it is the only one that registers a join listener (`ConfigVersionNotice`). The escape hatch is **`/discordlogger regen confirm`** (`discordlogger.regen`, op by default): it replaces `config.yml` with this build's default and renames the old file to `config.backup-<timestamp>.yml`. It requires the literal `confirm` argument because `regen` and `reload` are one keystroke apart and one of them is destructive. It deliberately does **not** merge or preserve settings — the entire point is to land on a file this build fully understands.
 
 - **Webhook testing / CORS:** Discord webhooks allow simple browser POSTs; each bundle carries its own test payload. Tests go browser → Discord directly. A Cloudflare Worker relay used to exist for this and was deleted — it was never deployed and never needed. The **frozen** v9 bundle still contains the dormant `proxyUrl` branch in its `sendTest`; it is inert (the key no longer exists in `registry.json`, so the value is `""`) and must not be edited, because publication froze that schema. Newer bundles should simply omit it.
+
+### Config generator and config docs — stable schemas only
+
+Neither offers a config version that has only ever shipped in a nightly, and there is **no opt-in**. A nightly's schema can still change before release, so a config generated against one can be silently wrong by the time the stable build lands — worse than not offering it at all. Both carry a footnote explaining the absence instead of a toggle.
+
+The beta opt-in in `versions.js` still exists and still drives the **downloads page**, which is a different question: choosing which *build* to install is the user's call, choosing a config format that may still move is not. `window.DLVersions.showBeta` is deliberately ignored by both the generator and the config-docs picker — setting it true does not surface beta schemas.
+
+A schema's docs page stays reachable by URL the whole time; it is simply not listed until a stable release carries it. This is what makes `registry.json`'s `since` pointing at a stable version the safe default.
 
 ### Downloads page
 
