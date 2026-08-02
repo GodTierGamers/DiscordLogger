@@ -1,5 +1,6 @@
 package com.discordlogger.listener.player;
 
+import com.discordlogger.filter.Filters;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.event.EventHandler;
@@ -17,6 +18,11 @@ public final class PlayerCommand implements Listener {
     @EventHandler
     public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.command.enabled", true)) return;
+        if (Filters.blocksPlayer(e.getPlayer()) || Filters.blocksWorld(e.getPlayer().getWorld().getName())) return;
+
+        // Checked before anything is rendered: /login carries a password, so it must
+        // not reach the console echo either.
+        if (Filters.blocksCommand(e.getMessage())) return;
 
         String who = Names.display(e.getPlayer(), plugin);
         String cmd = Log.mdEscape(Log.redactWebhooks(e.getMessage())); // includes leading '/'

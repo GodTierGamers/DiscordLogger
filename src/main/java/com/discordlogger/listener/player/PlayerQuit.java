@@ -1,5 +1,6 @@
 package com.discordlogger.listener.player;
 
+import com.discordlogger.filter.Filters;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.Bukkit;
@@ -17,6 +18,7 @@ public final class PlayerQuit implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onQuit(PlayerQuitEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.quit.enabled", true)) return;
+        if (Filters.blocksPlayer(e.getPlayer()) || Filters.blocksWorld(e.getPlayer().getWorld().getName())) return;
 
         String who = Names.display(e.getPlayer(), plugin);
         String msg = who + " left the server";

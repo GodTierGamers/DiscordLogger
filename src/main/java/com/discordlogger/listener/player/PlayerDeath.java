@@ -1,5 +1,6 @@
 package com.discordlogger.listener.player;
 
+import com.discordlogger.filter.Filters;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.Location;
@@ -28,6 +29,7 @@ public final class PlayerDeath implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(PlayerDeathEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.death.enabled", true)) return;
+        if (Filters.blocksPlayer(e.getEntity()) || Filters.blocksWorld(e.getEntity().getWorld().getName())) return;
 
         final Player victim = e.getEntity();
         final String vName = Names.display(victim, (JavaPlugin) plugin);

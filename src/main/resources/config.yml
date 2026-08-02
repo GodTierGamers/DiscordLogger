@@ -36,6 +36,13 @@
 
 # Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v10/
 
+#########################
+# D O   N O T   E D I T #
+#########################
+
+# Set automatically
+config-version: 10
+
 ###################
 # WEBHOOK OPTIONS #
 ###################
@@ -63,6 +70,49 @@ format:
 embeds:
   enabled: true
   author: "Server Logs" # Can be modified for proxy servers (e.g. Survival, Creative)
+
+###################################################
+#  ______ _____ _   _______ ______ _____   _____  #
+# |  ____|_   _| | |__   __|  ____|  __ \ / ____| #
+# | |__    | | | |    | |  | |__  | |__) | (___   #
+# |  __|   | | | |    | |  |  __| |  _  / \___ \  #
+# | |     _| |_| |____| |  | |____| | \ \ ____) | #
+# |_|    |_____|______|_|  |______|_|  \_\_____/  #
+#                                                 #
+###################################################
+
+# Filters apply on top of the toggles below: an event that is enabled can still be
+# skipped if it matches something here.
+
+filters:
+  # Never log these commands, whoever runs them. Matched on the command word, so
+  # arguments and a plugin prefix are ignored -- "/essentials:msg hi" matches "msg".
+  # The defaults exist because these leak: login commands carry passwords in plain
+  # text, and private messages are private.
+  ignored_commands:
+    - login
+    - register
+    - changepassword
+    - unregister
+    - msg
+    - tell
+    - whisper
+    - w
+    - r
+    - reply
+
+  # Never log anything from these players. Accepts names or UUIDs, mixed freely.
+  ignored_players: []
+
+  # Players with this permission are never logged -- useful for staff alts, or a bot
+  # account whose activity would drown everything else. Empty disables the check.
+  exempt_permission: ""
+
+  # Never log events that happen in these worlds.
+  ignored_worlds: []
+
+  # Skip chat messages containing any of these (case-insensitive).
+  ignored_chat_containing: []
 
 ####################################################################################
 #                                                                                  #
@@ -174,4 +224,5 @@ log:
       enabled: true
       color: "#16A085" # dark teal
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+
 # CONFIG VERSION V10, SHIPPED WITH v2.1.6 (x-release-please-version)

@@ -217,6 +217,16 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 - `dispatch()` hands off to `WebhookQueue` and returns immediately — callers may be on the main thread and must never block on HTTP.
 - `post()` performs one request and **returns a `Response`** (status + rate-limit headers) rather than logging; the queue owns retry/wait/give-up decisions.
 
+### Log filtering (`filters:`)
+
+Applied in the **listener**, not in `Log` — that is where the player, world and raw command still exist; by the time a message reaches `Log` it is rendered prose. `Filters` holds an immutable snapshot swapped atomically on reload, and `applyRuntimeConfig` reloads it *before* `Log.init` so a reload cannot briefly log something the new config filters.
+
+`filters.ignored_commands` **ships non-empty**, which is unusual for this project and deliberate: command logging posts the line as typed, so `/login` published passwords in plain text and `/msg` published private messages. Matching is on the command word after stripping the slash, arguments and any plugin qualifier — without that last step `/essentials:msg` would bypass an entry of `msg`, which would make a security-flavoured filter worthless.
+
+**Moderation events are deliberately not filtered by player.** `ignored_players` means "this account's own activity", not "everything mentioning this account"; a ban is a record of staff action and hiding it guts the audit trail.
+
+**Lists in config are a migration hazard.** `ConfigMigrator` replaced scalars only, and every value was a scalar until `filters:` existed. A list hitting that path wrote `key:"[a, b]"` — invalid YAML, original items orphaned. It now splices list blocks bottom-up (top-down would invalidate later indices) and quotes an item only when YAML would otherwise read it as a boolean or number. `ConfigMigratorListTest` pins this.
+
 ### Per-event webhook routing
 
 Every event takes an optional `log.<group>.<event>.webhook`. Empty means the main `webhook.url`, which is the overwhelmingly common case. `Log.webhookFor(category)` resolves it from a map built alongside `colorMap` — same walk, same key normalisation, same atomic swap. An invalid URL is rejected at load with a console warning and that event falls back, rather than posting into the void.
@@ -471,6 +481,18 @@ The validator checks each `extras` entry the same way as `configKey`: the templa
 #### What each of the four config copies is for
 
 Phases 1–3 touch three different files that all look like "the config". They are not interchangeable — see *Config file dictionary* above for the full breakdown, and check all four before claiming a schema change is done.
+
+### How a config's schema is identified
+
+Three sources, in decreasing durability, resolved by `ConfigMigrator.detectVersion`:
+
+1. **Its shape** — which keys exist (`SchemaDetector.infer`). The arbiter. A file's schema is not a claim it makes, it is what the file *is*; a config declaring v10 while lacking every v10 key is a v9 file with a bad label.
+2. **The `config-version` key** at the top of the file. Replaced a comment on the *last* line, which was the least durable thing in a config — editors strip comments, formatters move them, and tidying the end of a file removes one without anyone noticing. When it vanished, migration was skipped and every option silently fell back to its default.
+3. **The trailer comment**. Retained because every v9-and-earlier config in existence has one and no key — the files that most need upgrading are exactly the ones with only this.
+
+On disagreement the **shape wins** and the mismatch is logged. `config-version` is excluded from the transplant in `resolvePath`: the newly written file already declares its own schema, and copying the old number forward would relabel a v10 file as v9 and make the next start migrate it again.
+
+Each version's marker is the first key that appeared in it, so deleting an unrelated option cannot drop a file a version. **v4 and v5 have identical key sets** and are genuinely indistinguishable; reporting the newer is safe because nothing changed between them.
 
 ### Config version enforcement (plugin side)
 

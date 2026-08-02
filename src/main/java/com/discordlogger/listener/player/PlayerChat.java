@@ -1,5 +1,6 @@
 package com.discordlogger.listener.player;
 
+import com.discordlogger.filter.Filters;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import io.papermc.paper.event.player.AsyncChatEvent;
@@ -18,9 +19,13 @@ public final class PlayerChat implements Listener {
     @EventHandler
     public void onChat(AsyncChatEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.chat.enabled", true)) return;
+        if (Filters.blocksPlayer(e.getPlayer()) || Filters.blocksWorld(e.getPlayer().getWorld().getName())) return;
 
         String who  = Names.display(e.getPlayer(), plugin);
-        String text = Log.mdEscape(PlainTextComponentSerializer.plainText().serialize(e.message()));
+        final String plain = PlainTextComponentSerializer.plainText().serialize(e.message());
+        if (Filters.blocksChat(plain)) return;
+
+        String text = Log.mdEscape(plain);
         String msg  = "**" + who + "**: " + text;
         Log.eventWithThumb("Player Chat", msg, Log.playerAvatarUrl(e.getPlayer().getUniqueId()));
     }

@@ -1,5 +1,6 @@
 package com.discordlogger.listener.player;
 
+import com.discordlogger.filter.Filters;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.NamespacedKey;
@@ -21,6 +22,7 @@ public final class PlayerAdvancement implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onAdvancement(PlayerAdvancementDoneEvent e) {
         if (!plugin.getConfig().getBoolean("log.player.advancement.enabled", true)) return;
+        if (Filters.blocksPlayer(e.getPlayer()) || Filters.blocksWorld(e.getPlayer().getWorld().getName())) return;
 
         final NamespacedKey key = e.getAdvancement().getKey();
         final String ns = key.getNamespace();   // usually "minecraft"
