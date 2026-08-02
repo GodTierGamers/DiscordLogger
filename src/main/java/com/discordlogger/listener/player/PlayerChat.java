@@ -1,6 +1,7 @@
 package com.discordlogger.listener.player;
 
 import com.discordlogger.filter.Filters;
+import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import io.papermc.paper.event.player.AsyncChatEvent;
@@ -26,7 +27,7 @@ public final class PlayerChat implements Listener {
         if (Filters.blocksChat(plain)) return;
 
         String text = Log.mdEscape(plain);
-        String msg  = "**" + who + "**: " + text;
+        String msg  = Lang.text("discord.player-chat", "player", who, "message", text);
         Log.eventWithThumb("Player Chat", msg, Log.playerAvatarUrl(e.getPlayer().getUniqueId()));
     }
 }

@@ -1,6 +1,7 @@
 package com.discordlogger.listener.player;
 
 import com.discordlogger.filter.Filters;
+import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.Bukkit;
@@ -21,7 +22,7 @@ public final class PlayerQuit implements Listener {
         if (Filters.blocksPlayer(e.getPlayer()) || Filters.blocksWorld(e.getPlayer().getWorld().getName())) return;
 
         String who = Names.display(e.getPlayer(), plugin);
-        String msg = who + " left the server";
+        String msg = Lang.text("discord.player-quit", "player", who);
         Log.eventWithThumb("Player Quit", msg, Log.playerAvatarUrl(e.getPlayer().getUniqueId()));
 
         // Defer cache eviction to the next tick so that other MONITOR-priority

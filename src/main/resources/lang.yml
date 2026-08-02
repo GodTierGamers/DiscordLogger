@@ -1,0 +1,144 @@
+#########################
+# D O   N O T   E D I T #
+#########################
+
+# Set automatically
+lang-version: 1
+
+##############################################################################
+#                                                                            #
+#  Every message this plugin shows you, in one place.                        #
+#                                                                            #
+#  chat:    shown in game. Uses MiniMessage for colour and formatting:       #
+#           https://docs.advntr.dev/minimessage/format.html                  #
+#  discord: the wording of messages posted to Discord. Plain text -- Discord #
+#           renders Markdown, not MiniMessage, so tags would appear as text. #
+#                                                                            #
+#  Placeholders look like {player} and are replaced before sending. Each     #
+#  message lists the ones it accepts. An unknown placeholder is left as is,  #
+#  so a typo shows up in the message rather than vanishing.                  #
+#                                                                            #
+#  Console messages are deliberately NOT here. They stay in English so that  #
+#  searching an error, or pasting it into a support thread, still matches.   #
+#                                                                            #
+##############################################################################
+
+chat:
+  # Prefix used by the messages below that carry one.
+  prefix: "<gold>[DiscordLogger]</gold> "
+
+  # /discordlogger reload
+  reload-ok: "<green>DiscordLogger configuration reloaded ({ms} ms).</green>"
+  reload-no-webhook: "<red>Config reloaded, but webhook.url is missing or invalid.</red>"
+  reload-no-webhook-hint: "<red>Set a valid Discord webhook URL and try again.</red>"
+
+  # /discordlogger webhook
+  webhook-usage: "<yellow>Usage: <white>/discordlogger webhook <url></white></yellow>"
+  webhook-where: "<gray>Create one in Discord under Channel Settings > Integrations > Webhooks.</gray>"
+  webhook-private: "<gray>Anyone who sees the URL can post to that channel, so avoid typing it on a shared screen. It is never shown back to you.</gray>"
+  webhook-invalid: "<red>That does not look like a Discord webhook URL.</red>"
+  webhook-expected: "<gray>Expected: https://discord.com/api/webhooks/<id>/<token></gray>"
+  webhook-set: "<green>Webhook set and reloaded - logging to channel {channel}.</green>"
+  webhook-write-failed: "<red>Could not write webhook.url to config.yml. Check the file exists and is writable.</red>"
+  webhook-rejected: "<red>Saved, but the plugin did not accept it. Check config.yml and the console.</red>"
+
+  # /discordlogger regen
+  regen-warning: "<yellow>This replaces config.yml with the default from this build. Your current file is backed up, but your settings are NOT carried over.</yellow>"
+  regen-confirm: "<yellow>Run <white>/discordlogger regen confirm</white> to go ahead.</yellow>"
+  regen-done: "<green>config.yml rebuilt at schema {schema}.</green>"
+  regen-backup: "<gray>Previous file saved as {file}</gray>"
+  regen-no-webhook: "<red>The new config has no webhook URL yet - set webhook.url, then run /discordlogger reload.</red>"
+
+  # Command routing
+  help-header: "<aqua>DiscordLogger Commands:</aqua>"
+  help-entry: "<gray>  /{label} {command}<dark_gray> - <white>{description}"
+  unknown-subcommand: "<red>Unknown subcommand: {input}</red>"
+  no-permission: "<red>You do not have permission to use /{label} {command}</red>"
+
+  # Shown after /discordlogger reload when the config schema changed
+  reload-config-ahead: "<red>Your config.yml (schema v{installed}) is newer than this build (v{shipped}). Keys it does not recognise are ignored.</red>"
+  reload-config-ahead-fix: "<red>Update the plugin, or run <white>/discordlogger regen</white> to start fresh.</red>"
+  reload-config-upgraded: "<green>config.yml upgraded from schema v{from} to v{to} (previous file saved as config.old.yml).</green>"
+
+  # /discordlogger regen failures
+  regen-no-bundled: "<red>This build has no bundled config.yml to restore from.</red>"
+  regen-read-failed: "<red>Could not read the bundled config.yml: {error}</red>"
+  regen-write-failed: "<red>Could not rewrite config.yml: {error}</red>"
+
+  # Shown to ops when the config is newer than the plugin understands
+  config-ahead: "<gold>[DiscordLogger]</gold> <yellow>Your config.yml (schema v{installed}) is newer than this build (v{shipped}). Settings it does not recognise are being ignored.</yellow>"
+  config-ahead-fix: "<yellow>Update the plugin, or run <white>/discordlogger regen</white> to rebuild the config from this build. Your current file is backed up.</yellow>"
+
+  # Shown to ops once per nightly build
+  nightly-notice: "<gold>[DiscordLogger]</gold> <yellow>This is a nightly build - it may be unstable. Upgrade often: <white>https://discordlogger.godtiergamers.xyz</white></yellow>"
+
+discord:
+  # Placeholders: {player}
+  player-join: "{player} joined the server"
+  player-quit: "{player} left the server"
+
+  # Placeholders: {player}, {message}
+  player-chat: "**{player}**: {message}"
+
+  # Placeholders: {player}, {command}
+  player-command: "{player} ran: {command}"
+
+  # Placeholders: {sender}, {command}
+  server-command: "{sender} ran: {command}"
+
+  death:
+    # Placeholders: {player}
+    description: "{player} died"
+    cause-field: "Cause of Death"
+    coords-field: "Coords"
+    # Placeholders: {x}, {y}, {z}, {world}
+    coords-value: "{x}, {y}, {z} in {world}"
+
+    # Placeholders: {killer}, {weapon} (weapon may be empty)
+    slain-by-player: "Slain by {killer}{weapon}"
+    # Placeholders: {killer}
+    slain-by-mob: "Slain by {killer}"
+    shot-by: "Shot by {killer}"
+    shot: "Shot"
+    unknown: "Died"
+
+    # One line per damage cause the server can report.
+    causes:
+      fall: "Fell from a high place"
+      lava: "Tried to swim in lava"
+      fire: "Burned to death"
+      fire-tick: "Burned to death"
+      drowning: "Drowned"
+      suffocation: "Suffocated in a wall"
+      void: "Fell into the void"
+      contact: "Was pricked to death"
+      block-explosion: "Blew up"
+      entity-explosion: "Blew up"
+      magic: "Was killed by magic"
+      poison: "Was poisoned"
+      wither: "Withered away"
+      starvation: "Starved to death"
+      freeze: "Froze to death"
+      lightning: "Was struck by lightning"
+      hot-floor: "Discovered the floor was lava"
+      cramming: "Was squished too much"
+      dragon-breath: "Was roasted by dragon breath"
+      thorns: "Was killed by thorns"
+      kill: "Killed by command"
+      suicide: "Killed by command"
+      world-border: "Left the world border"
+      sonic-boom: "Hit by a warden's sonic boom"
+      campfire: "Burned on a campfire"
+      falling-block: "Squashed by a falling block"
+      fly-into-wall: "Flew into a wall"
+      dryout: "Dried out"
+      melting: "Melted"
+      entity-attack: "Slain"
+      entity-sweep-attack: "Slain"
+      projectile: "Shot"
+      custom: "Died"
+
+  platform-field: "Platform"
+  platform-bedrock: "Bedrock"
+
+# LANG VERSION V1, SHIPPED WITH v2.1.6 (x-release-please-version)

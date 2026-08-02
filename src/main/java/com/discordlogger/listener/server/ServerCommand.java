@@ -1,6 +1,7 @@
 package com.discordlogger.listener.server;
 
 import com.discordlogger.filter.Filters;
+import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -22,6 +23,7 @@ public final class ServerCommand implements Listener {
         if (Filters.blocksCommand(e.getCommand())) return;
         final String who = Log.mdEscape(e.getSender().getName()); // "Server" for console
         final String cmd = Log.mdEscape(Log.redactWebhooks("/" + e.getCommand()));
-        Log.eventWithThumb("Server Command", who + " ran: " + cmd, THUMB_SERVER);
+        Log.eventWithThumb("Server Command",
+                Lang.text("discord.server-command", "sender", who, "command", cmd), THUMB_SERVER);
     }
 }

@@ -1,6 +1,7 @@
 package com.discordlogger.listener.player;
 
 import com.discordlogger.filter.Filters;
+import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.event.EventHandler;
@@ -26,7 +27,7 @@ public final class PlayerCommand implements Listener {
 
         String who = Names.display(e.getPlayer(), plugin);
         String cmd = Log.mdEscape(Log.redactWebhooks(e.getMessage())); // includes leading '/'
-        String msg = who + " ran: " + cmd;
+        String msg = Lang.text("discord.player-command", "player", who, "command", cmd);
         Log.eventWithThumb("Player Command", msg, Log.playerAvatarUrl(e.getPlayer().getUniqueId()));
     }
 }

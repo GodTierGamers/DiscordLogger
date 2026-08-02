@@ -1,5 +1,6 @@
 package com.discordlogger.config;
 
+import com.discordlogger.lang.Lang;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -84,11 +85,7 @@ public final class ConfigVersionNotice implements Listener {
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
         if (!p.isOp()) return;
-        p.sendMessage(ChatColor.GOLD + "[DiscordLogger] " + ChatColor.YELLOW
-                + "Your config.yml (schema v" + installed + ") is newer than this build (v"
-                + shipped + "). Settings it doesn't recognise are being ignored.");
-        p.sendMessage(ChatColor.YELLOW + "Update the plugin, or run "
-                + ChatColor.WHITE + "/discordlogger regen" + ChatColor.YELLOW
-                + " to rebuild the config from this build. Your current file is backed up.");
+        p.sendMessage(Lang.chat("chat.config-ahead", "installed", installed, "shipped", shipped));
+        p.sendMessage(Lang.chat("chat.config-ahead-fix"));
     }
 }

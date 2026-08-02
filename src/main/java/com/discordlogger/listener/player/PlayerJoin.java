@@ -1,6 +1,7 @@
 package com.discordlogger.listener.player;
 
 import com.discordlogger.filter.Filters;
+import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.ClientPlatform;
 import com.discordlogger.util.Names;
@@ -25,7 +26,7 @@ public final class PlayerJoin implements Listener {
             Names.capture(e.getPlayer()); // seed/update cache
             final String who = Names.display(e.getPlayer(), plugin);
             final java.util.UUID uuid = e.getPlayer().getUniqueId();
-            final String msg = who + " joined the server";
+            final String msg = Lang.text("discord.player-join", "player", who);
             final String thumb = Log.playerAvatarUrl(uuid);
 
             // Only ever added for Bedrock. Nothing can prove a player IS Java --
