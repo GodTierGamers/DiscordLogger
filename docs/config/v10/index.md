@@ -23,35 +23,69 @@ description: Full documentation for config.yml schema v10 — defaults, per-key 
 ## Top-level keys
 
 ### `webhook`
-**Required.** Discord webhook target for all logs.
+**Required.** Where logs are sent, unless an individual event overrides it.
 
-- `webhook.url` — a Discord webhook URL
-    - Must be a valid Discord endpoint (the plugin verifies formatting).
-    - If empty/invalid, logs **won’t** post to Discord.
-
-**Example:**
 ```yaml
 webhook:
-  url: "https://discord.com/api/webhooks/XXXX/XXXXXXXXXXXXXXXX"
+  url: "https://discord.com/api/webhooks/1234567890/AbCdEf-gH1jK_lMnOpQrStUvWxYz"
 ```
+
+**Getting the URL:** in Discord, right-click the channel → *Edit Channel* →
+*Integrations* → *Webhooks* → *New Webhook* → *Copy Webhook URL*. You need
+**Manage Webhooks** in that channel.
+
+Or set it in game without touching the file at all:
+
+```
+/discordlogger webhook https://discord.com/api/webhooks/1234567890/AbCdEf…
+```
+
+That writes it here and reloads. The URL is never echoed back, and command logging
+redacts it, so running it does not publish the URL to the channel you are moving away
+from.
+
+**If it is empty or malformed**, the plugin still starts and still logs to console — it
+just says so on startup and posts nothing to Discord. It is not a crash, so check the
+console if messages are not arriving.
+
+> Treat the URL like a password. Anyone who has it can post to that channel as your
+> server.
 
 ---
 
 ### `embeds`
-Controls whether logs are sent as **Discord embeds** (recommended) or as plain text, and the embed **author** label.
-
-- `embeds.enabled` — `true` to send rich embeds (defaults to **true** in the v10 shipped file).
-- `embeds.author` — Small label at the top of embeds (default: **"Server Logs"**).
-
-> **Changed in v10:** `embeds.colors` no longer exists. Each event's colour now sits
-> directly under that event, beside its toggle — see [`log`](#log) below. Upgrading from
-> v9 moves your existing colours across automatically.
+Whether logs are sent as rich **embeds** or as plain text lines.
 
 ```yaml
 embeds:
   enabled: true
-  author: "Server Logs"
+  author: "Server Logs"     # small label at the top of every embed
 ```
+
+With `enabled: true` a death arrives as a coloured embed titled **Player Death**, with
+a **Cause of Death** field and the player's head as the thumbnail.
+
+With `enabled: false` the same event is one line of text:
+
+```
+`[14:32:07, 31:07:2026]` - **Player Death**: Lachlan fell from a high place
+```
+
+Plain text is worth choosing if you pipe the channel somewhere else, or find embeds
+noisy at volume. Everything still gets logged either way — only the presentation
+changes.
+
+`embeds.author` is the small label above the title. On a network it is worth setting
+per server so you can tell them apart:
+
+```yaml
+embeds:
+  author: "Survival"        # or "Creative", "Lobby", …
+```
+
+> **Changed in v10:** `embeds.colors` no longer exists. Each event's colour now sits
+> under that event, beside its toggle — see [`log`](#log). Upgrading from v9 moves your
+> existing colours across automatically.
 
 ---
 
@@ -94,95 +128,244 @@ Applied on top of the event toggles: an event that is **enabled** can still be s
 if it matches a filter. This is how you exclude specific things without turning a whole
 category off.
 
-| Key | What it does |
+Each list is independent — use one and leave the rest empty if you like.
+
+#### `filters.ignored_commands`
+Commands that are never logged, whoever runs them.
+
+The match is on the **command word only**, so arguments and any plugin prefix are
+ignored. A single entry of `msg` blocks all three of these:
+
+```
+/msg Steve hello
+/MSG Steve hello
+/essentials:msg Steve hello
+```
+
+Write entries **without** the leading slash:
+
+```yaml
+filters:
+  ignored_commands:
+    - login
+    - register
+    - msg
+    - vanish
+    - co          # CoreProtect inspect spam
+```
+
+> **This list ships non-empty, on purpose.** Command logging posts the line exactly as
+> typed, so `/login hunter2` would publish that password to Discord, and `/msg` would
+> publish private messages. The defaults cover the usual auth and messaging commands.
+> Removing them is a decision, not a tidy-up.
+
+#### `filters.ignored_worlds`
+Worlds whose events are never logged.
+
+Use the world's **folder name**, which is what the server calls it internally — not a
+display name from a plugin. On a default server:
+
+| World | Name to put here |
 |---|---|
-| `filters.ignored_commands` | Commands never logged, matched on the command word. Arguments and a plugin prefix are ignored, so `/essentials:msg hi` matches `msg`. |
-| `filters.ignored_players` | Players never logged. Accepts **names or UUIDs**, mixed freely. |
-| `filters.exempt_permission` | Players holding this permission are never logged. Empty disables the check. |
-| `filters.ignored_worlds` | Worlds whose events are never logged. |
-| `filters.ignored_chat_containing` | Chat messages containing any of these (case-insensitive) are skipped. |
+| Overworld | `world` |
+| Nether | `world_nether` |
+| The End | `world_the_end` |
 
-> **`ignored_commands` ships non-empty, on purpose.** Command logging posts the full
-> line as typed, so `/login` and `/register` would publish passwords in plain text and
-> `/msg` would publish private messages. The defaults cover the common auth and
-> messaging commands. Removing them is a decision, not a tidy-up.
+So to stop logging anything that happens in the Nether:
 
-> **Moderation events are not filtered by player.** `ignored_players` means "this
-> account's own activity isn't logged" — its joins, chat, commands, deaths. A ban or
-> kick is a record of *staff* action, not that player's activity, and hiding it is how
-> an audit trail loses the entries that matter most.
+```yaml
+filters:
+  ignored_worlds:
+    - world_nether
+```
 
-The command match is on the command word only, so a filter cannot be dodged by
-qualifying it: `/msg`, `/MSG` and `/essentials:msg` all match an entry of `msg`.
+**If your server renames or adds worlds** — Multiverse, a custom `level-name`, minigame
+worlds — those names will differ. Two ways to find the real one:
+
+- Look in your server folder. Each world is a directory containing `level.dat`; the
+  directory name is the world name.
+- In game, type `/execute in ` and let it tab-complete — it lists every loaded world by
+  its actual name.
+
+Matching is case-insensitive, so `World_Nether` works as well as `world_nether`.
+
+```yaml
+# A creative plot world, a minigame world, and the End
+filters:
+  ignored_worlds:
+    - creative
+    - bedwars_arena
+    - world_the_end
+```
+
+#### `filters.ignored_players`
+Players whose **own activity** is never logged — their joins, quits, chat, commands and
+deaths.
+
+Accepts **names or UUIDs, mixed freely** in the same list. A UUID keeps working after a
+name change, so prefer it for anything long-lived:
+
+```yaml
+filters:
+  ignored_players:
+    - AdminAlt                                  # by name
+    - ShopBot
+    - 069a79f4-44e9-4726-a5be-fca90e38aaf5      # by UUID
+```
+
+> **Moderation events are not filtered by player.** A ban or a kick is a record of
+> *staff* action, not that player's own activity, so it is still logged even for an
+> ignored account. Otherwise you could silence a bot and then never see it being
+> banned — which is exactly the entry an audit trail exists for.
+
+#### `filters.exempt_permission`
+Any player holding this permission is never logged. Empty — the default — disables the
+check entirely.
+
+Useful when the set of people to exclude changes often, such as staff or anyone
+currently vanished, because you then manage it in your permissions plugin rather than
+by editing this file:
+
+```yaml
+filters:
+  exempt_permission: "discordlogger.exempt"
+```
+
+Grant it however your permissions plugin does. With LuckPerms:
+
+```
+/lp group staff permission set discordlogger.exempt true
+```
+
+Leave it as `""` unless you want this behaviour — a node that something else happens to
+grant would quietly suppress logging for those players.
+
+#### `filters.ignored_chat_containing`
+Chat messages containing any of these are skipped. Case-insensitive **substring** match
+— not whole words, and not a regular expression:
+
+```yaml
+filters:
+  ignored_chat_containing:
+    - "[afk]"
+    - discord.gg        # invite links
+```
+
+Because it matches inside words, keep entries distinctive: an entry of `ass` would also
+skip "password" and "grass".
+
+---
 
 ---
 
 ### `log`
-Each event is a section with two keys: **`enabled`** (whether to log it) and
-**`color`** (the embed colour for that event). v10 supports:
+Every event is a section with the same three keys, plus sub-options on a few:
+
+| Key | What it does |
+|---|---|
+| `enabled` | Whether to log this event at all. |
+| `color` | The embed's colour bar, as hex. |
+| `webhook` | Send **just this event** to a different channel. Empty = the main `webhook.url`. |
+
+The events available:
 
 - `log.player.*` — `join`, `quit`, `chat`, `command`, `death`, `advancement`, `teleport`, `gamemode`
 - `log.server.*` — `command`, `start`, `stop`, `explosion`
 - `log.moderation.*` — `ban`, `unban`, `kick`, `op`, `deop`, `whitelist_toggle`, `whitelist_edit`
 
-**Example (structure):**
+**A minimal example** — log joins, don't log quits:
+
 ```yaml
 log:
   player:
     join:
       enabled: true
       color: "#57F287"
+      webhook: ""
     quit:
-      enabled: false      # this event won't be logged
+      enabled: false           # this event is never sent
       color: "#ED4245"
+      webhook: ""
 ```
 
-Every event also takes a **`webhook`**, which routes just that event to its own
-Discord channel:
+#### `color`
+Hex, with or without the leading `#`. Both of these are the same green:
 
 ```yaml
+      color: "#57F287"
+      color: "57F287"
+```
+
+An unreadable value falls back to the built-in default rather than failing to load, and
+`color` is read whether or not the event is enabled — so turning something off and back
+on keeps the colour you chose.
+
+#### `webhook` — sending one event elsewhere
+The common case is a private staff channel for moderation while everything else goes to
+a public one:
+
+```yaml
+webhook:
+  url: "https://discord.com/api/webhooks/111/PUBLIC"    # everything, by default
+
 log:
   moderation:
     ban:
       enabled: true
       color: "#FF0000"
-      webhook: "https://discord.com/api/webhooks/…"   # private staff channel
+      webhook: "https://discord.com/api/webhooks/222/STAFF"   # …except this
+    kick:
+      enabled: true
+      color: "#FF0000"
+      webhook: "https://discord.com/api/webhooks/222/STAFF"   # …and this
 ```
 
-Leave it empty and the event uses `webhook.url` from the top of the file, which is
-what almost every server wants. A value that isn't a valid Discord webhook URL is
-ignored with a warning in console, and that event falls back to the main webhook
-rather than silently going nowhere.
+Leave it as `""` and the event uses the main webhook, which is what almost every server
+wants. A value that isn't a valid Discord webhook URL is **ignored with a warning in
+console** and that event falls back to the main webhook, rather than silently going
+nowhere.
 
-Each destination is paced independently, because Discord's rate limits are per
-webhook — a busy chat channel will not delay your moderation log.
+Each destination is paced independently, because Discord's rate limits are per webhook
+— a busy chat channel will not delay your moderation log.
 
-Some events carry extra sub-options alongside `enabled`, `color` and `webhook`:
+#### Sub-options
+A few events carry an extra key beside `enabled`, `color` and `webhook`:
 
 | Key | Default | What it does |
 |---|---|---|
 | `log.player.death.show_coords` | `false` | Appends where the player died, as `x, y, z in world`. |
 | `log.player.join.show_platform` | `true` | Adds a **Platform: Bedrock** field when the joining player came from Bedrock. |
 
-> **`show_platform` only ever flags Bedrock.** Nothing can prove a player *is* Java —
-> with Geyser standalone, Bedrock players authenticate as ordinary Java accounts and are
-> indistinguishable even to Floodgate. So the field appears only when something positively
-> indicates Bedrock, and its absence means "no indication", not "definitely Java". On a
-> server without Geyser it never appears at all.
+```yaml
+log:
+  player:
+    death:
+      enabled: true
+      color: "#ED4245"
+      webhook: ""
+      show_coords: true        # "Lachlan died … Coords: 128, 71, -344 in world"
+    join:
+      enabled: true
+      color: "#57F287"
+      webhook: ""
+      show_platform: true
+```
 
 > **`show_coords` is off by default on purpose.** A death message with coordinates tells
 > everyone who can read the channel exactly where the body — and the inventory it
 > dropped — is. That is useful on a private server and a griefing tool on a public one,
 > so it is opt-in rather than something you discover after the fact.
 
-`color` is read whether or not the event is enabled, so turning something off and
-back on keeps the colour you chose. Colours are hex, with or without the leading `#`;
-an unreadable value falls back to the built-in default rather than failing to load.
+> **`show_platform` only ever flags Bedrock.** Nothing can prove a player *is* Java —
+> with Geyser standalone, Bedrock players authenticate as ordinary Java accounts and are
+> indistinguishable even to Floodgate. So the field appears only when something
+> positively indicates Bedrock, and its absence means "no indication", not "definitely
+> Java". On a server without Geyser it never appears at all.
 
 > **Upgrading from v9:** every `log.<group>.<event>: true` becomes
-> `log.<group>.<event>.enabled: true`, and each colour moves from `embeds.colors.*`
-> to its event's `color`. The plugin does this automatically on first start and
-> keeps your previous file as `config.old.yml`.
+> `log.<group>.<event>.enabled: true`, and each colour moves from `embeds.colors.*` to
+> its event's `color`. The plugin does this automatically on first start and keeps your
+> previous file as `config.old.yml`.
 
 ---
 
