@@ -36,14 +36,10 @@
 
 # Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v10/
 
-#############################
-# D O   N O T   E D I T     #
-#############################
+#########################
+# D O   N O T   E D I T #
+#########################
 
-# Identifies which config format this file uses, so the plugin can upgrade it
-# correctly when you update. Changing it will not convert anything -- it only
-# misleads the upgrader. If it goes missing the plugin works it out from the keys
-# below, so deleting it is survivable, just unnecessary.
 config-version: 10
 
 ###################
@@ -74,14 +70,15 @@ embeds:
   enabled: true
   author: "Server Logs" # Can be modified for proxy servers (e.g. Survival, Creative)
 
-####################################################################################
-#                                                                                  #
-#     ___  _  _  _                                                                 #
-#    | __|(_)| || |_  ___  _ _  ___                                                #
-#    | _| | || ||  _|/ -_)| '_|(_-<                                                #
-#    |_|  |_||_| \__|\___||_|  /__/                                                #
-#                                                                                  #
-####################################################################################
+###################################################
+#  ______ _____ _   _______ ______ _____   _____  #
+# |  ____|_   _| | |__   __|  ____|  __ \ / ____| #
+# | |__    | | | |    | |  | |__  | |__) | (___   #
+# |  __|   | | | |    | |  |  __| |  _  / \___ \  #
+# | |     _| |_| |____| |  | |____| | \ \ ____) | #
+# |_|    |_____|______|_|  |______|_|  \_\_____/  #
+#                                                 #
+###################################################
 
 # Filters apply on top of the toggles below: an event that is enabled can still be
 # skipped if it matches something here.
@@ -226,4 +223,5 @@ log:
       enabled: true
       color: "#16A085" # dark teal
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+
 # CONFIG VERSION V10, DOWNLOADED FROM WEBSITE
