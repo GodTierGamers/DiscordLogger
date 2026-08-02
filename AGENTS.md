@@ -63,11 +63,9 @@ To add a new synced location: wrap the value in `<!-- dl:sync:KEY -->` markers (
 
 ## Build & test
 
-**Tests exist and gate CI** (JUnit 5 + surefire; `ci.yml` runs `mvn clean package` with tests on). `mvn test` runs them in ~10s.
+**There are no automated tests.** A JUnit suite covering `ConfigMigrator`, `SchemaDetector`, `Filters`, `Lang` and webhook redaction existed and was removed at the maintainer's request; it is recoverable from git history at `eeaf402`. The JUnit dependency and surefire plugin remain in `pom.xml`, so re-adding tests is a matter of dropping files into `src/test/java`.
 
-They cover `ConfigMigrator` and webhook redaction specifically, because those are the two places a silent bug destroys something the user cannot get back: their settings, or their webhook's secrecy. When touching either, **add the case to the test rather than only checking by hand** — all five suites are written against the genuinely shipped `config.yml` and read the schema number from its trailer, so they keep testing the real thing across schema bumps without edits.
-
-Verified to actually fail: reintroducing bidirectional migration, dropping the v6→v7 step, letting the config writer strip comments, and disabling redaction each break the suite.
+**What this means in practice:** changes to `ConfigMigrator` are the highest-risk edits in the repo and now have no automated guard. It runs exactly once on every existing install, and a mistake there destroys settings the user cannot get back. Verify migrations by hand against a customised config before shipping one.
 
 
 ```bash
