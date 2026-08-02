@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Config Docs — v10
-description: Full documentation for config.yml schema v10 — defaults, per-key explanations, and a downloadable config file.
+description: Full documentation for DiscordLogger's config.yml and lang.yml at schema v10 — every key explained, with downloadable files.
 ---
 
 ![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
@@ -10,9 +10,15 @@ description: Full documentation for config.yml schema v10 — defaults, per-key 
 
 **_Supported Plugin Versions:_ <span data-dl-schema-versions="v10">…</span>**
 
-<div style="margin:1rem 0 1.25rem;">
+<div style="margin:1rem 0 .5rem;">
   <a class="btn" href="/assets/configs/v10/config.yml" download>
     Download v10 config.yml
+  </a>
+</div>
+
+<div style="margin:0 0 1.25rem;">
+  <a class="btn" href="/assets/configs/v10/lang.yml" download>
+    Download v10 lang.yml
   </a>
 </div>
 

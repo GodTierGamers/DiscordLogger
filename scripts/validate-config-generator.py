@@ -327,36 +327,45 @@ def check_java_fallbacks_match_shipped_config() -> list[str]:
 
 
 def check_lang_doc_copy() -> list[str]:
-    """The lang.yml embedded on the docs page must be the shipped file verbatim.
+    """Every copy of lang.yml on the site must be the shipped file verbatim.
 
-    It is a copy, so it drifts the moment someone edits one and not the other — and
-    a docs page showing options that no longer exist is worse than no page.
+    There are two, and they drift independently: the one the docs page embeds, and
+    the one people download. A docs page showing options that no longer exist, or a
+    download that does not match what the plugin ships, is worse than neither.
     """
     shipped = "src/main/resources/lang.yml"
+    if not os.path.exists(shipped):
+        return []
 
     # Follows the live schema rather than naming a version, so this keeps working
     # when v11 arrives instead of silently checking a frozen page.
     schema = shipped_schema()
     if schema is None:
-        return ["could not determine the shipped config schema, so lang.yml's docs copy cannot be checked"]
-    embedded = f"docs/config/{schema}/lang.yml.txt"
-    if not os.path.exists(shipped):
-        return []
-    if not os.path.exists(embedded):
-        return [f"{embedded} is missing; the lang docs page embeds it"]
+        return ["could not determine the shipped config schema, so lang.yml's copies cannot be checked"]
+
+    copies = [
+        f"docs/config/{schema}/lang.yml.txt",
+        f"docs/assets/configs/{schema}/lang.yml",
+    ]
 
     with open(shipped, encoding="utf-8") as f:
-        a = f.read().splitlines()
-    with open(embedded, encoding="utf-8") as f:
-        b = f.read().splitlines()
+        shipped_lines = f.read().splitlines()
 
-    # Each keeps its own trailer: the shipped file carries the release-please marker.
-    if a[:-1] != b[:-1]:
-        return [
-            f"{shipped} and {embedded} have drifted apart. Copy the shipped file over: "
-            f"cp {shipped} {embedded}"
-        ]
-    return []
+    errors = []
+    for copy in copies:
+        if not os.path.exists(copy):
+            errors.append(f"{copy} is missing; the docs page and download both need it")
+            continue
+        with open(copy, encoding="utf-8") as f:
+            copy_lines = f.read().splitlines()
+        # Compare everything except each file's own trailer line, which legitimately
+        # differs -- the shipped one carries the release-please marker.
+        if shipped_lines[:-1] != copy_lines[:-1]:
+            errors.append(
+                f"{shipped} and {copy} have drifted apart. Copy the shipped file over: "
+                f"cp {shipped} {copy}"
+            )
+    return errors
 
 
 def main() -> int:

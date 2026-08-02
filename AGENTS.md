@@ -223,7 +223,16 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 
 That required un-hardcoding the rotation names: they were `config.new.yml` / `config.old.yml`, so a second migrated file would have overwritten the first one's backup. They are now derived from the file being migrated (`lang.yml` → `lang.old.yml`).
 
-**Three copies to keep in step**: the shipped `src/main/resources/lang.yml`, the verbatim embed `docs/config/v<N>/lang.yml.txt` (`validate-config-generator.py` fails on drift, and follows the live schema rather than naming a version), and `LangTest`, which walks every `Lang.*("key")` in the source. `lang.yml` is documented **inside the config docs page**, not on its own — it is part of the same reference.
+**Four copies to keep in step**, and `validate-config-generator.py` checks all of them:
+
+| Copy | Purpose |
+|---|---|
+| `src/main/resources/lang.yml` | What the plugin ships. The source of truth. |
+| `docs/config/v<N>/lang.yml.txt` | Embedded on the docs page. |
+| `docs/assets/configs/v<N>/lang.yml` | The download button. Carries the `DOWNLOADED FROM WEBSITE` trailer, not the release-please marker — the same convention as `config.yml`'s mirror. |
+| `LangTest` | Walks every `Lang.*("key")` in the source. |
+
+The drift check follows the **live schema** rather than naming a version, so it keeps working at v11 instead of silently checking a frozen page. `lang.yml` is documented **inside the config docs page**, not on its own — it is part of the same reference, under the same version.
 
 
 Every message players and Discord readers see. `Lang.chat(key, ...)` renders MiniMessage for in game; `Lang.text(key, ...)` returns plain text for Discord, which renders Markdown and would post a `<green>` tag literally. Two methods rather than one so mixing them up is hard.
