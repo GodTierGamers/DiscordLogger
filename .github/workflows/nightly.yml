@@ -154,12 +154,15 @@ jobs:
           python3 - <<'PY'
           import os, re, datetime
 
-          path = "src/main/resources/config.yml"
+          # Every config file the plugin ships carries the same trailer, so every
+          # one has to be stamped. Missing lang.yml left it claiming the source
+          # version, with the release-please marker still in it, in a file users open.
+          paths = [
+              "src/main/resources/config.yml",
+              "src/main/resources/lang.yml",
+          ]
           new_tag = os.environ["NEW_TAG"]
           built = datetime.datetime.utcnow().strftime("%d-%m-%Y")
-
-          with open(path, "r", encoding="utf-8") as f:
-              text = f.read()
 
           # Consumes any existing BUILT/annotation suffix too, so this stays
           # idempotent if it's ever run more than once against the same checkout.
@@ -171,14 +174,18 @@ jobs:
           def repl(m):
               return f"CONFIG VERSION V{m.group(1)}, SHIPPED WITH {new_tag} BUILT {built}"
 
-          new_text, n = pattern.subn(repl, text, count=1)
-          if n == 0:
-              raise SystemExit("Could not find CONFIG VERSION trailer in " + path)
+          for path in paths:
+              with open(path, "r", encoding="utf-8") as f:
+                  text = f.read()
 
-          with open(path, "w", encoding="utf-8") as f:
-              f.write(new_text)
+              new_text, n = pattern.subn(repl, text, count=1)
+              if n == 0:
+                  raise SystemExit("Could not find CONFIG VERSION trailer in " + path)
 
-          print(f"Stamped {new_tag} BUILT {built} into {path}")
+              with open(path, "w", encoding="utf-8") as f:
+                  f.write(new_text)
+
+              print(f"Stamped {new_tag} BUILT {built} into {path}")
           PY
 
       - name: Build

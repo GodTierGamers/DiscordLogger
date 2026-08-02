@@ -71,17 +71,20 @@ jobs:
           java-version: ${{ steps.javaver.outputs.version }}
           cache: maven
 
-      - name: Stamp build date into config.yml trailer
+      - name: Stamp build date into the config trailers
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import re, datetime
 
-          path = "src/main/resources/config.yml"
+          # Every config file the plugin ships carries the same trailer, so every
+          # one has to be stamped. Missing lang.yml left it claiming the source
+          # version, with the release-please marker still in it, in a file users open.
+          paths = [
+              "src/main/resources/config.yml",
+              "src/main/resources/lang.yml",
+          ]
           built = datetime.datetime.utcnow().strftime("%d-%m-%Y")
-
-          with open(path, "r", encoding="utf-8") as f:
-              text = f.read()
 
           # Trailer already contains the correct released version (release-please
           # rewrote it in the merged Release PR) -- we only append the build date.
@@ -95,14 +98,18 @@ jobs:
           def repl(m):
               return f"{m.group(1)} BUILT {built}"
 
-          new_text, n = pattern.subn(repl, text, count=1)
-          if n == 0:
-              raise SystemExit("Could not find CONFIG VERSION trailer in " + path)
+          for path in paths:
+              with open(path, "r", encoding="utf-8") as f:
+                  text = f.read()
 
-          with open(path, "w", encoding="utf-8") as f:
-              f.write(new_text)
+              new_text, n = pattern.subn(repl, text, count=1)
+              if n == 0:
+                  raise SystemExit("Could not find CONFIG VERSION trailer in " + path)
 
-          print(f"Stamped build date {built} into {path}")
+              with open(path, "w", encoding="utf-8") as f:
+                  f.write(new_text)
+
+              print(f"Stamped build date {built} into {path}")
           PY
 
       - name: Build (skip tests for speed)

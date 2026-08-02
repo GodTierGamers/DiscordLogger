@@ -217,6 +217,8 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 
 ### `lang.yml`
 
+**Every config file must be stamped and bumped.** Three places know about the trailer, and all three take a list, not a single path: `release-please-config.json`'s `extra-files` (bumps `SHIPPED WITH` when a release is cut), `nightly.yml` (stamps the beta tag and build date), and `release-please.yml`'s `build-artifact` (appends the build date). Adding a config file and forgetting one leaves it claiming an old version with the `(x-release-please-version)` marker still in it — in a file users open. That happened to `lang.yml` and was caught only by inspecting a nightly artifact.
+
 **The config version is global.** `lang.yml` carries the same `config-version` and the same `CONFIG VERSION V<n>` trailer as `config.yml` — every config file this plugin ships moves as one, so there is never a combination of versions to reason about. `Lang.reload` runs it through `ConfigMigrator.migrateIfVersionChanged`, which is file-agnostic.
 
 That required un-hardcoding the rotation names: they were `config.new.yml` / `config.old.yml`, so a second migrated file would have overwritten the first one's backup. They are now derived from the file being migrated (`lang.yml` → `lang.old.yml`).
