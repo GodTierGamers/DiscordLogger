@@ -219,7 +219,11 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 
 ### `lang.yml`
 
-**Four copies to keep in step**, same hazard as the config dictionary: the shipped `src/main/resources/lang.yml`, the docs embed `docs/lang/lang.yml.txt` (a verbatim copy — `validate-config-generator.py` fails if they drift), the prose on `docs/lang/index.md`, and `LangTest`, which walks every `Lang.*("key")` in the source. The lang version comes from the file's own trailer via `sync-versions.py` into `versions.yml`, so the docs page never hardcodes it.
+**The config version is global.** `lang.yml` carries the same `config-version` and the same `CONFIG VERSION V<n>` trailer as `config.yml` — every config file this plugin ships moves as one, so there is never a combination of versions to reason about. `Lang.reload` runs it through `ConfigMigrator.migrateIfVersionChanged`, which is file-agnostic.
+
+That required un-hardcoding the rotation names: they were `config.new.yml` / `config.old.yml`, so a second migrated file would have overwritten the first one's backup. They are now derived from the file being migrated (`lang.yml` → `lang.old.yml`).
+
+**Three copies to keep in step**: the shipped `src/main/resources/lang.yml`, the verbatim embed `docs/config/v<N>/lang.yml.txt` (`validate-config-generator.py` fails on drift, and follows the live schema rather than naming a version), and `LangTest`, which walks every `Lang.*("key")` in the source. `lang.yml` is documented **inside the config docs page**, not on its own — it is part of the same reference.
 
 
 Every message players and Discord readers see. `Lang.chat(key, ...)` renders MiniMessage for in game; `Lang.text(key, ...)` returns plain text for Discord, which renders Markdown and would post a `<green>` tag literally. Two methods rather than one so mixing them up is hard.

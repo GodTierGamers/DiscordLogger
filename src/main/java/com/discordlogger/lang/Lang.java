@@ -2,6 +2,7 @@ package com.discordlogger.lang;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import com.discordlogger.config.ConfigMigrator;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -23,6 +24,10 @@ import java.util.Map;
  *       not MiniMessage, so a {@code <green>} tag there would be posted literally.
  *       Keeping the two methods separate makes that hard to get wrong.</li>
  * </ul>
+ *
+ * <p>Versioned with {@code config.yml} rather than separately: all of this plugin's
+ * config files carry one shared version and are upgraded together, so there is never a
+ * combination of versions to reason about.
  *
  * <p>Console messages are deliberately absent. They are diagnostics, and a translated
  * error is one nobody can search for — support threads and search results depend on
@@ -73,6 +78,12 @@ public final class Lang {
         if (!file.exists()) {
             plugin.saveResource("lang.yml", false);
         }
+
+        // Shares config.yml's version, so it upgrades on the same schedule and
+        // through the same code. ConfigMigrator is file-agnostic: it reads the
+        // default from the jar and the user's copy from disk, whichever they are.
+        ConfigMigrator.migrateIfVersionChanged(plugin, "lang.yml", file);
+
         lang = YamlConfiguration.loadConfiguration(file);
     }
 

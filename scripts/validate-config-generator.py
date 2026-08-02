@@ -333,7 +333,13 @@ def check_lang_doc_copy() -> list[str]:
     a docs page showing options that no longer exist is worse than no page.
     """
     shipped = "src/main/resources/lang.yml"
-    embedded = "docs/lang/lang.yml.txt"
+
+    # Follows the live schema rather than naming a version, so this keeps working
+    # when v11 arrives instead of silently checking a frozen page.
+    schema = shipped_schema()
+    if schema is None:
+        return ["could not determine the shipped config schema, so lang.yml's docs copy cannot be checked"]
+    embedded = f"docs/config/{schema}/lang.yml.txt"
     if not os.path.exists(shipped):
         return []
     if not os.path.exists(embedded):
