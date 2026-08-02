@@ -34,6 +34,7 @@ from pathlib import Path
 
 POM = Path("pom.xml")
 SHIPPED_CONFIG = Path("src/main/resources/config.yml")
+SHIPPED_LANG = Path("src/main/resources/lang.yml")
 DATA = Path("docs/_data/versions.yml")
 
 # Prose/badges are rewritten between markers so the surrounding wording stays editable:
@@ -70,6 +71,13 @@ def pom_values() -> dict[str, str]:
     if not vm:
         sys.exit("pom.xml: could not read the project <version>")
 
+    # The lang format the plugin currently ships, from lang.yml's trailer.
+    lang_version = ""
+    if SHIPPED_LANG.exists():
+        lm = re.search(r"LANG\s+VERSION\s+V(\d+)", SHIPPED_LANG.read_text(encoding="utf-8"), re.I)
+        if lm:
+            lang_version = "V" + lm.group(1)
+
     # The config schema the plugin currently ships, from config.yml's trailer.
     # Docs examples show it, and it moves on its own schedule (see AGENTS.md).
     schema = ""
@@ -82,6 +90,7 @@ def pom_values() -> dict[str, str]:
     return {
         "plugin": vm.group(1).strip(),
         "schema": schema,
+        "lang": lang_version,
         "java": prop("maven.compiler.release"),
         "paper_api": prop("paper.api.version"),
         "min_paper": prop("dl.api.version"),
@@ -96,6 +105,7 @@ def write_data_file(v: dict[str, str]) -> bool:
         "# Docs pages reference these as {{ site.data.versions.<key> }}.\n"
         f"plugin: \"{v['plugin']}\"\n"
         f"schema: \"{v['schema']}\"\n"
+        f"lang: \"{v['lang']}\"\n"
         f"java: \"{v['java']}\"\n"
         f"min_paper: \"{v['min_paper']}\"\n"
         f"paper_display: \"{v['paper_display']}\"\n"

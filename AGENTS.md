@@ -219,6 +219,9 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 
 ### `lang.yml`
 
+**Four copies to keep in step**, same hazard as the config dictionary: the shipped `src/main/resources/lang.yml`, the docs embed `docs/lang/lang.yml.txt` (a verbatim copy — `validate-config-generator.py` fails if they drift), the prose on `docs/lang/index.md`, and `LangTest`, which walks every `Lang.*("key")` in the source. The lang version comes from the file's own trailer via `sync-versions.py` into `versions.yml`, so the docs page never hardcodes it.
+
+
 Every message players and Discord readers see. `Lang.chat(key, ...)` renders MiniMessage for in game; `Lang.text(key, ...)` returns plain text for Discord, which renders Markdown and would post a `<green>` tag literally. Two methods rather than one so mixing them up is hard.
 
 **Console messages are deliberately NOT in lang.yml.** They are diagnostics, and a translated error is one nobody can search for — support threads and search results depend on the English text staying put.

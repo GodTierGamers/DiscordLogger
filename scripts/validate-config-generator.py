@@ -326,6 +326,33 @@ def check_java_fallbacks_match_shipped_config() -> list[str]:
     return errors
 
 
+def check_lang_doc_copy() -> list[str]:
+    """The lang.yml embedded on the docs page must be the shipped file verbatim.
+
+    It is a copy, so it drifts the moment someone edits one and not the other — and
+    a docs page showing options that no longer exist is worse than no page.
+    """
+    shipped = "src/main/resources/lang.yml"
+    embedded = "docs/lang/lang.yml.txt"
+    if not os.path.exists(shipped):
+        return []
+    if not os.path.exists(embedded):
+        return [f"{embedded} is missing; the lang docs page embeds it"]
+
+    with open(shipped, encoding="utf-8") as f:
+        a = f.read().splitlines()
+    with open(embedded, encoding="utf-8") as f:
+        b = f.read().splitlines()
+
+    # Each keeps its own trailer: the shipped file carries the release-please marker.
+    if a[:-1] != b[:-1]:
+        return [
+            f"{shipped} and {embedded} have drifted apart. Copy the shipped file over: "
+            f"cp {shipped} {embedded}"
+        ]
+    return []
+
+
 def main() -> int:
     all_errors = []
     live = shipped_schema()
@@ -335,6 +362,7 @@ def main() -> int:
     all_errors.extend(check_shipped_config_matches_mirror())
     all_errors.extend(check_doc_page_embedded_configs())
     all_errors.extend(check_java_fallbacks_match_shipped_config())
+    all_errors.extend(check_lang_doc_copy())
 
     if all_errors:
         for e in all_errors:
