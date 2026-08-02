@@ -252,7 +252,8 @@ public final class ConfigMigrator {
                 }
                 defaultText = new String(in.readAllBytes(), StandardCharsets.UTF_8);
             }
-            final Integer newVer = extractVersion(defaultText);
+            final Map<String, Object> defFlat = flattenYaml(new Yaml().load(defaultText));
+            final Integer newVer = detectVersion(defaultText, defFlat, m -> {});
 
             // If user file missing → write default and return (fresh install; no migration)
             if (!userFile.exists()) {
@@ -264,7 +265,14 @@ public final class ConfigMigrator {
 
             // Read user's current config (verbatim)
             final String userText = Files.readString(userFile.toPath(), StandardCharsets.UTF_8);
-            final Integer oldVer = extractVersion(userText);
+            Map<String, Object> userFlat;
+            try {
+                userFlat = flattenYaml(new Yaml().load(userText));
+            } catch (Exception malformed) {
+                plugin.getLogger().warning("config.yml could not be parsed: " + malformed.getMessage());
+                userFlat = new LinkedHashMap<>();
+            }
+            final Integer oldVer = detectVersion(userText, userFlat, plugin.getLogger()::warning);
 
             // Migrate ONLY forward. A config newer than this build is left exactly as
             // it is: rewriting it against an older shipped default would drop whatever
@@ -324,6 +332,11 @@ public final class ConfigMigrator {
      * @return the path in the target schema, or null if the key is genuinely gone
      */
     static String resolvePath(String path, Map<String, Object> defMap, int from, int to) {
+        // Never carried over. The freshly written file already declares the schema it
+        // is; transplanting the user's old number would label a v10 file as v9 and
+        // make the next start try to migrate it again.
+        if ("config-version".equals(path)) return null;
+
         String current = path;
         for (int v = from; v < to; v++) {
             current = step(v, current);
@@ -524,6 +537,57 @@ public final class ConfigMigrator {
 
     private static int leadingSpaces(String s) {
         int i = 0; while (i < s.length() && s.charAt(i) == ' ') i++; return i;
+    }
+
+    /**
+     * The schema a config file actually is.
+     *
+     * <p>Three sources, in decreasing durability:
+     *
+     * <ol>
+     *   <li><b>Its shape</b> — which keys exist. Cannot be wrong, because it is not a
+     *       claim about the file, it <i>is</i> the file. Used as the arbiter.</li>
+     *   <li>The <b>{@code config-version} key</b>. Survives comment stripping and sits
+     *       at the top of the file rather than the bottom, so it is far harder to
+     *       lose by accident than the trailer it replaces.</li>
+     *   <li>The <b>trailer comment</b>. Kept because every v9-and-earlier config in
+     *       existence has one and no key, so it is the only marker on the files that
+     *       most need upgrading.</li>
+     * </ol>
+     *
+     * <p>When a declaration disagrees with the shape, the shape wins and the mismatch
+     * is reported. The realistic cause is someone pasting an older config over a newer
+     * one, or hand-editing the number; in both cases the keys are what the plugin has
+     * to read, so they are what migration must be based on.
+     */
+    static Integer detectVersion(String text, Map<String, Object> flat, java.util.function.Consumer<String> warn) {
+        final Integer declared = declaredVersion(text, flat);
+        final int inferred = SchemaDetector.infer(flat);
+
+        if (inferred == SchemaDetector.UNKNOWN) return declared;
+        if (declared == null) return inferred;
+
+        if (declared != inferred) {
+            warn.accept("config.yml says it is schema v" + declared + ", but its keys are v"
+                    + inferred + ". Going with v" + inferred + " — the keys are what the plugin "
+                    + "actually reads. This usually means an older config was pasted over a "
+                    + "newer one, or the version was edited by hand.");
+        }
+        return inferred;
+    }
+
+    /** The version the file claims: the config-version key first, else the trailer. */
+    private static Integer declaredVersion(String text, Map<String, Object> flat) {
+        final Object key = flat == null ? null : flat.get("config-version");
+        if (key instanceof Number n) return n.intValue();
+        if (key instanceof String str) {
+            try {
+                return Integer.parseInt(str.trim());
+            } catch (NumberFormatException ignored) {
+                // Falls through to the trailer.
+            }
+        }
+        return extractVersion(text);
     }
 
     static Integer extractVersion(String text) {

@@ -74,6 +74,21 @@ format:
 
 ---
 
+### `config-version`
+Identifies which config format the file uses, so the plugin can upgrade it correctly.
+
+- **Do not change it.** Editing the number does not convert anything; it only misleads
+  the upgrader into running the wrong migration, or none.
+- **Deleting it is survivable.** If it is missing the plugin works the schema out from
+  which keys the file contains, and says so in console. It replaces a comment on the
+  last line, which was too easy to lose to a stray edit or an editor that strips
+  comments.
+- If the number and the file's actual keys disagree, the **keys win** — they are what
+  the plugin reads — and the mismatch is logged. The usual cause is an older config
+  pasted over a newer one.
+
+---
+
 ### `filters`
 Applied on top of the event toggles: an event that is **enabled** can still be skipped
 if it matches a filter. This is how you exclude specific things without turning a whole
@@ -248,6 +263,16 @@ The defaults shipped with v10. Each is set under its own event's `color` key:
 #############################
 
 # Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v10/
+
+#############################
+# D O   N O T   E D I T     #
+#############################
+
+# Identifies which config format this file uses, so the plugin can upgrade it
+# correctly when you update. Changing it will not convert anything -- it only
+# misleads the upgrader. If it goes missing the plugin works it out from the keys
+# below, so deleting it is survivable, just unnecessary.
+config-version: 10
 
 ###################
 # WEBHOOK OPTIONS #

@@ -482,6 +482,18 @@ The validator checks each `extras` entry the same way as `configKey`: the templa
 
 Phases 1–3 touch three different files that all look like "the config". They are not interchangeable — see *Config file dictionary* above for the full breakdown, and check all four before claiming a schema change is done.
 
+### How a config's schema is identified
+
+Three sources, in decreasing durability, resolved by `ConfigMigrator.detectVersion`:
+
+1. **Its shape** — which keys exist (`SchemaDetector.infer`). The arbiter. A file's schema is not a claim it makes, it is what the file *is*; a config declaring v10 while lacking every v10 key is a v9 file with a bad label.
+2. **The `config-version` key** at the top of the file. Replaced a comment on the *last* line, which was the least durable thing in a config — editors strip comments, formatters move them, and tidying the end of a file removes one without anyone noticing. When it vanished, migration was skipped and every option silently fell back to its default.
+3. **The trailer comment**. Retained because every v9-and-earlier config in existence has one and no key — the files that most need upgrading are exactly the ones with only this.
+
+On disagreement the **shape wins** and the mismatch is logged. `config-version` is excluded from the transplant in `resolvePath`: the newly written file already declares its own schema, and copying the old number forward would relabel a v10 file as v9 and make the next start migrate it again.
+
+Each version's marker is the first key that appeared in it, so deleting an unrelated option cannot drop a file a version. **v4 and v5 have identical key sets** and are genuinely indistinguishable; reporting the newer is safe because nothing changed between them.
+
 ### Config version enforcement (plugin side)
 
 `ConfigMigrator` compares the trailer in the user's `config.yml` against the one baked into the running JAR and returns a `Result(status, installed, shipped)`. The decision is `ConfigMigrator.decide(installed, shipped)`, deliberately split out as a pure function so it can be tested without a running server:
