@@ -217,6 +217,32 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 - `dispatch()` hands off to `WebhookQueue` and returns immediately — callers may be on the main thread and must never block on HTTP.
 - `post()` performs one request and **returns a `Response`** (status + rate-limit headers) rather than logging; the queue owns retry/wait/give-up decisions.
 
+### `lang.yml`
+
+**The config version is global.** `lang.yml` carries the same `config-version` and the same `CONFIG VERSION V<n>` trailer as `config.yml` — every config file this plugin ships moves as one, so there is never a combination of versions to reason about. `Lang.reload` runs it through `ConfigMigrator.migrateIfVersionChanged`, which is file-agnostic.
+
+That required un-hardcoding the rotation names: they were `config.new.yml` / `config.old.yml`, so a second migrated file would have overwritten the first one's backup. They are now derived from the file being migrated (`lang.yml` → `lang.old.yml`).
+
+**Four copies to keep in step**, and `validate-config-generator.py` checks all of them:
+
+| Copy | Purpose |
+|---|---|
+| `src/main/resources/lang.yml` | What the plugin ships. The source of truth. |
+| `docs/config/v<N>/lang.yml.txt` | Embedded on the docs page. |
+| `docs/assets/configs/v<N>/lang.yml` | The download button. Carries the `DOWNLOADED FROM WEBSITE` trailer, not the release-please marker — the same convention as `config.yml`'s mirror. |
+| `LangTest` | Walks every `Lang.*("key")` in the source. |
+
+The drift check follows the **live schema** rather than naming a version, so it keeps working at v11 instead of silently checking a frozen page. `lang.yml` is documented **inside the config docs page**, not on its own — it is part of the same reference, under the same version.
+
+
+Every message players and Discord readers see. `Lang.chat(key, ...)` renders MiniMessage for in game; `Lang.text(key, ...)` returns plain text for Discord, which renders Markdown and would post a `<green>` tag literally. Two methods rather than one so mixing them up is hard.
+
+**Console messages are deliberately NOT in lang.yml.** They are diagnostics, and a translated error is one nobody can search for — support threads and search results depend on the English text staying put.
+
+The shipped English is loaded from the jar at class-load, not in `reload`, so messages still resolve before the first load and act as a fallback for a `lang.yml` predating a new key. A missing key returns the key itself: a blank message looks like the plugin failing silently, whereas `chat.reload-ok` appearing in game names the entry to fix.
+
+Death causes are keyed by the enum name lowercased with hyphens (`FIRE_TICK` → `fire-tick`), so the switch that used to hold 33 strings is now a lookup. `LangTest` walks every `DamageCause` and every `Lang.*("key")` in the source: moving strings into a file removes the compiler as a safety net, so the test is what replaces it.
+
 ### Log filtering (`filters:`)
 
 Applied in the **listener**, not in `Log` — that is where the player, world and raw command still exist; by the time a message reaches `Log` it is rendered prose. `Filters` holds an immutable snapshot swapped atomically on reload, and `applyRuntimeConfig` reloads it *before* `Log.init` so a reload cannot briefly log something the new config filters.

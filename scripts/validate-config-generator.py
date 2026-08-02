@@ -326,6 +326,48 @@ def check_java_fallbacks_match_shipped_config() -> list[str]:
     return errors
 
 
+def check_lang_doc_copy() -> list[str]:
+    """Every copy of lang.yml on the site must be the shipped file verbatim.
+
+    There are two, and they drift independently: the one the docs page embeds, and
+    the one people download. A docs page showing options that no longer exist, or a
+    download that does not match what the plugin ships, is worse than neither.
+    """
+    shipped = "src/main/resources/lang.yml"
+    if not os.path.exists(shipped):
+        return []
+
+    # Follows the live schema rather than naming a version, so this keeps working
+    # when v11 arrives instead of silently checking a frozen page.
+    schema = shipped_schema()
+    if schema is None:
+        return ["could not determine the shipped config schema, so lang.yml's copies cannot be checked"]
+
+    copies = [
+        f"docs/config/{schema}/lang.yml.txt",
+        f"docs/assets/configs/{schema}/lang.yml",
+    ]
+
+    with open(shipped, encoding="utf-8") as f:
+        shipped_lines = f.read().splitlines()
+
+    errors = []
+    for copy in copies:
+        if not os.path.exists(copy):
+            errors.append(f"{copy} is missing; the docs page and download both need it")
+            continue
+        with open(copy, encoding="utf-8") as f:
+            copy_lines = f.read().splitlines()
+        # Compare everything except each file's own trailer line, which legitimately
+        # differs -- the shipped one carries the release-please marker.
+        if shipped_lines[:-1] != copy_lines[:-1]:
+            errors.append(
+                f"{shipped} and {copy} have drifted apart. Copy the shipped file over: "
+                f"cp {shipped} {copy}"
+            )
+    return errors
+
+
 def main() -> int:
     all_errors = []
     live = shipped_schema()
@@ -335,6 +377,7 @@ def main() -> int:
     all_errors.extend(check_shipped_config_matches_mirror())
     all_errors.extend(check_doc_page_embedded_configs())
     all_errors.extend(check_java_fallbacks_match_shipped_config())
+    all_errors.extend(check_lang_doc_copy())
 
     if all_errors:
         for e in all_errors:

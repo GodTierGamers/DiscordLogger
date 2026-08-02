@@ -1,0 +1,350 @@
+####################################################################################################################################
+#                                                                                                                                  #
+#    /$$$$$$$  /$$                                               /$$ /$$                                                           #
+#   | $$__  $$|__/                                              | $$| $$                                                           #
+#   | $$  \ $$ /$$  /$$$$$$$  /$$$$$$$  /$$$$$$   /$$$$$$   /$$$$$$$| $$        /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$    #
+#   | $$  | $$| $$ /$$_____/ /$$_____/ /$$__  $$ /$$__  $$ /$$__  $$| $$       /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$   #
+#   | $$  | $$| $$|  $$$$$$ | $$      | $$  \ $$| $$  \__/| $$  | $$| $$      | $$  \ $$| $$  \ $$| $$  \ $$| $$$$$$$$| $$  \__/   #
+#   | $$  | $$| $$ \____  $$| $$      | $$  | $$| $$      | $$  | $$| $$      | $$  | $$| $$  | $$| $$  | $$| $$_____/| $$         #
+#   | $$$$$$$/| $$ /$$$$$$$/|  $$$$$$$|  $$$$$$/| $$      |  $$$$$$$| $$$$$$$$|  $$$$$$/|  $$$$$$$|  $$$$$$$|  $$$$$$$| $$         #
+#   |_______/ |__/|_______/  \_______/ \______/ |__/       \_______/|________/ \______/  \____  $$ \____  $$ \_______/|__/         #
+#                                                                                     /$$  \ $$ /$$  \ $$                          #
+#                                                                                    |  $$$$$$/|  $$$$$$/                          #
+#                                                                                     \______/  \______/                           #
+#                                                                                                                                  #
+####################################################################################################################################
+
+#######################################################################################
+#                                                                                     #
+#    _____              __ _         _____                           _                #
+#   /  __ \            / _(_)       |  __ \                         | |               #
+#   | /  \/ ___  _ __ | |_ _  __ _  | |  \/ ___ _ __   ___ _ __ __ _| |_ ___  _ __    #
+#   | |    / _ \| '_ \|  _| |/ _` | | | __ / _ \ '_ \ / _ \ '__/ _` | __/ _ \| '__|   #
+#   | \__/\ (_) | | | | | | | (_| | | |_\ \  __/ | | |  __/ | | (_| | || (_) | |      #
+#    \____/\___/|_| |_|_| |_|\__, |  \____/\___|_| |_|\___|_|  \__,_|\__\___/|_|      #
+#                             __/ |                                                   #
+#                            |___/                                                    #
+#                                                                                     #
+#######################################################################################
+
+# If you don't feel like configuring yourself, try out our config generator, simply select your plugin version and configure easily
+# https://discordlogger.godtiergamers.xyz/generator/
+
+#############################
+# D O C U M E N T A T I O N #
+#############################
+
+# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v10/
+
+#########################
+# D O   N O T   E D I T #
+#########################
+
+# Set automatically.
+config-version: 10
+
+#####################################################
+#                                                   #
+#   _                                               #
+#  | |    __ _ _ __   __ _ _   _  __ _  __ _  ___   #
+#  | |   / _` | '_ \ / _` | | | |/ _` |/ _` |/ _ \  #
+#  | |__| (_| | | | | (_| | |_| | (_| | (_| |  __/  #
+#  |_____\__,_|_| |_|\__, |\__,_|\__,_|\__, |\___|  #
+#                    |___/             |___/        #
+#                                                   #
+#####################################################
+
+# Every message this plugin shows you, in one place. Change any of them and run
+#   /discordlogger reload
+# The plugin does not need restarting.
+#
+# ---------------------------------------------------------------------------
+# THE TWO SECTIONS ARE NOT INTERCHANGEABLE
+# ---------------------------------------------------------------------------
+#
+#   chat:     shown IN GAME. Uses MiniMessage for colour and formatting.
+#   discord:  posted TO DISCORD. Plain text only.
+#
+# Discord renders Markdown, not MiniMessage. A <green> tag in the discord
+# section is posted to your channel as the literal characters "<green>", so
+# keep formatting tags out of it. Discord's own Markdown does work there:
+# **bold**, *italic*, `code`, ~~strikethrough~~.
+#
+# ---------------------------------------------------------------------------
+# MINIMESSAGE, IN 30 SECONDS
+# ---------------------------------------------------------------------------
+#
+#   <red>text</red>            colour   (also: green, blue, yellow, gold,
+#                                        aqua, gray, dark_gray, white, black,
+#                                        dark_red, dark_green, dark_aqua,
+#                                        dark_blue, dark_purple, light_purple)
+#   <#ff8800>text</#ff8800>    any hex colour
+#   <bold>text</bold>          also <italic>, <underlined>, <strikethrough>
+#   <gradient:red:blue>text</gradient>
+#   <click:open_url:'https://example.com'>text</click>
+#   <hover:show_text:'Tooltip'>text</hover>
+#
+# Full reference: https://docs.advntr.dev/minimessage/format.html
+#
+# A tag you spell wrong is NOT an error -- it is shown to the player exactly as
+# typed. If you see "<gren>" in game, that is the tag, not a bug.
+#
+# ---------------------------------------------------------------------------
+# PLACEHOLDERS
+# ---------------------------------------------------------------------------
+#
+# Placeholders look like {player} and are replaced before the message is sent.
+# Each message below lists the ones it accepts, and they are NOT interchangeable
+# between messages -- {player} only works where the plugin has a player to put
+# there.
+#
+# A placeholder you spell wrong is left in the message rather than blanked, so
+# a typo shows up as "{palyer} joined the server" instead of a sentence with a
+# hole in it. That is deliberate: a visible mistake is a fixable one.
+#
+# You can also delete a placeholder entirely if you do not want that detail.
+#   player-join: "{player} joined"        ->  "Steve joined"
+#   player-join: "Someone joined"         ->  "Someone joined"
+#
+# ---------------------------------------------------------------------------
+# IF YOU BREAK SOMETHING
+# ---------------------------------------------------------------------------
+#
+# * Deleted a message?      The plugin falls back to the English shipped inside
+#                           the jar. Nothing breaks.
+# * Deleted a whole key?    You will see the key name itself, e.g.
+#                           "chat.reload-ok". That names exactly what to fix.
+# * Deleted the whole file? It is written again on the next start.
+# * Broken the YAML?        The plugin logs the parse error on start and falls
+#                           back to English. Check indentation first -- it must
+#                           be spaces, never tabs.
+#
+# Console messages are deliberately NOT in this file. They stay in English so
+# that searching an error, or pasting it into a support thread, still matches
+# what everyone else sees.
+#
+##############################################################################
+
+chat:
+
+  # Put in front of the messages that use a prefix. Set to "" to remove it.
+  prefix: "<gold>[DiscordLogger]</gold> "
+
+  # ---------------------------------------------------------------- /reload --
+
+  # Placeholders: {ms} -- how long the reload took, in milliseconds
+  reload-ok: "<green>DiscordLogger configuration reloaded ({ms} ms).</green>"
+
+  # Shown when the config loaded but webhook.url is empty or malformed.
+  reload-no-webhook: "<red>Config reloaded, but webhook.url is missing or invalid.</red>"
+  reload-no-webhook-hint: "<red>Set a valid Discord webhook URL and try again.</red>"
+
+  # Shown when reloading detected a config from a NEWER plugin version.
+  # Placeholders: {installed} -- the schema in config.yml
+  #               {shipped}   -- the schema this build understands
+  reload-config-ahead: "<red>Your config.yml (schema v{installed}) is newer than this build (v{shipped}). Keys it does not recognise are ignored.</red>"
+  reload-config-ahead-fix: "<red>Update the plugin, or run <white>/discordlogger regen</white> to start fresh.</red>"
+
+  # Shown when reloading upgraded the config from an older schema.
+  # Placeholders: {from}, {to}
+  reload-config-upgraded: "<green>config.yml upgraded from schema v{from} to v{to} (previous file saved as config.old.yml).</green>"
+
+  # --------------------------------------------------------------- /webhook --
+
+  # Shown when the command is run with no URL.
+  webhook-usage: "<yellow>Usage: <white>/discordlogger webhook <url></white></yellow>"
+  webhook-where: "<gray>Create one in Discord under Channel Settings > Integrations > Webhooks.</gray>"
+  # Shown only to players, not from console -- a reminder that the URL is a secret.
+  webhook-private: "<gray>Anyone who sees the URL can post to that channel, so avoid typing it on a shared screen. It is never shown back to you.</gray>"
+
+  # Shown when the URL is not a Discord webhook.
+  webhook-invalid: "<red>That does not look like a Discord webhook URL.</red>"
+  webhook-expected: "<gray>Expected: https://discord.com/api/webhooks/<id>/<token></gray>"
+
+  # Success. Placeholders: {channel} -- the channel id from the URL.
+  # The full URL is never shown back, on purpose: it is a credential, and this
+  # message may be on someone's screen or stream.
+  webhook-set: "<green>Webhook set and reloaded - logging to channel {channel}.</green>"
+
+  webhook-write-failed: "<red>Could not write webhook.url to config.yml. Check the file exists and is writable.</red>"
+  webhook-rejected: "<red>Saved, but the plugin did not accept it. Check config.yml and the console.</red>"
+
+  # ----------------------------------------------------------------- /regen --
+
+  # Shown when /discordlogger regen is run without "confirm".
+  regen-warning: "<yellow>This replaces config.yml with the default from this build. Your current file is backed up, but your settings are NOT carried over.</yellow>"
+  regen-confirm: "<yellow>Run <white>/discordlogger regen confirm</white> to go ahead.</yellow>"
+
+  # Placeholders: {schema} -- the config schema that was written, e.g. "v10"
+  regen-done: "<green>config.yml rebuilt at schema {schema}.</green>"
+  # Placeholders: {file} -- the backup filename
+  regen-backup: "<gray>Previous file saved as {file}</gray>"
+  regen-no-webhook: "<red>The new config has no webhook URL yet - set webhook.url, then run /discordlogger reload.</red>"
+
+  regen-no-bundled: "<red>This build has no bundled config.yml to restore from.</red>"
+  # Placeholders: {error}
+  regen-read-failed: "<red>Could not read the bundled config.yml: {error}</red>"
+  regen-write-failed: "<red>Could not rewrite config.yml: {error}</red>"
+
+  # ------------------------------------------------------- command handling --
+
+  help-header: "<aqua>DiscordLogger Commands:</aqua>"
+  # One line per subcommand.
+  # Placeholders: {label} -- the command as typed (discordlogger, dlog, dlogger)
+  #               {command}, {description}
+  help-entry: "<gray>  /{label} {command}<dark_gray> - <white>{description}"
+
+  # Placeholders: {input} -- what they actually typed
+  unknown-subcommand: "<red>Unknown subcommand: {input}</red>"
+  # Placeholders: {label}, {command}
+  no-permission: "<red>You do not have permission to use /{label} {command}</red>"
+
+  # ------------------------------------------------------------- on joining --
+
+  # Shown to OPS when config.yml is newer than this build understands.
+  # Placeholders: {installed}, {shipped}
+  config-ahead: "<gold>[DiscordLogger]</gold> <yellow>Your config.yml (schema v{installed}) is newer than this build (v{shipped}). Settings it does not recognise are being ignored.</yellow>"
+  config-ahead-fix: "<yellow>Update the plugin, or run <white>/discordlogger regen</white> to rebuild the config from this build. Your current file is backed up.</yellow>"
+
+  # Shown to OPS once per nightly build. Never appears on a stable release.
+  nightly-notice: "<gold>[DiscordLogger]</gold> <yellow>This is a nightly build - it may be unstable. Upgrade often: <white>https://discordlogger.godtiergamers.xyz</white></yellow>"
+
+
+##############################################################################
+# DISCORD -- plain text. No MiniMessage tags; Discord Markdown works.        #
+##############################################################################
+
+discord:
+
+  # Placeholders: {player} -- their display name, or nickname if enabled
+  player-join: "{player} joined the server"
+  player-quit: "{player} left the server"
+
+  # Placeholders: {player}, {message}
+  # ** ** is Discord's bold. The message is escaped before substitution, so a
+  # player cannot inject Markdown into your channel.
+  player-chat: "**{player}**: {message}"
+
+  # Placeholders: {player}, {command} -- the command includes its leading slash
+  # Commands listed in filters.ignored_commands never reach here at all.
+  player-command: "{player} ran: {command}"
+
+  # Placeholders: {sender} -- "Server" for the console, or the sender's name
+  #               {command}
+  server-command: "{sender} ran: {command}"
+
+  death:
+
+    # The line under the embed title. Placeholders: {player}
+    description: "{player} died"
+
+    # Field NAMES, not values -- the bold label above each field in the embed.
+    cause-field: "Cause of Death"
+    coords-field: "Coords"
+
+    # Only shown when log.player.death.show_coords is true in config.yml.
+    # Placeholders: {x}, {y}, {z} -- block coordinates
+    #               {world}           -- the world's folder name
+    coords-value: "{x}, {y}, {z} in {world}"
+
+    # ---- how the death happened ------------------------------------------
+    # These four cover deaths caused by a player or mob. The causes list below
+    # covers everything else.
+
+    # Killed by another player.
+    # Placeholders: {killer} -- their display name
+    #               {weapon} -- " [Diamond Sword]", or EMPTY if bare-handed.
+    #                             The brackets and leading space are part of the
+    #                             value, so remove {weapon} entirely to hide it.
+    slain-by-player: "Slain by {killer}{weapon}"
+
+    # Killed by a mob. Placeholders: {killer} -- e.g. "a zombie"
+    slain-by-mob: "Slain by {killer}"
+
+    # Shot from range. Placeholders: {killer} -- a player or a mob
+    shot-by: "Shot by {killer}"
+    # Shot, but the shooter is no longer known (they logged off, or despawned).
+    shot: "Shot"
+
+    # Last resort: the server reported a cause this plugin has no wording for.
+    # If you ever see this in your channel, it is worth reporting -- it means
+    # Minecraft added a damage type.
+    unknown: "Died"
+
+    # ---- one line per damage cause ---------------------------------------
+    # Keys are Minecraft's own damage causes, lowercased with hyphens. Do not
+    # rename them; the plugin looks each one up by that exact name.
+    causes:
+      # Fell too far.
+      fall: "Fell from a high place"
+      # Swam in lava.
+      lava: "Tried to swim in lava"
+      # Standing in fire.
+      fire: "Burned to death"
+      # Still burning after leaving the fire.
+      fire-tick: "Burned to death"
+      # Ran out of air.
+      drowning: "Drowned"
+      # Inside a solid block.
+      suffocation: "Suffocated in a wall"
+      # Fell out of the world.
+      void: "Fell into the void"
+      # Touched a cactus or sweet berry bush.
+      contact: "Was pricked to death"
+      # TNT, a bed in the Nether, a respawn anchor in the Overworld.
+      block-explosion: "Blew up"
+      # A creeper, a ghast fireball, an end crystal.
+      entity-explosion: "Blew up"
+      # A potion of harming, or an evoker's fangs.
+      magic: "Was killed by magic"
+      # Poison ran the health down.
+      poison: "Was poisoned"
+      # The wither effect.
+      wither: "Withered away"
+      # Hunger reached zero.
+      starvation: "Starved to death"
+      # Powder snow.
+      freeze: "Froze to death"
+      # Struck by lightning.
+      lightning: "Was struck by lightning"
+      # Standing on magma blocks.
+      hot-floor: "Discovered the floor was lava"
+      # Too many entities in one block.
+      cramming: "Was squished too much"
+      # The ender dragon's breath cloud.
+      dragon-breath: "Was roasted by dragon breath"
+      # Attacking someone wearing Thorns armour.
+      thorns: "Was killed by thorns"
+      # The /kill command.
+      kill: "Killed by command"
+      # /kill used on yourself.
+      suicide: "Killed by command"
+      # Outside the world border.
+      world-border: "Left the world border"
+      # A warden's ranged attack.
+      sonic-boom: "Hit by a warden's sonic boom"
+      # Standing in a campfire.
+      campfire: "Burned on a campfire"
+      # An anvil or gravel landed on them.
+      falling-block: "Squashed by a falling block"
+      # Elytra flight into a wall — kinetic damage.
+      fly-into-wall: "Flew into a wall"
+      # An axolotl or dolphin out of water.
+      dryout: "Dried out"
+      # A snow golem in a warm biome.
+      melting: "Melted"
+      # A mob or player hit them, when the attacker is no longer known.
+      entity-attack: "Slain"
+      # A sweeping sword attack, attacker no longer known.
+      entity-sweep-attack: "Slain"
+      # An arrow or similar, shooter no longer known.
+      projectile: "Shot"
+      # Damage dealt by another plugin. Nothing truthful can be said about it.
+      custom: "Died"
+
+  # The field added to a join when the player came from Bedrock, if
+  # log.player.join.show_platform is true. It NEVER says "Java" -- see the docs.
+  platform-field: "Platform"
+  platform-bedrock: "Bedrock"
+
+# CONFIG VERSION V10, DOWNLOADED FROM WEBSITE

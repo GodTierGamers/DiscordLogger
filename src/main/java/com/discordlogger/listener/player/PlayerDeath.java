@@ -1,6 +1,7 @@
 package com.discordlogger.listener.player;
 
 import com.discordlogger.filter.Filters;
+import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.Location;
@@ -35,19 +36,19 @@ public final class PlayerDeath implements Listener {
         final String vName = Names.display(victim, (JavaPlugin) plugin);
 
         final List<Log.Field> fields = new ArrayList<>();
-        fields.add(new Log.Field("Cause of Death", describeCause(victim)));
+        fields.add(new Log.Field(Lang.text("discord.death.cause-field"), describeCause(victim)));
 
         // Only present when asked for. Off by default: a death message with
         // coordinates tells everyone who can read the channel where the body — and
         // the inventory it dropped — is.
         if (plugin.getConfig().getBoolean("log.player.death.show_coords", false)) {
-            fields.add(new Log.Field("Coords", coordsOf(victim)));
+            fields.add(new Log.Field(Lang.text("discord.death.coords-field"), coordsOf(victim)));
         }
 
         Log.eventFieldsWithThumb(
                 "Player Death",
                 "Player Death",
-                vName + " died",
+                Lang.text("discord.death.description", "player", vName),
                 null,                       // null -> use embeds.author from config
                 fields,
                 Log.playerAvatarUrl(victim.getUniqueId())
@@ -66,7 +67,9 @@ public final class PlayerDeath implements Listener {
         if (killer != null) {
             String kName = Names.display(killer, (JavaPlugin) plugin);
             String weapon = weaponName(killer.getInventory().getItemInMainHand());
-            return "Slain by " + kName + (weapon.isEmpty() ? "" : " [" + weapon + "]");
+            return Lang.text("discord.death.slain-by-player",
+                    "killer", kName,
+                    "weapon", weapon.isEmpty() ? "" : " [" + weapon + "]");
         }
 
         EntityDamageEvent last = victim.getLastDamageCause();
@@ -76,28 +79,30 @@ public final class PlayerDeath implements Listener {
             if (damager instanceof Projectile proj) {
                 Object shooter = proj.getShooter();
                 if (shooter instanceof Player pShooter) {
-                    return "Shot by " + Names.display(pShooter, (JavaPlugin) plugin);
+                    return Lang.text("discord.death.shot-by",
+                            "killer", Names.display(pShooter, (JavaPlugin) plugin));
                 }
                 if (shooter instanceof Entity eShooter) {
-                    return "Shot by " + mobName(eShooter);
+                    return Lang.text("discord.death.shot-by", "killer", mobName(eShooter));
                 }
-                return "Shot";
+                return Lang.text("discord.death.shot");
             }
-            return "Slain by " + mobName(damager);
+            return Lang.text("discord.death.slain-by-mob", "killer", mobName(damager));
         }
 
         final String text = last == null ? null : causeText(last.getCause());
         // Only reached when there is no damage cause at all, or Paper has added one
         // we do not know yet. causeTextIsExhaustive() in the tests fails on the latter.
-        return text == null ? "Died" : text;
+        return text == null ? Lang.text("discord.death.unknown") : text;
     }
 
     /** Block coordinates and world, e.g. "128, 71, -344 in world". */
     private String coordsOf(Player victim) {
         final Location at = victim.getLocation();
         final String world = at.getWorld() == null ? "unknown" : at.getWorld().getName();
-        return at.getBlockX() + ", " + at.getBlockY() + ", " + at.getBlockZ()
-                + " in " + Log.mdEscape(world);
+        return Lang.text("discord.death.coords-value",
+                "x", at.getBlockX(), "y", at.getBlockY(), "z", at.getBlockZ(),
+                "world", Log.mdEscape(world));
     }
 
     private String weaponName(ItemStack item) {
@@ -123,50 +128,25 @@ public final class PlayerDeath implements Listener {
      * on any that returns null, so a cause added by a future Paper release is caught
      * in CI instead of surfacing as "Cause of Death: Died" on someone's server.
      */
+    /**
+     * Phrasing for a damage cause, or null if this one has no entry.
+     *
+     * <p>Reads {@code discord.death.causes.<cause>} from lang.yml, keyed by the enum
+     * name lowercased with underscores as hyphens. Returning null rather than a
+     * generic string is what keeps the gap detectable: a test walks every
+     * {@code DamageCause} the API declares and fails on any without an entry, so a
+     * cause added by a future Paper release is caught in CI instead of surfacing as
+     * "Cause of Death: Died" on someone's server.
+     */
     static String causeText(EntityDamageEvent.DamageCause cause) {
         if (cause == null) return null;
-        switch (cause) {
-            case FALL: return "Fell from a high place";
-            case LAVA: return "Tried to swim in lava";
-            case FIRE:
-            case FIRE_TICK: return "Burned to death";
-            case DROWNING: return "Drowned";
-            case SUFFOCATION: return "Suffocated in a wall";
-            case VOID: return "Fell into the void";
-            case CONTACT: return "Was pricked to death";
-            case BLOCK_EXPLOSION:
-            case ENTITY_EXPLOSION: return "Blew up";
-            case MAGIC: return "Was killed by magic";
-            case POISON: return "Was poisoned";
-            case WITHER: return "Withered away";
-            case STARVATION: return "Starved to death";
-            case FREEZE: return "Froze to death";
-            case LIGHTNING: return "Was struck by lightning";
-            case HOT_FLOOR: return "Discovered the floor was lava";
-            case CRAMMING: return "Was squished too much";
-            case DRAGON_BREATH: return "Was roasted by dragon breath";
-            case THORNS: return "Was killed by thorns";
-
-            // Reachable via /kill, and the twelve others that previously fell through
-            // to a bare "Died".
-            case KILL: return "Killed by command";
-            case SUICIDE: return "Killed by command";
-            case WORLD_BORDER: return "Left the world border";
-            case SONIC_BOOM: return "Hit by a warden's sonic boom";
-            case CAMPFIRE: return "Burned on a campfire";
-            case FALLING_BLOCK: return "Squashed by a falling block";
-            case FLY_INTO_WALL: return "Flew into a wall";
-            case DRYOUT: return "Dried out";
-            case MELTING: return "Melted";
-            // These normally resolve through the damager branch above; they only reach
-            // here when the attacker is already gone by the time the death is read.
-            case ENTITY_ATTACK: return "Slain";
-            case ENTITY_SWEEP_ATTACK: return "Slain";
-            case PROJECTILE: return "Shot";
-            // Inflicted by a plugin, so there is nothing truthful to say beyond this.
-            case CUSTOM: return "Died";
-
-            default: return null;
-        }
+        final String key = "discord.death.causes." + langKey(cause);
+        return Lang.has(key) ? Lang.text(key) : null;
     }
+
+    /** {@code FIRE_TICK} to {@code fire-tick}, matching the keys in lang.yml. */
+    static String langKey(EntityDamageEvent.DamageCause cause) {
+        return cause.name().toLowerCase(java.util.Locale.ROOT).replace('_', '-');
+    }
+
 }

@@ -3,6 +3,7 @@ package com.discordlogger.command;
 import com.discordlogger.DiscordLogger;
 import com.discordlogger.config.ConfigMigrator;
 import com.discordlogger.log.Log;
+import com.discordlogger.lang.Lang;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -45,14 +46,10 @@ public final class Webhook implements Subcommand {
     @Override
     public boolean execute(CommandSender sender, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: " + ChatColor.WHITE
-                    + "/discordlogger webhook <url>");
-            sender.sendMessage(ChatColor.GRAY
-                    + "Create one in Discord under Channel Settings > Integrations > Webhooks.");
+            sender.sendMessage(Lang.chat("chat.webhook-usage"));
+            sender.sendMessage(Lang.chat("chat.webhook-where"));
             if (sender instanceof Player) {
-                sender.sendMessage(ChatColor.GRAY
-                        + "Anyone who sees the URL can post to that channel, so avoid typing it "
-                        + "on a shared screen. It is never shown back to you.");
+                sender.sendMessage(Lang.chat("chat.webhook-private"));
             }
             return true;
         }
@@ -60,16 +57,14 @@ public final class Webhook implements Subcommand {
         final String url = args[0].trim();
 
         if (!Log.isValidWebhookUrl(url)) {
-            sender.sendMessage(ChatColor.RED + "That doesn't look like a Discord webhook URL.");
-            sender.sendMessage(ChatColor.GRAY
-                    + "Expected: https://discord.com/api/webhooks/<id>/<token>");
+            sender.sendMessage(Lang.chat("chat.webhook-invalid"));
+            sender.sendMessage(Lang.chat("chat.webhook-expected"));
             return true;
         }
 
         final File configFile = new File(plugin.getDataFolder(), "config.yml");
         if (!ConfigMigrator.setScalar(configFile, "webhook.url", url)) {
-            sender.sendMessage(ChatColor.RED
-                    + "Could not write webhook.url to config.yml. Check the file exists and is writable.");
+            sender.sendMessage(Lang.chat("chat.webhook-write-failed"));
             return true;
         }
 
@@ -77,14 +72,12 @@ public final class Webhook implements Subcommand {
         final boolean ok = plugin.applyRuntimeConfig();
 
         if (ok) {
-            sender.sendMessage(ChatColor.GREEN + "Webhook set and reloaded — logging to channel "
-                    + channelId(url) + ".");
+            sender.sendMessage(Lang.chat("chat.webhook-set", "channel", channelId(url)));
         } else {
             // setScalar succeeded and the URL passed the format check, so this means
             // the reload rejected it for some other reason -- worth saying plainly
             // rather than reporting success.
-            sender.sendMessage(ChatColor.RED
-                    + "Saved, but the plugin did not accept it. Check config.yml and the console.");
+            sender.sendMessage(Lang.chat("chat.webhook-rejected"));
         }
 
         // Console record without the token, so the server log is safe to share.

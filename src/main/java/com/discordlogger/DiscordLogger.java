@@ -8,6 +8,7 @@ import com.discordlogger.config.ConfigMigrator;
 import com.discordlogger.config.ConfigVersionNotice;
 import com.discordlogger.event.EventRegistry;
 import com.discordlogger.filter.Filters;
+import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
 import com.discordlogger.metrics.PluginMetrics;
 import com.discordlogger.update.BuildInfo;
@@ -108,6 +109,7 @@ public final class DiscordLogger extends JavaPlugin {
         // Before Log.init, so a reload cannot briefly log something the new config
         // says to filter.
         Filters.reload(this);
+        Lang.reload(this);
 
         final String url = getConfig().getString("webhook.url", "");
         final String timePattern = getConfig().getString("format.time", "[HH:mm:ss dd:MM:yyyy]");

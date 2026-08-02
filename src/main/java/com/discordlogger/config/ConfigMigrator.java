@@ -229,6 +229,12 @@ public final class ConfigMigrator {
         }
     }
 
+    /** "lang.yml" -> "lang". Used to name the rotated files after their source. */
+    private static String stripExtension(String fileName) {
+        final int dot = fileName.lastIndexOf('.');
+        return dot > 0 ? fileName.substring(0, dot) : fileName;
+    }
+
     /** The config schema number baked into this JAR. Null if the trailer is missing. */
     public static Integer shippedVersion(JavaPlugin plugin, String resourcePath) {
         try (InputStream in = plugin.getResource(resourcePath)) {
@@ -269,7 +275,8 @@ public final class ConfigMigrator {
             try {
                 userFlat = flattenYaml(new Yaml().load(userText));
             } catch (Exception malformed) {
-                plugin.getLogger().warning("config.yml could not be parsed: " + malformed.getMessage());
+                plugin.getLogger().warning(userFile.getName() + " could not be parsed: "
+                        + malformed.getMessage());
                 userFlat = new LinkedHashMap<>();
             }
             final Integer oldVer = detectVersion(userText, userFlat, plugin.getLogger()::warning);
@@ -282,27 +289,33 @@ public final class ConfigMigrator {
                 return new Result(decision, oldVer, newVer);
             }
 
-            plugin.getLogger().info("Migrating config schema v" + oldVer + " -> v" + newVer
+            plugin.getLogger().info("Migrating " + userFile.getName() + " schema v" + oldVer + " -> v" + newVer
                     + " (one step at a time, so renames from every intermediate version apply)");
 
             final String merged = migrateText(defaultText, userText, oldVer, newVer);
 
-            // Write config.new.yml
-            File newFile = new File(userFile.getParentFile(), "config.new.yml");
+            // Derived from the file being migrated, not hardcoded: this class now runs
+            // for lang.yml as well, and a fixed "config.old.yml" would have had the
+            // second migration overwrite the first one's backup.
+            final String base = stripExtension(userFile.getName());
+
+            File newFile = new File(userFile.getParentFile(), base + ".new.yml");
             Files.writeString(newFile.toPath(), merged, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-            // Rotate: config.yml -> config.old.yml, new -> config.yml
-            File oldFile = new File(userFile.getParentFile(), "config.old.yml");
+            // Rotate: <name>.yml -> <name>.old.yml, new -> <name>.yml
+            File oldFile = new File(userFile.getParentFile(), base + ".old.yml");
             try {
                 Files.move(userFile.toPath(), oldFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } catch (Exception ex) {
-                plugin.getLogger().warning("Could not move config.yml to config.old.yml: " + ex.getMessage());
+                plugin.getLogger().warning("Could not move " + userFile.getName()
+                        + " to " + oldFile.getName() + ": " + ex.getMessage());
             }
             Files.move(newFile.toPath(), userFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-            plugin.getLogger().info("Config updated automatically from version " + oldVer + " to " + newVer);
-            plugin.getLogger().info("Previous file saved as config.old.yml");
+            plugin.getLogger().info(userFile.getName() + " updated automatically from version "
+                    + oldVer + " to " + newVer);
+            plugin.getLogger().info("Previous file saved as " + oldFile.getName());
             return new Result(Status.UPGRADED, oldVer, newVer);
 
         } catch (Exception ex) {

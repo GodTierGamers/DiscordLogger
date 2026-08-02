@@ -1,6 +1,7 @@
 package com.discordlogger.command;
 
 import com.discordlogger.DiscordLogger;
+import com.discordlogger.lang.Lang;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import com.discordlogger.config.ConfigMigrator;
@@ -32,23 +33,20 @@ public final class Reload implements Subcommand {
         // A reload is exactly when someone has just swapped a config in, so the
         // same schema check that runs at startup has to run here too.
         if (configState.status() == ConfigMigrator.Status.AHEAD) {
-            sender.sendMessage(ChatColor.RED + "Your config.yml (schema v" + configState.installed()
-                    + ") is newer than this build (v" + configState.shipped()
-                    + "). Keys it doesn't recognise are ignored.");
-            sender.sendMessage(ChatColor.RED + "Update the plugin, or run "
-                    + ChatColor.WHITE + "/discordlogger regen" + ChatColor.RED + " to start fresh.");
+            sender.sendMessage(Lang.chat("chat.reload-config-ahead",
+                    "installed", configState.installed(), "shipped", configState.shipped()));
+            sender.sendMessage(Lang.chat("chat.reload-config-ahead-fix"));
         } else if (configState.migrated()) {
-            sender.sendMessage(ChatColor.GREEN + "config.yml upgraded from schema v"
-                    + configState.installed() + " to v" + configState.shipped()
-                    + " (previous file saved as config.old.yml).");
+            sender.sendMessage(Lang.chat("chat.reload-config-upgraded",
+                    "from", configState.installed(), "to", configState.shipped()));
         }
 
         if (ok) {
             long ms = System.currentTimeMillis() - start;
-            sender.sendMessage(ChatColor.GREEN + "DiscordLogger configuration reloaded (" + ms + " ms).");
+            sender.sendMessage(Lang.chat("chat.reload-ok", "ms", ms));
         } else {
-            sender.sendMessage(ChatColor.RED + "Config reloaded, but webhook.url is missing/invalid.");
-            sender.sendMessage(ChatColor.RED + "Set a valid Discord webhook URL in config.yml and try again.");
+            sender.sendMessage(Lang.chat("chat.reload-no-webhook"));
+            sender.sendMessage(Lang.chat("chat.reload-no-webhook-hint"));
         }
         return true;
     }

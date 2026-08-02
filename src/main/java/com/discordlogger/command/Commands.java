@@ -1,5 +1,6 @@
 package com.discordlogger.command;
 
+import com.discordlogger.lang.Lang;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -28,7 +29,7 @@ public final class Commands implements CommandExecutor, TabCompleter {
         String key = args[0].toLowerCase(Locale.ROOT);
         Subcommand sc = subs.get(key);
         if (sc == null) {
-            sender.sendMessage(ChatColor.RED + "Unknown subcommand: " + args[0]);
+            sender.sendMessage(Lang.chat("chat.unknown-subcommand", "input", args[0]));
             sendHelp(sender, label);
             return true;
         }
@@ -36,7 +37,7 @@ public final class Commands implements CommandExecutor, TabCompleter {
         // Permission check
         String perm = sc.permission();
         if (perm != null && !perm.isBlank() && !sender.hasPermission(perm)) {
-            sender.sendMessage(ChatColor.RED + "You do not have permission to use /" + label + " " + sc.name());
+            sender.sendMessage(Lang.chat("chat.no-permission", "label", label, "command", sc.name()));
             return true;
         }
 
@@ -73,12 +74,12 @@ public final class Commands implements CommandExecutor, TabCompleter {
     }
 
     private void sendHelp(CommandSender sender, String label) {
-        sender.sendMessage(ChatColor.AQUA + "DiscordLogger Commands:");
+        sender.sendMessage(Lang.chat("chat.help-header"));
         for (Subcommand sc : subs.values()) {
             String perm = sc.permission();
             if (perm == null || perm.isBlank() || sender.hasPermission(perm)) {
-                sender.sendMessage(ChatColor.GRAY + "  /" + label + " " + sc.name()
-                        + ChatColor.DARK_GRAY + " — " + ChatColor.WHITE + sc.description());
+                sender.sendMessage(Lang.chat("chat.help-entry",
+                        "label", label, "command", sc.name(), "description", sc.description()));
             }
         }
     }
