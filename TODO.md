@@ -11,7 +11,6 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 ## Plugin
 
 - **Deeper logging modes** — option to relay the full server console rather than only the specific events currently supported.
-- **Log filtering (allow/deny lists)** — exclude specific entries within a category: e.g. don't log `/whisper` when command logging is on, or ignore a particular player by UUID.
 - **`lang.yml` with MiniMessage** — move every user-facing string into a language file so wording and formatting can be fully rewritten without touching code.
 
 ## Website & docs
