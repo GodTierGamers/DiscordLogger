@@ -105,6 +105,11 @@ filters:
     - r
     - reply
 
+  # An ALLOW-list. When this has anything in it, ONLY these commands are logged and
+  # everything else is skipped -- useful if you only care about moderation commands.
+  # Leave empty to log everything except ignored_commands above.
+  only_log_commands: []
+
   # Never log anything from these players. Accepts names or UUIDs, mixed freely.
   ignored_players: []
 
@@ -117,6 +122,42 @@ filters:
 
   # Skip chat messages containing any of these (case-insensitive).
   ignored_chat_containing: []
+
+  # Skip chat shorter than this many characters. 0 disables it.
+  # Useful against "hi", "?", "." spam. Counts characters, not words.
+  minimum_chat_length: 0
+
+  # Advancements never logged. Matched on the full key, and a trailing * matches a
+  # whole tab -- "minecraft:husbandry/*" is every farming advancement.
+  ignored_advancements: []
+
+  # Recipe unlocks and tab roots fire constantly and mean nothing to a reader, so
+  # they are skipped. Set true only if you genuinely want them.
+  log_recipe_advancements: false
+
+  # Teleport causes never logged. Teleports are the noisiest event on most servers,
+  # and most of them are plugin warps rather than anything worth recording.
+  # Values: PLUGIN, COMMAND, ENDER_PEARL, CHORUS_FRUIT, NETHER_PORTAL, END_PORTAL,
+  #         END_GATEWAY, SPECTATE, DISMOUNT, EXIT_BED, CONSUMABLE_EFFECT, UNKNOWN
+  ignored_teleport_causes: []
+
+  # Skip teleports shorter than this many blocks. 0 disables it.
+  # Never applies across worlds -- a nether portal is not a short hop.
+  minimum_teleport_distance: 0
+
+  # Deaths with these causes are never logged. Same names as the death causes in
+  # lang.yml, upper case: VOID, FALL, LAVA, KILL, ENTITY_ATTACK, and so on.
+  # A void world or a parkour course can produce a lot of VOID and FALL deaths.
+  ignored_death_causes: []
+
+  # Explosions from these sources are never logged. Use the entity name for mob and
+  # TNT explosions (CREEPER, PRIMED_TNT, END_CRYSTAL, FIREBALL, WITHER_SKULL) or the
+  # block name for block ones (BED, RESPAWN_ANCHOR).
+  ignored_explosion_sources: []
+
+  # Skip explosions that destroyed fewer than this many blocks. 0 disables it.
+  # A creeper going off in the air breaks nothing and is rarely worth a message.
+  minimum_explosion_blocks: 0
 
 ####################################################################################
 #                                                                                  #

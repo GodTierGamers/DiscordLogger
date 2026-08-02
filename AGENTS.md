@@ -247,6 +247,10 @@ Death causes are keyed by the enum name lowercased with hyphens (`FIRE_TICK` →
 
 Applied in the **listener**, not in `Log` — that is where the player, world and raw command still exist; by the time a message reaches `Log` it is rendered prose. `Filters` holds an immutable snapshot swapped atomically on reload, and `applyRuntimeConfig` reloads it *before* `Log.init` so a reload cannot briefly log something the new config filters.
 
+**14 filters**, in three groups: *who* (`ignored_players`, `exempt_permission`), *where* (`ignored_worlds`), and *what* (commands, chat, advancements, teleports, deaths, explosions). Each listener checks the ones relevant to it — `Filters` holds no event knowledge, and no listener holds filter logic.
+
+`only_log_commands` is an allow-list that wins outright when set, with the deny-list applying inside it. `log_recipe_advancements` was a hardcoded skip in `PlayerAdvancement` and is now a setting, defaulting to the old behaviour.
+
 `filters.ignored_commands` **ships non-empty**, which is unusual for this project and deliberate: command logging posts the line as typed, so `/login` published passwords in plain text and `/msg` published private messages. Matching is on the command word after stripping the slash, arguments and any plugin qualifier — without that last step `/essentials:msg` would bypass an entry of `msg`, which would make a security-flavoured filter worthless.
 
 **Moderation events are deliberately not filtered by player.** `ignored_players` means "this account's own activity", not "everything mentioning this account"; a ban is a record of staff action and hiding it guts the audit trail.

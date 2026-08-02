@@ -37,6 +37,17 @@ public final class PlayerTeleport implements Listener {
         final Location to = e.getTo();
 
         final boolean worldChange = worldsDifferent(from, to);
+
+        // Distance is null across a world change, which is never a "short hop".
+        Double travelled = null;
+        if (!worldChange && from != null && to != null && from.getWorld() != null) {
+            try {
+                travelled = from.distance(to);
+            } catch (IllegalArgumentException ignored) {
+                travelled = null;
+            }
+        }
+        if (Filters.blocksTeleport(e.getCause() == null ? null : e.getCause().name(), travelled)) return;
         final String fromStr = fmtLoc(from);
         final String toStr = fmtLoc(to);
 

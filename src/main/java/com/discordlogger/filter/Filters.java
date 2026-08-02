@@ -43,13 +43,33 @@ public final class Filters {
             Set<String> ignoredNames,
             Set<UUID> ignoredUuids,
             Set<String> ignoredCommands,
+            Set<String> onlyCommands,
             Set<String> ignoredWorlds,
             List<String> chatPatterns,
+            int minChatLength,
+            List<String> ignoredAdvancements,
+            boolean logRecipeAdvancements,
+            Set<String> ignoredTeleportCauses,
+            double minTeleportDistance,
+            Set<String> ignoredDeathCauses,
+            Set<String> ignoredExplosionSources,
+            int minExplosionBlocks,
             String exemptPermission
     ) {
         static Snapshot empty() {
-            return new Snapshot(Set.of(), Set.of(), Set.of(), Set.of(), List.of(), "");
+            return new Snapshot(Set.of(), Set.of(), Set.of(), Set.of(), Set.of(), List.of(), 0,
+                    List.of(), false, Set.of(), 0d, Set.of(), Set.of(), 0, "");
         }
+    }
+
+    /** Reads a list of enum-ish names into a normalised set: upper case, underscores. */
+    private static Set<String> constantSet(JavaPlugin plugin, String path) {
+        final Set<String> out = new LinkedHashSet<>();
+        for (String entry : plugin.getConfig().getStringList(path)) {
+            if (entry == null || entry.isBlank()) continue;
+            out.add(entry.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_'));
+        }
+        return out;
     }
 
     /** Re-read the filter config. Called from applyRuntimeConfig, so /reload picks it up. */
@@ -87,16 +107,42 @@ public final class Filters {
                 .map(s -> s.toLowerCase(Locale.ROOT))
                 .toList();
 
+        final Set<String> onlyCommands = new LinkedHashSet<>();
+        for (String entry : plugin.getConfig().getStringList("filters.only_log_commands")) {
+            if (entry == null || entry.isBlank()) continue;
+            onlyCommands.add(normaliseCommand(entry));
+        }
+
+        final List<String> advancements = plugin.getConfig()
+                .getStringList("filters.ignored_advancements").stream()
+                .filter(a -> a != null && !a.isBlank())
+                .map(a -> a.trim().toLowerCase(Locale.ROOT))
+                .toList();
+
         final String perm = plugin.getConfig().getString("filters.exempt_permission", "").trim();
 
-        current = new Snapshot(names, uuids, commands, worlds, patterns, perm);
+        current = new Snapshot(
+                names, uuids, commands, onlyCommands, worlds, patterns,
+                Math.max(0, plugin.getConfig().getInt("filters.minimum_chat_length", 0)),
+                advancements,
+                plugin.getConfig().getBoolean("filters.log_recipe_advancements", false),
+                constantSet(plugin, "filters.ignored_teleport_causes"),
+                Math.max(0d, plugin.getConfig().getDouble("filters.minimum_teleport_distance", 0d)),
+                constantSet(plugin, "filters.ignored_death_causes"),
+                constantSet(plugin, "filters.ignored_explosion_sources"),
+                Math.max(0, plugin.getConfig().getInt("filters.minimum_explosion_blocks", 0)),
+                perm);
 
-        final int total = names.size() + uuids.size() + commands.size()
-                + worlds.size() + patterns.size();
-        if (total > 0 || !perm.isEmpty()) {
-            plugin.getLogger().info("Log filters active: " + commands.size() + " command(s), "
-                    + (names.size() + uuids.size()) + " player(s), " + worlds.size() + " world(s), "
-                    + patterns.size() + " chat pattern(s)"
+        final Snapshot snap = current;
+        final int rules = snap.ignoredNames().size() + snap.ignoredUuids().size()
+                + snap.ignoredCommands().size() + snap.onlyCommands().size()
+                + snap.ignoredWorlds().size() + snap.chatPatterns().size()
+                + snap.ignoredAdvancements().size() + snap.ignoredTeleportCauses().size()
+                + snap.ignoredDeathCauses().size() + snap.ignoredExplosionSources().size();
+        if (rules > 0 || !perm.isEmpty()) {
+            plugin.getLogger().info("Log filters active: " + rules + " rule(s)"
+                    + (snap.onlyCommands().isEmpty() ? ""
+                       : ", command allow-list of " + snap.onlyCommands().size())
                     + (perm.isEmpty() ? "" : ", exempt permission '" + perm + "'") + ".");
         }
     }
@@ -128,18 +174,97 @@ public final class Filters {
     /**
      * True when this command should never be logged.
      *
+     * <p>{@code only_log_commands} is an allow-list and wins outright when set: a
+     * server that wants nothing but moderation commands should not also have to
+     * enumerate every command it does not want. The deny-list still applies inside
+     * it, so a command can be allow-listed by prefix and then excluded.
+     *
      * @param raw the command as typed, with or without a leading slash and arguments
      */
     public static boolean blocksCommand(String raw) {
         if (raw == null || raw.isBlank()) return false;
-        return current.ignoredCommands().contains(normaliseCommand(raw));
+        final Snapshot snap = current;
+        final String word = normaliseCommand(raw);
+
+        if (!snap.onlyCommands().isEmpty() && !snap.onlyCommands().contains(word)) return true;
+        return snap.ignoredCommands().contains(word);
     }
 
-    /** True when a chat line contains any configured pattern. */
+    /**
+     * True when this advancement should not be logged.
+     *
+     * <p>Entries match the full key ({@code minecraft:husbandry/plant_seed}) and
+     * support a trailing {@code *}. The wildcard matters because advancements are
+     * grouped by tab, so "stop logging the farming ones" should be one line rather
+     * than twenty.
+     *
+     * @param key       the full namespaced key
+     * @param path      the key's path, e.g. {@code husbandry/plant_seed}
+     */
+    public static boolean blocksAdvancement(String key, String path) {
+        final Snapshot snap = current;
+
+        // Recipe unlocks and tab roots fire constantly and mean nothing to a reader.
+        // Kept as a filter rather than hardcoded so a server that genuinely wants
+        // them can have them, but off by default because almost nobody does.
+        if (!snap.logRecipeAdvancements() && path != null
+                && (path.startsWith("recipes/") || path.startsWith("recipe/")
+                    || path.endsWith("/root") || path.equals("story/root"))) {
+            return true;
+        }
+
+        if (key == null || snap.ignoredAdvancements().isEmpty()) return false;
+        final String lower = key.toLowerCase(Locale.ROOT);
+        for (String entry : snap.ignoredAdvancements()) {
+            if (entry.endsWith("*")) {
+                if (lower.startsWith(entry.substring(0, entry.length() - 1))) return true;
+            } else if (lower.equals(entry)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** True when a teleport should not be logged, by its cause or how short it was. */
+    public static boolean blocksTeleport(String cause, Double distance) {
+        final Snapshot snap = current;
+        if (cause != null && snap.ignoredTeleportCauses()
+                .contains(cause.toUpperCase(Locale.ROOT))) return true;
+
+        // A distance of null means the two points are in different worlds, which is
+        // never "a short hop" and so is never filtered by distance.
+        return distance != null && snap.minTeleportDistance() > 0d
+                && distance < snap.minTeleportDistance();
+    }
+
+    /** True when a death with this damage cause should not be logged. */
+    public static boolean blocksDeath(String damageCause) {
+        return damageCause != null
+                && current.ignoredDeathCauses().contains(damageCause.toUpperCase(Locale.ROOT));
+    }
+
+    /**
+     * True when an explosion should not be logged.
+     *
+     * @param source        the entity type that exploded, or null for a block
+     * @param affectedBlocks how many blocks it destroyed
+     */
+    public static boolean blocksExplosion(String source, int affectedBlocks) {
+        final Snapshot snap = current;
+        if (source != null && snap.ignoredExplosionSources()
+                .contains(source.toUpperCase(Locale.ROOT))) return true;
+        return snap.minExplosionBlocks() > 0 && affectedBlocks < snap.minExplosionBlocks();
+    }
+
+    /** True when a chat line contains any configured pattern, or is too short to be worth logging. */
     public static boolean blocksChat(String message) {
         if (message == null || message.isEmpty()) return false;
+        final Snapshot snap = current;
+
+        if (snap.minChatLength() > 0 && message.strip().length() < snap.minChatLength()) return true;
+
         final String haystack = message.toLowerCase(Locale.ROOT);
-        for (String needle : current.chatPatterns()) {
+        for (String needle : snap.chatPatterns()) {
             if (haystack.contains(needle)) return true;
         }
         return false;

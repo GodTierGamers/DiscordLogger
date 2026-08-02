@@ -33,6 +33,10 @@ public final class PlayerDeath implements Listener {
         if (Filters.blocksPlayer(e.getEntity()) || Filters.blocksWorld(e.getEntity().getWorld().getName())) return;
 
         final Player victim = e.getEntity();
+
+        final EntityDamageEvent lastDamage = victim.getLastDamageCause();
+        if (Filters.blocksDeath(lastDamage == null ? null : lastDamage.getCause().name())) return;
+
         final String vName = Names.display(victim, (JavaPlugin) plugin);
 
         final List<Log.Field> fields = new ArrayList<>();

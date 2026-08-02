@@ -134,7 +134,9 @@ Applied on top of the event toggles: an event that is **enabled** can still be s
 if it matches a filter. This is how you exclude specific things without turning a whole
 category off.
 
-Each list is independent — use one and leave the rest empty if you like.
+There are 14 of them, each independent — use one and leave the rest empty if you like.
+They fall into three groups: **who** (players, permission), **where** (worlds), and
+**what** (commands, chat, advancements, teleports, deaths, explosions).
 
 #### `filters.ignored_commands`
 Commands that are never logged, whoever runs them.
@@ -259,6 +261,135 @@ filters:
 
 Because it matches inside words, keep entries distinctive: an entry of `ass` would also
 skip "password" and "grass".
+
+#### `filters.only_log_commands`
+An **allow-list**. When it has anything in it, only those commands are logged and
+everything else is skipped:
+
+```yaml
+filters:
+  only_log_commands:
+    - ban
+    - kick
+    - op
+    - deop
+```
+
+Useful when you want a moderation record rather than a log of everything typed —
+otherwise you would have to enumerate every command you *don't* want.
+
+Leave it empty to log everything except `ignored_commands`. When both are set, the
+allow-list decides first and the deny-list still applies inside it, so you can allow
+a set and then exclude one from it.
+
+#### `filters.minimum_chat_length`
+Skips chat shorter than this many characters. `0` disables it.
+
+```yaml
+filters:
+  minimum_chat_length: 3      # drops "hi", "?", "."
+```
+
+Counts characters, not words, and trims whitespace first.
+
+#### `filters.ignored_advancements`
+Advancements never logged. Matched on the full key, with a trailing `*` for a whole
+tab:
+
+```yaml
+filters:
+  ignored_advancements:
+    - "minecraft:husbandry/*"              # every farming advancement
+    - "minecraft:story/mine_stone"         # just this one
+```
+
+The wildcard matters because advancements are grouped by tab — `story/`, `husbandry/`,
+`adventure/`, `nether/`, `end/` — so excluding a category is one line rather than
+twenty.
+
+Vanilla has around 110 non-recipe advancements, and a new player works through dozens
+in their first session, so this is usually the difference between a usable channel and
+a flooded one.
+
+#### `filters.log_recipe_advancements`
+Recipe unlocks and tab roots fire constantly and mean nothing to a reader, so they are
+skipped. Set `true` only if you genuinely want them:
+
+```yaml
+filters:
+  log_recipe_advancements: false     # default
+```
+
+> This was hardcoded before v10 and is now a setting, so a server that wants recipe
+> unlocks can have them.
+
+#### `filters.ignored_teleport_causes`
+Teleports are the noisiest event on most servers, and most of them are plugin warps
+rather than anything worth recording.
+
+```yaml
+filters:
+  ignored_teleport_causes:
+    - PLUGIN          # /warp, /home, /spawn — anything a plugin moved
+    - COMMAND         # vanilla /tp
+    - ENDER_PEARL
+```
+
+Accepted values: `PLUGIN`, `COMMAND`, `ENDER_PEARL`, `CHORUS_FRUIT`, `NETHER_PORTAL`,
+`END_PORTAL`, `END_GATEWAY`, `SPECTATE`, `DISMOUNT`, `EXIT_BED`, `CONSUMABLE_EFFECT`,
+`UNKNOWN`. Case-insensitive.
+
+> `PLUGIN` is the one to reach for first. On a server with Essentials or similar, most
+> teleports are that.
+
+#### `filters.minimum_teleport_distance`
+Skips teleports shorter than this many blocks. `0` disables it.
+
+```yaml
+filters:
+  minimum_teleport_distance: 10
+```
+
+**Never applies across worlds** — a nether portal is not a short hop, so it is always
+logged regardless of this setting.
+
+#### `filters.ignored_death_causes`
+Deaths with these causes are never logged. Same names as the death causes in
+`lang.yml`, in upper case:
+
+```yaml
+filters:
+  ignored_death_causes:
+    - VOID       # a void world, or a parkour course
+    - FALL
+```
+
+A minigame arena or a void map can otherwise produce a constant stream of the same
+death.
+
+#### `filters.ignored_explosion_sources`
+Explosions from these sources are never logged. Use the **entity** name for mob and TNT
+explosions, or the **block** name for block ones:
+
+```yaml
+filters:
+  ignored_explosion_sources:
+    - CREEPER
+    - PRIMED_TNT
+    - BED                # exploding in the Nether
+    - RESPAWN_ANCHOR     # exploding in the Overworld
+```
+
+#### `filters.minimum_explosion_blocks`
+Skips explosions that destroyed fewer than this many blocks. `0` disables it.
+
+```yaml
+filters:
+  minimum_explosion_blocks: 5
+```
+
+A creeper going off in the air, or against bedrock, breaks nothing and is rarely worth
+a message. This keeps the ones that actually damaged a build.
 
 ---
 
@@ -712,6 +843,11 @@ filters:
     - r
     - reply
 
+  # An ALLOW-list. When this has anything in it, ONLY these commands are logged and
+  # everything else is skipped -- useful if you only care about moderation commands.
+  # Leave empty to log everything except ignored_commands above.
+  only_log_commands: []
+
   # Never log anything from these players. Accepts names or UUIDs, mixed freely.
   ignored_players: []
 
@@ -724,6 +860,42 @@ filters:
 
   # Skip chat messages containing any of these (case-insensitive).
   ignored_chat_containing: []
+
+  # Skip chat shorter than this many characters. 0 disables it.
+  # Useful against "hi", "?", "." spam. Counts characters, not words.
+  minimum_chat_length: 0
+
+  # Advancements never logged. Matched on the full key, and a trailing * matches a
+  # whole tab -- "minecraft:husbandry/*" is every farming advancement.
+  ignored_advancements: []
+
+  # Recipe unlocks and tab roots fire constantly and mean nothing to a reader, so
+  # they are skipped. Set true only if you genuinely want them.
+  log_recipe_advancements: false
+
+  # Teleport causes never logged. Teleports are the noisiest event on most servers,
+  # and most of them are plugin warps rather than anything worth recording.
+  # Values: PLUGIN, COMMAND, ENDER_PEARL, CHORUS_FRUIT, NETHER_PORTAL, END_PORTAL,
+  #         END_GATEWAY, SPECTATE, DISMOUNT, EXIT_BED, CONSUMABLE_EFFECT, UNKNOWN
+  ignored_teleport_causes: []
+
+  # Skip teleports shorter than this many blocks. 0 disables it.
+  # Never applies across worlds -- a nether portal is not a short hop.
+  minimum_teleport_distance: 0
+
+  # Deaths with these causes are never logged. Same names as the death causes in
+  # lang.yml, upper case: VOID, FALL, LAVA, KILL, ENTITY_ATTACK, and so on.
+  # A void world or a parkour course can produce a lot of VOID and FALL deaths.
+  ignored_death_causes: []
+
+  # Explosions from these sources are never logged. Use the entity name for mob and
+  # TNT explosions (CREEPER, PRIMED_TNT, END_CRYSTAL, FIREBALL, WITHER_SKULL) or the
+  # block name for block ones (BED, RESPAWN_ANCHOR).
+  ignored_explosion_sources: []
+
+  # Skip explosions that destroyed fewer than this many blocks. 0 disables it.
+  # A creeper going off in the air breaks nothing and is rarely worth a message.
+  minimum_explosion_blocks: 0
 
 ####################################################################################
 #                                                                                  #
