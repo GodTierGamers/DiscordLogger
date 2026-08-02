@@ -268,6 +268,7 @@ The defaults shipped with v10. Each is set under its own event's `color` key:
 # D O   N O T   E D I T #
 #########################
 
+# Set automatically
 config-version: 10
 
 ###################
