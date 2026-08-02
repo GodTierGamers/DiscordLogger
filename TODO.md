@@ -11,7 +11,6 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 ## Plugin
 
 - **Deeper logging modes** — option to relay the full server console rather than only the specific events currently supported.
-- **`lang.yml` with MiniMessage** — move every user-facing string into a language file so wording and formatting can be fully rewritten without touching code.
 
 ## Website & docs
 
