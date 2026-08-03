@@ -24,6 +24,4 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
   - Needs a `state` parameter for CSRF and an origin allowlist.
   - Note: Discord creates a **new webhook on every authorization**, so running the flow repeatedly accumulates webhooks in the channel. The UI has to say so.
   - Requires a Discord application (client ID + secret) registered by the project owner, and a registered redirect URI.
-- **Complete website redesign.**
 - **Search visibility (ongoing)** — the technical groundwork is in place (sitemap, canonicals, structured data, per-page titles and descriptions). What's left is the slow part: content people actually search for (troubleshooting and comparison pages), listings on the sites Minecraft admins browse, and monitoring real queries in Search Console. This item stays open indefinitely; it isn't a task with a finish line.
-- **Full docs quality pass** — review everything for accuracy and clarity.
