@@ -15,4 +15,4 @@ URL is never sent anywhere except Discord.
 
 <!-- Loader: reads /assets/configs/registry.json, then loads the version-specific
      generator bundle from /assets/configs/<schema>/generator.js -->
-<script defer src="{{ '/assets/js/generator.js?v=3' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/generator.js?v=4' | relative_url }}"></script>

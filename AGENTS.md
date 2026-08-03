@@ -573,7 +573,7 @@ The beta opt-in in `versions.js` still exists and still drives the **downloads p
 
 Two consequences that must hold together:
 
-- The generator's picker **lists** an unreleased `since` but never **preselects** it (`v.published` marks entries that came from the releases API). Preselecting it would hand a 2.1.6 user a v10 config their installed plugin reads as `AHEAD`. On release day the API publishes the same version, the entries merge, and the default lands there on its own — nothing on screen changes.
+- The generator's picker **defaults to the newest version on offer**, declared or published — there is no separate "not yet released" tier and nothing is listed-but-not-selected. Someone who lands on the generator is configuring the current schema, which is the one about to ship.
 - The config-docs index falls back to `since` when no release covers a schema yet ("ships with DiscordLogger v2.2.0"). Still not a claim about the future: it is the build the registry names, and the API supplies the identical string once it ships.
 
 A schema's docs page is reachable by URL regardless. `registry.json`'s `since` pointing at a stable version remains the default — it is now what makes a finished schema public rather than what delays it.
