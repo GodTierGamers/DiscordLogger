@@ -9,9 +9,8 @@ published.
 Hangar versions are registered with an `externalUrl` pointing at the GitHub
 Release asset rather than a re-hosted copy, so Hangar's download button
 increments GitHub's counter. Modrinth has no equivalent — its API requires the
-file to be uploaded to Modrinth — so that one JAR is mirrored, and Modrinth
-keeps its own tally. `--badge` adds the two together and writes the
-shields.io endpoint JSON the README badge reads, so one number covers both.
+file to be uploaded to Modrinth — so that one JAR is mirrored there and keeps
+its own tally.
 
 Run by .github/workflows/release-please.yml after the stable JAR is attached to
 the GitHub Release. Nightly builds are deliberately never published here — they
@@ -38,7 +37,6 @@ that dies after tagging is messier. Genuine API failures do fail the job.
 Usage:
     publish-listings.py --jar target/DiscordLogger-v2.2.0.jar --tag v2.2.0
     publish-listings.py --jar ... --tag ... --dry-run   # no network writes
-    publish-listings.py --badge                         # refresh the badge only
     publish-listings.py --check-auth                    # verify both tokens
 """
 from __future__ import annotations
@@ -322,65 +320,6 @@ def publish_hangar(
 
 GITHUB_API = "https://api.github.com/repos/GodTierGamers/DiscordLogger"
 
-# shields.io renders any JSON in this shape as a badge, which is the only way to
-# show a total that spans two hosts — its built-in github/downloads badge can
-# only ever see GitHub.
-BADGE_PATH = Path("docs/assets/badges/downloads.json")
-
-
-def download_counts() -> dict[str, int]:
-    """GitHub + Modrinth downloads. Hangar is deliberately absent: its versions
-    are external links to the GitHub asset, so Hangar traffic is already inside
-    the GitHub number and adding it would double-count."""
-    github = 0
-    page = 1
-    while True:
-        releases = request(f"{GITHUB_API}/releases?per_page=100&page={page}")
-        if not releases:
-            break
-        for release in releases:
-            for asset in release.get("assets", []):
-                # Checksums sit next to every JAR; they are not plugin downloads.
-                if not asset["name"].endswith(".sha256"):
-                    github += asset["download_count"]
-        if len(releases) < 100:
-            break
-        page += 1
-
-    modrinth = request(f"{MODRINTH_API}/project/{MODRINTH_PROJECT}")["downloads"]
-    return {"github": github, "modrinth": modrinth, "total": github + modrinth}
-
-
-def write_badge(counts: dict[str, int], path: Path) -> None:
-    total = counts["total"]
-    # Exact, with thousands separators, rather than shields' "1k" abbreviation.
-    # This number is committed to the repo rather than computed by shields at
-    # request time, and a rounded committed number reads as a placeholder someone
-    # typed — it never moves between refreshes, so nothing tells a reader it is
-    # real. The exact figure changes on every refresh and is self-evidently
-    # measured. It is also simply more information, for no cost.
-    label = f"{total:,}"
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(
-            {
-                "schemaVersion": 1,
-                "label": "downloads",
-                "message": label,
-                "color": "brightgreen",
-            },
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    log(
-        f"GitHub {counts['github']} + Modrinth {counts['modrinth']} = {total} "
-        f"-> {path} ({label})"
-    )
-
-
 # ------------------------------------------------------------------ auth check
 
 
@@ -462,11 +401,6 @@ def main() -> int:
         help="verify both API credentials still work, publish nothing, then exit",
     )
     parser.add_argument(
-        "--badge",
-        action="store_true",
-        help="only refresh the combined GitHub+Modrinth downloads badge, then exit",
-    )
-    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="resolve and validate everything, but make no network writes",
@@ -476,12 +410,8 @@ def main() -> int:
     if args.check_auth:
         return check_auth()
 
-    if args.badge:
-        write_badge(download_counts(), BADGE_PATH)
-        return 0
-
     if not args.jar or not args.tag:
-        fail("--jar and --tag are required unless --badge is given")
+        fail("--jar and --tag are required")
 
     if not args.jar.is_file():
         fail(f"JAR not found: {args.jar}")
@@ -541,12 +471,6 @@ def main() -> int:
             failures.append(f"Hangar: {exc}")
     else:
         log("::notice::HANGAR_API_KEY is not set — skipping Hangar.")
-
-    if not args.dry_run and not failures:
-        try:
-            write_badge(download_counts(), BADGE_PATH)
-        except Exception as exc:  # noqa: BLE001 - a stale badge must not fail a release
-            log(f"::warning::Could not refresh the downloads badge: {exc}")
 
     for failure in failures:
         print(f"::error::{failure}", flush=True)

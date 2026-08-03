@@ -88,7 +88,7 @@ release-please-config.json             release-please: changelog sections, extra
 .release-please-manifest.json          release-please: current released version (state)
 scripts/validate-config-generator.py   CI check: options.json <-> template <-> Java source <-> shipped config <-> mirror <-> doc embed
 scripts/sync-versions.py               Propagates pom.xml's version values into README/CONTRIBUTING/docs
-scripts/publish-listings.py            Mirrors stable releases to Modrinth/Hangar; writes the combined downloads badge
+scripts/publish-listings.py            Mirrors stable releases to Modrinth/Hangar
 src/main/resources/
   plugin.yml                           Plugin descriptor (Maven-filtered)
   build-info.properties                Build channel/version/date, baked in at package time
@@ -150,7 +150,7 @@ Stable releases are mirrored onto two listings, because that is where server own
 
 `scripts/publish-listings.py`, run by `release-please.yml`'s `publish-listings` job, does both. It is idempotent (re-running skips versions that already exist), refuses to publish if `pom.xml`'s version doesn't match the release tag, and refuses nightly tags outright — nightlies are GitHub-only, as the downloads page states.
 
-**Download counting.** The count spans two hosts, so the README badge is a shields.io *endpoint* badge reading `docs/assets/badges/downloads.json`, written by `publish-listings.py --badge`: GitHub asset downloads (excluding `.sha256` files) **+** Modrinth's total. Hangar is deliberately not added — its traffic is already inside the GitHub number, and adding it would double-count. `downloads-badge.yml` refreshes it daily; releases refresh it inline.
+**Download counting.** The README badge is shields.io's stock `github/downloads/.../total`, which counts GitHub Release assets. Hangar traffic is already inside that number — its versions are `externalUrl` links to the GitHub asset — so only Modrinth's own tally is missing. There used to be a combined endpoint badge written by `publish-listings.py --badge` and committed by `downloads-badge.yml`; it was removed because the commit pushed straight to `main` and branch protection rejects that, so it failed every single day and the number froze. A badge that silently stops updating is worse than one that undercounts by a known amount.
 
 **Two secrets must exist** or the corresponding platform is skipped with a notice (a lagging listing is recoverable; a release job dying after tagging is not): `MODRINTH_TOKEN` (PAT, "Create versions" **plus one read scope** — either "Read analytics" or "Read user info") and `HANGAR_API_KEY` (create_version permission). Both are repository **Actions** secrets — the job declares no `environment:`, so environment secrets would not resolve.
 

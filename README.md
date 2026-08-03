@@ -4,7 +4,7 @@
 ![Build](https://img.shields.io/github/actions/workflow/status/GodTierGamers/DiscordLogger/ci.yml?branch=main&label=build)
 ![Release](https://img.shields.io/github/v/release/GodTierGamers/DiscordLogger)
 ![Nightly](https://img.shields.io/github/v/release/GodTierGamers/DiscordLogger?include_prereleases&label=nightly)
-![Downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fdiscordlogger.godtiergamers.xyz%2Fassets%2Fbadges%2Fdownloads.json)
+![Downloads](https://img.shields.io/github/downloads/GodTierGamers/DiscordLogger/total)
 ![Issues](https://img.shields.io/github/issues/GodTierGamers/DiscordLogger)
 ![License](https://img.shields.io/github/license/GodTierGamers/DiscordLogger)
 <!-- dl:sync-block:badges -->

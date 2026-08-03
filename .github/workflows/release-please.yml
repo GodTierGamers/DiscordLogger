@@ -195,16 +195,3 @@ jobs:
           set -euo pipefail
           jar="$(ls -1 target/*.jar | head -n1)"
           python3 scripts/publish-listings.py --jar "$jar" --tag "$TAG"
-
-      - name: Commit the refreshed downloads badge
-        run: |
-          set -euo pipefail
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- docs/assets/badges/downloads.json; then
-            echo "Badge unchanged."
-            exit 0
-          fi
-          git add docs/assets/badges/downloads.json
-          git commit -m "chore: refresh downloads badge [skip ci]"
-          git push origin main
