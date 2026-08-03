@@ -11,6 +11,18 @@ on:
   push:
     branches: [main]
 
+  # Re-publish an already-tagged release to the listings without cutting a new
+  # one. A publish that can only ever run as a side effect of the release commit
+  # strands the release when it fails -- which is exactly what happened to
+  # v2.2.0, where Hangar succeeded and Modrinth 400'd, leaving no way to retry
+  # short of faking another release.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to publish to Modrinth/Hangar, e.g. v2.2.0"
+        required: true
+        type: string
+
 concurrency:
   group: release-please-${{ github.ref }}
   cancel-in-progress: false
@@ -147,7 +159,14 @@ jobs:
   # asset, so its downloads land on GitHub's counter.
   publish-listings:
     needs: [release-please, build-artifact]
-    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    # `always()` is required because both needs are skipped on a manual dispatch;
+    # without it the job would be skipped too. The tag is whichever of the two
+    # paths supplied one.
+    if: >-
+      ${{ always() && (
+        needs.release-please.outputs.releases_created == 'true'
+        || github.event_name == 'workflow_dispatch'
+      ) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -159,7 +178,7 @@ jobs:
       - name: Download the released JAR
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.release-please.outputs.tag_name }}
+          TAG: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
         run: |
           set -euo pipefail
           mkdir -p target
@@ -171,7 +190,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
           HANGAR_API_KEY: ${{ secrets.HANGAR_API_KEY }}
-          TAG: ${{ needs.release-please.outputs.tag_name }}
+          TAG: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
         run: |
           set -euo pipefail
           jar="$(ls -1 target/*.jar | head -n1)"

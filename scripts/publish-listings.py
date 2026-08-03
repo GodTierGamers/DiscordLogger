@@ -202,6 +202,23 @@ def validate_game_versions(versions: list[str]) -> None:
 # ------------------------------------------------------------------ modrinth
 
 
+def modrinth_project_id() -> str:
+    """The project's real base62 id, resolved from its slug.
+
+    `project_id` in a version payload is NOT slug-or-id like the read endpoints
+    are -- Modrinth base62-decodes it. The 13-character slug overflows that
+    decode and comes back as a 400 that names neither the field nor the slug
+    ("Base62 decoding overflowed"), which is why this went unnoticed until a
+    real release tried to publish. Resolved at runtime rather than hardcoded so
+    the two can never disagree.
+    """
+    project = request(f"{MODRINTH_API}/project/{MODRINTH_PROJECT}")
+    ident = (project or {}).get("id", "")
+    if not ident:
+        fail(f"Modrinth returned no id for project '{MODRINTH_PROJECT}'")
+    return ident
+
+
 def publish_modrinth(
     token: str, jar: Path, version: str, game_versions: list[str], changelog: str, dry: bool
 ) -> None:
@@ -221,7 +238,7 @@ def publish_modrinth(
         "version_type": "release",
         "loaders": ["paper"],
         "featured": True,
-        "project_id": MODRINTH_PROJECT,
+        "project_id": modrinth_project_id(),
         "file_parts": ["file"],
         "primary_file": "file",
     }
