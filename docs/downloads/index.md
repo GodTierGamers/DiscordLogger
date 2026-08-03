@@ -14,7 +14,7 @@ or plugin manager installs from them. Nightly builds are only published here.
 <div class="dl-promo">
   <div class="dl-promo__text">
     <p class="dl-promo__title">Got the JAR? Build your config next</p>
-    <p class="dl-promo__sub">Pick what to log in your browser and download a ready-to-use <code>config.yml</code>.</p>
+    <p class="dl-promo__sub">Pick what to log in your browser and download ready-to-use <code>config.yml</code> and <code>lang.yml</code> files.</p>
   </div>
   <a class="dl-cta dl-cta--primary" href="/generator/">Open the generator</a>
 </div>

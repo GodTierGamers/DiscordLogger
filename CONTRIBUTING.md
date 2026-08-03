@@ -21,11 +21,12 @@ Everything after that is automated: merged work appears in the next **nightly bu
 - **Java <!-- dl:sync:java -->25<!-- /dl:sync -->** (Temurin recommended) and Maven.
 - `mvn -B -ntp clean package` must pass.
 - Test on a real **Paper <!-- dl:sync:paper_display -->26.x<!-- /dl:sync -->** server when your change touches runtime behavior — a clean compile is not a functional test.
-- **Config changes travel in lockstep**: if you add or change a `log.*` / `embeds.*` config key, the same PR must update the listener, `src/main/resources/config.yml`, and the website generator data (`docs/assets/configs/v*/options.json` + `config.template.yml`). Run the checker locally:
+- **Config changes travel in lockstep**: if you add or change a `log.*`, `embeds.*` or `filters.*` key — or any message in `lang.yml` — the same PR must update the code that reads it, the shipped file under `src/main/resources/`, and the website generator data (`docs/assets/configs/v*/options.json` plus the matching `config.template.yml` / `lang.template.yml`). Generating a config and changing nothing has to reproduce the shipped files byte for byte; that is checked, not assumed. Run it locally:
   ```bash
   python3 scripts/validate-config-generator.py
   ```
   CI runs it too and will fail the PR on a mismatch.
+- **`mvn -B -ntp test` must pass.** `ConfigMigrator` in particular runs once on every existing install, so a change there without a test is a change that gets rejected — settings people spent real time on are what breaks.
 - Be defensive around config: default safely, avoid NPEs, log clear errors.
 - Prefer small, focused PRs — one change per PR, since one PR = one changelog line.
 
