@@ -40,10 +40,6 @@
 # D O   N O T   E D I T #
 #########################
 
-# Identifies which config format this file uses, so the plugin can upgrade it
-# correctly when you update. Changing it will not convert anything -- it only
-# misleads the upgrader. If it goes missing the plugin works it out from the keys
-# below, so deleting it is survivable, just unnecessary.
 # Set automatically
 config-version: 10
 
@@ -93,47 +89,37 @@ filters:
   # arguments and a plugin prefix are ignored -- "/essentials:msg hi" matches "msg".
   # The defaults exist because these leak: login commands carry passwords in plain
   # text, and private messages are private.
-  ignored_commands:
-    - login
-    - register
-    - changepassword
-    - unregister
-    - msg
-    - tell
-    - whisper
-    - w
-    - r
-    - reply
+{{FILTER_ignored_commands}}
 
   # An ALLOW-list. When this has anything in it, ONLY these commands are logged and
   # everything else is skipped -- useful if you only care about moderation commands.
   # Leave empty to log everything except ignored_commands above.
-  only_log_commands: []
+{{FILTER_only_log_commands}}
 
   # Never log anything from these players. Accepts names or UUIDs, mixed freely.
-  ignored_players: []
+{{FILTER_ignored_players}}
 
   # Players with this permission are never logged -- useful for staff alts, or a bot
   # account whose activity would drown everything else. Empty disables the check.
-  exempt_permission: ""
+{{FILTER_exempt_permission}}
 
   # Never log events that happen in these worlds.
-  ignored_worlds: []
+{{FILTER_ignored_worlds}}
 
   # Skip chat messages containing any of these (case-insensitive).
-  ignored_chat_containing: []
+{{FILTER_ignored_chat_containing}}
 
   # Skip chat shorter than this many characters. 0 disables it.
   # Useful against "hi", "?", "." spam. Counts characters, not words.
-  minimum_chat_length: 0
+{{FILTER_minimum_chat_length}}
 
   # Advancements never logged. Matched on the full key, and a trailing * matches a
   # whole tab -- "minecraft:husbandry/*" is every farming advancement.
-  ignored_advancements: []
+{{FILTER_ignored_advancements}}
 
   # Recipe unlocks and tab roots fire constantly and mean nothing to a reader, so
   # they are skipped. Set true only if you genuinely want them.
-  log_recipe_advancements: false
+{{FILTER_log_recipe_advancements}}
 
   # Teleport causes never logged. Teleports are the noisiest event on most servers.
   # The defaults are the ones that are not really teleports at all -- Minecraft moves
@@ -143,28 +129,25 @@ filters:
   #         END_GATEWAY, SPECTATE, DISMOUNT, EXIT_BED, CONSUMABLE_EFFECT, UNKNOWN
   # Add PLUGIN if you use Essentials or similar -- /home, /warp and /spawn all
   # arrive as PLUGIN and are usually the bulk of what is left.
-  ignored_teleport_causes:
-    - EXIT_BED      # standing up from a bed
-    - DISMOUNT      # getting off a horse, boat or minecart
-    - SPECTATE      # a spectator jumping to a player
+{{FILTER_ignored_teleport_causes}}
 
   # Skip teleports shorter than this many blocks. 0 disables it.
   # Never applies across worlds -- a nether portal is not a short hop.
-  minimum_teleport_distance: 0
+{{FILTER_minimum_teleport_distance}}
 
   # Deaths with these causes are never logged. Same names as the death causes in
   # lang.yml, upper case: VOID, FALL, LAVA, KILL, ENTITY_ATTACK, and so on.
   # A void world or a parkour course can produce a lot of VOID and FALL deaths.
-  ignored_death_causes: []
+{{FILTER_ignored_death_causes}}
 
   # Explosions from these sources are never logged. Use the entity name for mob and
   # TNT explosions (CREEPER, PRIMED_TNT, END_CRYSTAL, FIREBALL, WITHER_SKULL) or the
   # block name for block ones (BED, RESPAWN_ANCHOR).
-  ignored_explosion_sources: []
+{{FILTER_ignored_explosion_sources}}
 
   # Skip explosions that destroyed fewer than this many blocks. 0 disables it.
   # A creeper going off in the air breaks nothing and is rarely worth a message.
-  minimum_explosion_blocks: 0
+{{FILTER_minimum_explosion_blocks}}
 
 ####################################################################################
 #                                                                                  #
@@ -276,4 +259,5 @@ log:
       enabled: {{LOG_moderation.whitelist_edit.enabled}}
       color: "{{COLOR_moderation.whitelist_edit}}" # dark teal
       webhook: "{{HOOK_moderation.whitelist_edit}}" # Send just this event elsewhere. Empty = use webhook.url above
+
 # CONFIG VERSION V10, GENERATED ON WEBSITE ON {{GENERATED_AT}}

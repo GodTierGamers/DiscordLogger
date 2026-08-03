@@ -80,7 +80,7 @@ Discord channel.
 <div class="dl-promo">
   <div class="dl-promo__text">
     <p class="dl-promo__title">Build your config without writing YAML</p>
-    <p class="dl-promo__sub">Pick your version, choose what to log, download the file. Runs entirely in your browser.</p>
+    <p class="dl-promo__sub">Pick your version, choose what to log and what to filter out, reword any message, download both files. Runs entirely in your browser.</p>
   </div>
   <a class="dl-cta dl-cta--primary" href="/generator/">Open the generator</a>
 </div>
@@ -99,7 +99,7 @@ Discord channel.
 
 The **[setup guide](/setup/)** covers creating the webhook and verifying it works.
 Prefer to configure everything up front? The **[config generator](/generator/)**
-builds a complete `config.yml` in your browser.
+builds both `config.yml` and `lang.yml` in your browser.
 
 ## Requirements
 

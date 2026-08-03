@@ -372,11 +372,17 @@ Internally the generator is still keyed on **config schema versions** (v9, v10�
 docs/assets/js/generator.js        LOADER — small, stable, shared
 docs/assets/configs/
   registry.json                    one entry per SCHEMA: { config: "v9", since: "2.1.5" }
-  v9/generator.js                  SELF-CONTAINED bundle: steps, styles, webhook payload, YAML builder
-  v9/options.json                  toggles/colors UI data (incl. defaultColor per event)
-  v9/config.template.yml           {{TOKEN}} output template
+  v9/generator.js                  SELF-CONTAINED bundle: steps, styles, webhook payload, YAML builders
+  v9/options.json                  UI data: events+colours, `filters`, `lang` groups
+  v9/config.template.yml           {{TOKEN}} output template for config.yml
+  v9/lang.template.yml             {{LANG_*}} output template for lang.yml (v10+)
   v9/config.yml                    reference copy of what shipped
+  v9/lang.yml                      reference copy of what shipped (v10+)
 ```
+
+**The generator emits every key in both files, and nothing is hardcoded in a template that the wizard cannot reach.** A setting the generator silently bakes in is one the user does not know they have — which is exactly what the fourteen filters were until they were wired up. Concretely: `options.json` carries `filters` (one entry per `filters.*` key, typed `list` / `choices` / `text` / `number` / `bool`) and `lang` (all messages, grouped, each with its shipped default). Adding a fifteenth filter or an eightieth message is a **data** change — one entry plus one `{{TOKEN}}` — never a code change to the bundle.
+
+**The invariant that makes this safe: generating and changing nothing must reproduce the shipped files byte for byte.** `validate-config-generator.py` enforces it in both directions — `render_filter()` there is a deliberate reimplementation of the bundle's renderer, so the two must agree, and the lang template is re-substituted with its declared defaults and diffed against `src/main/resources/lang.yml`. It also fails on a filter with no template slot, a template token with no entry, and a filter no Java source reads. Templates therefore may not carry text the shipped file lacks: a stray explanatory comment above `config-version` is enough to break the invariant, and did.
 
 **The isolation rule (the whole point): once a schema version has been *published*, never edit it again.** Old plugin versions must keep generating exactly the config they always did. Fix bugs only in the current unpublished schema; copy the folder forward instead of refactoring in place. The loader↔bundle contract is documented at the top of both files and is frozen — a bundle registers `window.DL_GENERATORS['v9'] = launch` and receives `ctx` (`mount`, `configVersion`, `pluginVersion`, `beta`, `backToVersions`; `proxyUrl` is still passed for the frozen v9 bundle but is always `""`).
 
@@ -408,7 +414,7 @@ docs/assets/configs/
 | `src/main/resources/config.yml` | **REPLACE** with v10 content; trailer becomes `CONFIG VERSION V10` | The JAR only ever carries the current schema. `ConfigMigrator` migrates old user files forward at runtime. |
 | `docs/assets/configs/v9/**` | **DO NOT TOUCH — ever again** | Bundle, options, template, mirror. Someone still running a v9 plugin must keep generating exactly the config they always did. |
 | `docs/config/v9/index.md` | **KEEP FOREVER** | v9 users still need their docs. Old schema docs are never deleted, only superseded. |
-| `docs/assets/configs/v10/**` | **CREATE** — copy v9's folder, then adapt it | Copy forward; never refactor an old schema in place. |
+| `docs/assets/configs/v10/**` | **CREATE** — copy v9's folder, then adapt it | Copy forward; never refactor an old schema in place. All six files: bundle, `options.json`, both templates, both mirrors. |
 | `docs/config/v10/index.md` | **CREATE** | New docs page for the new schema. |
 | `registry.json` | **ADD** one line: `{ "config": "v10", "since": "<first build shipping it>" }` | The v9 entry stays untouched. |
 
@@ -444,7 +450,7 @@ Compare that against the newest entry in `docs/assets/configs/registry.json`. If
 #### Phase 2 — the website generator (the part with the isolation rule)
 
 5. **`cp -r docs/assets/configs/v<N-1> docs/assets/configs/v<N>`** — copy forward, then adapt the copy. Never refactor the old folder in place.
-   - **Immediately change `const CONFIG_VERSION` at the top of the copied `generator.js`.** It drives three things at once: the key the bundle registers under (`window.DL_GENERATORS[...]`), the directory it fetches `options.json` and the template from, and the version shown to the user. Left at the old value, the new bundle registers as the *previous* schema and serves the previous schema's data — so the new generator silently emits the **old** config. Valid YAML, wrong file, no error anywhere. `validate-config-generator.py` now checks this (it was missed once and only surfaced by driving the UI).
+   - **Immediately change `const CONFIG_VERSION` at the top of the copied `generator.js`.** It drives three things at once: the key the bundle registers under (`window.DL_GENERATORS[...]`), the directory it fetches `options.json` and the template from, and the version shown to the user. Left at the old value, the new bundle registers as the *previous* schema and serves the previous schema's data — so the new generator silently emits the **old** config. Valid YAML, wrong file, no error anywhere. `validate-config-generator.py` now checks this (it was missed once and only surfaced by driving the UI). The same copy-forward trap bit the **style element's id**, which is built from `CONFIG_VERSION` for exactly this reason: hardcoded, it made `injectStyles()` a no-op for anyone who opened the older generator first in the same session, silently dropping every rule the new bundle added.
 6. **Adapt the new bundle**: `generator.js` (registers `window.DL_GENERATORS['v<N>']`), `options.json`, the template, and the `config.yml` mirror. The mirror must match `src/main/resources/config.yml` byte for byte apart from the trailer's `BUILT` suffix.
 7. **DO NOT TOUCH `docs/assets/configs/v<N-1>/**` ever again.** Someone still running the older plugin must keep generating exactly the config they always did.
 

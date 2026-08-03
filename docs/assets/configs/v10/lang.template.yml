@@ -1,0 +1,350 @@
+####################################################################################################################################
+#                                                                                                                                  #
+#    /$$$$$$$  /$$                                               /$$ /$$                                                           #
+#   | $$__  $$|__/                                              | $$| $$                                                           #
+#   | $$  \ $$ /$$  /$$$$$$$  /$$$$$$$  /$$$$$$   /$$$$$$   /$$$$$$$| $$        /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$    #
+#   | $$  | $$| $$ /$$_____/ /$$_____/ /$$__  $$ /$$__  $$ /$$__  $$| $$       /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$   #
+#   | $$  | $$| $$|  $$$$$$ | $$      | $$  \ $$| $$  \__/| $$  | $$| $$      | $$  \ $$| $$  \ $$| $$  \ $$| $$$$$$$$| $$  \__/   #
+#   | $$  | $$| $$ \____  $$| $$      | $$  | $$| $$      | $$  | $$| $$      | $$  | $$| $$  | $$| $$  | $$| $$_____/| $$         #
+#   | $$$$$$$/| $$ /$$$$$$$/|  $$$$$$$|  $$$$$$/| $$      |  $$$$$$$| $$$$$$$$|  $$$$$$/|  $$$$$$$|  $$$$$$$|  $$$$$$$| $$         #
+#   |_______/ |__/|_______/  \_______/ \______/ |__/       \_______/|________/ \______/  \____  $$ \____  $$ \_______/|__/         #
+#                                                                                     /$$  \ $$ /$$  \ $$                          #
+#                                                                                    |  $$$$$$/|  $$$$$$/                          #
+#                                                                                     \______/  \______/                           #
+#                                                                                                                                  #
+####################################################################################################################################
+
+#######################################################################################
+#                                                                                     #
+#    _____              __ _         _____                           _                #
+#   /  __ \            / _(_)       |  __ \                         | |               #
+#   | /  \/ ___  _ __ | |_ _  __ _  | |  \/ ___ _ __   ___ _ __ __ _| |_ ___  _ __    #
+#   | |    / _ \| '_ \|  _| |/ _` | | | __ / _ \ '_ \ / _ \ '__/ _` | __/ _ \| '__|   #
+#   | \__/\ (_) | | | | | | | (_| | | |_\ \  __/ | | |  __/ | | (_| | || (_) | |      #
+#    \____/\___/|_| |_|_| |_|\__, |  \____/\___|_| |_|\___|_|  \__,_|\__\___/|_|      #
+#                             __/ |                                                   #
+#                            |___/                                                    #
+#                                                                                     #
+#######################################################################################
+
+# If you don't feel like configuring yourself, try out our config generator, simply select your plugin version and configure easily
+# https://discordlogger.godtiergamers.xyz/generator/
+
+#############################
+# D O C U M E N T A T I O N #
+#############################
+
+# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v10/
+
+#########################
+# D O   N O T   E D I T #
+#########################
+
+# Set automatically.
+config-version: 10
+
+#####################################################
+#                                                   #
+#   _                                               #
+#  | |    __ _ _ __   __ _ _   _  __ _  __ _  ___   #
+#  | |   / _` | '_ \ / _` | | | |/ _` |/ _` |/ _ \  #
+#  | |__| (_| | | | | (_| | |_| | (_| | (_| |  __/  #
+#  |_____\__,_|_| |_|\__, |\__,_|\__,_|\__, |\___|  #
+#                    |___/             |___/        #
+#                                                   #
+#####################################################
+
+# Every message this plugin shows you, in one place. Change any of them and run
+#   /discordlogger reload
+# The plugin does not need restarting.
+#
+# ---------------------------------------------------------------------------
+# THE TWO SECTIONS ARE NOT INTERCHANGEABLE
+# ---------------------------------------------------------------------------
+#
+#   chat:     shown IN GAME. Uses MiniMessage for colour and formatting.
+#   discord:  posted TO DISCORD. Plain text only.
+#
+# Discord renders Markdown, not MiniMessage. A <green> tag in the discord
+# section is posted to your channel as the literal characters "<green>", so
+# keep formatting tags out of it. Discord's own Markdown does work there:
+# **bold**, *italic*, `code`, ~~strikethrough~~.
+#
+# ---------------------------------------------------------------------------
+# MINIMESSAGE, IN 30 SECONDS
+# ---------------------------------------------------------------------------
+#
+#   <red>text</red>            colour   (also: green, blue, yellow, gold,
+#                                        aqua, gray, dark_gray, white, black,
+#                                        dark_red, dark_green, dark_aqua,
+#                                        dark_blue, dark_purple, light_purple)
+#   <#ff8800>text</#ff8800>    any hex colour
+#   <bold>text</bold>          also <italic>, <underlined>, <strikethrough>
+#   <gradient:red:blue>text</gradient>
+#   <click:open_url:'https://example.com'>text</click>
+#   <hover:show_text:'Tooltip'>text</hover>
+#
+# Full reference: https://docs.advntr.dev/minimessage/format.html
+#
+# A tag you spell wrong is NOT an error -- it is shown to the player exactly as
+# typed. If you see "<gren>" in game, that is the tag, not a bug.
+#
+# ---------------------------------------------------------------------------
+# PLACEHOLDERS
+# ---------------------------------------------------------------------------
+#
+# Placeholders look like {player} and are replaced before the message is sent.
+# Each message below lists the ones it accepts, and they are NOT interchangeable
+# between messages -- {player} only works where the plugin has a player to put
+# there.
+#
+# A placeholder you spell wrong is left in the message rather than blanked, so
+# a typo shows up as "{palyer} joined the server" instead of a sentence with a
+# hole in it. That is deliberate: a visible mistake is a fixable one.
+#
+# You can also delete a placeholder entirely if you do not want that detail.
+#   player-join: "{player} joined"        ->  "Steve joined"
+#   player-join: "Someone joined"         ->  "Someone joined"
+#
+# ---------------------------------------------------------------------------
+# IF YOU BREAK SOMETHING
+# ---------------------------------------------------------------------------
+#
+# * Deleted a message?      The plugin falls back to the English shipped inside
+#                           the jar. Nothing breaks.
+# * Deleted a whole key?    You will see the key name itself, e.g.
+#                           "chat.reload-ok". That names exactly what to fix.
+# * Deleted the whole file? It is written again on the next start.
+# * Broken the YAML?        The plugin logs the parse error on start and falls
+#                           back to English. Check indentation first -- it must
+#                           be spaces, never tabs.
+#
+# Console messages are deliberately NOT in this file. They stay in English so
+# that searching an error, or pasting it into a support thread, still matches
+# what everyone else sees.
+#
+##############################################################################
+
+chat:
+
+  # Put in front of the messages that use a prefix. Set to "" to remove it.
+  prefix: "{{LANG_chat.prefix}}"
+
+  # ---------------------------------------------------------------- /reload --
+
+  # Placeholders: {ms} -- how long the reload took, in milliseconds
+  reload-ok: "{{LANG_chat.reload-ok}}"
+
+  # Shown when the config loaded but webhook.url is empty or malformed.
+  reload-no-webhook: "{{LANG_chat.reload-no-webhook}}"
+  reload-no-webhook-hint: "{{LANG_chat.reload-no-webhook-hint}}"
+
+  # Shown when reloading detected a config from a NEWER plugin version.
+  # Placeholders: {installed} -- the schema in config.yml
+  #               {shipped}   -- the schema this build understands
+  reload-config-ahead: "{{LANG_chat.reload-config-ahead}}"
+  reload-config-ahead-fix: "{{LANG_chat.reload-config-ahead-fix}}"
+
+  # Shown when reloading upgraded the config from an older schema.
+  # Placeholders: {from}, {to}
+  reload-config-upgraded: "{{LANG_chat.reload-config-upgraded}}"
+
+  # --------------------------------------------------------------- /webhook --
+
+  # Shown when the command is run with no URL.
+  webhook-usage: "{{LANG_chat.webhook-usage}}"
+  webhook-where: "{{LANG_chat.webhook-where}}"
+  # Shown only to players, not from console -- a reminder that the URL is a secret.
+  webhook-private: "{{LANG_chat.webhook-private}}"
+
+  # Shown when the URL is not a Discord webhook.
+  webhook-invalid: "{{LANG_chat.webhook-invalid}}"
+  webhook-expected: "{{LANG_chat.webhook-expected}}"
+
+  # Success. Placeholders: {channel} -- the channel id from the URL.
+  # The full URL is never shown back, on purpose: it is a credential, and this
+  # message may be on someone's screen or stream.
+  webhook-set: "{{LANG_chat.webhook-set}}"
+
+  webhook-write-failed: "{{LANG_chat.webhook-write-failed}}"
+  webhook-rejected: "{{LANG_chat.webhook-rejected}}"
+
+  # ----------------------------------------------------------------- /regen --
+
+  # Shown when /discordlogger regen is run without "confirm".
+  regen-warning: "{{LANG_chat.regen-warning}}"
+  regen-confirm: "{{LANG_chat.regen-confirm}}"
+
+  # Placeholders: {schema} -- the config schema that was written, e.g. "v10"
+  regen-done: "{{LANG_chat.regen-done}}"
+  # Placeholders: {file} -- the backup filename
+  regen-backup: "{{LANG_chat.regen-backup}}"
+  regen-no-webhook: "{{LANG_chat.regen-no-webhook}}"
+
+  regen-no-bundled: "{{LANG_chat.regen-no-bundled}}"
+  # Placeholders: {error}
+  regen-read-failed: "{{LANG_chat.regen-read-failed}}"
+  regen-write-failed: "{{LANG_chat.regen-write-failed}}"
+
+  # ------------------------------------------------------- command handling --
+
+  help-header: "{{LANG_chat.help-header}}"
+  # One line per subcommand.
+  # Placeholders: {label} -- the command as typed (discordlogger, dlog, dlogger)
+  #               {command}, {description}
+  help-entry: "{{LANG_chat.help-entry}}"
+
+  # Placeholders: {input} -- what they actually typed
+  unknown-subcommand: "{{LANG_chat.unknown-subcommand}}"
+  # Placeholders: {label}, {command}
+  no-permission: "{{LANG_chat.no-permission}}"
+
+  # ------------------------------------------------------------- on joining --
+
+  # Shown to OPS when config.yml is newer than this build understands.
+  # Placeholders: {installed}, {shipped}
+  config-ahead: "{{LANG_chat.config-ahead}}"
+  config-ahead-fix: "{{LANG_chat.config-ahead-fix}}"
+
+  # Shown to OPS once per nightly build. Never appears on a stable release.
+  nightly-notice: "{{LANG_chat.nightly-notice}}"
+
+
+##############################################################################
+# DISCORD -- plain text. No MiniMessage tags; Discord Markdown works.        #
+##############################################################################
+
+discord:
+
+  # Placeholders: {player} -- their display name, or nickname if enabled
+  player-join: "{{LANG_discord.player-join}}"
+  player-quit: "{{LANG_discord.player-quit}}"
+
+  # Placeholders: {player}, {message}
+  # ** ** is Discord's bold. The message is escaped before substitution, so a
+  # player cannot inject Markdown into your channel.
+  player-chat: "{{LANG_discord.player-chat}}"
+
+  # Placeholders: {player}, {command} -- the command includes its leading slash
+  # Commands listed in filters.ignored_commands never reach here at all.
+  player-command: "{{LANG_discord.player-command}}"
+
+  # Placeholders: {sender} -- "Server" for the console, or the sender's name
+  #               {command}
+  server-command: "{{LANG_discord.server-command}}"
+
+  death:
+
+    # The line under the embed title. Placeholders: {player}
+    description: "{{LANG_discord.death.description}}"
+
+    # Field NAMES, not values -- the bold label above each field in the embed.
+    cause-field: "{{LANG_discord.death.cause-field}}"
+    coords-field: "{{LANG_discord.death.coords-field}}"
+
+    # Only shown when log.player.death.show_coords is true in config.yml.
+    # Placeholders: {x}, {y}, {z} -- block coordinates
+    #               {world}           -- the world's folder name
+    coords-value: "{{LANG_discord.death.coords-value}}"
+
+    # ---- how the death happened ------------------------------------------
+    # These four cover deaths caused by a player or mob. The causes list below
+    # covers everything else.
+
+    # Killed by another player.
+    # Placeholders: {killer} -- their display name
+    #               {weapon} -- " [Diamond Sword]", or EMPTY if bare-handed.
+    #                             The brackets and leading space are part of the
+    #                             value, so remove {weapon} entirely to hide it.
+    slain-by-player: "{{LANG_discord.death.slain-by-player}}"
+
+    # Killed by a mob. Placeholders: {killer} -- e.g. "a zombie"
+    slain-by-mob: "{{LANG_discord.death.slain-by-mob}}"
+
+    # Shot from range. Placeholders: {killer} -- a player or a mob
+    shot-by: "{{LANG_discord.death.shot-by}}"
+    # Shot, but the shooter is no longer known (they logged off, or despawned).
+    shot: "{{LANG_discord.death.shot}}"
+
+    # Last resort: the server reported a cause this plugin has no wording for.
+    # If you ever see this in your channel, it is worth reporting -- it means
+    # Minecraft added a damage type.
+    unknown: "{{LANG_discord.death.unknown}}"
+
+    # ---- one line per damage cause ---------------------------------------
+    # Keys are Minecraft's own damage causes, lowercased with hyphens. Do not
+    # rename them; the plugin looks each one up by that exact name.
+    causes:
+      # Fell too far.
+      fall: "{{LANG_discord.death.causes.fall}}"
+      # Swam in lava.
+      lava: "{{LANG_discord.death.causes.lava}}"
+      # Standing in fire.
+      fire: "{{LANG_discord.death.causes.fire}}"
+      # Still burning after leaving the fire.
+      fire-tick: "{{LANG_discord.death.causes.fire-tick}}"
+      # Ran out of air.
+      drowning: "{{LANG_discord.death.causes.drowning}}"
+      # Inside a solid block.
+      suffocation: "{{LANG_discord.death.causes.suffocation}}"
+      # Fell out of the world.
+      void: "{{LANG_discord.death.causes.void}}"
+      # Touched a cactus or sweet berry bush.
+      contact: "{{LANG_discord.death.causes.contact}}"
+      # TNT, a bed in the Nether, a respawn anchor in the Overworld.
+      block-explosion: "{{LANG_discord.death.causes.block-explosion}}"
+      # A creeper, a ghast fireball, an end crystal.
+      entity-explosion: "{{LANG_discord.death.causes.entity-explosion}}"
+      # A potion of harming, or an evoker's fangs.
+      magic: "{{LANG_discord.death.causes.magic}}"
+      # Poison ran the health down.
+      poison: "{{LANG_discord.death.causes.poison}}"
+      # The wither effect.
+      wither: "{{LANG_discord.death.causes.wither}}"
+      # Hunger reached zero.
+      starvation: "{{LANG_discord.death.causes.starvation}}"
+      # Powder snow.
+      freeze: "{{LANG_discord.death.causes.freeze}}"
+      # Struck by lightning.
+      lightning: "{{LANG_discord.death.causes.lightning}}"
+      # Standing on magma blocks.
+      hot-floor: "{{LANG_discord.death.causes.hot-floor}}"
+      # Too many entities in one block.
+      cramming: "{{LANG_discord.death.causes.cramming}}"
+      # The ender dragon's breath cloud.
+      dragon-breath: "{{LANG_discord.death.causes.dragon-breath}}"
+      # Attacking someone wearing Thorns armour.
+      thorns: "{{LANG_discord.death.causes.thorns}}"
+      # The /kill command.
+      kill: "{{LANG_discord.death.causes.kill}}"
+      # /kill used on yourself.
+      suicide: "{{LANG_discord.death.causes.suicide}}"
+      # Outside the world border.
+      world-border: "{{LANG_discord.death.causes.world-border}}"
+      # A warden's ranged attack.
+      sonic-boom: "{{LANG_discord.death.causes.sonic-boom}}"
+      # Standing in a campfire.
+      campfire: "{{LANG_discord.death.causes.campfire}}"
+      # An anvil or gravel landed on them.
+      falling-block: "{{LANG_discord.death.causes.falling-block}}"
+      # Elytra flight into a wall — kinetic damage.
+      fly-into-wall: "{{LANG_discord.death.causes.fly-into-wall}}"
+      # An axolotl or dolphin out of water.
+      dryout: "{{LANG_discord.death.causes.dryout}}"
+      # A snow golem in a warm biome.
+      melting: "{{LANG_discord.death.causes.melting}}"
+      # A mob or player hit them, when the attacker is no longer known.
+      entity-attack: "{{LANG_discord.death.causes.entity-attack}}"
+      # A sweeping sword attack, attacker no longer known.
+      entity-sweep-attack: "{{LANG_discord.death.causes.entity-sweep-attack}}"
+      # An arrow or similar, shooter no longer known.
+      projectile: "{{LANG_discord.death.causes.projectile}}"
+      # Damage dealt by another plugin. Nothing truthful can be said about it.
+      custom: "{{LANG_discord.death.causes.custom}}"
+
+  # The field added to a join when the player came from Bedrock, if
+  # log.player.join.show_platform is true. It NEVER says "Java" -- see the docs.
+  platform-field: "{{LANG_discord.platform-field}}"
+  platform-bedrock: "{{LANG_discord.platform-bedrock}}"
+
+# CONFIG VERSION V10, GENERATED ON WEBSITE ON {{GENERATED_AT}}

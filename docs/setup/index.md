@@ -118,7 +118,7 @@ log:
 
 Three ways to go further:
 
-- **[Config generator](/generator/)** — pick what you want in your browser and download the finished file.
+- **[Config generator](/generator/)** — pick what you want in your browser and download the finished `config.yml` and `lang.yml`.
 - **[Configuration reference](/config/)** — every key, with examples.
 - **Send events to different channels** — put a webhook URL on any individual event, so moderation can go somewhere private while chat stays public.
 
@@ -157,5 +157,5 @@ If something looks wrong after an update, `/discordlogger regen confirm` rebuild
 ## Next
 
 - **[Configuration reference](/config/)** — every key in `config.yml` and `lang.yml`
-- **[Config generator](/generator/)** — build a config without editing YAML
+- **[Config generator](/generator/)** — build both files without editing YAML
 - **[Report a problem](https://github.com/GodTierGamers/DiscordLogger/issues/new/choose)**

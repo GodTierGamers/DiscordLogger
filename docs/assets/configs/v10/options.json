@@ -3,7 +3,7 @@
     {
       "id": "player",
       "label": "Player Events",
-      "description": "Joins, quits, chat, commands, deaths\u2026",
+      "description": "Joins, quits, chat, commands, deaths…",
       "items": [
         {
           "id": "join",
@@ -210,5 +210,774 @@
         }
       ]
     }
-  ]
+  ],
+  "filters": [
+    {
+      "key": "ignored_commands",
+      "type": "list",
+      "default": [
+        "login",
+        "register",
+        "changepassword",
+        "unregister",
+        "msg",
+        "tell",
+        "whisper",
+        "w",
+        "r",
+        "reply"
+      ],
+      "label": "Never log these commands",
+      "note": "Matched on the command word alone, so arguments and a plugin prefix are ignored — \"/essentials:msg hi\" matches \"msg\". The defaults are here because they leak: login commands carry passwords in plain text, and private messages are private. Clearing this list posts both to your channel.",
+      "placeholder": "one command per line, no slash"
+    },
+    {
+      "key": "only_log_commands",
+      "type": "list",
+      "default": [],
+      "label": "Only log these commands",
+      "note": "An allow-list. Put anything here and ONLY these commands are logged — useful if you just want moderation commands. Leave empty to log everything except the list above.",
+      "placeholder": "leave empty unless you want an allow-list"
+    },
+    {
+      "key": "ignored_players",
+      "type": "list",
+      "default": [],
+      "label": "Never log these players",
+      "note": "Names or UUIDs, mixed freely.",
+      "placeholder": "one name or UUID per line"
+    },
+    {
+      "key": "exempt_permission",
+      "type": "text",
+      "default": "",
+      "label": "Exempt permission",
+      "note": "Players holding this permission are never logged — handy for staff alts or a bot account that would drown everything else. Empty disables the check.",
+      "placeholder": "e.g. discordlogger.exempt"
+    },
+    {
+      "key": "ignored_worlds",
+      "type": "list",
+      "default": [],
+      "label": "Never log these worlds",
+      "note": "Uses the world's folder name, e.g. world_nether.",
+      "placeholder": "one world per line"
+    },
+    {
+      "key": "ignored_chat_containing",
+      "type": "list",
+      "default": [],
+      "label": "Skip chat containing",
+      "note": "Case-insensitive substring match.",
+      "placeholder": "one phrase per line"
+    },
+    {
+      "key": "minimum_chat_length",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "label": "Minimum chat length",
+      "note": "Skips chat shorter than this many characters — useful against \"hi\", \"?\" and \".\" spam. Counts characters, not words. 0 disables it."
+    },
+    {
+      "key": "ignored_advancements",
+      "type": "list",
+      "default": [],
+      "label": "Never log these advancements",
+      "note": "Matched on the full key. A trailing * matches a whole tab, so minecraft:husbandry/* is every farming advancement.",
+      "placeholder": "e.g. minecraft:husbandry/*"
+    },
+    {
+      "key": "log_recipe_advancements",
+      "type": "bool",
+      "default": false,
+      "label": "Log recipe unlocks and tab roots",
+      "note": "These fire constantly and mean nothing to a reader, so they are skipped by default. Turn on only if you genuinely want them."
+    },
+    {
+      "key": "ignored_teleport_causes",
+      "type": "choices",
+      "default": [
+        "EXIT_BED",
+        "DISMOUNT",
+        "SPECTATE"
+      ],
+      "choices": [
+        {
+          "value": "PLUGIN",
+          "note": "another plugin moved them — /home, /warp, /spawn"
+        },
+        {
+          "value": "COMMAND",
+          "note": "/tp and friends"
+        },
+        {
+          "value": "ENDER_PEARL",
+          "note": ""
+        },
+        {
+          "value": "CHORUS_FRUIT",
+          "note": ""
+        },
+        {
+          "value": "NETHER_PORTAL",
+          "note": ""
+        },
+        {
+          "value": "END_PORTAL",
+          "note": ""
+        },
+        {
+          "value": "END_GATEWAY",
+          "note": ""
+        },
+        {
+          "value": "SPECTATE",
+          "note": "a spectator jumping to a player"
+        },
+        {
+          "value": "DISMOUNT",
+          "note": "getting off a horse, boat or minecart"
+        },
+        {
+          "value": "EXIT_BED",
+          "note": "standing up from a bed"
+        },
+        {
+          "value": "CONSUMABLE_EFFECT",
+          "note": ""
+        },
+        {
+          "value": "UNKNOWN",
+          "note": ""
+        }
+      ],
+      "label": "Never log these teleport causes",
+      "note": "Teleports are the noisiest event on most servers. The three defaults are not really teleports at all — Minecraft moves the player a block or two and reports it as one. Tick PLUGIN if you run Essentials: /home, /warp and /spawn all arrive that way and are usually the bulk of what is left."
+    },
+    {
+      "key": "minimum_teleport_distance",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "label": "Minimum teleport distance (blocks)",
+      "note": "Never applies across worlds — a nether portal is not a short hop. 0 disables it."
+    },
+    {
+      "key": "ignored_death_causes",
+      "type": "choices",
+      "default": [],
+      "choices": [
+        {
+          "value": "FALL",
+          "note": "Fell from a high place"
+        },
+        {
+          "value": "LAVA",
+          "note": "Tried to swim in lava"
+        },
+        {
+          "value": "FIRE",
+          "note": "Burned to death"
+        },
+        {
+          "value": "FIRE_TICK",
+          "note": "Burned to death"
+        },
+        {
+          "value": "DROWNING",
+          "note": "Drowned"
+        },
+        {
+          "value": "SUFFOCATION",
+          "note": "Suffocated in a wall"
+        },
+        {
+          "value": "VOID",
+          "note": "Fell into the void"
+        },
+        {
+          "value": "CONTACT",
+          "note": "Was pricked to death"
+        },
+        {
+          "value": "BLOCK_EXPLOSION",
+          "note": "Blew up"
+        },
+        {
+          "value": "ENTITY_EXPLOSION",
+          "note": "Blew up"
+        },
+        {
+          "value": "MAGIC",
+          "note": "Was killed by magic"
+        },
+        {
+          "value": "POISON",
+          "note": "Was poisoned"
+        },
+        {
+          "value": "WITHER",
+          "note": "Withered away"
+        },
+        {
+          "value": "STARVATION",
+          "note": "Starved to death"
+        },
+        {
+          "value": "FREEZE",
+          "note": "Froze to death"
+        },
+        {
+          "value": "LIGHTNING",
+          "note": "Was struck by lightning"
+        },
+        {
+          "value": "HOT_FLOOR",
+          "note": "Discovered the floor was lava"
+        },
+        {
+          "value": "CRAMMING",
+          "note": "Was squished too much"
+        },
+        {
+          "value": "DRAGON_BREATH",
+          "note": "Was roasted by dragon breath"
+        },
+        {
+          "value": "THORNS",
+          "note": "Was killed by thorns"
+        },
+        {
+          "value": "KILL",
+          "note": "Killed by command"
+        },
+        {
+          "value": "SUICIDE",
+          "note": "Killed by command"
+        },
+        {
+          "value": "WORLD_BORDER",
+          "note": "Left the world border"
+        },
+        {
+          "value": "SONIC_BOOM",
+          "note": "Hit by a warden's sonic boom"
+        },
+        {
+          "value": "CAMPFIRE",
+          "note": "Burned on a campfire"
+        },
+        {
+          "value": "FALLING_BLOCK",
+          "note": "Squashed by a falling block"
+        },
+        {
+          "value": "FLY_INTO_WALL",
+          "note": "Flew into a wall"
+        },
+        {
+          "value": "DRYOUT",
+          "note": "Dried out"
+        },
+        {
+          "value": "MELTING",
+          "note": "Melted"
+        },
+        {
+          "value": "ENTITY_ATTACK",
+          "note": "Slain"
+        },
+        {
+          "value": "ENTITY_SWEEP_ATTACK",
+          "note": "Slain"
+        },
+        {
+          "value": "PROJECTILE",
+          "note": "Shot"
+        },
+        {
+          "value": "CUSTOM",
+          "note": "Died"
+        }
+      ],
+      "label": "Never log these death causes",
+      "note": "A void world or a parkour course can produce a lot of VOID and FALL deaths."
+    },
+    {
+      "key": "ignored_explosion_sources",
+      "type": "list",
+      "default": [],
+      "label": "Never log these explosion sources",
+      "note": "The entity name for mob and TNT explosions (CREEPER, PRIMED_TNT, END_CRYSTAL, FIREBALL, WITHER_SKULL) or the block name for block ones (BED, RESPAWN_ANCHOR).",
+      "placeholder": "one source per line"
+    },
+    {
+      "key": "minimum_explosion_blocks",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "label": "Minimum blocks destroyed",
+      "note": "A creeper going off in the air breaks nothing and is rarely worth a message. 0 disables it."
+    }
+  ],
+  "lang": {
+    "sections": [
+      {
+        "id": "chat",
+        "label": "In-game messages",
+        "note": "Shown to players and console. MiniMessage formatting: <red>text</red>, <bold>, <gradient:red:blue>. A tag you spell wrong is shown to the player exactly as typed rather than erroring."
+      },
+      {
+        "id": "discord",
+        "label": "Discord messages",
+        "note": "Posted to your channel. Plain text — MiniMessage tags would appear literally. Discord's own Markdown works: **bold**, *italic*, `code`."
+      }
+    ],
+    "groups": [
+      {
+        "id": "chat-command",
+        "label": "Command replies",
+        "section": "chat",
+        "keys": [
+          {
+            "key": "chat.prefix",
+            "default": "<gold>[DiscordLogger]</gold> ",
+            "note": "Put in front of the messages that use a prefix. Set to \"\" to remove it."
+          },
+          {
+            "key": "chat.help-header",
+            "default": "<aqua>DiscordLogger Commands:</aqua>"
+          },
+          {
+            "key": "chat.help-entry",
+            "default": "<gray>  /{label} {command}<dark_gray> - <white>{description}",
+            "note": "One line per subcommand. Placeholders: {label} -- the command as typed (discordlogger, dlog, dlogger) {command}, {description}"
+          },
+          {
+            "key": "chat.unknown-subcommand",
+            "default": "<red>Unknown subcommand: {input}</red>",
+            "note": "Placeholders: {input} -- what they actually typed"
+          },
+          {
+            "key": "chat.no-permission",
+            "default": "<red>You do not have permission to use /{label} {command}</red>",
+            "note": "Placeholders: {label}, {command}"
+          }
+        ]
+      },
+      {
+        "id": "chat-reload",
+        "label": "/discordlogger reload",
+        "section": "chat",
+        "keys": [
+          {
+            "key": "chat.reload-ok",
+            "default": "<green>DiscordLogger configuration reloaded ({ms} ms).</green>",
+            "note": "Placeholders: {ms} -- how long the reload took, in milliseconds"
+          },
+          {
+            "key": "chat.reload-no-webhook",
+            "default": "<red>Config reloaded, but webhook.url is missing or invalid.</red>",
+            "note": "Shown when the config loaded but webhook.url is empty or malformed."
+          },
+          {
+            "key": "chat.reload-no-webhook-hint",
+            "default": "<red>Set a valid Discord webhook URL and try again.</red>"
+          },
+          {
+            "key": "chat.reload-config-ahead",
+            "default": "<red>Your config.yml (schema v{installed}) is newer than this build (v{shipped}). Keys it does not recognise are ignored.</red>",
+            "note": "Shown when reloading detected a config from a NEWER plugin version. Placeholders: {installed} -- the schema in config.yml {shipped}   -- the schema this build understands"
+          },
+          {
+            "key": "chat.reload-config-ahead-fix",
+            "default": "<red>Update the plugin, or run <white>/discordlogger regen</white> to start fresh.</red>"
+          },
+          {
+            "key": "chat.reload-config-upgraded",
+            "default": "<green>config.yml upgraded from schema v{from} to v{to} (previous file saved as config.old.yml).</green>",
+            "note": "Shown when reloading upgraded the config from an older schema. Placeholders: {from}, {to}"
+          }
+        ]
+      },
+      {
+        "id": "chat-webhook",
+        "label": "/discordlogger webhook",
+        "section": "chat",
+        "keys": [
+          {
+            "key": "chat.webhook-usage",
+            "default": "<yellow>Usage: <white>/discordlogger webhook <url></white></yellow>",
+            "note": "Shown when the command is run with no URL."
+          },
+          {
+            "key": "chat.webhook-where",
+            "default": "<gray>Create one in Discord under Channel Settings > Integrations > Webhooks.</gray>"
+          },
+          {
+            "key": "chat.webhook-private",
+            "default": "<gray>Anyone who sees the URL can post to that channel, so avoid typing it on a shared screen. It is never shown back to you.</gray>",
+            "note": "Shown only to players, not from console -- a reminder that the URL is a secret."
+          },
+          {
+            "key": "chat.webhook-invalid",
+            "default": "<red>That does not look like a Discord webhook URL.</red>",
+            "note": "Shown when the URL is not a Discord webhook."
+          },
+          {
+            "key": "chat.webhook-expected",
+            "default": "<gray>Expected: https://discord.com/api/webhooks/<id>/<token></gray>"
+          },
+          {
+            "key": "chat.webhook-set",
+            "default": "<green>Webhook set and reloaded - logging to channel {channel}.</green>",
+            "note": "Success. Placeholders: {channel} -- the channel id from the URL. The full URL is never shown back, on purpose: it is a credential, and this message may be on someone's screen or stream."
+          },
+          {
+            "key": "chat.webhook-write-failed",
+            "default": "<red>Could not write webhook.url to config.yml. Check the file exists and is writable.</red>"
+          },
+          {
+            "key": "chat.webhook-rejected",
+            "default": "<red>Saved, but the plugin did not accept it. Check config.yml and the console.</red>"
+          }
+        ]
+      },
+      {
+        "id": "chat-regen",
+        "label": "/discordlogger regen",
+        "section": "chat",
+        "keys": [
+          {
+            "key": "chat.regen-warning",
+            "default": "<yellow>This replaces config.yml with the default from this build. Your current file is backed up, but your settings are NOT carried over.</yellow>",
+            "note": "Shown when /discordlogger regen is run without \"confirm\"."
+          },
+          {
+            "key": "chat.regen-confirm",
+            "default": "<yellow>Run <white>/discordlogger regen confirm</white> to go ahead.</yellow>"
+          },
+          {
+            "key": "chat.regen-done",
+            "default": "<green>config.yml rebuilt at schema {schema}.</green>",
+            "note": "Placeholders: {schema} -- the config schema that was written, e.g. \"v10\""
+          },
+          {
+            "key": "chat.regen-backup",
+            "default": "<gray>Previous file saved as {file}</gray>",
+            "note": "Placeholders: {file} -- the backup filename"
+          },
+          {
+            "key": "chat.regen-no-webhook",
+            "default": "<red>The new config has no webhook URL yet - set webhook.url, then run /discordlogger reload.</red>"
+          },
+          {
+            "key": "chat.regen-no-bundled",
+            "default": "<red>This build has no bundled config.yml to restore from.</red>"
+          },
+          {
+            "key": "chat.regen-read-failed",
+            "default": "<red>Could not read the bundled config.yml: {error}</red>",
+            "note": "Placeholders: {error}"
+          },
+          {
+            "key": "chat.regen-write-failed",
+            "default": "<red>Could not rewrite config.yml: {error}</red>"
+          }
+        ]
+      },
+      {
+        "id": "chat-startup",
+        "label": "Notices shown on join",
+        "section": "chat",
+        "keys": [
+          {
+            "key": "chat.config-ahead",
+            "default": "<gold>[DiscordLogger]</gold> <yellow>Your config.yml (schema v{installed}) is newer than this build (v{shipped}). Settings it does not recognise are being ignored.</yellow>",
+            "note": "Shown to OPS when config.yml is newer than this build understands. Placeholders: {installed}, {shipped}"
+          },
+          {
+            "key": "chat.config-ahead-fix",
+            "default": "<yellow>Update the plugin, or run <white>/discordlogger regen</white> to rebuild the config from this build. Your current file is backed up.</yellow>"
+          },
+          {
+            "key": "chat.nightly-notice",
+            "default": "<gold>[DiscordLogger]</gold> <yellow>This is a nightly build - it may be unstable. Upgrade often: <white>https://discordlogger.godtiergamers.xyz</white></yellow>",
+            "note": "Shown to OPS once per nightly build. Never appears on a stable release."
+          }
+        ]
+      },
+      {
+        "id": "discord-events",
+        "label": "Event messages",
+        "section": "discord",
+        "keys": [
+          {
+            "key": "discord.player-join",
+            "default": "{player} joined the server",
+            "note": "Placeholders: {player} -- their display name, or nickname if enabled"
+          },
+          {
+            "key": "discord.player-quit",
+            "default": "{player} left the server"
+          },
+          {
+            "key": "discord.player-chat",
+            "default": "**{player}**: {message}",
+            "note": "Placeholders: {player}, {message} ** ** is Discord's bold. The message is escaped before substitution, so a player cannot inject Markdown into your channel."
+          },
+          {
+            "key": "discord.player-command",
+            "default": "{player} ran: {command}",
+            "note": "Placeholders: {player}, {command} -- the command includes its leading slash Commands listed in filters.ignored_commands never reach here at all."
+          },
+          {
+            "key": "discord.server-command",
+            "default": "{sender} ran: {command}",
+            "note": "Placeholders: {sender} -- \"Server\" for the console, or the sender's name {command}"
+          }
+        ]
+      },
+      {
+        "id": "discord-death",
+        "label": "Death embed",
+        "section": "discord",
+        "keys": [
+          {
+            "key": "discord.death.description",
+            "default": "{player} died",
+            "note": "The line under the embed title. Placeholders: {player}"
+          },
+          {
+            "key": "discord.death.cause-field",
+            "default": "Cause of Death",
+            "note": "Field NAMES, not values -- the bold label above each field in the embed."
+          },
+          {
+            "key": "discord.death.coords-field",
+            "default": "Coords"
+          },
+          {
+            "key": "discord.death.coords-value",
+            "default": "{x}, {y}, {z} in {world}",
+            "note": "Only shown when log.player.death.show_coords is true in config.yml. Placeholders: {x}, {y}, {z} -- block coordinates {world}           -- the world's folder name"
+          },
+          {
+            "key": "discord.death.slain-by-player",
+            "default": "Slain by {killer}{weapon}",
+            "note": "Killed by another player. Placeholders: {killer} -- their display name {weapon} -- \" [Diamond Sword]\", or EMPTY if bare-handed. The brackets and leading space are part of the value, so remove {weapon} entirely to hide it."
+          },
+          {
+            "key": "discord.death.slain-by-mob",
+            "default": "Slain by {killer}",
+            "note": "Killed by a mob. Placeholders: {killer} -- e.g. \"a zombie\""
+          },
+          {
+            "key": "discord.death.shot-by",
+            "default": "Shot by {killer}",
+            "note": "Shot from range. Placeholders: {killer} -- a player or a mob"
+          },
+          {
+            "key": "discord.death.shot",
+            "default": "Shot",
+            "note": "Shot, but the shooter is no longer known (they logged off, or despawned)."
+          },
+          {
+            "key": "discord.death.unknown",
+            "default": "Died",
+            "note": "Last resort: the server reported a cause this plugin has no wording for. If you ever see this in your channel, it is worth reporting -- it means Minecraft added a damage type."
+          }
+        ]
+      },
+      {
+        "id": "discord-causes",
+        "label": "How the death happened",
+        "section": "discord",
+        "keys": [
+          {
+            "key": "discord.death.causes.fall",
+            "default": "Fell from a high place",
+            "note": "Fell too far."
+          },
+          {
+            "key": "discord.death.causes.lava",
+            "default": "Tried to swim in lava",
+            "note": "Swam in lava."
+          },
+          {
+            "key": "discord.death.causes.fire",
+            "default": "Burned to death",
+            "note": "Standing in fire."
+          },
+          {
+            "key": "discord.death.causes.fire-tick",
+            "default": "Burned to death",
+            "note": "Still burning after leaving the fire."
+          },
+          {
+            "key": "discord.death.causes.drowning",
+            "default": "Drowned",
+            "note": "Ran out of air."
+          },
+          {
+            "key": "discord.death.causes.suffocation",
+            "default": "Suffocated in a wall",
+            "note": "Inside a solid block."
+          },
+          {
+            "key": "discord.death.causes.void",
+            "default": "Fell into the void",
+            "note": "Fell out of the world."
+          },
+          {
+            "key": "discord.death.causes.contact",
+            "default": "Was pricked to death",
+            "note": "Touched a cactus or sweet berry bush."
+          },
+          {
+            "key": "discord.death.causes.block-explosion",
+            "default": "Blew up",
+            "note": "TNT, a bed in the Nether, a respawn anchor in the Overworld."
+          },
+          {
+            "key": "discord.death.causes.entity-explosion",
+            "default": "Blew up",
+            "note": "A creeper, a ghast fireball, an end crystal."
+          },
+          {
+            "key": "discord.death.causes.magic",
+            "default": "Was killed by magic",
+            "note": "A potion of harming, or an evoker's fangs."
+          },
+          {
+            "key": "discord.death.causes.poison",
+            "default": "Was poisoned",
+            "note": "Poison ran the health down."
+          },
+          {
+            "key": "discord.death.causes.wither",
+            "default": "Withered away",
+            "note": "The wither effect."
+          },
+          {
+            "key": "discord.death.causes.starvation",
+            "default": "Starved to death",
+            "note": "Hunger reached zero."
+          },
+          {
+            "key": "discord.death.causes.freeze",
+            "default": "Froze to death",
+            "note": "Powder snow."
+          },
+          {
+            "key": "discord.death.causes.lightning",
+            "default": "Was struck by lightning",
+            "note": "Struck by lightning."
+          },
+          {
+            "key": "discord.death.causes.hot-floor",
+            "default": "Discovered the floor was lava",
+            "note": "Standing on magma blocks."
+          },
+          {
+            "key": "discord.death.causes.cramming",
+            "default": "Was squished too much",
+            "note": "Too many entities in one block."
+          },
+          {
+            "key": "discord.death.causes.dragon-breath",
+            "default": "Was roasted by dragon breath",
+            "note": "The ender dragon's breath cloud."
+          },
+          {
+            "key": "discord.death.causes.thorns",
+            "default": "Was killed by thorns",
+            "note": "Attacking someone wearing Thorns armour."
+          },
+          {
+            "key": "discord.death.causes.kill",
+            "default": "Killed by command",
+            "note": "The /kill command."
+          },
+          {
+            "key": "discord.death.causes.suicide",
+            "default": "Killed by command",
+            "note": "/kill used on yourself."
+          },
+          {
+            "key": "discord.death.causes.world-border",
+            "default": "Left the world border",
+            "note": "Outside the world border."
+          },
+          {
+            "key": "discord.death.causes.sonic-boom",
+            "default": "Hit by a warden's sonic boom",
+            "note": "A warden's ranged attack."
+          },
+          {
+            "key": "discord.death.causes.campfire",
+            "default": "Burned on a campfire",
+            "note": "Standing in a campfire."
+          },
+          {
+            "key": "discord.death.causes.falling-block",
+            "default": "Squashed by a falling block",
+            "note": "An anvil or gravel landed on them."
+          },
+          {
+            "key": "discord.death.causes.fly-into-wall",
+            "default": "Flew into a wall",
+            "note": "Elytra flight into a wall — kinetic damage."
+          },
+          {
+            "key": "discord.death.causes.dryout",
+            "default": "Dried out",
+            "note": "An axolotl or dolphin out of water."
+          },
+          {
+            "key": "discord.death.causes.melting",
+            "default": "Melted",
+            "note": "A snow golem in a warm biome."
+          },
+          {
+            "key": "discord.death.causes.entity-attack",
+            "default": "Slain",
+            "note": "A mob or player hit them, when the attacker is no longer known."
+          },
+          {
+            "key": "discord.death.causes.entity-sweep-attack",
+            "default": "Slain",
+            "note": "A sweeping sword attack, attacker no longer known."
+          },
+          {
+            "key": "discord.death.causes.projectile",
+            "default": "Shot",
+            "note": "An arrow or similar, shooter no longer known."
+          },
+          {
+            "key": "discord.death.causes.custom",
+            "default": "Died",
+            "note": "Damage dealt by another plugin. Nothing truthful can be said about it."
+          }
+        ]
+      },
+      {
+        "id": "discord-platform",
+        "label": "Bedrock indicator",
+        "section": "discord",
+        "keys": [
+          {
+            "key": "discord.platform-field",
+            "default": "Platform",
+            "note": "The field added to a join when the player came from Bedrock, if log.player.join.show_platform is true. It NEVER says \"Java\" -- see the docs."
+          },
+          {
+            "key": "discord.platform-bedrock",
+            "default": "Bedrock"
+          }
+        ]
+      }
+    ]
+  }
 }

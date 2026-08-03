@@ -1,12 +1,15 @@
 ---
 layout: default
 title: "config.yml Generator — Build a Config Online"
-description: Build a DiscordLogger config.yml in your browser — pick which Minecraft events get logged, set your Discord webhook, and download the finished file.
+description: Build a DiscordLogger config.yml in your browser — pick which Minecraft events get logged, set your Discord webhook, tune the filters, reword the messages, and download the finished files.
 ---
 
 # config.yml Generator
 
-Pick your plugin version, test your webhook, then choose what to log. Everything runs in your browser — your webhook URL is never sent anywhere except Discord.
+Pick your plugin version, test your webhook, then choose what to log, what to filter
+out, and what every message says. You get both files the plugin uses —
+`config.yml` and `lang.yml` — and everything runs in your browser, so your webhook
+URL is never sent anywhere except Discord.
 
 <div id="cfg-gen" class="markdown-body"></div>
 

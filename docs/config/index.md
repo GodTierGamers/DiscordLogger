@@ -9,7 +9,7 @@ description: Pick your config.yml version to view the correct documentation and 
 <div class="dl-promo">
   <div class="dl-promo__text">
     <p class="dl-promo__title">Don't want to read all this?</p>
-    <p class="dl-promo__sub">The generator builds a complete <code>config.yml</code> in your browser — pick what to log, and download the finished file.</p>
+    <p class="dl-promo__sub">The generator builds both files in your browser — pick what to log, tune the filters, reword the messages, and download <code>config.yml</code> and <code>lang.yml</code>.</p>
   </div>
   <a class="dl-cta dl-cta--primary" href="/generator/">Open the generator</a>
 </div>
