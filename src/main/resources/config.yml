@@ -131,11 +131,18 @@ filters:
   # they are skipped. Set true only if you genuinely want them.
   log_recipe_advancements: false
 
-  # Teleport causes never logged. Teleports are the noisiest event on most servers,
-  # and most of them are plugin warps rather than anything worth recording.
+  # Teleport causes never logged. Teleports are the noisiest event on most servers.
+  # The defaults are the ones that are not really teleports at all -- Minecraft moves
+  # the player a block or two and reports it as one. Nobody wants a Discord message
+  # because someone got out of bed.
   # Values: PLUGIN, COMMAND, ENDER_PEARL, CHORUS_FRUIT, NETHER_PORTAL, END_PORTAL,
   #         END_GATEWAY, SPECTATE, DISMOUNT, EXIT_BED, CONSUMABLE_EFFECT, UNKNOWN
-  ignored_teleport_causes: []
+  # Add PLUGIN if you use Essentials or similar -- /home, /warp and /spawn all
+  # arrive as PLUGIN and are usually the bulk of what is left.
+  ignored_teleport_causes:
+    - EXIT_BED      # standing up from a bed
+    - DISMOUNT      # getting off a horse, boat or minecart
+    - SPECTATE      # a spectator jumping to a player
 
   # Skip teleports shorter than this many blocks. 0 disables it.
   # Never applies across worlds -- a nether portal is not a short hop.
