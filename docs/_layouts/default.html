@@ -51,11 +51,8 @@
     </script>
     {%- endif -%}
 
-    <!-- GitHub Markdown CSS (keeps the original look) -->
-    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5.5.1/github-markdown.css">
-
     <!-- Your theme + favicon -->
-    <link rel="stylesheet" href="{{ '/assets/theme.css?v=8' | relative_url }}">
+    <link rel="stylesheet" href="{{ '/assets/theme.css?v=9' | relative_url }}">
     <link rel="icon" href="{{ '/assets/favicon.png' | relative_url }}">
     <meta name="color-scheme" content="light dark">
 
@@ -77,6 +74,7 @@
 </head>
 
 <body>
+<a class="dl-skip" href="#content">Skip to content</a>
 <div class="dl-shell">
     <aside class="dl-sidebar" role="navigation" aria-label="Main">
         <div class="dl-sidebar__header">
@@ -134,7 +132,7 @@
         </div>
     </aside>
 
-    <main class="dl-main">
+    <main class="dl-main" id="content">
         <article class="markdown-body">
             {{ content }}
         </article>

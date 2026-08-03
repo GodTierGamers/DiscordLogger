@@ -4,8 +4,6 @@ title: "config.yml Reference — Every Option Explained"
 description: Pick your config.yml version to view the correct documentation and download the exact file that shipped with the plugin.
 ---
 
-![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
-
 # Config Docs
 
 Pick the **config schema version** your server is using.

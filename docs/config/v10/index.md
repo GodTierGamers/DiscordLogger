@@ -4,8 +4,6 @@ title: Config Docs — v10
 description: Full documentation for DiscordLogger's config.yml and lang.yml at schema v10 — every key explained, with downloadable files.
 ---
 
-![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
-
 # config.yml Docs — v10
 
 **_Supported Plugin Versions:_ <span data-dl-schema-versions="v10">…</span>**

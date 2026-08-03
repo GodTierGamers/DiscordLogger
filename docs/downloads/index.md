@@ -4,8 +4,6 @@ title: "Download — Stable and Nightly Builds"
 description: Download the latest DiscordLogger release for PaperMC, or opt in to nightly builds. Free and open source, straight from GitHub Releases.
 ---
 
-![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
-
 # Downloads
 
 Latest builds from **GitHub Releases**. Stable releases are also on

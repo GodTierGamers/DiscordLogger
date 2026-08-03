@@ -4,8 +4,6 @@ title: Config Docs — v9
 description: Full documentation for config.yml schema v9 — defaults, per-key explanations, and a downloadable config file.
 ---
 
-![DiscordLogger](/assets/DiscordLogger-Banner.webp "DiscordLogger")
-
 # config.yml Docs — v9
 
 **_Supported Plugin Versions:_ <span data-dl-schema-versions="v9">…</span>**
