@@ -63,9 +63,11 @@ To add a new synced location: wrap the value in `<!-- dl:sync:KEY -->` markers (
 
 ## Build & test
 
-**There are no automated tests.** A JUnit suite covering `ConfigMigrator`, `SchemaDetector`, `Filters`, `Lang` and webhook redaction existed and was removed at the maintainer's request; it is recoverable from git history at `eeaf402`. The JUnit dependency and surefire plugin remain in `pom.xml`, so re-adding tests is a matter of dropping files into `src/test/java`.
+**Tests exist and gate CI** (JUnit 5 + surefire; `ci.yml` runs `mvn clean package` with tests on). `mvn test` runs them in ~10s.
 
-**What this means in practice:** changes to `ConfigMigrator` are the highest-risk edits in the repo and now have no automated guard. It runs exactly once on every existing install, and a mistake there destroys settings the user cannot get back. Verify migrations by hand against a customised config before shipping one.
+**Never assert the trailer's exact form.** `nightly.yml` and the release build both rewrite it before compiling — the `(x-release-please-version)` marker only exists in the source file. Two tests pinned that marker and made *every nightly fail for three days* while CI stayed green, because CI does not stamp. Assert `CONFIG VERSION V\d+` survives, not what follows it.
+
+`ConfigMigrator` is the highest-risk code in the repo — it runs exactly once on every existing install, and a mistake destroys settings the user cannot get back. That is what most of the suite covers.
 
 
 ```bash
@@ -246,6 +248,10 @@ Death causes are keyed by the enum name lowercased with hyphens (`FIRE_TICK` →
 ### Log filtering (`filters:`)
 
 Applied in the **listener**, not in `Log` — that is where the player, world and raw command still exist; by the time a message reaches `Log` it is rendered prose. `Filters` holds an immutable snapshot swapped atomically on reload, and `applyRuntimeConfig` reloads it *before* `Log.init` so a reload cannot briefly log something the new config filters.
+
+**14 filters**, in three groups: *who* (`ignored_players`, `exempt_permission`), *where* (`ignored_worlds`), and *what* (commands, chat, advancements, teleports, deaths, explosions). Each listener checks the ones relevant to it — `Filters` holds no event knowledge, and no listener holds filter logic.
+
+`only_log_commands` is an allow-list that wins outright when set, with the deny-list applying inside it. `log_recipe_advancements` was a hardcoded skip in `PlayerAdvancement` and is now a setting, defaulting to the old behaviour.
 
 `filters.ignored_commands` **ships non-empty**, which is unusual for this project and deliberate: command logging posts the line as typed, so `/login` published passwords in plain text and `/msg` published private messages. Matching is on the command word after stripping the slash, arguments and any plugin qualifier — without that last step `/essentials:msg` would bypass an entry of `msg`, which would make a security-flavoured filter worthless.
 

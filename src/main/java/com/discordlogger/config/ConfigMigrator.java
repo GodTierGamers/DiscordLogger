@@ -95,7 +95,7 @@ public final class ConfigMigrator {
                 final int[] span = listSpanInDefault(defLines, target);
                 if (span != null) {
                     listEdits.add(new ListEdit(span[0], span[1],
-                            renderList(defLines.get(span[0]), userList)));
+                            renderList(defLines.subList(span[0], span[1]), userList)));
                 }
                 continue;
             }
@@ -144,9 +144,35 @@ public final class ConfigMigrator {
         return new int[]{pos.index(), end};
     }
 
-    /** The user's list, written under the default's own key line and indentation. */
-    private static List<String> renderList(String keyLine, List<?> values) {
+    /**
+     * The user's list, written under the default's own key line and indentation.
+     *
+     * <p>Inline comments on the default's items are carried over to any item with the
+     * same value. Without that, a shipped list like
+     * {@code - EXIT_BED   # standing up from a bed} loses its explanation the first
+     * time the file is migrated, and the config quietly becomes less readable on every
+     * upgrade even for someone who changed nothing.
+     */
+    private static List<String> renderList(List<String> defaultBlock, List<?> values) {
+        final String keyLine = defaultBlock.get(0);
         final int keyIndent = leadingSpaces(keyLine);
+
+        // value -> the comment that followed it in the shipped file
+        final Map<String, String> comments = new LinkedHashMap<>();
+        for (int i = 1; i < defaultBlock.size(); i++) {
+            final String line = defaultBlock.get(i);
+            final String trimmed = line.strip();
+            if (!trimmed.startsWith("-")) continue;
+            final String afterDash = trimmed.substring(1);
+            final int hash = findUnquotedHash(afterDash, 0);
+            if (hash < 0) continue;
+            final String value = afterDash.substring(0, hash).strip();
+            if (value.isEmpty()) continue;
+            // Keep the original spacing between the value and its comment, so an
+            // unchanged file round-trips byte for byte rather than being reindented.
+            final int valueEnd = afterDash.indexOf(value) + value.length();
+            comments.put(value, afterDash.substring(valueEnd));
+        }
         final int colon = keyLine.indexOf(':', keyIndent);
         final String comment = inlineCommentOf(keyLine.substring(colon + 1));
         final String key = keyLine.substring(0, colon + 1);
@@ -159,7 +185,9 @@ public final class ConfigMigrator {
         out.add(key + comment);
         final String indent = " ".repeat(keyIndent + 2);
         for (Object v : values) {
-            out.add(indent + "- " + renderListItem(v));
+            final String rendered = renderListItem(v);
+            final String itemComment = comments.get(rendered);
+            out.add(indent + "- " + rendered + (itemComment == null ? "" : itemComment));
         }
         return out;
     }

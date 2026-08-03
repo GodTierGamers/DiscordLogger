@@ -28,9 +28,9 @@ public final class PlayerAdvancement implements Listener {
         final String ns = key.getNamespace();   // usually "minecraft"
         final String path = key.getKey();       // e.g., "adventure/sleep_in_bed"
 
-        // Always ignore recipe/root advancements to avoid spam
-        if (path.startsWith("recipes/") || path.startsWith("recipe/")) return;
-        if (path.endsWith("/root") || path.equals("story/root")) return;
+        // Recipe/root suppression lives in Filters now, so a server can opt back in,
+        // and specific advancements or whole tabs can be excluded by key.
+        if (Filters.blocksAdvancement(ns + ":" + path, path)) return;
 
         final String playerName = Names.display(e.getPlayer(), plugin);
         final String pretty = prettyTitle(path);

@@ -72,6 +72,9 @@ public final class Explosion implements Listener {
         final String world = (w == null) ? "unknown" : w.getName();
 
         final int affected = (e.blockList() == null) ? 0 : e.blockList().size();
+        // Filter on the entity that exploded: CREEPER, PRIMED_TNT, END_CRYSTAL…
+        if (Filters.blocksExplosion(type == null ? null : type.name(), affected)) return;
+
         final String yield  = fmtYield(e.getYield());
 
         List<Log.Field> fields = new ArrayList<>();
@@ -107,6 +110,10 @@ public final class Explosion implements Listener {
         final String world = (w == null) ? "unknown" : w.getName();
 
         final int affected = (e.blockList() == null) ? 0 : e.blockList().size();
+        // A block explosion has a Material rather than an EntityType, so "BED"
+        // and "RESPAWN_ANCHOR" filter the same way "CREEPER" does.
+        if (Filters.blocksExplosion(mat == null ? null : mat.name(), affected)) return;
+
         final String yield  = fmtYield(e.getYield());
 
         List<Log.Field> fields = new ArrayList<>();
