@@ -131,6 +131,21 @@
                 beta: !!r.prerelease || (versionApi ? versionApi.isBeta(r.version) : false),
             }));
 
+        /* A schema's `since` is a first-class entry in its own right, whether or
+           not that build has been published yet. Without this, a schema that is
+           finished and frozen stays unreachable until release day purely because
+           the releases API has nothing to match it against — and the people who
+           most need it are exactly the ones already running the nightly that
+           ships it. Only stable `since` values qualify: a schema that debuts in
+           a nightly stays out, in line with the stable-only rule below.
+           Deliberately NOT marked beta — it is the real, final schema for that
+           build, and once the release lands the API supplies the identical entry,
+           so nothing on screen changes. */
+        schemas.forEach(s => {
+            const since = parseVer(s.since);
+            if (since && since.beta === null) list.push({ version: s.since, beta: false });
+        });
+
         // de-dupe identical tags, keeping the stabler entry
         const byVersion = new Map();
         list.forEach(e => {
@@ -185,9 +200,9 @@
         visible.forEach((v, i) => {
             select.appendChild(h('option', { value: String(i) }, v.beta ? `${v.version}  (BETA)` : v.version));
         });
-        // default to the newest stable build, never a nightly
-        const firstStable = visible.findIndex(v => !v.beta);
-        select.value = String(firstStable >= 0 ? firstStable : 0);
+        // Default to the newest version on offer. `visible` is sorted newest-first
+        // and nightlies are already filtered out, so that is index 0.
+        select.value = '0';
 
         const detail = h('p', { class: 'cfg-note' });
         const notReady = h('p', { class: 'cfg-note cfg-note--beta' });

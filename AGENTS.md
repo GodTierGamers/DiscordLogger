@@ -343,7 +343,7 @@ Jekyll site (GitHub Pages gem stack) at `discordlogger.godtiergamers.xyz` (CNAME
 
 ### Version awareness — never hardcode a version number
 
-**Never write "and newer" about schema coverage.** A schema is only known to be shipped by the releases that have actually shipped it — the next release may open a new one, so promising future coverage eventually becomes a lie on a page nobody revisits. `<span data-dl-schema-versions="v10">` fills itself from the releases API plus `registry.json`, listing only real releases, and says so plainly when none exists yet. The config-docs index uses the same rule.
+**Never write "and newer" about schema coverage.** A schema is only known to be shipped by the releases that have actually shipped it — the next release may open a new one, so promising future coverage eventually becomes a lie on a page nobody revisits. `<span data-dl-schema-versions="v10">` fills itself from the releases API plus `registry.json`, listing only real releases, and says so plainly when none exists yet. Naming the schema's own `since` when nothing has shipped it is not the same thing and is fine — that is one declared build, not an open-ended promise.
 
 `docs/assets/js/versions.js` is loaded from `<head>` on every page and is the single source of truth. It reads the GitHub releases API once (cached per session), works out the newest stable and newest nightly, and exposes `window.DLVersions`.
 
@@ -372,11 +372,17 @@ Internally the generator is still keyed on **config schema versions** (v9, v10�
 docs/assets/js/generator.js        LOADER — small, stable, shared
 docs/assets/configs/
   registry.json                    one entry per SCHEMA: { config: "v9", since: "2.1.5" }
-  v9/generator.js                  SELF-CONTAINED bundle: steps, styles, webhook payload, YAML builder
-  v9/options.json                  toggles/colors UI data (incl. defaultColor per event)
-  v9/config.template.yml           {{TOKEN}} output template
+  v9/generator.js                  SELF-CONTAINED bundle: steps, styles, webhook payload, YAML builders
+  v9/options.json                  UI data: events+colours, `filters`, `lang` groups
+  v9/config.template.yml           {{TOKEN}} output template for config.yml
+  v9/lang.template.yml             {{LANG_*}} output template for lang.yml (v10+)
   v9/config.yml                    reference copy of what shipped
+  v9/lang.yml                      reference copy of what shipped (v10+)
 ```
+
+**The generator emits every key in both files, and nothing is hardcoded in a template that the wizard cannot reach.** A setting the generator silently bakes in is one the user does not know they have — which is exactly what the fourteen filters were until they were wired up. Concretely: `options.json` carries `filters` (one entry per `filters.*` key, typed `list` / `choices` / `text` / `number` / `bool`) and `lang` (all messages, grouped, each with its shipped default). Adding a fifteenth filter or an eightieth message is a **data** change — one entry plus one `{{TOKEN}}` — never a code change to the bundle.
+
+**The invariant that makes this safe: generating and changing nothing must reproduce the shipped files byte for byte.** `validate-config-generator.py` enforces it in both directions — `render_filter()` there is a deliberate reimplementation of the bundle's renderer, so the two must agree, and the lang template is re-substituted with its declared defaults and diffed against `src/main/resources/lang.yml`. It also fails on a filter with no template slot, a template token with no entry, and a filter no Java source reads. Templates therefore may not carry text the shipped file lacks: a stray explanatory comment above `config-version` is enough to break the invariant, and did.
 
 **The isolation rule (the whole point): once a schema version has been *published*, never edit it again.** Old plugin versions must keep generating exactly the config they always did. Fix bugs only in the current unpublished schema; copy the folder forward instead of refactoring in place. The loader↔bundle contract is documented at the top of both files and is frozen — a bundle registers `window.DL_GENERATORS['v9'] = launch` and receives `ctx` (`mount`, `configVersion`, `pluginVersion`, `beta`, `backToVersions`; `proxyUrl` is still passed for the frozen v9 bundle but is always `""`).
 
@@ -408,7 +414,7 @@ docs/assets/configs/
 | `src/main/resources/config.yml` | **REPLACE** with v10 content; trailer becomes `CONFIG VERSION V10` | The JAR only ever carries the current schema. `ConfigMigrator` migrates old user files forward at runtime. |
 | `docs/assets/configs/v9/**` | **DO NOT TOUCH — ever again** | Bundle, options, template, mirror. Someone still running a v9 plugin must keep generating exactly the config they always did. |
 | `docs/config/v9/index.md` | **KEEP FOREVER** | v9 users still need their docs. Old schema docs are never deleted, only superseded. |
-| `docs/assets/configs/v10/**` | **CREATE** — copy v9's folder, then adapt it | Copy forward; never refactor an old schema in place. |
+| `docs/assets/configs/v10/**` | **CREATE** — copy v9's folder, then adapt it | Copy forward; never refactor an old schema in place. All six files: bundle, `options.json`, both templates, both mirrors. |
 | `docs/config/v10/index.md` | **CREATE** | New docs page for the new schema. |
 | `registry.json` | **ADD** one line: `{ "config": "v10", "since": "<first build shipping it>" }` | The v9 entry stays untouched. |
 
@@ -444,7 +450,7 @@ Compare that against the newest entry in `docs/assets/configs/registry.json`. If
 #### Phase 2 — the website generator (the part with the isolation rule)
 
 5. **`cp -r docs/assets/configs/v<N-1> docs/assets/configs/v<N>`** — copy forward, then adapt the copy. Never refactor the old folder in place.
-   - **Immediately change `const CONFIG_VERSION` at the top of the copied `generator.js`.** It drives three things at once: the key the bundle registers under (`window.DL_GENERATORS[...]`), the directory it fetches `options.json` and the template from, and the version shown to the user. Left at the old value, the new bundle registers as the *previous* schema and serves the previous schema's data — so the new generator silently emits the **old** config. Valid YAML, wrong file, no error anywhere. `validate-config-generator.py` now checks this (it was missed once and only surfaced by driving the UI).
+   - **Immediately change `const CONFIG_VERSION` at the top of the copied `generator.js`.** It drives three things at once: the key the bundle registers under (`window.DL_GENERATORS[...]`), the directory it fetches `options.json` and the template from, and the version shown to the user. Left at the old value, the new bundle registers as the *previous* schema and serves the previous schema's data — so the new generator silently emits the **old** config. Valid YAML, wrong file, no error anywhere. `validate-config-generator.py` now checks this (it was missed once and only surfaced by driving the UI). The same copy-forward trap bit the **style element's id**, which is built from `CONFIG_VERSION` for exactly this reason: hardcoded, it made `injectStyles()` a no-op for anyone who opened the older generator first in the same session, silently dropping every rule the new bundle added.
 6. **Adapt the new bundle**: `generator.js` (registers `window.DL_GENERATORS['v<N>']`), `options.json`, the template, and the `config.yml` mirror. The mirror must match `src/main/resources/config.yml` byte for byte apart from the trailer's `BUILT` suffix.
 7. **DO NOT TOUCH `docs/assets/configs/v<N-1>/**` ever again.** Someone still running the older plugin must keep generating exactly the config they always did.
 
@@ -563,7 +569,14 @@ Neither offers a config version that has only ever shipped in a nightly, and the
 
 The beta opt-in in `versions.js` still exists and still drives the **downloads page**, which is a different question: choosing which *build* to install is the user's call, choosing a config format that may still move is not. `window.DLVersions.showBeta` is deliberately ignored by both the generator and the config-docs picker — setting it true does not surface beta schemas.
 
-A schema's docs page stays reachable by URL the whole time; it is simply not listed until a stable release carries it. This is what makes `registry.json`'s `since` pointing at a stable version the safe default.
+**"Nightly-only" is a test on the `since` STRING, not on whether that build has been published.** A schema whose `since` is a stable version (`"2.2.0"`) is final and frozen — the release simply hasn't happened yet — so both pages list it and the generator offers it immediately. Waiting for the release would hide the schema from precisely the people running the nightly that ships it, for no safety gain. A schema whose `since` carries `-BETA.` is genuinely still moving and stays hidden. This is the rule to preserve; do not "fix" it back to `DLVersions.isBeta(since)`, which conflates the two.
+
+Two consequences that must hold together:
+
+- The generator's picker **defaults to the newest version on offer**, declared or published — there is no separate "not yet released" tier and nothing is listed-but-not-selected. Someone who lands on the generator is configuring the current schema, which is the one about to ship.
+- The config-docs index falls back to `since` when no release covers a schema yet ("ships with DiscordLogger v2.2.0"). Still not a claim about the future: it is the build the registry names, and the API supplies the identical string once it ships.
+
+A schema's docs page is reachable by URL regardless. `registry.json`'s `since` pointing at a stable version remains the default — it is now what makes a finished schema public rather than what delays it.
 
 ### Downloads page
 

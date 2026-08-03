@@ -184,6 +184,150 @@ def check_version(options_path: str, live_schema: str | None = None) -> list[str
     return errors
 
 
+def render_filter(entry: dict) -> str:
+    """A deliberate reimplementation of renderFilter() in the v10 generator bundle.
+
+    Two independent implementations that must agree is the whole point: this is
+    what proves the generator's untouched output IS the file the plugin ships,
+    rather than something that merely looks like it.
+    """
+    key, kind, value = entry["key"], entry.get("type", "list"), entry.get("default")
+    if kind == "bool":
+        return f"  {key}: {'true' if value else 'false'}"
+    if kind == "number":
+        return f"  {key}: {value if isinstance(value, (int, float)) and value >= 0 else 0}"
+    if kind == "text":
+        return f'  {key}: "{value or ""}"'
+
+    items = [str(v).strip() for v in (value or []) if str(v).strip()]
+    if not items:
+        return f"  {key}: []"
+    notes = {c["value"]: c.get("note", "") for c in entry.get("choices", [])}
+    rendered = [
+        v if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_./*-]*", v) else '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
+        for v in items
+    ]
+    width = max([12] + [len(r) for r in rendered])
+    lines = []
+    for raw, r in zip(items, rendered):
+        body = f"  - {r}"
+        note = notes.get(raw)
+        lines.append(f"  {body}{' ' * (width - len(r) + 2)}# {note}" if note else f"  {body}")
+    return f"  {key}:\n" + "\n".join(lines)
+
+
+def check_filter_contract(options_path: str, template_path: str, is_live: bool) -> list[str]:
+    """Every filter is reachable in the wizard, read by the plugin, and shipped as declared."""
+    with open(options_path, encoding="utf-8") as f:
+        data = json.load(f)
+    filters = data.get("filters")
+    if filters is None:
+        return []          # schemas older than v10 don't expose filters at all
+
+    with open(template_path, encoding="utf-8") as f:
+        template = f.read()
+    template_keys = set(re.findall(r"\{\{FILTER_([A-Za-z0-9_]+)\}\}", template))
+    declared = {f["key"] for f in filters}
+
+    errors = []
+    for missing in sorted(declared - template_keys):
+        errors.append(
+            f"{options_path}: filter '{missing}' has no {{{{FILTER_{missing}}}}} slot in "
+            f"{template_path}, so the wizard would collect it and then drop it"
+        )
+    for orphan in sorted(template_keys - declared):
+        errors.append(
+            f"{template_path}: {{{{FILTER_{orphan}}}}} has no entry in {options_path}. "
+            f"Unmatched tokens are stripped, so that filter would vanish from the output"
+        )
+
+    if not is_live:
+        return errors
+
+    with open(SHIPPED_CONFIG, encoding="utf-8") as f:
+        shipped = f.read()
+
+    for entry in filters:
+        key = entry["key"]
+        grep = subprocess.run(
+            ["grep", "-rl", "-F", f'"filters.{key}"', JAVA_SRC],
+            capture_output=True, text=True,
+        )
+        if not grep.stdout.strip():
+            errors.append(
+                f"{options_path}: filter '{key}' is offered to users but no Java source "
+                f"under {JAVA_SRC} reads 'filters.{key}'"
+            )
+        block = render_filter(entry)
+        if block not in shipped:
+            errors.append(
+                f"{options_path}: filter '{key}' declares a default that does not match "
+                f"{SHIPPED_CONFIG}. Generating a config and changing nothing must reproduce "
+                f"the shipped file exactly. Expected to find:\n{block}"
+            )
+    return errors
+
+
+def check_lang_contract(version_dir: str, is_live: bool) -> list[str]:
+    """The lang template and its option list must cover each other exactly.
+
+    And, for the live schema, substituting every declared default back into the
+    template must rebuild the shipped lang.yml verbatim -- the same invariant the
+    filters check enforces, for the other file the generator emits.
+    """
+    options_path = os.path.join(version_dir, "options.json")
+    template_path = os.path.join(version_dir, "lang.template.yml")
+
+    with open(options_path, encoding="utf-8") as f:
+        data = json.load(f)
+    lang = data.get("lang")
+    if lang is None:
+        return []          # a schema whose generator does not offer lang.yml
+
+    if not os.path.exists(template_path):
+        return [f"{template_path} missing, but {options_path} declares lang options"]
+
+    with open(template_path, encoding="utf-8") as f:
+        template = f.read()
+
+    template_keys = set(re.findall(r"\{\{LANG_([A-Za-z0-9._-]+)\}\}", template))
+    declared = {k["key"]: k.get("default", "") for g in lang.get("groups", []) for k in g.get("keys", [])}
+
+    errors = []
+    for missing in sorted(set(declared) - template_keys):
+        errors.append(f"{options_path}: lang key '{missing}' has no {{{{LANG_{missing}}}}} slot in {template_path}")
+    for orphan in sorted(template_keys - set(declared)):
+        errors.append(
+            f"{template_path}: {{{{LANG_{orphan}}}}} is in no group in {options_path}, so that "
+            f"message would be unreachable in the wizard and stripped from the output"
+        )
+
+    if not is_live or errors:
+        return errors
+
+    shipped_path = "src/main/resources/lang.yml"
+    if not os.path.exists(shipped_path):
+        return errors
+
+    rebuilt = template
+    for key, default in declared.items():
+        rebuilt = rebuilt.replace("{{LANG_" + key + "}}", default.replace("\\", "\\\\").replace('"', '\\"'))
+    rebuilt = re.sub(r"\{\{GENERATED_AT\}\}", "", rebuilt)
+
+    with open(shipped_path, encoding="utf-8") as f:
+        shipped_lines = f.read().splitlines()
+
+    # Trailers legitimately differ: the shipped file carries the release-please
+    # marker, the generated one carries a timestamp.
+    if shipped_lines[:-1] != rebuilt.splitlines()[:-1]:
+        errors.append(
+            f"{template_path} plus its declared defaults no longer rebuilds {shipped_path}. "
+            f"Generating lang.yml and changing nothing must reproduce the shipped file exactly -- "
+            f"regenerate the template from it."
+        )
+    return errors
+
+
 def check_shipped_config_matches_mirror() -> list[str]:
     if not os.path.exists(SHIPPED_CONFIG):
         return [f"{SHIPPED_CONFIG} not found"]
@@ -372,8 +516,13 @@ def main() -> int:
     all_errors = []
     live = shipped_schema()
     for options_path in sorted(glob.glob("docs/assets/configs/v*/options.json")):
+        version_dir = os.path.dirname(options_path)
+        is_live = os.path.basename(version_dir) == live
         all_errors.extend(check_version(options_path, live))
-        all_errors.extend(check_bundle_declares_its_own_version(os.path.dirname(options_path)))
+        all_errors.extend(check_bundle_declares_its_own_version(version_dir))
+        all_errors.extend(check_filter_contract(
+            options_path, os.path.join(version_dir, "config.template.yml"), is_live))
+        all_errors.extend(check_lang_contract(version_dir, is_live))
     all_errors.extend(check_shipped_config_matches_mirror())
     all_errors.extend(check_doc_page_embedded_configs())
     all_errors.extend(check_java_fallbacks_match_shipped_config())
