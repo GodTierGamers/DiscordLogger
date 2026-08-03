@@ -2,15 +2,44 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "pull-request-title-pattern": "chore: release ${version}",
   "changelog-sections": [
-    { "type": "feat", "section": "✨ Features" },
-    { "type": "fix", "section": "🐛 Fixes" },
-    { "type": "perf", "section": "⚡ Performance" },
-    { "type": "refactor", "section": "🛠 Refactors" },
-    { "type": "docs", "section": "📝 Docs" },
-    { "type": "chore", "section": "🧰 Maintenance", "hidden": false },
-    { "type": "ci", "section": "⚙️ CI/CD" },
-    { "type": "build", "section": "⚙️ CI/CD" },
-    { "type": "test", "section": "🧪 Tests", "hidden": true }
+    {
+      "type": "feat",
+      "section": "\u2728 Features"
+    },
+    {
+      "type": "fix",
+      "section": "\ud83d\udc1b Fixes"
+    },
+    {
+      "type": "perf",
+      "section": "\u26a1 Performance"
+    },
+    {
+      "type": "refactor",
+      "section": "\ud83d\udee0 Refactors"
+    },
+    {
+      "type": "docs",
+      "section": "\ud83d\udcdd Docs"
+    },
+    {
+      "type": "chore",
+      "section": "\ud83e\uddf0 Maintenance",
+      "hidden": false
+    },
+    {
+      "type": "ci",
+      "section": "\u2699\ufe0f CI/CD"
+    },
+    {
+      "type": "build",
+      "section": "\u2699\ufe0f CI/CD"
+    },
+    {
+      "type": "test",
+      "section": "\ud83e\uddea Tests",
+      "hidden": true
+    }
   ],
   "packages": {
     ".": {
@@ -27,6 +56,10 @@
         {
           "type": "generic",
           "path": "src/main/resources/lang.yml"
+        },
+        {
+          "type": "generic",
+          "path": "docs/_data/versions.yml"
         }
       ]
     }
