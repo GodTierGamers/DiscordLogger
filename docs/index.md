@@ -18,7 +18,6 @@ description: Post Minecraft server events to Discord — joins, quits, chat, dea
   <div class="dl-hero__actions">
     <a class="dl-cta dl-cta--primary" href="/downloads/">Download</a>
     <a class="dl-cta dl-cta--ghost" href="/setup/">Setup guide</a>
-    <a class="dl-cta dl-cta--ghost" href="/generator/">Build a config</a>
   </div>
 
   <p class="dl-hero__meta">
@@ -76,6 +75,14 @@ Discord channel.
     <h3>No account needed</h3>
     <p>It posts over a plain Discord webhook. No bot to invite, no token to manage, no third-party service.</p>
   </div>
+</div>
+
+<div class="dl-promo">
+  <div class="dl-promo__text">
+    <p class="dl-promo__title">Build your config without writing YAML</p>
+    <p class="dl-promo__sub">Pick your version, choose what to log, download the file. Runs entirely in your browser.</p>
+  </div>
+  <a class="dl-cta dl-cta--primary" href="/generator/">Open the generator</a>
 </div>
 
 ## Get started

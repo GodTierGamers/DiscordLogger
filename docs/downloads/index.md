@@ -11,6 +11,14 @@ Latest builds from **GitHub Releases**. Stable releases are also on
 [Hangar](https://hangar.papermc.io/LVCHLANN/DiscordLogger) — use either if your host
 or plugin manager installs from them. Nightly builds are only published here.
 
+<div class="dl-promo">
+  <div class="dl-promo__text">
+    <p class="dl-promo__title">Got the JAR? Build your config next</p>
+    <p class="dl-promo__sub">Pick what to log in your browser and download a ready-to-use <code>config.yml</code>.</p>
+  </div>
+  <a class="dl-cta dl-cta--primary" href="/generator/">Open the generator</a>
+</div>
+
 <div id="dl-downloads-status" class="dl-downloads-status">
   Fetching releases from GitHub…
 </div>

@@ -394,6 +394,23 @@ a:hover { text-decoration: underline; }
 .dl-card p { margin: 0; color: var(--fg-muted); font-size: .92rem; }
 .dl-card code { font-size: .84em; }
 
+.dl-promo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+    margin: 0 0 1.6rem;
+    border: 1px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: var(--radius-lg);
+}
+.dl-promo__text { min-width: 0; }
+.dl-promo__title { font-weight: 650; margin: 0 0 .2rem; }
+.dl-promo__sub { margin: 0; color: var(--fg-muted); font-size: .92rem; }
+.dl-promo .dl-cta { flex: none; }
+
 /* ------------------------------------------------------------ controls -- */
 
 .btn {
