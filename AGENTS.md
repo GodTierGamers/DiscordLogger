@@ -343,7 +343,7 @@ Jekyll site (GitHub Pages gem stack) at `discordlogger.godtiergamers.xyz` (CNAME
 
 ### Version awareness — never hardcode a version number
 
-**Never write "and newer" about schema coverage.** A schema is only known to be shipped by the releases that have actually shipped it — the next release may open a new one, so promising future coverage eventually becomes a lie on a page nobody revisits. `<span data-dl-schema-versions="v10">` fills itself from the releases API plus `registry.json`, listing only real releases, and says so plainly when none exists yet. The config-docs index uses the same rule.
+**Never write "and newer" about schema coverage.** A schema is only known to be shipped by the releases that have actually shipped it — the next release may open a new one, so promising future coverage eventually becomes a lie on a page nobody revisits. `<span data-dl-schema-versions="v10">` fills itself from the releases API plus `registry.json`, listing only real releases, and says so plainly when none exists yet. Naming the schema's own `since` when nothing has shipped it is not the same thing and is fine — that is one declared build, not an open-ended promise.
 
 `docs/assets/js/versions.js` is loaded from `<head>` on every page and is the single source of truth. It reads the GitHub releases API once (cached per session), works out the newest stable and newest nightly, and exposes `window.DLVersions`.
 
@@ -563,7 +563,14 @@ Neither offers a config version that has only ever shipped in a nightly, and the
 
 The beta opt-in in `versions.js` still exists and still drives the **downloads page**, which is a different question: choosing which *build* to install is the user's call, choosing a config format that may still move is not. `window.DLVersions.showBeta` is deliberately ignored by both the generator and the config-docs picker — setting it true does not surface beta schemas.
 
-A schema's docs page stays reachable by URL the whole time; it is simply not listed until a stable release carries it. This is what makes `registry.json`'s `since` pointing at a stable version the safe default.
+**"Nightly-only" is a test on the `since` STRING, not on whether that build has been published.** A schema whose `since` is a stable version (`"2.2.0"`) is final and frozen — the release simply hasn't happened yet — so both pages list it and the generator offers it immediately. Waiting for the release would hide the schema from precisely the people running the nightly that ships it, for no safety gain. A schema whose `since` carries `-BETA.` is genuinely still moving and stays hidden. This is the rule to preserve; do not "fix" it back to `DLVersions.isBeta(since)`, which conflates the two.
+
+Two consequences that must hold together:
+
+- The generator's picker **lists** an unreleased `since` but never **preselects** it (`v.published` marks entries that came from the releases API). Preselecting it would hand a 2.1.6 user a v10 config their installed plugin reads as `AHEAD`. On release day the API publishes the same version, the entries merge, and the default lands there on its own — nothing on screen changes.
+- The config-docs index falls back to `since` when no release covers a schema yet ("ships with DiscordLogger v2.2.0"). Still not a claim about the future: it is the build the registry names, and the API supplies the identical string once it ships.
+
+A schema's docs page is reachable by URL regardless. `registry.json`'s `since` pointing at a stable version remains the default — it is now what makes a finished schema public rather than what delays it.
 
 ### Downloads page
 

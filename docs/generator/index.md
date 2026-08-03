@@ -12,4 +12,4 @@ Pick your plugin version, test your webhook, then choose what to log. Everything
 
 <!-- Loader: reads /assets/configs/registry.json, then loads the version-specific
      generator bundle from /assets/configs/<schema>/generator.js -->
-<script defer src="{{ '/assets/js/generator.js?v=2' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/generator.js?v=3' | relative_url }}"></script>

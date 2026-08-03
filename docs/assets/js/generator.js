@@ -129,13 +129,31 @@
             .map(r => ({
                 version: r.version,
                 beta: !!r.prerelease || (versionApi ? versionApi.isBeta(r.version) : false),
+                published: true,
             }));
 
-        // de-dupe identical tags, keeping the stabler entry
+        /* A schema's `since` is a first-class entry in its own right, whether or
+           not that build has been published yet. Without this, a schema that is
+           finished and frozen stays unreachable until release day purely because
+           the releases API has nothing to match it against — and the people who
+           most need it are exactly the ones already running the nightly that
+           ships it. Only stable `since` values qualify: a schema that debuts in
+           a nightly stays out, in line with the stable-only rule below.
+           Deliberately NOT marked beta — it is the real, final schema for that
+           build, and once the release lands this entry is simply superseded by
+           the identical one from the API, so nothing on screen changes. */
+        schemas.forEach(s => {
+            const since = parseVer(s.since);
+            if (since && since.beta === null) list.push({ version: s.since, beta: false, published: false });
+        });
+
+        // de-dupe identical tags, keeping the stabler entry — and preferring the
+        // one the releases API supplied, so `published` survives the merge once
+        // the build actually ships.
         const byVersion = new Map();
         list.forEach(e => {
             const prev = byVersion.get(e.version);
-            if (!prev || (prev.beta && !e.beta)) byVersion.set(e.version, e);
+            if (!prev || (prev.beta && !e.beta) || (!prev.published && e.published)) byVersion.set(e.version, e);
         });
 
         return [...byVersion.values()].sort((a, b) => cmpVer(parseVer(b.version), parseVer(a.version)));
@@ -185,9 +203,13 @@
         visible.forEach((v, i) => {
             select.appendChild(h('option', { value: String(i) }, v.beta ? `${v.version}  (BETA)` : v.version));
         });
-        // default to the newest stable build, never a nightly
-        const firstStable = visible.findIndex(v => !v.beta);
-        select.value = String(firstStable >= 0 ? firstStable : 0);
+        /* Default to the newest build a visitor can actually be running: the
+           newest PUBLISHED stable. An unreleased schema entry is offered but never
+           preselected — preselecting it would hand today's users a config their
+           installed plugin reads as ahead of itself. On release day the same
+           version is published, so the default lands there on its own. */
+        const firstReal = visible.findIndex(v => !v.beta && v.published);
+        select.value = String(firstReal >= 0 ? firstReal : 0);
 
         const detail = h('p', { class: 'cfg-note' });
         const notReady = h('p', { class: 'cfg-note cfg-note--beta' });

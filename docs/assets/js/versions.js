@@ -216,8 +216,13 @@
      * <p>Deliberately never says "and newer": a schema is only known to be shipped
      * by the releases that have shipped it. The next release may open a new schema,
      * so claiming future coverage would eventually be a lie on a page nobody
-     * revisits. Until a stable release carries it, the honest answer is that none
-     * does yet.
+     * revisits.
+     *
+     * <p>When nothing has shipped it yet, it names the schema's own `since` — the
+     * one build the registry says will carry it. That is a single declared version
+     * rather than an open-ended promise, so the rule above still holds, and it keeps
+     * a finished schema's page readable before release day instead of leading with
+     * an apology.
      */
     async function applySchemaCoverage(root) {
         const hosts = root.querySelectorAll('[data-dl-schema-versions]');
@@ -256,7 +261,7 @@
             const uniq = [...new Set(hits)].sort((a, b) => cmpVer(parseVer(a), parseVer(b)));
             el.textContent = uniq.length
                 ? uniq.map(v => 'v' + v).join(', ')
-                : 'none yet — this schema has not shipped in a stable release';
+                : 'v' + String(schemas[idx].since).replace(/^v/i, '');
         });
     }
 

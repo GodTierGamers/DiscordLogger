@@ -60,8 +60,10 @@ If you're not sure, open your `config.yml` and check the **last line**; it will 
       .map(r => r.version);
     const uniq = [...new Set(hits)].sort((a, b) => cmpBase(parseBase(a), parseBase(b)));
     // Never claim "and newer": the next release may open a new schema, so future
-    // coverage is not ours to promise. Until a stable release ships it, none does.
-    if (!uniq.length) return 'no stable release yet';
+    // coverage is not ours to promise. With nothing released yet, `since` is still
+    // the honest answer — it is the build that will carry this schema, named by the
+    // registry, and the moment that release lands the API supplies the same string.
+    if (!uniq.length) return 'v' + schema.since.replace(/^v/i, '');
     return uniq.map(v => 'v' + v).join(', ');
   }
 
@@ -87,17 +89,18 @@ If you're not sure, open your `config.yml` and check the **last line**; it will 
       .sort((a, b) => cmpBase(parseBase(b.since), parseBase(a.since)));
 
     function render() {
-      // Stable schemas only, with no opt-in. A schema that has only ever shipped in
-      // a nightly can still change before release, so documenting it as a choice
-      // invites someone to write a config against a format that then moves. The
-      // page for it still exists and is reachable by URL; it is simply not offered
-      // until a stable release carries it.
+      // Nightly-only schemas are excluded, with no opt-in: a format that has only
+      // ever existed in a nightly can still move before release, so documenting it
+      // as a choice invites someone to write a config against it and be wrong later.
+      // That test is on the `since` STRING, not on whether the build has shipped —
+      // a schema pinned to a stable version is final and frozen, and hiding it until
+      // release day would only hide it from the nightly users already running it.
       let anyBeta = false;
       const rows = [];
 
       schemas.forEach((s, i) => {
         const newer = schemas[i - 1] || null;
-        const beta = api ? api.isBeta(s.since) : false;
+        const beta = /-BETA\./i.test(String(s.since));
         if (beta) { anyBeta = true; return; }
 
         const label = s.config.toUpperCase();
