@@ -20,6 +20,7 @@ Everything it needs comes from pom.xml and the GitHub Release:
 
     <project.version>      the version number to publish
     <dl.game.versions>     Minecraft versions to advertise
+    MODRINTH_LOADERS       server platforms to tag on Modrinth (paper + purpur)
     the release body       becomes the changelog on both listings
     the release asset      the download URL the listings point at
 
@@ -61,6 +62,13 @@ MODRINTH_API = "https://api.modrinth.com/v2"
 # Analytics only exists on v3; v2 returns 404 for it. Used solely by --check-auth.
 MODRINTH_API_V3 = "https://api.modrinth.com/v3"
 MODRINTH_PROJECT = "discordlogger"
+
+# Modrinth treats each server fork as its own loader, and a version tagged only
+# "paper" is filtered out for anyone browsing as Purpur -- even though Purpur is
+# a Paper fork the plugin fully supports and the docs name explicitly. Both tags
+# go on every version. Hangar has no equivalent: its platform list is
+# PAPER/WATERFALL/VELOCITY, and PAPER already covers the forks.
+MODRINTH_LOADERS = ["paper", "purpur"]
 
 HANGAR_API = "https://hangar.papermc.io/api/v1"
 HANGAR_SLUG = "DiscordLogger"
@@ -197,6 +205,17 @@ def validate_game_versions(versions: list[str]) -> None:
     log(f"Game versions validated against Modrinth: {', '.join(versions)}")
 
 
+def validate_loaders(loaders: list[str]) -> None:
+    """Same reasoning as the game-version check: Modrinth answers an unknown
+    loader with an opaque 400, so a typo would surface as a failed release
+    rather than as a name it does not recognise."""
+    known = {entry["name"] for entry in request(f"{MODRINTH_API}/tag/loader")}
+    unknown = [l for l in loaders if l not in known]
+    if unknown:
+        fail(f"MODRINTH_LOADERS lists {unknown}, which Modrinth does not recognise.")
+    log(f"Loaders validated against Modrinth: {', '.join(loaders)}")
+
+
 # ------------------------------------------------------------------ modrinth
 
 
@@ -234,7 +253,7 @@ def publish_modrinth(
         "dependencies": [],
         "game_versions": game_versions,
         "version_type": "release",
-        "loaders": ["paper"],
+        "loaders": MODRINTH_LOADERS,
         "featured": True,
         "project_id": modrinth_project_id(),
         "file_parts": ["file"],
@@ -440,6 +459,7 @@ def main() -> int:
         fail("pom.xml <dl.game.versions> is empty")
 
     validate_game_versions(game_versions)
+    validate_loaders(MODRINTH_LOADERS)
     changelog = release_body(args.tag)
 
     modrinth_token = os.environ.get("MODRINTH_TOKEN", "").strip()
