@@ -51,7 +51,29 @@ Both of these are features the README and both listings promise, which silently 
   - **Scope by world**, which `ignored_worlds` already does, and eventually by WorldGuard region.
   - Route it to its own webhook. Per-event routing already allows this, and `WebhookQueue` runs one worker per destination, so a mining spree cannot stall the moderation channel.
 
+- **Periodic digest** — one embed a day: joins, deaths, bans, top chatters. Low volume, high glanceability, and closer to what most admins actually read than the individual events are.
+
+- **`/discordlogger preview <event>`** — render an embed without having to die or ban someone to see it. Also turns colour tuning into a feedback loop instead of a guess, which is currently only possible through the website generator.
+
+- **Ship translated `lang.yml` bundles** — de, fr, es, pt-BR to start. Every string is already externalised, so this is pure community contribution with no code behind it, and no competitor offers it. Needs a convention for how a translation is selected and how it falls back to the bundled English per key, not per file.
+
+- **Fan-out: multiple webhooks per event.** Routing is one-to-one today. Sending moderation to both a staff channel and a long-term archive is a real ask, and `WebhookQueue` already keys destinations independently, so the queueing side is mostly there.
+
 - **Deeper logging modes** — option to relay the full server console rather than only the specific events currently supported.
+
+## Diagnostics
+
+Nothing here adds a feature. All of it is the difference between an admin diagnosing a problem themselves and opening an issue that begins "it just stopped working".
+
+- **`/discordlogger status`** — queue depth per destination, last send result, which webhooks are configured (redacted), and current rate-limit state. None of this is observable today from in-game or console.
+
+- **Validate the webhook on startup.** A `GET` on the URL proves it still exists. A webhook deleted in Discord is currently discovered by the first event 404-ing, which can be hours later and looks like the plugin broke.
+
+- **Tell ops in-game when sends are failing.** `WebhookQueue` already warns once per outage — to console. The person who needs to know is usually in-game, and console is exactly where a warning goes unread.
+
+- **Report unclean shutdowns.** If the previous run never logged a stop, say so on the next start. Cheap crash visibility, and nothing else in this category offers it.
+
+- **Lint the config on startup.** Catch the contradictions a schema cannot: `only_log_commands` set alongside `ignored_commands`, every event disabled, a filter that blocks everything it is meant to allow. Consistent with the plugin's existing habit of explaining a problem plainly rather than failing obscurely.
 
 ## Website & docs
 
@@ -77,6 +99,8 @@ Both of these are features the README and both listings promise, which silently 
 - **Search visibility (ongoing)** — the technical groundwork is in place (sitemap, canonicals, structured data, per-page titles and descriptions), and the Modrinth/Hangar listing bodies were rewritten for 2.2.0. What's left is the slow part: the pages above, listings on the sites Minecraft admins browse, and monitoring real queries once Search Console is connected. This item stays open indefinitely; it isn't a task with a finish line.
 
 - **Let the config generator skip the webhook step.** It currently refuses to advance without a valid, confirmed URL, so there is no way to build a config before you have created the webhook — which is the order many people would rather work in.
+
+- **Browser tests for the generator bundle.** The `cfg-styles-v9` id survived a copy-forward into v10 and made `injectStyles()` a no-op for anyone who opened the v9 generator first in the same session — silently dropping every rule the newer bundle added. It was caught by driving the UI by hand, which is not a strategy. A headless check on three invariants would have caught it: the bundle registers under its own `CONFIG_VERSION`, generating with defaults untouched reproduces the shipped files, and every option in `options.json` actually renders a control.
 
 - **Fix the primary button's contrast in light mode.** `#cfg-gen .cfg-btn--primary` is `color-mix(in oklab, var(--accent) 14%, transparent)`, which on a white panel reads as disabled. It lives in the shared loader stylesheet, so changing it also affects how the frozen v9 bundle renders — check both before committing.
 
