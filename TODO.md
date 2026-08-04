@@ -16,6 +16,14 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
   - Then mint a token at runtime with `actions/create-github-app-token` and pass it to the `token:` input of `googleapis/release-please-action`.
   - A fine-grained PAT works too, but expires — and a silent expiry puts releases straight back to needing manual overrides.
 
+## Plugin — advertised but broken
+
+Both of these are features the README and both listings promise, which silently do nothing on a large share of real servers. They rank above new features.
+
+- **Respect vanish.** `PlayerJoin` checks the config toggle, then `Filters.blocksPlayer` and `blocksWorld`, and nothing else — there is no vanish awareness anywhere in the codebase. An admin joining vanished is announced to Discord, which defeats the entire point of vanish. `filters.ignored_players` cannot cover it: vanish is dynamic state, not a static list. Soft-depend on EssentialsX, SuperVanish/PremiumVanish and CMI, check all of them, and treat any "yes" as vanished — the same OR-the-signals reasoning `ClientPlatform` uses for Bedrock, and for the same reason: a false negative announces something that was meant to be hidden.
+
+- **Detect punishments made by punishment plugins.** `Ban.java` recognises `ban` and `tempban`, then confirms the punishment landed by checking `Bukkit.getBanList(BanList.Type.NAME)`. LiteBans, LibertyBans, AdvancedBan and CMI store punishments in their own databases, so that check returns false and **nothing is logged, silently**. Two smaller holes in the same file: only `BanList.Type.NAME` is consulted, so `/ban-ip` is missed; and those plugins' own verbs (`/mute`, `/warn`, `/punish`, `/tempmute`) are not recognised at all. LiteBans has proper punishment events — start there, since it converts a silent failure into the best-covered path.
+
 ## Plugin
 
 - **PlaceholderAPI support** — the one feature a server owner comparing DiscordLogger against WebhookLogger side by side would pick the other for. MiniMessage formatting already exists in `lang.yml`; what's missing is placeholder *expansion*, so rank prefixes, nicknames and the like appear in relayed messages. Soft-depend and expand `lang.yml` values before sending, skipping silently when the plugin is absent — the same reflection pattern `ClientPlatform` uses for Floodgate. Opens config schema v11.
@@ -33,7 +41,39 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 
 - **Give `SchemaDetector` markers for the other managed files.** It infers a schema from config.yml-shaped keys, so `lang.yml` — and a future proxy config — fall back to their *declared* `config-version` with no shape check behind it. Shape-wins-over-declaration is what makes the version marker hard to break by accident; the other files do not currently have it. Cheapest to add alongside whichever file comes next rather than retrofitting later.
 
+- **Log CoreProtect rollbacks and restores.** A handful of events a month, each of high audit value — *"Lachlan rolled back 4,200 blocks at spawn, r=30, t=2d"*. It is the accountability event nobody logs, and the case where the person you most want a record of is the admin. Cannot flood anything, so none of the aggregation problem below applies. Worth doing whether or not block logging ever happens.
+
+- **Block logging, aggregated.** Not useful on a busy survival server; genuinely wanted on a whitelisted, staff-build or creative server, where *"who broke spawn"* is the most-asked admin question. Note this does **not** need CoreProtect — Bukkit's `BlockBreakEvent`/`BlockPlaceEvent` give it directly; CoreProtect's API is a lookup interface for asking after the fact.
+
+  - **Per-event messages are impossible, so aggregation is mandatory.** A webhook sustains roughly 30 messages a minute; one player mining for a minute easily produces 500+ block events. `WebhookQueue` is `ArrayBlockingQueue(1000)` per destination and **drops** past that — and an audit trail that silently discards is worse than no audit trail.
+  - **Batch a window** of 10–30 seconds into one embed: *"Steve — 47 blocks broken in world: stone ×44, diamond_ore ×3"*. Turns 500 messages into two.
+  - **Allow-list by block type**, mirroring `only_log_commands`. The locked-down case cares about beacons, spawners, shulker boxes, ender chests, item frames and command blocks — not dirt.
+  - **Scope by world**, which `ignored_worlds` already does, and eventually by WorldGuard region.
+  - Route it to its own webhook. Per-event routing already allows this, and `WebhookQueue` runs one worker per destination, so a mining spree cannot stall the moderation channel.
+
+- **Periodic digest** — one embed a day: joins, deaths, bans, top chatters. Low volume, high glanceability, and closer to what most admins actually read than the individual events are.
+
+- **`/discordlogger preview <event>`** — render an embed without having to die or ban someone to see it. Also turns colour tuning into a feedback loop instead of a guess, which is currently only possible through the website generator.
+
+- **Ship translated `lang.yml` bundles** — de, fr, es, pt-BR to start. Every string is already externalised, so this is pure community contribution with no code behind it, and no competitor offers it. Needs a convention for how a translation is selected and how it falls back to the bundled English per key, not per file.
+
+- **Fan-out: multiple webhooks per event.** Routing is one-to-one today. Sending moderation to both a staff channel and a long-term archive is a real ask, and `WebhookQueue` already keys destinations independently, so the queueing side is mostly there.
+
 - **Deeper logging modes** — option to relay the full server console rather than only the specific events currently supported.
+
+## Diagnostics
+
+Nothing here adds a feature. All of it is the difference between an admin diagnosing a problem themselves and opening an issue that begins "it just stopped working".
+
+- **`/discordlogger status`** — queue depth per destination, last send result, which webhooks are configured (redacted), and current rate-limit state. None of this is observable today from in-game or console.
+
+- **Validate the webhook on startup.** A `GET` on the URL proves it still exists. A webhook deleted in Discord is currently discovered by the first event 404-ing, which can be hours later and looks like the plugin broke.
+
+- **Tell ops in-game when sends are failing.** `WebhookQueue` already warns once per outage — to console. The person who needs to know is usually in-game, and console is exactly where a warning goes unread.
+
+- **Report unclean shutdowns.** If the previous run never logged a stop, say so on the next start. Cheap crash visibility, and nothing else in this category offers it.
+
+- **Lint the config on startup.** Catch the contradictions a schema cannot: `only_log_commands` set alongside `ignored_commands`, every event disabled, a filter that blocks everything it is meant to allow. Consistent with the plugin's existing habit of explaining a problem plainly rather than failing obscurely.
 
 ## Website & docs
 
@@ -59,6 +99,8 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 - **Search visibility (ongoing)** — the technical groundwork is in place (sitemap, canonicals, structured data, per-page titles and descriptions), and the Modrinth/Hangar listing bodies were rewritten for 2.2.0. What's left is the slow part: the pages above, listings on the sites Minecraft admins browse, and monitoring real queries once Search Console is connected. This item stays open indefinitely; it isn't a task with a finish line.
 
 - **Let the config generator skip the webhook step.** It currently refuses to advance without a valid, confirmed URL, so there is no way to build a config before you have created the webhook — which is the order many people would rather work in.
+
+- **Browser tests for the generator bundle.** The `cfg-styles-v9` id survived a copy-forward into v10 and made `injectStyles()` a no-op for anyone who opened the v9 generator first in the same session — silently dropping every rule the newer bundle added. It was caught by driving the UI by hand, which is not a strategy. A headless check on three invariants would have caught it: the bundle registers under its own `CONFIG_VERSION`, generating with defaults untouched reproduces the shipped files, and every option in `options.json` actually renders a control.
 
 - **Fix the primary button's contrast in light mode.** `#cfg-gen .cfg-btn--primary` is `color-mix(in oklab, var(--accent) 14%, transparent)`, which on a white panel reads as disabled. It lives in the shared loader stylesheet, so changing it also affects how the frozen v9 bundle renders — check both before committing.
 
