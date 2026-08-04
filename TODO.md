@@ -16,6 +16,14 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
   - Then mint a token at runtime with `actions/create-github-app-token` and pass it to the `token:` input of `googleapis/release-please-action`.
   - A fine-grained PAT works too, but expires — and a silent expiry puts releases straight back to needing manual overrides.
 
+## Plugin — advertised but broken
+
+Both of these are features the README and both listings promise, which silently do nothing on a large share of real servers. They rank above new features.
+
+- **Respect vanish.** `PlayerJoin` checks the config toggle, then `Filters.blocksPlayer` and `blocksWorld`, and nothing else — there is no vanish awareness anywhere in the codebase. An admin joining vanished is announced to Discord, which defeats the entire point of vanish. `filters.ignored_players` cannot cover it: vanish is dynamic state, not a static list. Soft-depend on EssentialsX, SuperVanish/PremiumVanish and CMI, check all of them, and treat any "yes" as vanished — the same OR-the-signals reasoning `ClientPlatform` uses for Bedrock, and for the same reason: a false negative announces something that was meant to be hidden.
+
+- **Detect punishments made by punishment plugins.** `Ban.java` recognises `ban` and `tempban`, then confirms the punishment landed by checking `Bukkit.getBanList(BanList.Type.NAME)`. LiteBans, LibertyBans, AdvancedBan and CMI store punishments in their own databases, so that check returns false and **nothing is logged, silently**. Two smaller holes in the same file: only `BanList.Type.NAME` is consulted, so `/ban-ip` is missed; and those plugins' own verbs (`/mute`, `/warn`, `/punish`, `/tempmute`) are not recognised at all. LiteBans has proper punishment events — start there, since it converts a silent failure into the best-covered path.
+
 ## Plugin
 
 - **PlaceholderAPI support** — the one feature a server owner comparing DiscordLogger against WebhookLogger side by side would pick the other for. MiniMessage formatting already exists in `lang.yml`; what's missing is placeholder *expansion*, so rank prefixes, nicknames and the like appear in relayed messages. Soft-depend and expand `lang.yml` values before sending, skipping silently when the plugin is absent — the same reflection pattern `ClientPlatform` uses for Floodgate. Opens config schema v11.
@@ -32,6 +40,16 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 - **Decouple `ConfigMigrator` from `JavaPlugin`** — *prerequisite for the Velocity work above; scope it before committing to that.* `migrateIfVersionChanged` takes a `JavaPlugin`, a type Velocity does not have, so the proxy cannot use the migrator at all as it stands. It needs a data folder, a resource-loading function and a logger instead. Mechanically straightforward and `migrateText` is already pure — but this is the file that runs once on every existing install and destroys real settings when it is wrong, so it is not a free afternoon. The five `ConfigMigrator` test classes are what make it safe to attempt.
 
 - **Give `SchemaDetector` markers for the other managed files.** It infers a schema from config.yml-shaped keys, so `lang.yml` — and a future proxy config — fall back to their *declared* `config-version` with no shape check behind it. Shape-wins-over-declaration is what makes the version marker hard to break by accident; the other files do not currently have it. Cheapest to add alongside whichever file comes next rather than retrofitting later.
+
+- **Log CoreProtect rollbacks and restores.** A handful of events a month, each of high audit value — *"Lachlan rolled back 4,200 blocks at spawn, r=30, t=2d"*. It is the accountability event nobody logs, and the case where the person you most want a record of is the admin. Cannot flood anything, so none of the aggregation problem below applies. Worth doing whether or not block logging ever happens.
+
+- **Block logging, aggregated.** Not useful on a busy survival server; genuinely wanted on a whitelisted, staff-build or creative server, where *"who broke spawn"* is the most-asked admin question. Note this does **not** need CoreProtect — Bukkit's `BlockBreakEvent`/`BlockPlaceEvent` give it directly; CoreProtect's API is a lookup interface for asking after the fact.
+
+  - **Per-event messages are impossible, so aggregation is mandatory.** A webhook sustains roughly 30 messages a minute; one player mining for a minute easily produces 500+ block events. `WebhookQueue` is `ArrayBlockingQueue(1000)` per destination and **drops** past that — and an audit trail that silently discards is worse than no audit trail.
+  - **Batch a window** of 10–30 seconds into one embed: *"Steve — 47 blocks broken in world: stone ×44, diamond_ore ×3"*. Turns 500 messages into two.
+  - **Allow-list by block type**, mirroring `only_log_commands`. The locked-down case cares about beacons, spawners, shulker boxes, ender chests, item frames and command blocks — not dirt.
+  - **Scope by world**, which `ignored_worlds` already does, and eventually by WorldGuard region.
+  - Route it to its own webhook. Per-event routing already allows this, and `WebhookQueue` runs one worker per destination, so a mining spree cannot stall the moderation channel.
 
 - **Deeper logging modes** — option to relay the full server console rather than only the specific events currently supported.
 
