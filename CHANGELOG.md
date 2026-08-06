@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.2.1](https://github.com/GodTierGamers/DiscordLogger/compare/v2.2.0...v2.2.1) (2026-08-06)
+
+
+### 🐛 Fixes
+
+* **badge:** use shields' stock GitHub downloads badge ([#152](https://github.com/GodTierGamers/DiscordLogger/issues/152)) ([cfa4a18](https://github.com/GodTierGamers/DiscordLogger/commit/cfa4a184f3251cae7186c470d91526e7e105d298))
+* **docs:** update the Jekyll toolchain gems to clear 23 advisories ([#160](https://github.com/GodTierGamers/DiscordLogger/issues/160)) ([158795c](https://github.com/GodTierGamers/DiscordLogger/commit/158795cafb97de276522ff94082063b5712f83e4))
+* **release:** bump the docs version inside the release PR ([#153](https://github.com/GodTierGamers/DiscordLogger/issues/153)) ([bc53631](https://github.com/GodTierGamers/DiscordLogger/commit/bc53631d9ed805232d8a678bc0064dc2cd648d5f))
+* **release:** send Modrinth the project id, not the slug ([#150](https://github.com/GodTierGamers/DiscordLogger/issues/150)) ([0597372](https://github.com/GodTierGamers/DiscordLogger/commit/05973729edd75fc3e0b3806fed21a04cb748a4dc))
+* **release:** tag Modrinth versions as paper and purpur ([#155](https://github.com/GodTierGamers/DiscordLogger/issues/155)) ([b4897bc](https://github.com/GodTierGamers/DiscordLogger/commit/b4897bc410f7d5bdb8f68a30210c84151d2ff35a))
+
+
+### 📝 Docs
+
+* record the block-logging design and two silent failures in TODO ([#157](https://github.com/GodTierGamers/DiscordLogger/issues/157)) ([0d05774](https://github.com/GodTierGamers/DiscordLogger/commit/0d05774abad7742ed10e828419cbba6d8bf6d45d))
+* record the post-2.2.0 plan in TODO ([#154](https://github.com/GodTierGamers/DiscordLogger/issues/154)) ([01090ae](https://github.com/GodTierGamers/DiscordLogger/commit/01090ae1580336fdc2fe9818fe8e1f57cd892db6))
+* record the Velocity design and its two prerequisites in TODO ([#156](https://github.com/GodTierGamers/DiscordLogger/issues/156)) ([fad0f22](https://github.com/GodTierGamers/DiscordLogger/commit/fad0f22eeeb16a5bdb9d756cc52f375ce6ec1f8b))
+
+
+### 🧰 Maintenance
+
+* bump org.apache.maven.plugins:maven-surefire-plugin from 3.5.2 to 3.5.6 ([#158](https://github.com/GodTierGamers/DiscordLogger/issues/158)) ([1819eaf](https://github.com/GodTierGamers/DiscordLogger/commit/1819eafd0ad10ebbae80a6711ef8205266b015e6))
+* bump org.junit.jupiter:junit-jupiter from 5.11.4 to 6.1.2 ([#159](https://github.com/GodTierGamers/DiscordLogger/issues/159)) ([ae2b761](https://github.com/GodTierGamers/DiscordLogger/commit/ae2b761065a9e789e783032d8c7f91b28fd4c90a))
+
 ## [2.2.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.1.6...v2.2.0) (2026-08-03)
 
 
