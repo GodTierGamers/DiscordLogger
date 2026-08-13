@@ -50,9 +50,14 @@ public final class UpdateChecker {
         }
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            try (HttpClient client = HttpClient.newBuilder()
+            // Deliberately NOT try-with-resources. HttpClient only became
+            // AutoCloseable in Java 21, and this is compiled for 17 so the plugin
+            // loads on servers older than 1.20.5. Nothing leaks: one request is
+            // made and the client is unreachable immediately afterwards.
+            final HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(TIMEOUT)
-                    .build()) {
+                    .build();
+            try {
 
                 HttpRequest req = HttpRequest.newBuilder(URI.create(RELEASES_LIST_API_URL))
                         .timeout(TIMEOUT)
