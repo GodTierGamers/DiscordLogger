@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Discord Webhook Not Posting — How to Fix It"
-description: Your Minecraft server logs events to console but nothing appears in Discord. Work through the causes in order of likelihood, from a malformed URL to a deleted webhook to a host blocking outbound HTTPS.
+description: Events reach your Minecraft console but never Discord. The five causes in order of likelihood — malformed URL, deleted webhook, blocked HTTPS, or a filter.
 ---
 
 # Discord webhook not posting

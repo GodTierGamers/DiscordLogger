@@ -51,6 +51,42 @@
     </script>
     {%- endif -%}
 
+    {%- comment -%}
+      BreadcrumbList tells search engines the page's place in the hierarchy, and
+      Google renders it in place of the raw URL in a result. Only emitted for
+      nested pages — a breadcrumb on the homepage describes nothing.
+
+      Built from page.url rather than front matter so a new page under /guides/
+      gets it automatically and cannot forget to.
+    {%- endcomment -%}
+    {%- assign segments = page.url | remove_first: '/' | split: '/' -%}
+    {%- if segments.size > 1 -%}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": {{ site.url | append: site.baseurl | append: '/' | jsonify }}
+        }{%- assign crumb_path = '' -%}
+        {%- for seg in segments -%}
+          {%- assign crumb_path = crumb_path | append: '/' | append: seg -%}
+          {%- assign is_last = forloop.last -%},
+        {
+          "@type": "ListItem",
+          "position": {{ forloop.index | plus: 1 }},
+          "name": {% if is_last %}{{ page.title | jsonify }}{% else %}{{ seg | replace: '-', ' ' | capitalize | jsonify }}{% endif %},
+          "item": {{ site.url | append: site.baseurl | append: crumb_path | append: '/' | jsonify }}
+        }
+        {%- endfor -%}
+      ]
+    }
+    </script>
+    {%- endif -%}
+
     <!-- Your theme + favicon -->
     <link rel="stylesheet" href="{{ '/assets/theme.css?v=9' | relative_url }}">
     <link rel="icon" href="{{ '/assets/favicon.png' | relative_url }}">

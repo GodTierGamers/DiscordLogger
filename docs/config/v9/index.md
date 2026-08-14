@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Config Docs — v9
+title: "config.yml v9 Reference — Every Key Explained"
 description: Full documentation for config.yml schema v9 — defaults, per-key explanations, and a downloadable config file.
 ---
 

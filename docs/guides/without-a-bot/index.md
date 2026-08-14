@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Log Minecraft to Discord Without a Bot"
-description: You don't need a Discord bot to get server logs into Discord. A webhook does it with no token, no hosting, and no permissions to manage — here's how, and when a bot is genuinely the better choice.
+description: You don't need a Discord bot to log Minecraft server events. A webhook does it with no token and nothing to host — and when a bot is genuinely better.
 ---
 
 # Log Minecraft to Discord without a bot
