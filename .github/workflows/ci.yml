@@ -66,6 +66,41 @@ jobs:
             !target/*-sources.jar
             !target/*-javadoc.jar
 
+  compat-floor:
+    # Proves the plugin compiles against the OLDEST server that can load it.
+    #
+    # api-version cannot express a patch version before 1.20.5, so declaring
+    # "1.19" admits 1.19.0 onward — but the test suite only runs from 1.19.4, and
+    # the main build compiles against that. Without this job, using an API added
+    # in 1.19.1+ would compile, test, ship, and then NoSuchMethodError on the
+    # 1.19.0 servers the listings advertise. Compiling against the floor is what
+    # makes that advertisement a checked claim rather than an assumption.
+    needs: changes
+    if: needs.changes.outputs.java == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Read Java version from pom.xml
+        id: javaver
+        run: echo "version=$(grep -oE '<maven.compiler.release>[0-9]+' pom.xml | grep -oE '[0-9]+')" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ steps.javaver.outputs.version }}
+          cache: maven
+
+      - name: Read the compat floor from pom.xml
+        id: floor
+        run: echo "version=$(grep -oE '<dl.compat.floor>[^<]+' pom.xml | cut -d'>' -f2)" >> "$GITHUB_OUTPUT"
+
+      - name: Compile against the oldest supported API
+        run: mvn -B -ntp clean compile -Dpaper.api.version=${{ steps.floor.outputs.version }}
+
   validate-generator-data:
     needs: changes
     if: needs.changes.outputs.docs == 'true'
