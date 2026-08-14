@@ -1,5 +1,43 @@
 # Changelog
 
+## [2.3.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.2.0...v2.3.0) (2026-08-14)
+
+
+### ✨ Features
+
+* **metrics:** measure what people do with the plugin, not who uses it ([#166](https://github.com/GodTierGamers/DiscordLogger/issues/166)) ([a51f2ab](https://github.com/GodTierGamers/DiscordLogger/commit/a51f2abfbfe55086314bc58ae5b9d09b42efff1a))
+* **metrics:** report whether sending actually works ([#167](https://github.com/GodTierGamers/DiscordLogger/issues/167)) ([4a4d075](https://github.com/GodTierGamers/DiscordLogger/commit/4a4d07513434a51c6ca60670f706f71b79817151))
+
+
+### 🐛 Fixes
+
+* **badge:** use shields' stock GitHub downloads badge ([#152](https://github.com/GodTierGamers/DiscordLogger/issues/152)) ([cfa4a18](https://github.com/GodTierGamers/DiscordLogger/commit/cfa4a184f3251cae7186c470d91526e7e105d298))
+* **docs:** update the Jekyll toolchain gems to clear 23 advisories ([#160](https://github.com/GodTierGamers/DiscordLogger/issues/160)) ([158795c](https://github.com/GodTierGamers/DiscordLogger/commit/158795cafb97de276522ff94082063b5712f83e4))
+* **release:** bump the docs version inside the release PR ([#153](https://github.com/GodTierGamers/DiscordLogger/issues/153)) ([bc53631](https://github.com/GodTierGamers/DiscordLogger/commit/bc53631d9ed805232d8a678bc0064dc2cd648d5f))
+* **release:** send Modrinth the project id, not the slug ([#150](https://github.com/GodTierGamers/DiscordLogger/issues/150)) ([0597372](https://github.com/GodTierGamers/DiscordLogger/commit/05973729edd75fc3e0b3806fed21a04cb748a4dc))
+* **release:** tag Modrinth versions as paper and purpur ([#155](https://github.com/GodTierGamers/DiscordLogger/issues/155)) ([b4897bc](https://github.com/GodTierGamers/DiscordLogger/commit/b4897bc410f7d5bdb8f68a30210c84151d2ff35a))
+* support Paper 1.19.4 and newer, not just 26.x ([#164](https://github.com/GodTierGamers/DiscordLogger/issues/164)) ([252312c](https://github.com/GodTierGamers/DiscordLogger/commit/252312c552ae0dc6ac8e924e593ce0f0a7f1bd1d))
+
+
+### 📝 Docs
+
+* add a page for the queries every event generates ([ae15c0c](https://github.com/GodTierGamers/DiscordLogger/commit/ae15c0c91e601f651ee4a597ffe310f4f0ee6d2b))
+* add five guides for features that had no page ([#171](https://github.com/GodTierGamers/DiscordLogger/issues/171)) ([c00b263](https://github.com/GodTierGamers/DiscordLogger/commit/c00b263a4da93ff0c4df31d3d5ab90a8daa98e04))
+* add the three guides people actually search for ([#168](https://github.com/GodTierGamers/DiscordLogger/issues/168)) ([813e325](https://github.com/GodTierGamers/DiscordLogger/commit/813e3258458696c7c89570340f2a2a442b2aaf8a))
+* fix the metadata search engines actually display ([#169](https://github.com/GodTierGamers/DiscordLogger/issues/169)) ([f6871c7](https://github.com/GodTierGamers/DiscordLogger/commit/f6871c7f6856dbecaaeb5582e160df5f2f82b049))
+* record the API floors, the metrics, and close out finished TODO items ([#170](https://github.com/GodTierGamers/DiscordLogger/issues/170)) ([30751a5](https://github.com/GodTierGamers/DiscordLogger/commit/30751a55a38598269865fe935d9427a81676b63a))
+* record the block-logging design and two silent failures in TODO ([#157](https://github.com/GodTierGamers/DiscordLogger/issues/157)) ([0d05774](https://github.com/GodTierGamers/DiscordLogger/commit/0d05774abad7742ed10e828419cbba6d8bf6d45d))
+* record the post-2.2.0 plan in TODO ([#154](https://github.com/GodTierGamers/DiscordLogger/issues/154)) ([01090ae](https://github.com/GodTierGamers/DiscordLogger/commit/01090ae1580336fdc2fe9818fe8e1f57cd892db6))
+* record the Velocity design and its two prerequisites in TODO ([#156](https://github.com/GodTierGamers/DiscordLogger/issues/156)) ([fad0f22](https://github.com/GodTierGamers/DiscordLogger/commit/fad0f22eeeb16a5bdb9d756cc52f375ce6ec1f8b))
+
+
+### 🧰 Maintenance
+
+* bump org.apache.maven.plugins:maven-surefire-plugin from 3.5.2 to 3.5.6 ([#158](https://github.com/GodTierGamers/DiscordLogger/issues/158)) ([1819eaf](https://github.com/GodTierGamers/DiscordLogger/commit/1819eafd0ad10ebbae80a6711ef8205266b015e6))
+* bump org.junit.jupiter:junit-jupiter from 5.11.4 to 6.1.2 ([#159](https://github.com/GodTierGamers/DiscordLogger/issues/159)) ([ae2b761](https://github.com/GodTierGamers/DiscordLogger/commit/ae2b761065a9e789e783032d8c7f91b28fd4c90a))
+* bump org.junit.jupiter:junit-jupiter from 6.1.2 to 6.1.3 ([#163](https://github.com/GodTierGamers/DiscordLogger/issues/163)) ([7a7b445](https://github.com/GodTierGamers/DiscordLogger/commit/7a7b445bcb4d6f8f53849e80a55ef896b42bd91e))
+* stop Dependabot bumping the Paper API floor ([#165](https://github.com/GodTierGamers/DiscordLogger/issues/165)) ([9037822](https://github.com/GodTierGamers/DiscordLogger/commit/9037822b5ca0574f0b246b3a28dd7625af40bc7a))
+
 ## [2.2.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.1.6...v2.2.0) (2026-08-03)
 
 
