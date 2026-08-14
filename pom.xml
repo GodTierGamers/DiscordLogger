@@ -9,16 +9,42 @@
     <url>https://github.com/GodTierGamers/DiscordLogger</url>
 
     <properties>
-        <maven.compiler.release>25</maven.compiler.release>
+        <!-- Java 17, not 25. Bytecode is a hard gate: a Java 17 runtime physically
+             cannot load a class file compiled for 25, so targeting 25 restricted the
+             plugin to servers on 1.20.5+. Nothing in this codebase needs anything
+             newer than 17 — see UpdateChecker for the single exception, which was
+             a library API rather than a language feature. -->
+        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <paper.api.version>26.2.build.87-stable</paper.api.version>
+
+        <!-- Compile against the OLDEST supported API, never the newest. Building
+             against a newer one and declaring an older api-version is how you ship a
+             plugin that loads and then dies on NoSuchMethodError: the compiler
+             happily links methods the old server does not have. 1.19.4 is the floor
+             because it is the oldest release where the full test suite runs — 1.18.x
+             and 1.19.0 to 1.19.2 ship a Bukkit whose YamlConfiguration needs SnakeYAML
+             1.x, which collides with ours on the (unrelocated) test classpath.
+             That collision is a test artifact only, since SnakeYAML is shaded and
+             relocated in the JAR, but support we cannot run the suite against is
+             support we cannot honestly claim. -->
+        <paper.api.version>1.19.4-R0.1-SNAPSHOT</paper.api.version>
+
+        <!-- The oldest API the plugin promises to compile against, checked by CI's
+             compat-floor job. It is LOWER than paper.api.version above, and the gap
+             is deliberate: api-version cannot express a patch before 1.20.5, so
+             declaring 1.19 admits 1.19.0 onward, while the test suite only runs from
+             1.19.4 (Bukkit switched to SnakeYAML 2.x there, and older ones collide
+             with ours on the unrelocated test classpath). Compiling against this
+             floor is what makes advertising the whole 1.19 line honest rather than
+             hopeful — it fails the build the moment anyone uses an API newer than
+             the oldest server that can load the plugin. -->
+        <dl.compat.floor>1.19-R0.1-SNAPSHOT</dl.compat.floor>
 
         <!-- SINGLE SOURCE OF TRUTH for the versions humans would otherwise retype.
              Everything downstream derives from these: plugin.yml via Maven
              filtering, the CI workflows by reading this file, and the website +
              README via scripts/sync-versions.py. Change them here, nowhere else. -->
-        <dl.api.version>26.1</dl.api.version>
-        <dl.paper.display>26.x</dl.paper.display>
+        <dl.api.version>1.19</dl.api.version>
 
         <!-- Minecraft versions advertised on the Modrinth and Hangar listings when a
              stable release is published. This is the one value that cannot be derived
@@ -27,7 +53,7 @@
              editorial call. Keep it in step with dl.api.version. Every entry is
              checked against Modrinth's known-version list before publishing, so a
              typo or an invented version fails the release rather than mislabelling it. -->
-        <dl.game.versions>26.1,26.1.1,26.1.2,26.2</dl.game.versions>
+        <dl.game.versions>1.19,1.19.1,1.19.2,1.19.3,1.19.4,1.20,1.20.1,1.20.2,1.20.3,1.20.4,1.20.5,1.20.6,1.21,1.21.1,1.21.2,1.21.3,1.21.4,1.21.5,1.21.6,1.21.7,1.21.8,1.21.9,1.21.10,1.21.11,26.1,26.1.1,26.1.2,26.2</dl.game.versions>
 
         <!-- Build channel/date are stamped by CI (-Ddl.build.channel=stable|nightly,
              -Ddl.build.date=DD-MM-YYYY). A plain local `mvn package` gets "dev",

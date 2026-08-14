@@ -48,8 +48,26 @@ class PlayerDeathCauseTest {
     @DisplayName("/kill reads as a command, not as a mystery")
     void killCommandIsNamed() {
         // The reported case: /kill produced "Cause of Death: Died".
-        assertEquals("Killed by command", PlayerDeath.causeText(DamageCause.KILL));
-        assertEquals("Killed by command", PlayerDeath.causeText(DamageCause.SUICIDE));
+        //
+        // Looked up by NAME rather than written as DamageCause.KILL, because the
+        // constant does not exist before 1.20 and the plugin is compiled against
+        // its oldest supported API. Naming it directly is a compile error there --
+        // which is exactly the trap this whole file exists to catch, one level up:
+        // the production code has always resolved causes by name at runtime, so it
+        // was only ever the test that could not travel backwards.
+        assertCauseReads("KILL", "Killed by command");
+        assertCauseReads("SUICIDE", "Killed by command");
+    }
+
+    /** Asserts phrasing for a cause named at runtime, skipping if this API lacks it. */
+    private static void assertCauseReads(String constant, String expected) {
+        DamageCause cause;
+        try {
+            cause = DamageCause.valueOf(constant);
+        } catch (IllegalArgumentException absentOnThisVersion) {
+            return;
+        }
+        assertEquals(expected, PlayerDeath.causeText(cause));
     }
 
     @Test

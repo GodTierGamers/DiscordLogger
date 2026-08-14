@@ -11,7 +11,7 @@ Values, and where each comes from:
     <project.version>          the plugin version           (release-please owns it)
     <maven.compiler.release>   Java the plugin is built for
     <dl.api.version>           minimum Paper (plugin.yml's api-version)
-    <dl.paper.display>         how Paper is written in prose, e.g. "26.x"
+    <dl.game.versions>         the supported range; prose + badge are derived from it
 
 Targets:
 
@@ -51,9 +51,29 @@ BLOCK = re.compile(
 BLOCK_TEMPLATES = {
     "badges": lambda v: (
         f"![Java](https://img.shields.io/badge/Java-{v['java']}%2B-orange)\n"
-        f"![Paper](https://img.shields.io/badge/Paper-{v['paper_display']}-blue)\n"
+        f"![Paper](https://img.shields.io/badge/Paper-{v['paper_badge']}-blue)\n"
     ),
 }
+
+
+def paper_display(game_versions: str) -> str:
+    """The supported range as (prose, badge) — e.g. ("1.19.4 – 26.2", "1.19.4--26.2").
+
+    Derived from <dl.game.versions> rather than hand-set, because the two would
+    otherwise drift the moment a new Minecraft release is added: the listings
+    would advertise it while every badge and requirements table still named the
+    old ceiling. A bare "1.19.4+" was worse still -- true, but silent about what
+    has actually been tested at the top of the range.
+    """
+    parts = [v.strip() for v in game_versions.split(",") if v.strip()]
+    if not parts:
+        return "unknown", "unknown"
+    if len(parts) == 1:
+        return parts[0], parts[0]
+    # Prose gets an en dash; the badge gets shields.io's escaping, where a literal
+    # dash is "--" and a space breaks the URL outright (the image silently fails to
+    # render and GitHub shows the raw markdown instead).
+    return f"{parts[0]} \u2013 {parts[-1]}", f"{parts[0]}--{parts[-1]}"
 
 
 def pom_values() -> dict[str, str]:
@@ -79,13 +99,16 @@ def pom_values() -> dict[str, str]:
         if sm:
             schema = sm.group(1).upper()
 
+    display, badge = paper_display(prop("dl.game.versions"))
+
     return {
         "plugin": vm.group(1).strip(),
         "schema": schema,
         "java": prop("maven.compiler.release"),
         "paper_api": prop("paper.api.version"),
         "min_paper": prop("dl.api.version"),
-        "paper_display": prop("dl.paper.display"),
+        "paper_display": display,
+        "paper_badge": badge,
     }
 
 

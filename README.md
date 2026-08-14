@@ -8,13 +8,13 @@
 ![Issues](https://img.shields.io/github/issues/GodTierGamers/DiscordLogger)
 ![License](https://img.shields.io/github/license/GodTierGamers/DiscordLogger)
 <!-- dl:sync-block:badges -->
-![Java](https://img.shields.io/badge/Java-25%2B-orange)
-![Paper](https://img.shields.io/badge/Paper-26.x-blue)
+![Java](https://img.shields.io/badge/Java-17%2B-orange)
+![Paper](https://img.shields.io/badge/Paper-1.19--26.2-blue)
 <!-- /dl:sync-block -->
 ![Discord Webhooks](https://img.shields.io/badge/Discord-Webhooks-5865F2)
 
 A minimal, reliable Minecraft server **logging plugin** that posts clean messages to a **Discord webhook** — in Markdown **or rich embeds**.
-Built for **Paper <!-- dl:sync:paper_display -->26.x<!-- /dl:sync -->** (and Paper forks like Purpur) on **Java <!-- dl:sync:java -->25<!-- /dl:sync -->+**, tested with Geyser/Floodgate (Bedrock cross-play).
+Built for **Paper <!-- dl:sync:paper_display -->1.19 – 26.2<!-- /dl:sync -->** (and Paper forks like Purpur) on **Java <!-- dl:sync:java -->17<!-- /dl:sync -->+**, tested with Geyser/Floodgate (Bedrock cross-play).
 
 ---
 
@@ -74,8 +74,8 @@ Full instructions, including creating the webhook in Discord and checking that e
 
 ## 🔌 Compatibility
 
-- **Server:** Paper **<!-- dl:sync:paper_display -->26.x<!-- /dl:sync -->**, or a Paper fork such as Purpur. The plugin uses Paper-specific APIs, so Paper is required — it will tell you clearly on startup if the server doesn't provide them.
-- **Java:** **<!-- dl:sync:java -->25<!-- /dl:sync -->+** — Minecraft <!-- dl:sync:paper_display -->26.x<!-- /dl:sync --> requires it, and the plugin is compiled for it. It will not load on older Java runtimes.
+- **Server:** Paper **<!-- dl:sync:paper_display -->1.19 – 26.2<!-- /dl:sync -->**, or a Paper fork such as Purpur. The plugin uses Paper-specific APIs, so Paper is required — it will tell you clearly on startup if the server doesn't provide them.
+- **Java:** **<!-- dl:sync:java -->17<!-- /dl:sync -->+** — the plugin is compiled for Java <!-- dl:sync:java -->17<!-- /dl:sync -->, so it loads on that and anything newer. Your *Minecraft* version sets the real floor: 1.19.4 needs Java 17, 1.20.5 needs 21, and 26.x needs 25. Whatever your server already runs on is fine.
 - **Cross-play:** Compatible with **Geyser/Floodgate** — death messages are server-generated for consistency across Java/Bedrock names/locales, and joins from Bedrock can be flagged as such.
 - **Spigot and CraftBukkit are not supported.** The plugin uses Paper's chat API; on a server without it you get a plain explanation on startup rather than a stack trace.
 
