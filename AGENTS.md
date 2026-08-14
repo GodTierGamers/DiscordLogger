@@ -44,6 +44,7 @@ Everything below was verified against the actual source at the time of writing; 
 | `<version>` | the plugin version — **release-please owns it**, never hand-edit |
 | `<maven.compiler.release>` | Java the plugin is built for |
 | `<dl.api.version>` | minimum Paper; becomes `plugin.yml`'s `api-version` |
+| `<dl.compat.floor>` | the oldest API the build promises to compile against; CI's `compat-floor` job enforces it |
 | `<dl.game.versions>` | the supported range; the listings advertise it, and the prose + badge in README/CONTRIBUTING are derived from its first and last entries |
 | `<dl.paper.display>` | how Paper is written in prose, e.g. `26.x` |
 
@@ -157,6 +158,20 @@ Stable releases are mirrored onto two listings, because that is where server own
 
 **The publish is re-runnable.** `release-please.yml` takes a `workflow_dispatch` with a `tag` input, so a listing that failed can be retried against an existing release without cutting a new one. Before that existed, `publish-listings` could only run as a side effect of the release commit — which is how v2.2.0 ended up published on Hangar, absent from Modrinth, and unrecoverable without faking a release.
 
+### Metrics
+
+33 bStats charts in `metrics/PluginMetrics.java`, with runtime tallies in `metrics/Counters.java`.
+
+**The line: configuration state, plugin presence and server software — never a player.** No names, UUIDs, IPs, message content, coordinates or world names. Counts are buckets, not exact numbers; `bucket()` has a test asserting it never returns the bare figure, so a chart cannot become a fingerprint by accident. `commands_used` is a `Set` for the same reason — fifty `/reload`s are indistinguishable from one.
+
+**Counter reads are destructive.** bStats sums each submission across every server, so a running total would re-count everything already reported. `take*` returns the delta and resets.
+
+**Source builds report**, tagged `dev` by `release_channel`. They were excluded once on the theory that a developer's machine skews every chart; bStats identifies a server by an id in `plugins/bStats/config.yml`, per data directory, so rebuild cycles against one test server are one server. Excluding them only understated the totals.
+
+**`command_filter_state` is the one with teeth.** It reports `Reduced` when a command the plugin ships in `filters.ignored_commands` has been removed — `/login` and `/msg` are in there because command logging posts lines verbatim. Tested, including the trap where a *longer* list is still `Reduced`.
+
+**Adding a chart means updating the disclosure.** The README and setup guide both enumerate what is collected. That list is a promise, not decoration.
+
 **Download counting.** The README badge is shields.io's stock `github/downloads/.../total`, which counts GitHub Release assets. Hangar traffic is already inside that number — its versions are `externalUrl` links to the GitHub asset — so only Modrinth's own tally is missing. There used to be a combined endpoint badge written by `publish-listings.py --badge` and committed by `downloads-badge.yml`; it was removed because the commit pushed straight to `main` and branch protection rejects that, so it failed every single day and the number froze. A badge that silently stops updating is worse than one that undercounts by a known amount.
 
 **Two secrets must exist** or the corresponding platform is skipped with a notice (a lagging listing is recoverable; a release job dying after tagging is not): `MODRINTH_TOKEN` (PAT, "Create versions" **plus one read scope** — either "Read analytics" or "Read user info") and `HANGAR_API_KEY` (create_version permission). Both are repository **Actions** secrets — the job declares no `environment:`, so environment secrets would not resolve.
@@ -173,6 +188,10 @@ Modrinth answers both "expired" and "wrong scopes" with a bare 401, so the failu
 The downloads badge does **not** use analytics — Modrinth's public project endpoint already exposes the total with no auth at all. Analytics would only be needed for time-series or per-version breakdowns.
 
 Modrinth PATs expire. `check-listing-credentials.yml` runs `publish-listings.py --check-auth` weekly so a dead token is caught by a failed scheduled run rather than by a release that has already tagged. Note that `--dry-run` makes no authenticated call at all and proves nothing about the tokens; `--check-auth` is the mode that does.
+
+**Three floors exist and are deliberately different numbers.** `api-version: 1.19` admits 1.19.0 onward, because api-version cannot express a patch before 1.20.5. `<dl.compat.floor>` is 1.19.0 and CI compiles against it on every Java change — without that job, using an API added in 1.19.1+ would compile, test, ship, and only then `NoSuchMethodError` on the servers the listings promise. `<paper.api.version>` is 1.19.4 because that is the oldest release the *test suite* can run against: below it, Bukkit's `YamlConfiguration` wants SnakeYAML 1.x and collides with ours on the unrelocated test classpath. That collision cannot happen in the shipped JAR, where SnakeYAML is shaded and relocated.
+
+**Dependabot is told to ignore `paper-api`** in `.github/dependabot.yml`. It is not a dependency to keep current — it is the oldest server the plugin promises to run on, pinned low on purpose. A bot bumping it to the newest build silently undoes the whole arrangement.
 
 `<dl.game.versions>` in `pom.xml` is the Minecraft version list both listings advertise. It's the one value that can't be derived — `api-version` is a floor, not a list — so it's validated against Modrinth's known-version API before publishing; a typo fails the release rather than mislabelling it.
 
