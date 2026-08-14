@@ -47,12 +47,18 @@ public final class PluginMetrics {
 
     /** Call once from onEnable, after {@link BuildInfo#load}. */
     public static void start(JavaPlugin plugin) {
-        // A developer's local build would otherwise show up as a real server and
-        // skew every chart. Only shipped artifacts report.
-        if (BuildInfo.isDev()) {
-            plugin.getLogger().fine("Metrics disabled for a local/dev build.");
-            return;
-        }
+        // Source builds DO report, and the release_channel chart separates them as
+        // "dev". They used to be excluded on the theory that a developer's machine
+        // would skew every chart, but that reasoning does not survive contact with
+        // how bStats identifies a server: the id lives in plugins/bStats/config.yml,
+        // per server directory, so fifty rebuild-and-restart cycles against one test
+        // server are one server, not fifty. Excluding them instead understated the
+        // server count and made "how many people build from source" unanswerable --
+        // a question that can only be answered by counting.
+        //
+        // The cost is real but small: a test server with deliberately odd settings
+        // lands in the config-shaped charts like any other unusual server. Filtering
+        // by channel is what that chart is for.
 
         try {
             final Metrics metrics = new Metrics(plugin, PLUGIN_ID);

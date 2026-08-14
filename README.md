@@ -85,7 +85,7 @@ Full instructions, including creating the webhook in Discord and checking that e
 
 - **Your webhook URL is a credential.** Anyone holding it can post to that channel as your server. The plugin never echoes it back, redacts it from command logging, and keeps it out of tab-completion. The [config generator](https://discordlogger.godtiergamers.xyz/generator/) runs entirely in your browser — it sends your webhook to Discord and nowhere else.
 - **Command logging posts commands verbatim**, which is why `/login`, `/register`, `/msg` and similar ship in `filters.ignored_commands` by default. Removing them publishes passwords and private messages to your channel.
-- **Anonymous metrics** are reported to [bStats](https://bstats.org/plugin/bukkit/DiscordLogger/33026): config schema version, release channel, whether embeds are on, and which event types are enabled — alongside the server/Java/plugin version data bStats collects for every plugin. No webhook URLs, player names, or message content. Local development builds don't report at all. Opt out in `plugins/bStats/config.yml`, which switches it off for every bStats plugin on the server at once.
+- **Anonymous metrics** are reported to [bStats](https://bstats.org/plugin/bukkit/DiscordLogger/33026): config schema version, release channel, whether embeds are on, and which event types are enabled — alongside the server/Java/plugin version data bStats collects for every plugin. No webhook URLs, player names, or message content. Builds compiled from source report too, tagged as such, so the totals aren't quietly understated. Opt out in `plugins/bStats/config.yml`, which switches it off for every bStats plugin on the server at once.
 
 ---
 
