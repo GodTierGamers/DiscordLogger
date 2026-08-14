@@ -5,6 +5,7 @@ import org.bstats.bukkit.Metrics;
 import org.bstats.charts.AdvancedPie;
 import org.bstats.charts.DrilldownPie;
 import org.bstats.charts.SimplePie;
+import org.bstats.charts.SingleLineChart;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -141,6 +142,19 @@ public final class PluginMetrics {
             metrics.addCustomChart(new SimplePie("command_filter_state",
                     () -> commandFilterState(plugin)));
 
+            // ------------------------------------------------------------- reliability
+            // Deltas since the last report, so the line charts show activity rather
+            // than an ever-climbing total. These describe whether the plugin is
+            // working, not what anyone's players are doing.
+            metrics.addCustomChart(new SingleLineChart("send_failures", Counters::takeFailedInt));
+            metrics.addCustomChart(new SingleLineChart("queue_drops", Counters::takeDroppedInt));
+            metrics.addCustomChart(new SingleLineChart("rate_limit_waits", Counters::takeRateLimitedInt));
+            metrics.addCustomChart(new SingleLineChart("dead_webhooks", Counters::takeNotFoundInt));
+            // Volume is a fact about someone's community rather than about this
+            // plugin, so it is banded before it leaves the process.
+            metrics.addCustomChart(new SimplePie("send_rate", Counters::takeSendRateBand));
+            metrics.addCustomChart(new AdvancedPie("commands_used", PluginMetrics::commandsUsed));
+
             // ---------------------------------------------------------------- lang.yml
             metrics.addCustomChart(new SimplePie("lang_customised",
                     () -> yesNo(langChanged(plugin) > 0)));
@@ -153,6 +167,13 @@ public final class PluginMetrics {
             // Metrics must never be the reason a server fails to start.
             plugin.getLogger().fine("Metrics could not start: " + t.getMessage());
         }
+    }
+
+    /** Which subcommands ran since the last report. Presence, not a tally. */
+    private static Map<String, Integer> commandsUsed() {
+        final Map<String, Integer> counts = new LinkedHashMap<>();
+        for (String name : Counters.takeCommandsUsed()) counts.put(name, 1);
+        return counts;
     }
 
     // ------------------------------------------------------------------ environment

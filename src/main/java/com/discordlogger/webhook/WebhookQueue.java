@@ -1,5 +1,7 @@
 package com.discordlogger.webhook;
 
+import com.discordlogger.metrics.Counters;
+
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
@@ -110,6 +112,7 @@ public final class WebhookQueue {
         final Destination dest = DESTINATIONS.computeIfAbsent(url, Destination::new);
 
         if (!dest.queue.offer(json)) {
+            Counters.dropped();
             if (!dest.warnedFull) {
                 dest.warnedFull = true;
                 log().warning("[DiscordWebhook] Send queue for webhook ..." + shortId(url)
@@ -198,6 +201,7 @@ public final class WebhookQueue {
             final DiscordWebhook.Response res = DiscordWebhook.post(dest.url, json);
 
             if (res.rateLimited()) {
+                Counters.rateLimited();
                 // Told to back off explicitly — wait it out and retry the SAME message
                 // without consuming an attempt, since nothing was wrong with it.
                 final long waitMs = clampWait(res.retryAfterMs());
@@ -210,6 +214,7 @@ public final class WebhookQueue {
             }
 
             if (res.success()) {
+                Counters.sent();
                 applyRateLimitHints(dest, res);
                 return;
             }
@@ -220,6 +225,7 @@ public final class WebhookQueue {
                     sleep(backoff);
                     continue;
                 }
+                Counters.failed();
                 log().warning("[DiscordWebhook] Giving up on a message after " + MAX_ATTEMPTS
                         + " attempts (last status " + res.status() + ").");
                 return;
@@ -227,6 +233,8 @@ public final class WebhookQueue {
 
             // 4xx that isn't 429: bad/deleted webhook, malformed payload — retrying
             // can't help, so say something actionable and move on.
+            Counters.failed();
+            if (res.status() == 404) Counters.notFound();
             log().warning("[DiscordWebhook] Discord rejected a message with HTTP " + res.status()
                     + (res.status() == 404
                         ? " — webhook ..." + shortId(dest.url) + " no longer exists. Check the"
