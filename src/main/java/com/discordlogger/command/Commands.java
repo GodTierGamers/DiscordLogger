@@ -1,6 +1,7 @@
 package com.discordlogger.command;
 
 import com.discordlogger.lang.Lang;
+import com.discordlogger.metrics.Counters;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -40,6 +41,9 @@ public final class Commands implements CommandExecutor, TabCompleter {
             sender.sendMessage(Lang.chat("chat.no-permission", "label", label, "command", sc.name()));
             return true;
         }
+
+        // Which subcommand ran, never who ran it -- see metrics/Counters.
+        Counters.commandUsed(sc.name().toLowerCase(Locale.ROOT));
 
         // Pass remaining args
         String[] tail = Arrays.copyOfRange(args, 1, args.length);
