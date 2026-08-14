@@ -137,11 +137,16 @@ without permission doesn't appear.
 `PLUGIN` to `filters.ignored_teleport_causes` if you use Essentials, since `/home`,
 `/warp` and `/spawn` all arrive that way.
 
-**The plugin reports anonymous metrics** to [bStats](https://bstats.org/plugin/bukkit/DiscordLogger/33026):
-which config schema you're on, your release channel, whether embeds are enabled, and
-which event types are switched on — plus the server, Java and plugin versions bStats
-collects for every plugin. No webhook URLs, no player names, no message content. Turn
-it off in `plugins/bStats/config.yml`, which covers every bStats plugin at once.
+**The plugin reports anonymous metrics** to [bStats](https://bstats.org/plugin/bukkit/DiscordLogger/33026).
+They describe your *setup*, never your players: server and Java version, online or
+offline mode, whether you run behind a proxy, which companion plugins are installed,
+which events and filters you've changed from the defaults, whether you edited
+`lang.yml`, and where your config came from.
+
+Never collected: webhook URLs, player names, UUIDs, IP addresses, message content,
+coordinates, or world names. Counts are reported as ranges rather than exact numbers.
+
+Turn it off in `plugins/bStats/config.yml`, which covers every bStats plugin at once.
 
 ---
 
