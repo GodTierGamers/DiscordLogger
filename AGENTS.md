@@ -10,7 +10,7 @@ Everything below was verified against the actual source at the time of writing; 
 
 - **Current plugin version:** tracked by `pom.xml` / `.release-please-manifest.json` — never hand-edit either, see **Releases** below.
 - **Current config schema:** **v9** (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V9, SHIPPED WITH v2.1.6 (x-release-please-version)`)
-- **Paper API:** `26.2.build.87-stable` (`provided` scope), `api-version: 26.1`, compiled for **Java 25**
+- **Paper API:** compiled against the OLDEST supported version (`1.19.4-R0.1-SNAPSHOT`, `provided` scope), `api-version: 1.19`, **Java 17** bytecode. Compiling against the newest and declaring an older `api-version` is how a plugin loads and then dies on `NoSuchMethodError`.
 - **GitHub:** `GodTierGamers/DiscordLogger`
 
 ## Working agreement (binding — not suggestions)
@@ -44,6 +44,7 @@ Everything below was verified against the actual source at the time of writing; 
 | `<version>` | the plugin version — **release-please owns it**, never hand-edit |
 | `<maven.compiler.release>` | Java the plugin is built for |
 | `<dl.api.version>` | minimum Paper; becomes `plugin.yml`'s `api-version` |
+| `<dl.game.versions>` | the supported range; the listings advertise it, and the prose + badge in README/CONTRIBUTING are derived from its first and last entries |
 | `<dl.paper.display>` | how Paper is written in prose, e.g. `26.x` |
 
 The sync script also derives two values it doesn't own: **`plugin`** (the released version, from `<version>`) and **`schema`** (the config schema, read from `config.yml`'s trailer). Docs examples of the config trailer use these, so they can't go stale when a release ships or the schema moves.
