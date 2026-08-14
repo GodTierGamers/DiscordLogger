@@ -25,6 +25,26 @@ Longer answers to the questions people actually arrive with.
     <h3><a href="/guides/webhook-not-posting/">Webhook not posting</a></h3>
     <p>Events reach console but never Discord. The five causes, in order of likelihood, and how console tells you which one you have.</p>
   </div>
+  <div class="dl-card">
+    <h3><a href="/guides/staff-channel/">Private staff channel</a></h3>
+    <p>Route bans and kicks somewhere private while chat stays public. Any event can have its own webhook.</p>
+  </div>
+  <div class="dl-card">
+    <h3><a href="/guides/reduce-spam/">Reduce logging spam</a></h3>
+    <p>Fourteen filters, matched to the noise each one actually solves.</p>
+  </div>
+  <div class="dl-card">
+    <h3><a href="/guides/translate/">Translate every message</a></h3>
+    <p>All 79 strings live in <code>lang.yml</code>. Reword or translate without touching code.</p>
+  </div>
+  <div class="dl-card">
+    <h3><a href="/guides/bedrock-geyser/">Geyser and Bedrock</a></h3>
+    <p>Death messages that read the same for everyone, and Bedrock players flagged on join.</p>
+  </div>
+  <div class="dl-card">
+    <h3><a href="/guides/upgrading/">Upgrading</a></h3>
+    <p>What happens to your config when you drop in a new JAR — and what to do if it looks wrong.</p>
+  </div>
 </div>
 
 ## Also useful
