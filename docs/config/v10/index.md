@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Config Docs — v10
+title: "config.yml v10 Reference — Every Key Explained"
 description: Full documentation for DiscordLogger's config.yml and lang.yml at schema v10 — every key explained, with downloadable files.
 ---
 
