@@ -88,14 +88,6 @@ Nothing here adds a feature. All of it is the difference between an admin diagno
   - Note: Discord creates a **new webhook on every authorization**, so running the flow repeatedly accumulates webhooks in the channel. The UI has to say so.
   - Requires a Discord application (client ID + secret) registered by the project owner, and a registered redirect URI.
 
-- **Verify the domain in Google Search Console.** *Do this before writing any of the pages below.* The site does not surface in search even for its own domain name, which is consistent with it not being indexed at all. If that is the case, no amount of content fixes it, and every page written first is wasted effort. Ten minutes, and it is diagnostic: it says whether the problem is indexation or authority. **Requires the project owner's account.**
-
-- **Write the pages people actually search for.** Measured 2026-08-03: DiscordLogger ranks #1 and #2 for *"minecraft plugin log server events to discord webhook paper"* — as SpigotMC and GitHub. The docs site appears nowhere. For *"how to log minecraft chat to discord without a bot"* the plugin does not appear at all, despite that being precisely what it is. Three pages, in order of intent:
-
-  - **Log Minecraft to Discord without a bot** — the differentiator the plugin owns and ranks nowhere for.
-  - **DiscordSRV vs DiscordLogger** — comparison queries convert, and "I only want logging, not a chat bridge" is a real search. Be fair to DiscordSRV; it is a different product, not a worse one.
-  - **Discord webhook not posting — troubleshooting** — the symptom→cause table already exists in the setup guide, buried where nobody searching will find it.
-
 - **Search visibility (ongoing)** — the technical groundwork is in place (sitemap, canonicals, structured data, per-page titles and descriptions), and the Modrinth/Hangar listing bodies were rewritten for 2.2.0. What's left is the slow part: the pages above, listings on the sites Minecraft admins browse, and monitoring real queries once Search Console is connected. This item stays open indefinitely; it isn't a task with a finish line.
 
 - **Let the config generator skip the webhook step.** It currently refuses to advance without a valid, confirmed URL, so there is no way to build a config before you have created the webhook — which is the order many people would rather work in.

@@ -6,7 +6,7 @@ A tour of how DiscordLogger is actually built — for contributors, curious user
 
 ## What DiscordLogger is
 
-A Paper server plugin (Java 25) that watches server events and posts them to a Discord channel over a webhook, either as rich embeds or plain Markdown text. It ships two versioned files — `config.yml` (what to log, where, and how it looks) and `lang.yml` (every string it says) — both of which migrate themselves forward automatically. It checks for updates in a way that's aware of which release channel it's running on, and is accompanied by a Jekyll website (this `docs/` folder) with an interactive config generator.
+A Paper server plugin (Java 17 bytecode, running on Paper 1.19 through 26.x) that watches server events and posts them to a Discord channel over a webhook, either as rich embeds or plain Markdown text. It ships two versioned files — `config.yml` (what to log, where, and how it looks) and `lang.yml` (every string it says) — both of which migrate themselves forward automatically. It checks for updates in a way that's aware of which release channel it's running on, and is accompanied by a Jekyll website (this `docs/` folder) with an interactive config generator.
 
 ## How a request flows through the plugin at startup
 
@@ -18,7 +18,7 @@ A Paper server plugin (Java 25) that watches server events and posts them to a D
 4. **`NightlyNotice`** activates (a no-op unless this is a nightly build).
 5. **Runtime config is applied** — the webhook URL and time format are read, `Lang` loads the language file, `Filters` builds its immutable snapshot, and `Log.init(...)` is called. A missing or invalid webhook doesn't disable the plugin; it just runs in a "degraded," console-only mode until an admin fixes it and runs `/discordlogger reload`.
 6. **Every listener registers**, unconditionally — whether an event actually gets logged is decided *inside* each listener by reading the config live, every time. This is what lets `/discordlogger reload` work without needing to re-register anything.
-7. Commands are wired up, anonymous [bStats](https://bstats.org) metrics start (skipped entirely for local dev builds), an async update check fires, and the plugin announces server start.
+7. Commands are wired up, anonymous [bStats](https://bstats.org) metrics start — source builds included, tagged as such — an async update check fires (skipped for source builds, since nagging someone about updates to the code they are editing is noise), and the plugin announces server start.
 
 ## The pieces that do the actual work
 
@@ -60,6 +60,8 @@ The invariant tying the generator to all of this: **generate, change nothing, an
 ## The website and the config generator
 
 The site is a fairly plain Jekyll project deployed straight from `main` via GitHub Pages — docs changes go live the moment they're merged, independent of when the plugin itself releases.
+
+Alongside the reference pages there is `docs/guides/`, which exists for a different reason: reference pages are read by people who have already chosen the plugin, and guides are written for the question someone types before they have. Each one targets a measured query the site ranked nowhere for. They are documentation first — the DiscordSRV comparison says plainly that DiscordSRV is the better choice for a chat bridge, and the without-a-bot page has a section on what you give up — because a page that only lists advantages earns neither a link nor a reader.
 
 The interesting part is the **config generator**, which is deliberately built so that old plugin versions keep generating exactly the config they always did, forever, even as new config schemas get added. It's split into a small, stable *loader* (`docs/assets/js/generator.js`) and fully self-contained *bundles*, one per config schema (`docs/assets/configs/v9/generator.js`, `v10/generator.js`, and so on). A visitor picks the plugin version they downloaded — not a config schema, since nobody knows that off the top of their head — and the loader silently resolves which schema that version uses and hands off to the matching bundle. The rule that keeps this maintainable: once a newer schema's folder exists, the older one is never edited again. Bug fixes only ever land in the newest schema; a folder gets copied forward, not refactored in place.
 
