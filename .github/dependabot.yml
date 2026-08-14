@@ -7,6 +7,18 @@ updates:
     commit-message:
       prefix: "chore"
     open-pull-requests-limit: 10
+    ignore:
+      # paper-api is NOT a dependency to keep current -- it is the oldest server
+      # the plugin promises to run on, and it is pinned low on purpose. The plugin
+      # compiles against the FLOOR so the compiler refuses anything a 1.19 server
+      # would not have; bumping it to the newest build would let newer APIs link
+      # silently and then NoSuchMethodError on the versions the listings advertise.
+      #
+      # Dependabot cannot know that, so it opened #162 to "update" 26.2.build.87 to
+      # 26.2.build.111 -- correct for a normal dependency, wrong for this one.
+      # Raising the floor is a deliberate decision that also moves api-version and
+      # dl.game.versions, so it belongs in a human PR, not an automated bump.
+      - dependency-name: "io.papermc.paper:paper-api"
 
   - package-ecosystem: "github-actions"
     directory: "/"
