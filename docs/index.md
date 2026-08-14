@@ -85,6 +85,23 @@ Discord channel.
   <a class="dl-cta dl-cta--primary" href="/generator/">Open the generator</a>
 </div>
 
+## Guides
+
+<div class="dl-cards">
+  <div class="dl-card">
+    <h3><a href="/guides/without-a-bot/">Log to Discord without a bot</a></h3>
+    <p>You don't need a bot application or a token. What a webhook does, and what it doesn't.</p>
+  </div>
+  <div class="dl-card">
+    <h3><a href="/guides/discordsrv-alternative/">DiscordSRV vs DiscordLogger</a></h3>
+    <p>A bridge and an audit log solve different problems. Which one you actually want.</p>
+  </div>
+  <div class="dl-card">
+    <h3><a href="/guides/webhook-not-posting/">Webhook not posting?</a></h3>
+    <p>Console shows the event but Discord doesn't. Five causes, in order of likelihood.</p>
+  </div>
+</div>
+
 ## Get started
 
 1. **[Download](/downloads/)** the JAR and drop it into `plugins/`.
