@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Guides — Minecraft Discord Logging"
-description: Practical guides for logging a Minecraft server to Discord — running without a bot, choosing between DiscordLogger and DiscordSRV, and fixing a webhook that isn't posting.
+description: Guides for logging a Minecraft server to Discord — running without a bot, DiscordLogger vs DiscordSRV, and fixing a webhook that isn't posting.
 ---
 
 # Guides
@@ -16,6 +16,10 @@ Longer answers to the questions people actually arrive with.
   <div class="dl-card">
     <h3><a href="/guides/discordsrv-alternative/">DiscordSRV vs DiscordLogger</a></h3>
     <p>They solve different problems and overlap on one feature. Which one fits what you're actually trying to do — and how to run both without double-posting.</p>
+  </div>
+  <div class="dl-card">
+    <h3><a href="/guides/what-gets-logged/">What gets logged</a></h3>
+    <p>All nineteen events, what each one posts, and which are filtered by default and why.</p>
   </div>
   <div class="dl-card">
     <h3><a href="/guides/webhook-not-posting/">Webhook not posting</a></h3>

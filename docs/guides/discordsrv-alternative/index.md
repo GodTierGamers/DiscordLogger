@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "DiscordSRV vs DiscordLogger — Which Do You Need?"
-description: DiscordSRV is a two-way chat bridge with a bot. DiscordLogger is one-way logging over a webhook. An honest comparison of what each does, and which one fits what you're actually trying to do.
+title: "DiscordSRV vs DiscordLogger"
+description: DiscordSRV bridges chat with a bot. DiscordLogger logs events over a webhook. An honest comparison of what each does and which one you actually need.
 ---
 
 # DiscordSRV vs DiscordLogger

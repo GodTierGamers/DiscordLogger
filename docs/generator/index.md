@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "config.yml Generator — Build a Config Online"
-description: Build a DiscordLogger config.yml in your browser — pick which Minecraft events get logged, set your Discord webhook, tune the filters, reword the messages, and download the finished files.
+description: Build a DiscordLogger config.yml and lang.yml in your browser — pick what gets logged, set your webhook, tune the filters, download the finished files.
 ---
 
 # config.yml Generator

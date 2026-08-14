@@ -1,7 +1,7 @@
 ---
 layout: default
 title: DiscordLogger
-description: Post Minecraft server events to Discord — joins, quits, chat, deaths and moderation actions, as rich embeds or plain text. Free, open source, and configurable per event.
+description: Post Minecraft server events to Discord — joins, chat, deaths and moderation actions, as rich embeds or plain text. Free, open source, no bot required.
 ---
 
 <section class="dl-hero">
@@ -95,6 +95,10 @@ Discord channel.
   <div class="dl-card">
     <h3><a href="/guides/discordsrv-alternative/">DiscordSRV vs DiscordLogger</a></h3>
     <p>A bridge and an audit log solve different problems. Which one you actually want.</p>
+  </div>
+  <div class="dl-card">
+    <h3><a href="/guides/what-gets-logged/">What gets logged</a></h3>
+    <p>All nineteen events, and which are filtered by default.</p>
   </div>
   <div class="dl-card">
     <h3><a href="/guides/webhook-not-posting/">Webhook not posting?</a></h3>
