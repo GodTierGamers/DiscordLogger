@@ -6,18 +6,18 @@ Everything below was verified against the actual source at the time of writing; 
 
 ## What this project is
 
-**DiscordLogger** is a Minecraft **Paper** server plugin (Java 25) that posts server events to a Discord channel via **webhooks** — either as rich embeds (per-event colors, player-head thumbnails, timestamps) or as plain Markdown text. It ships with a versioned `config.yml` that auto-migrates between schema versions, a channel-aware update checker, and a companion **Jekyll website** (in `docs/`) hosted on GitHub Pages at `https://discordlogger.godtiergamers.xyz` that includes an interactive config generator.
+**DiscordLogger** is a Minecraft **Paper** server plugin (Java 17 bytecode) that posts server events to a Discord channel via **webhooks** — either as rich embeds (per-event colors, player-head thumbnails, timestamps) or as plain Markdown text. It ships two versioned files, `config.yml` and `lang.yml`, both of which auto-migrate between schema versions, plus a channel-aware update checker and a companion **Jekyll website** (in `docs/`) hosted on GitHub Pages at `https://discordlogger.godtiergamers.xyz` that includes an interactive config generator.
 
 - **Current plugin version:** tracked by `pom.xml` / `.release-please-manifest.json` — never hand-edit either, see **Releases** below.
-- **Current config schema:** **v9** (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V9, SHIPPED WITH v2.1.6 (x-release-please-version)`)
-- **Paper API:** compiled against the OLDEST supported version (`1.19.4-R0.1-SNAPSHOT`, `provided` scope), `api-version: 1.19`, **Java 17** bytecode. Compiling against the newest and declaring an older `api-version` is how a plugin loads and then dies on `NoSuchMethodError`.
+- **Current config schema:** **v10** (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V10, SHIPPED WITH v2.3.0 (x-release-please-version)`). v9 is published and frozen.
+- **Paper API:** three deliberately different numbers, all in `pom.xml` — see *Three floors* under Metrics. The short version: **compile against the oldest supported API, never the newest**, since compiling against the newest and declaring an older `api-version` is how a plugin loads and then dies on `NoSuchMethodError`.
 - **GitHub:** `GodTierGamers/DiscordLogger`
 
 ## Working agreement (binding — not suggestions)
 
 1. **Trunk-based**: branch off `main` (`feat/<name>`, `fix/<name>`), PR into `main`. Never commit directly to `main`.
 2. **Conventional Commit PR titles** (`feat:` / `fix:` / `docs:` / `chore:` / `refactor:` / `ci:` / `test:` …) — `lint-pr.yml` rejects anything else. The title becomes the changelog entry verbatim. Squash-merge.
-3. **Verify before PR**: `mvn -B -ntp clean package` must pass; for listener/config changes, exercise on a real Paper server when practical.
+3. **Verify before PR**: `mvn -B -ntp clean package` must pass — that runs the test suite, which gates CI. For listener/config changes, exercise on a real Paper server when practical.
 4. **Config changes travel in lockstep**: `config.yml` + listener + `EventRegistry` + `docs/assets/configs/v*/options.json` + `config.template.yml` + `docs/assets/configs/v*/config.yml` + the embedded block in `docs/config/v*/index.md` (see "Config file dictionary" below — four places, not two) in the same PR; run `python3 scripts/validate-config-generator.py` locally (CI runs it too).
 5. **Merging is a maintainer's call — you open PRs and stop.** Do not merge without an explicit, current instruction. This goes double for the **release-please Release PR**: merging it *is* the release. It exists to accumulate merged features (the batching role the old `dev` branch served) and stays open until the maintainer decides a feature compilation is ready to ship. Never merge it on general "go" energy from other work — it requires its own fresh "ship it," every single time, no exceptions, even if you were just told to merge something else.
 6. **Never hand-edit** `.release-please-manifest.json`, `CHANGELOG.md`, or `pom.xml`'s `<version>` — those belong to release-please.
@@ -37,18 +37,18 @@ Everything below was verified against the actual source at the time of writing; 
 
 ## Version values — pom.xml is the single source of truth
 
-**Never hand-type a Java version, Paper version or api-version anywhere except `pom.xml`.** Four properties there feed everything else:
+**Never hand-type a Java version, Paper version or api-version anywhere except `pom.xml`.** These properties feed everything else:
 
-| Property | Meaning |
-|---|---|
-| `<version>` | the plugin version — **release-please owns it**, never hand-edit |
-| `<maven.compiler.release>` | Java the plugin is built for |
-| `<dl.api.version>` | minimum Paper; becomes `plugin.yml`'s `api-version` |
-| `<dl.compat.floor>` | the oldest API the build promises to compile against; CI's `compat-floor` job enforces it |
-| `<dl.game.versions>` | the supported range; the listings advertise it, and the prose + badge in README/CONTRIBUTING are derived from its first and last entries |
-| `<dl.paper.display>` | how Paper is written in prose, e.g. `26.x` |
+| Property | Current | Meaning |
+|---|---|---|
+| `<version>` | — | the plugin version — **release-please owns it**, never hand-edit |
+| `<maven.compiler.release>` | `17` | Java the plugin is built for |
+| `<dl.api.version>` | `1.19` | minimum Paper; becomes `plugin.yml`'s `api-version` |
+| `<dl.compat.floor>` | `1.19-R0.1-SNAPSHOT` | the oldest API the build promises to compile against; CI's `compat-floor` job enforces it |
+| `<paper.api.version>` | `1.19.4-R0.1-SNAPSHOT` | what the normal build and the **test suite** compile against |
+| `<dl.game.versions>` | 28 entries, `1.19`–`26.2` | the supported range; the listings advertise it, and the prose + badge in README/CONTRIBUTING are derived from its first and last entries |
 
-The sync script also derives two values it doesn't own: **`plugin`** (the released version, from `<version>`) and **`schema`** (the config schema, read from `config.yml`'s trailer). Docs examples of the config trailer use these, so they can't go stale when a release ships or the schema moves.
+The sync script derives three values no property owns: **`plugin`** (the released version, from `<version>`), **`schema`** (the config schema, read from `config.yml`'s trailer), and **`paper_display`** (how Paper is written in prose, e.g. `1.19 – 26.2`, built from the first and last of `<dl.game.versions>`). Docs examples of the config trailer use these, so they can't go stale when a release ships or the schema moves. `paper_display` is derived rather than hand-set because a standalone property would drift the moment a Minecraft version is added — the listings would advertise the new ceiling while every badge and requirements table still named the old one. (A `<dl.paper.display>` property did exist and has been removed; if you see it referenced, that's stale.)
 
 How each destination gets its value — all automatic, none needs remembering:
 
@@ -65,7 +65,9 @@ To add a new synced location: wrap the value in `<!-- dl:sync:KEY -->` markers (
 
 ## Build & test
 
-**Tests exist and gate CI** (JUnit 5 + surefire; `ci.yml` runs `mvn clean package` with tests on). `mvn test` runs them in ~10s.
+**Tests exist and gate CI** (JUnit 5 + surefire; `ci.yml` runs `mvn clean package` with tests on). `mvn test` runs them in ~10s — currently 17 classes, 209 tests.
+
+They are concentrated where a silent failure is most expensive rather than spread for coverage: five classes on `ConfigMigrator` alone (decision table, step chain, path resolution, list splicing, single-line rewrites), the rest on filters, lang loading, death causes, routing, webhook redaction, metrics bucketing and Bedrock detection. Several exist because the bug they describe actually shipped.
 
 **Never assert the trailer's exact form.** `nightly.yml` and the release build both rewrite it before compiling — the `(x-release-please-version)` marker only exists in the source file. Two tests pinned that marker and made *every nightly fail for three days* while CI stayed green, because CI does not stamp. Assert `CONFIG VERSION V\d+` survives, not what follows it.
 
@@ -77,7 +79,7 @@ mvn -B -ntp clean package     # compile + shade → target/discordlogger-<versio
 mvn -B -ntp clean compile     # compile only (faster sanity check)
 ```
 
-- **There is no test suite.** `mvn package` compiling cleanly is the only automated check. Real verification means dropping the shaded JAR into a Paper server's `plugins/` folder.
+- A clean `mvn package` is not a functional test. Real verification of listener and config behaviour still means dropping the shaded JAR into a Paper server's `plugins/` folder.
 - The shade plugin relocates SnakeYAML to `com.discordlogger.shaded.snakeyaml` and excludes its `META-INF`. `minimizeJar` is deliberately **off** (ASM/modern bytecode issues).
 - **Maven resource filtering applies ONLY to `plugin.yml` and `build-info.properties`** (for `${project.version}` / `${dl.build.channel}` / `${dl.build.date}`). `config.yml` is copied **verbatim** — it contains `$` characters in ASCII art that must never be filtered. Don't add filtering to it; CI stamps its trailer via targeted regex replacement instead.
 - A plain local `mvn package` produces a **`dev`-channel** build (`dl.build.channel` defaults to `dev` in `pom.xml`) — see `BuildInfo`.
@@ -88,45 +90,63 @@ mvn -B -ntp clean compile     # compile only (faster sanity check)
 pom.xml                                Maven build
 release-please-config.json             release-please: changelog sections, extra-files
 .release-please-manifest.json          release-please: current released version (state)
-scripts/validate-config-generator.py   CI check: options.json <-> template <-> Java source <-> shipped config <-> mirror <-> doc embed
+scripts/validate-config-generator.py   CI check: options.json <-> template <-> Java source <-> shipped config
+                                       <-> mirror <-> doc embed, plus trailers and the registry invariant
 scripts/sync-versions.py               Propagates pom.xml's version values into README/CONTRIBUTING/docs
 scripts/publish-listings.py            Mirrors stable releases to Modrinth/Hangar
 src/main/resources/
   plugin.yml                           Plugin descriptor (Maven-filtered)
   build-info.properties                Build channel/version/date, baked in at package time
-  config.yml                           Default config, schema v9 (NOT filtered) — file 1 of 4, see dictionary
+  config.yml                           Default config, schema v10 (NOT filtered) — file 1 of 4, see dictionary
+  lang.yml                             Every player/Discord-facing string, same schema version
 src/main/java/com/discordlogger/
   DiscordLogger.java                   Plugin entry point (onEnable/onDisable)
   log/Log.java                         Static logging facade (the API everything calls)
+  lang/Lang.java                        Message lookup: chat() = MiniMessage, text() = plain
+  filter/Filters.java                  Immutable filter snapshot, swapped atomically on reload
   webhook/DiscordWebhook.java          Manual JSON building + one HTTP POST, reports outcome
   webhook/WebhookQueue.java            Single-threaded send queue: rate limiting, retries, ordering
   config/ConfigMigrator.java           Comment-preserving config version migration
+  config/SchemaDetector.java           Infers a config's schema from its KEYS — the arbiter
+  config/ConfigVersionNotice.java      Warns ops when a config is AHEAD of the running build
   event/EventRegistry.java             Registers all listeners; fires start/stop
   event/ServerStart.java               Static handler (not a Listener)
   event/ServerStop.java                Static handler (not a Listener)
   command/Commands.java                Subcommand router (executor + tab completer)
   command/Subcommand.java              Interface: name/description/permission/execute/tabComplete
   command/Reload.java                  /discordlogger reload
+  command/Webhook.java                 /discordlogger webhook <url> — never echoes the URL
+  command/Regen.java                   /discordlogger regen confirm — destructive, hence the literal
+  metrics/PluginMetrics.java           31 bStats charts; carries the privacy contract in its Javadoc
+  metrics/Counters.java                Runtime tallies; reads are destructive (see Metrics)
   update/BuildInfo.java                Reads build-info.properties (channel/version/built)
   update/NightlyNotice.java            Nightly-channel warnings (console + first-boot op chat)
   update/UpdateChecker.java            Async, channel-aware GitHub release check on startup
   util/Names.java                      Nickname resolution + cache ("Nick (Real)")
+  util/Platform.java                   Server-side capability probes
+  util/ClientPlatform.java             Bedrock detection via Floodgate, never guesses "Java"
   listener/player/                     PlayerJoin, PlayerQuit, PlayerChat, PlayerCommand,
-                                        PlayerDeath, PlayerAdvancement, PlayerTeleport, PlayerGamemode
+                                        PlayerDeath, PlayerAdvancement, PlayerTeleport, PlayerGamemode,
+                                        KillCommandTracker (pre-1.20 /kill vs VOID, see Listeners)
   listener/server/                     ServerCommand, Explosion
   listener/moderation/                 Ban, Unban, Kick, Op, Deop, Whitelist
+src/test/java/com/discordlogger/       JUnit 5; 17 classes, 209 tests — see Build & test
 docs/                                  Jekyll website (GitHub Pages, deploys from main)
-  config/v9/index.md                    Config docs page — embeds file 4 of 4, see dictionary
+  config/v10/index.md                   Config docs page — embeds file 4 of 4, see dictionary
+  config/v10/lang.yml.txt               The lang.yml the page embeds and serves for download
   assets/js/versions.js                 Site-wide version awareness + BETA badges/gating
   assets/js/generator.js                Config generator loader (schema picker)
   assets/configs/registry.json          One entry per config schema
-  assets/configs/v9/                    Self-contained v9 generator bundle + data (frozen once v10 ships)
+  assets/configs/v9/                    v9 generator bundle + data — PUBLISHED AND FROZEN, never edit
+  assets/configs/v10/                   v10 bundle: generator.js, options.json, both templates, both mirrors
 .github/workflows/
-  ci.yml                               Build + docs-validate on push/PR to main (path-filtered)
+  ci.yml                               build + compat-floor + validate-generator-data (path-filtered)
   lint-pr.yml                          Enforces Conventional Commit PR titles
   release-please.yml                   Rolling Release PR on main + builds/attaches the stable JAR
   nightly.yml                          Cron + manual nightly beta builds from main
-.github/dependabot.yml                 Weekly maven/github-actions/bundler dependency PRs
+  sync-versions.yml                    Runs sync-versions.py on any push to main touching pom.xml
+  check-listing-credentials.yml        Weekly --check-auth so a dead Modrinth PAT fails a cron, not a release
+.github/dependabot.yml                 Weekly maven/github-actions/bundler dependency PRs (paper-api ignored)
 ```
 
 ## Branches, releases, and the nightly channel
@@ -138,7 +158,7 @@ docs/                                  Jekyll website (GitHub Pages, deploys fro
 2. `release-please.yml` maintains a rolling **Release PR**: version bump computed from commit types (`fix:` → patch, `feat:` → minor, `!`/BREAKING → major), `CHANGELOG.md` from commit titles, `pom.xml` bumped natively, and `config.yml`'s annotated trailer line rewritten (the `(x-release-please-version)` marker — `ConfigMigrator` ignores everything after the `V<n>` number, verified).
 3. **Merging the Release PR is the release.** The next `release-please.yml` run (triggered by that merge) tags `v<version>` and publishes the GitHub Release with the changelog as its body.
 4. The same workflow run's `build-artifact` job then checks out the tag, stamps `BUILT <DD-MM-YYYY>` onto the trailer, builds with `-Ddl.build.channel=stable`, and attaches `DiscordLogger-v<version>.jar` + `.sha256`. (The build lives in the same run rather than a `release: published` listener because events created with the built-in `GITHUB_TOKEN` don't trigger other workflows — a separate listener would never fire. See Gotchas.)
-5. **Config schema revisions (v9 → v10) stay manual and deliberate** — bump the `V<n>` trailer, add `docs/assets/configs/v<n>/`, wire the generator config. Never inferred from commits.
+5. **Config schema revisions (`v<N>` → `v<N+1>`) stay manual and deliberate** — bump the `V<n>` trailer, add `docs/assets/configs/v<n>/`, wire the generator config. Never inferred from commits. See the RUNBOOK below.
 6. **Force a specific version:** a commit whose message has a `Release-As: X.Y.Z` footer retargets the Release PR (and `nightly.yml`'s version computation, which honors the same footer) to that exact version regardless of what the conventional-commit math would produce.
 
 ### Distribution — GitHub is the only host that serves a JAR (almost)
@@ -215,7 +235,15 @@ Cron (15:00 UTC — arbitrary, adjust freely) + `workflow_dispatch`, building fr
 - Stable servers never see nightlies: the stable-channel update check skips pre-releases entirely.
 
 ### CI (`ci.yml`)
-Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes; `validate-generator-data` runs on `docs/assets/configs/**` changes; both on a mixed PR. Concurrency cancels superseded runs. PR builds upload the JAR as an artifact.
+Path-filtered (`dorny/paths-filter`), three jobs behind a `changes` gate:
+
+| Job | Runs on | What it proves |
+|---|---|---|
+| `build` | `src/**`, `pom.xml` | compiles and the test suite passes; uploads the JAR as a PR artifact |
+| `compat-floor` | same | recompiles with `-Dpaper.api.version=<dl.compat.floor>`, so using an API added after the advertised floor fails here instead of `NoSuchMethodError`-ing on a user's server |
+| `validate-generator-data` | `docs/assets/configs/**` | `validate-config-generator.py` |
+
+Concurrency cancels superseded runs. Branch protection requires `build`, `validate-generator-data` and `lint`; `compat-floor` is not (yet) in the required list.
 
 ### Repo settings that matter (configured, not in files)
 - "Allow GitHub Actions to create and approve pull requests" **must stay enabled** — release-please cannot open its Release PR without it.
@@ -237,7 +265,7 @@ Path-filtered (`dorny/paths-filter`): `build` runs on `src/**`/`pom.xml` changes
 - All state is `static volatile`; `init()` runs on the main thread, senders on async scheduler threads. The color map is built locally then assigned in **one volatile write** so async readers never see a half-built map. Preserve this pattern.
 - `Log.isReady()` gates all Discord sends; console logging always happens.
 - API: `plain(String)`; `event(category, message)` / `eventWithThumb(...)`; `eventFields(...)` / `eventFieldsWithThumb(category, title, author, List<Field>, thumbUrl)`; `sendUpdateEmbed(...)` (UpdateChecker only); `mdEscape(String)` (use on any player-controlled text); `playerAvatarUrl(UUID)` (mc-heads.net).
-- **Color resolution:** category strings are normalized (lowercase; spaces/dots/dashes/slashes → `_`) then looked up, so `"Player Join"` → `player_join`. Defaults hard-coded in `Log.init`, overridable via `embeds.colors.*` (nested or flat keys). Unknown categories fall back to the `server` color.
+- **Color resolution:** category strings are normalized (lowercase; spaces/dots/dashes/slashes → `_`) then looked up, so `"Player Join"` → `player_join`. Defaults hard-coded in `Log.init`, overridden by `log.<group>.<event>.color` — the colour sits beside its toggle as of schema v10, not in the separate `embeds.colors` tree v9 used. Unknown categories fall back to the `server` color.
 - Valid webhook URL prefixes: `discord.com`, `discordapp.com`, `ptb.discord.com`, `canary.discord.com` (all `https://…/api/webhooks/`).
 
 ### `DiscordWebhook`
@@ -314,6 +342,7 @@ Every event takes an optional `log.<group>.<event>.webhook`. Empty means the mai
 - Player text → `Names.display(player, plugin)` + `Log.mdEscape(...)`; player embeds get `Log.playerAvatarUrl(uuid)` thumbnails; server events use the hosted `server.png`.
 - **Moderation listeners are command sniffers, not API hooks:** they watch `PlayerCommandPreprocessEvent` + `ServerCommandEvent`, parse the raw command, gate on vanilla/Bukkit/Essentials permission nodes (console always allowed), then **verify the state actually changed on the next tick** before logging. `Kick` is two-phase (intent map keyed by target UUID → confirmed by `PlayerKickEvent`, stale entries cleaned after 2 ticks).
 - Notable: `PlayerJoin` delays 2 ticks for nickname plugins; `PlayerQuit` defers cache eviction 1 tick; `PlayerChat` uses Paper `AsyncChatEvent` + Adventure serializer (why Paper API is required); `PlayerAdvancement` skips `recipes/*` and `*/root`; `PlayerDeath` builds Geyser-friendly messages from damage context; `Explosion` handles entity+block explosions with CDN icons and a 20-block nearby-player list; `ServerStart`/`ServerStop` are static handlers called by `EventRegistry`, not listeners.
+- **`KillCommandTracker` is a version-gated workaround, not a feature.** `DamageCause.KILL` arrived in 1.20; before it, the server reports `/kill` as `VOID`, so a command death read as "Fell into the void". It watches the command and lets `PlayerDeath` correlate a `VOID` death against it within 250ms. `ACTIVE` is `false` wherever `KILL` exists — running correlation where the real information is available could only turn a correct answer into a guess. Keep it that way; the parsing (`targetOf`) is unit-tested precisely because the awkward cases are textual (`/minecraft:kill`, `/killall`, selectors, leading whitespace).
 
 ### Commands
 - Root `/discordlogger` (aliases `/dlogger`, `/dlog`). The **command itself is deliberately ungated** — it used to require `discordlogger.reload`, which would have locked a `regen`-only admin out of the whole command once a second subcommand existed. `Commands` routes `Subcommand` implementations (LinkedHashMap) and filters both help and tab-complete by each subcommand's own permission, so an unprivileged sender sees nothing and can run nothing.
@@ -329,18 +358,30 @@ Every event takes an optional `log.<group>.<event>.webhook`. Empty means the mai
 ## Config reference (schema v10)
 
 ```yaml
+config-version         10            # declared schema; SchemaDetector still overrules it
 webhook.url            ""            # plugin is console-only until valid
 format.time            "[HH:mm:ss, dd:MM:yyyy]"  # Java DateTimeFormatter; plain-text mode only
 format.name            ""            # plain-text server-name prefix (proxy setups)
 format.nicknames       true          # "Nick (Real)" in player logs
 embeds.enabled         true          # false → plain Markdown messages
 embeds.author          "Server Logs"
-embeds.colors.<cat>.<event>  "#RRGGBB"
+
+# v10 shape: every event is a SECTION, not a boolean. Colour lives beside its
+# toggle rather than in embeds.colors.*, which is what v9→v10 migrated.
+log.<group>.<event>.enabled   true
+log.<group>.<event>.color     "#RRGGBB"
+log.<group>.<event>.webhook   ""      # empty = the main webhook.url
+log.<group>.<event>.<extra>           # per-event sub-options, see `extras`
+
 log.player.{join,quit,chat,command,death,advancement,teleport,gamemode}
 log.server.{command,start,stop,explosion}
 log.moderation.{ban,unban,kick,op,deop,whitelist_toggle,whitelist_edit}
+filters.<14 keys>                     # see Log filtering
 ```
-All `log.*` toggles ship as `true` in the default file.
+
+All `log.*.enabled` toggles ship as `true`. Sub-options currently shipped: `log.player.join.show_platform` (`true`) and `log.player.death.show_coords` (**`false`** — it reveals where the body and its drops are, so it is the one thing here that ships off).
+
+**`embeds.colors.*` no longer exists.** It was the v9 location; v10 moved every colour to `log.<group>.<event>.color`. `Log` still normalises category strings the same way, so the resolution rules below are unchanged — only the source keys moved.
 
 ### Config file dictionary — four places hold "the config," they are not the same thing
 
@@ -351,16 +392,21 @@ Four near-identical copies of the config content exist. Confusing them is the si
 | # | Location | What it actually is | Consumed by |
 |---|---|---|---|
 | 1 | `src/main/resources/config.yml` | **The shipped config** — the real source of truth. Bundled inside the plugin JAR; every server gets this on first run. | `DiscordLogger.onEnable` / `ConfigMigrator` (Java, at runtime) |
-| 2 | `docs/assets/configs/v9/config.yml` | **The download mirror** — a static copy served by the plain "Download" button on the config docs page. No wizard involved; just the file, verbatim. | A `<a download>` link in `docs/config/v9/index.md` |
-| 3 | `docs/assets/configs/v9/config.template.yml` | **The generator template** — `{{TOKEN}}` placeholders, filled in by the wizard based on what the visitor chose. Never downloaded directly; its *output* is. | `docs/assets/configs/v9/generator.js` |
+| 2 | `docs/assets/configs/v<N>/config.yml` | **The download mirror** — a static copy served by the plain "Download" button on the config docs page. No wizard involved; just the file, verbatim. | A `<a download>` link in `docs/config/v<N>/index.md` |
+| 3 | `docs/assets/configs/v<N>/config.template.yml` | **The generator template** — `{{TOKEN}}` placeholders, filled in by the wizard based on what the visitor chose. Never downloaded directly; its *output* is. | `docs/assets/configs/v<N>/generator.js` |
 | 4 | The `## Full config.yml` fenced code block inside `docs/config/v<N>/index.md` | **The doc-page embed** — the full file shown inline in prose, for people reading the docs who don't want to click through. Easiest of the four to forget since it lives inside Markdown, not a config file. | Rendered directly on the config docs page |
 
 **The rule:** 1, 2, and 4 must be **content-identical** — same real values, same comments, same banners — except each one's own trailer line (`SHIPPED WITH vX.Y.Z` vs `DOWNLOADED FROM WEBSITE`). `scripts/validate-config-generator.py` enforces this automatically in CI for both 1↔2 and 2↔4 — it will fail the build if any of them drift. File 3 isn't byte-compared (it has tokens instead of real values), but its `{{LOG_*}}`/`{{COLOR_*}}` tokens are cross-checked against `options.json` and the Java source by the same script.
 
+**The trailer itself is checked separately, and had to be.** Because the copy comparison deliberately excludes the trailer — the one line that is *meant* to differ — nothing looked at its contents for a long time, and `docs/config/v10/lang.yml.txt` sat claiming `SHIPPED WITH v2.1.6 (x-release-please-version)` through two releases. **A release-please marker only updates in files listed in `release-please-config.json`'s `extra-files`; anywhere else it freezes at whatever version it was written with and then lies.** `check_website_copies_are_labelled()` now asserts both halves of that rule for every copy under `docs/`: no marker in an untracked file, and a trailer that says where the file came from (`DOWNLOADED FROM WEBSITE` / `GENERATED ON WEBSITE`).
+
 **Practical consequence:** any edit to the real config content (webhook/format/embeds/log.\* structure or their comments, including the banners) touches file 1 first, then files 2 and 4 need the identical change, and file 3 needs the matching `{{TOKEN}}` version. Don't rely on memory for this — run `python3 scripts/validate-config-generator.py` locally before opening the PR; CI runs it too, but catching it before pushing is faster.
 
-### ⚠️ Known inconsistency (still open — don't propagate it)
-**Java fallback defaults don't all match config.yml.** `PlayerTeleport`, `PlayerGamemode`, and `Explosion` use `getBoolean(key, false)` while everything else uses `true` (and config.yml ships all `true`). The fallback only matters if the key is missing from a user's file, but the convention is *Java default == config.yml default* — fix toward `true` if you touch these. (Good first `fix:` PR.)
+### Java fallbacks must equal the shipped defaults
+
+`getBoolean("log.x.y.enabled", <fallback>)` in Java must use the same value `config.yml` ships. The fallback only applies when the key is missing from a user's file — hand-edited, partial copy, or predating the key — and a mismatch silently disables logging the docs promise is on. `validate-config-generator.py` fails the build on any disagreement.
+
+The one deliberate `false` is `log.player.death.show_coords`, which ships `false` in both places. (`PlayerTeleport`, `PlayerGamemode` and `Explosion` were once inconsistent here; that has been fixed — if you find a doc still listing it as open, it's stale.)
 
 ## Website (`docs/`)
 
@@ -399,14 +445,17 @@ Internally the generator is still keyed on **config schema versions** (v9, v10�
 ```
 docs/assets/js/generator.js        LOADER — small, stable, shared
 docs/assets/configs/
-  registry.json                    one entry per SCHEMA: { config: "v9", since: "2.1.5" }
-  v9/generator.js                  SELF-CONTAINED bundle: steps, styles, webhook payload, YAML builders
-  v9/options.json                  UI data: events+colours, `filters`, `lang` groups
-  v9/config.template.yml           {{TOKEN}} output template for config.yml
-  v9/lang.template.yml             {{LANG_*}} output template for lang.yml (v10+)
-  v9/config.yml                    reference copy of what shipped
-  v9/lang.yml                      reference copy of what shipped (v10+)
+  registry.json                    one entry per SCHEMA: { config: "v10", since: "2.2.0" }
+  v9/**                            PUBLISHED AND FROZEN — never edit (no lang files; lang.yml is v10+)
+  v10/generator.js                 SELF-CONTAINED bundle: steps, styles, webhook payload, YAML builders
+  v10/options.json                 UI data: events+colours, `filters`, `lang` groups
+  v10/config.template.yml          {{TOKEN}} output template for config.yml
+  v10/lang.template.yml            {{LANG_*}} output template for lang.yml
+  v10/config.yml                   reference copy of what shipped
+  v10/lang.yml                     reference copy of what shipped
 ```
+
+Live schemas: **v9** (`since: 2.1.5`, frozen) and **v10** (`since: 2.2.0`, current).
 
 **The generator emits every key in both files, and nothing is hardcoded in a template that the wizard cannot reach.** A setting the generator silently bakes in is one the user does not know they have — which is exactly what the fourteen filters were until they were wired up. Concretely: `options.json` carries `filters` (one entry per `filters.*` key, typed `list` / `choices` / `text` / `number` / `bool`) and `lang` (all messages, grouped, each with its shipped default). Adding a fifteenth filter or an eightieth message is a **data** change — one entry plus one `{{TOKEN}}` — never a code change to the bundle.
 
@@ -435,16 +484,16 @@ docs/assets/configs/
 
 `registry.json` entries take `{ "config", "since", "generatorReady"? }`. **`since` is the first build shipping that schema and may itself be a nightly** (e.g. `"1.2.3-BETA.1"`) when a schema debuts in one — version comparison is BETA-aware, so `1.2.3-BETA.1 < 1.2.3-BETA.2 < 1.2.3`. Setting `"generatorReady": false` lists a schema *before* its bundle exists: the picker names it, explains it isn't available yet, and disables Continue rather than failing to load a missing script.
 
-**Adding a new config schema (worked example: v9 → v10).** The plugin ships exactly **one** config — the current one — so the shipped file is *replaced*, while every website artifact for the old schema is *kept forever*:
+**Adding a new config schema (`v<N>` = the new one, `v<N-1>` = the frozen one).** The plugin ships exactly **one** config — the current one — so the shipped file is *replaced*, while every website artifact for the old schema is *kept forever*. This has happened once so far, v9 → v10 in 2.2.0; the next one is v10 → v11.
 
 | Path | Action | Why |
 |---|---|---|
-| `src/main/resources/config.yml` | **REPLACE** with v10 content; trailer becomes `CONFIG VERSION V10` | The JAR only ever carries the current schema. `ConfigMigrator` migrates old user files forward at runtime. |
-| `docs/assets/configs/v9/**` | **DO NOT TOUCH — ever again** | Bundle, options, template, mirror. Someone still running a v9 plugin must keep generating exactly the config they always did. |
-| `docs/config/v9/index.md` | **KEEP FOREVER** | v9 users still need their docs. Old schema docs are never deleted, only superseded. |
-| `docs/assets/configs/v10/**` | **CREATE** — copy v9's folder, then adapt it | Copy forward; never refactor an old schema in place. All six files: bundle, `options.json`, both templates, both mirrors. |
-| `docs/config/v10/index.md` | **CREATE** | New docs page for the new schema. |
-| `registry.json` | **ADD** one line: `{ "config": "v10", "since": "<first build shipping it>" }` | The v9 entry stays untouched. |
+| `src/main/resources/config.yml` | **REPLACE** with v\<N\> content; trailer becomes `CONFIG VERSION V<N>` | The JAR only ever carries the current schema. `ConfigMigrator` migrates old user files forward at runtime. |
+| `docs/assets/configs/v<N-1>/**` | **DO NOT TOUCH — ever again** | Bundle, options, templates, mirrors. Someone still running the older plugin must keep generating exactly the config they always did. |
+| `docs/config/v<N-1>/index.md` | **KEEP FOREVER** | Those users still need their docs. Old schema docs are never deleted, only superseded. |
+| `docs/assets/configs/v<N>/**` | **CREATE** — copy `v<N-1>`'s folder, then adapt it | Copy forward; never refactor an old schema in place. All six files: bundle, `options.json`, both templates, both mirrors. |
+| `docs/config/v<N>/index.md` | **CREATE** | New docs page for the new schema. Bring `lang.yml.txt` with it. |
+| `registry.json` | **ADD** one line: `{ "config": "v<N>", "since": "<first build shipping it>" }` | Every older entry stays untouched. |
 
 Nothing else. The generator picker, the config-docs index list, and BETA gating all derive from that one registry line plus the releases API.
 
@@ -498,7 +547,7 @@ Compare that against the newest entry in `docs/assets/configs/registry.json`. If
 
     Leave every older entry untouched.
 
-12. **`since` must be a build that actually ships this schema.** It may be a nightly (`"2.3.0-BETA.1"`) when a schema debuts in one; comparison is BETA-aware. **The invariant:** the newest registry entry must match the trailer in `src/main/resources/config.yml`. Listing a schema the plugin isn't shipping yet captures newer releases and sends them to a generator that doesn't exist. This has bitten before — a speculative v10 entry was added and had to be removed because it would have broken 2.2.0.
+12. **`since` must be a build that actually ships this schema.** It may be a nightly (`"2.3.0-BETA.1"`) when a schema debuts in one; comparison is BETA-aware. **The invariant:** the newest registry entry must match the trailer in `src/main/resources/config.yml`. Listing a schema the plugin isn't shipping yet captures newer releases and sends them to a generator that doesn't exist. This has bitten before — a speculative v10 entry was added and had to be removed because it would have broken 2.2.0. `check_registry_matches_shipped_schema()` now fails the build on it in both directions, so **add the registry entry in the same PR that bumps the shipped trailer**, not before.
 13. If the bundle isn't finished yet, set `"generatorReady": false` — the picker names the schema, says it isn't available, and disables Continue instead of failing on a missing script.
 
 #### Phase 5 — verify before opening the PR
@@ -623,7 +672,7 @@ Renders straight from the releases API. Nightly builds (tag matches `-BETA.N`) g
 
 ## Conventions
 
-- **Java 25, Paper API only**; Adventure preferred for anything new touching chat components (`ChatColor` lingers in command feedback).
+- **Java 17 bytecode, Paper API only.** 17 is the compile target because 1.19 servers run on it; do not reach for a newer language feature without moving `<maven.compiler.release>`, which raises the floor for every server on the list. Adventure preferred for anything new touching chat components (`ChatColor` lingers in command feedback).
 - Final classes, private constructors on static utility classes, `LinkedHashMap` where iteration order matters.
 - Config keys: lowercase snake_case, grouped `log.<category>.<event>`.
 - Every new logged event, in lockstep: listener (with live config gate) + `EventRegistry` registration + `log.*` key in `config.yml` + default color in `Log.init` + generator `options.json` (including its `defaultColor`, which must match the plugin default) / template entries + docs mention. The validator catches the generator-side half in CI.
@@ -632,10 +681,10 @@ Renders straight from the releases API. Nightly builds (tag matches `-BETA.N`) g
 
 ## Things NOT in this repo (avoid confusion)
 
-- **No test suite**, no linter/formatter config (Java).
+- **No linter/formatter config (Java).** There *is* a test suite — JUnit 5 under `src/test/`, gating CI. Any doc claiming otherwise is stale.
 - **No `generator.config.js`** — the old `DL_VERSIONS`/`DL_CONFIGS`/`DL_TEST_EMBED` globals are gone, replaced by `registry.json` plus per-bundle payloads.
 - **No committed AI/editor tooling config.** `CLAUDE.md`, `.claude/`, `.cursor*`, `.aider*`, `.windsurfrules`, `*.local.md` and friends are gitignored — they're local preference, not project state. `AGENTS.md` (this file) is the one tracked, AI-agent-facing reference; `ARCHITECTURE.md` and `CONTRIBUTING.md` serve that role for humans.
 - **No `dependency-reduced-pom.xml`.** It was committed historically; it's gitignored and its generation is disabled (`<createDependencyReducedPom>false</createDependencyReducedPom>` in the shade plugin config). It only matters when publishing to a Maven repo so consumers don't inherit shaded deps — this plugin ships as a JAR on GitHub Releases and is never consumed as a Maven artifact. Don't re-add it.
 - **No `release-spec.md` / `release-changelog-builder-config.json` / `release-on-merge.yml`** — replaced by release-please. Any reference to them (old docs, old issues, old habits) is stale.
 - **No `dev` branch** — retired in favor of trunk-based development on `main`.
-- **Config v10 does not exist yet.** In July 2026 an unreleased effort (v2.1.7 + a website rewrite + a "config v10" with nested sub-option toggles) was deliberately discarded to start fresh; the maintainer keeps an archive of it outside the repo. References to config **v10** or nested sub-option toggles mean that discarded work, **not** the current codebase — v9 is the only schema that exists.
+- **The July 2026 discarded work is not the current v10.** An unreleased effort (v2.1.7 + a website rewrite + a "config v10") was deliberately abandoned then; the maintainer keeps an archive outside the repo. The v10 that exists today was built fresh afterwards and shipped in **2.2.0** — it is real, current, and in `docs/assets/configs/v10/`. Old notes calling v10 speculative or nonexistent describe the abandoned attempt, not this one.

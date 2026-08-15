@@ -25,6 +25,14 @@
    user's config is missing the key (hand-edited, partial copy, pre-dating the
    key), and a mismatch silently disables logging the docs promise is on --
    which is exactly what happened to teleport/gamemode/explosion.
+6. Every website copy under docs/ carries a trailer saying it came from the
+   website, and none carries the release-please marker. A marker in a file
+   release-please does not track freezes at the version it was written with;
+   docs/config/v10/lang.yml.txt claimed "SHIPPED WITH v2.1.6" for two releases
+   because check 3 deliberately excludes the trailer from its comparison.
+7. The newest registry.json entry is the schema the plugin actually ships. An
+   entry ahead of the JAR captures newer releases and sends them to a bundle
+   for a config they do not use.
 
 Exits non-zero (and prints one ERROR line per problem) if anything's wrong.
 """
@@ -550,6 +558,45 @@ def check_lang_doc_copy() -> list[str]:
     return errors
 
 
+def check_registry_matches_shipped_schema() -> list[str]:
+    """The newest registry entry must be the schema the plugin actually ships.
+
+    The generator resolves a visitor's plugin version to a schema by walking this
+    list, so an entry ahead of the JAR captures every release newer than its
+    `since` and hands them a bundle for a config their build does not use. A
+    speculative v10 entry was added once before v10 shipped and had to be pulled
+    for exactly that reason -- it would have broken 2.2.0.
+
+    Trailing the shipped config is the same bug pointed the other way: the
+    schema in the JAR would be unreachable from the generator entirely.
+    """
+    live = shipped_schema()
+    if live is None:
+        return ["cannot read the shipped config's schema trailer"]
+
+    path = "docs/assets/configs/registry.json"
+    try:
+        with open(path, encoding="utf-8") as f:
+            schemas = json.load(f).get("schemas", [])
+    except (OSError, json.JSONDecodeError) as e:
+        return [f"{path}: unreadable ({e})"]
+    if not schemas:
+        return [f"{path}: no schemas listed"]
+
+    newest = schemas[-1].get("config")
+    if newest != live:
+        return [
+            f"{path}: newest entry is '{newest}' but the plugin ships '{live}' "
+            f"({SHIPPED_CONFIG}'s trailer). The newest entry must be the shipped "
+            f"schema -- ahead of it, the generator sends real releases to a bundle "
+            f"for a config they do not use; behind it, the shipped schema is "
+            f"unreachable."
+        ]
+    if not os.path.isdir(f"docs/assets/configs/{live}"):
+        return [f"{path} lists '{live}' but docs/assets/configs/{live}/ does not exist"]
+    return []
+
+
 def main() -> int:
     all_errors = []
     live = shipped_schema()
@@ -566,6 +613,7 @@ def main() -> int:
     all_errors.extend(check_java_fallbacks_match_shipped_config())
     all_errors.extend(check_lang_doc_copy())
     all_errors.extend(check_website_copies_are_labelled())
+    all_errors.extend(check_registry_matches_shipped_schema())
 
     if all_errors:
         for e in all_errors:
