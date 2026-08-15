@@ -160,7 +160,9 @@ Stable releases are mirrored onto two listings, because that is where server own
 
 ### Metrics
 
-33 bStats charts in `metrics/PluginMetrics.java`, with runtime tallies in `metrics/Counters.java`.
+31 bStats charts in `metrics/PluginMetrics.java`, with runtime tallies in `metrics/Counters.java`.
+
+**Check bStats' defaults before adding a chart.** It already collects `bukkitName`, `onlineMode`, `bukkitVersion`, `javaVersion`, `playerAmount`, `coreCount` and the OS fields on its own. A `server_fork` and an `online_mode` chart were added here and removed again once it turned out `bukkitName` *is* `Bukkit.getName()` — the same value under a second name, on every server, forever.
 
 **The line: configuration state, plugin presence and server software — never a player.** No names, UUIDs, IPs, message content, coordinates or world names. Counts are buckets, not exact numbers; `bucket()` has a test asserting it never returns the bare figure, so a chart cannot become a fingerprint by accident. `commands_used` is a `Set` for the same reason — fifty `/reload`s are indistinguishable from one.
 
