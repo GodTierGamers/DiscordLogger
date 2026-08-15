@@ -94,6 +94,7 @@ scripts/validate-config-generator.py   CI check: options.json <-> template <-> J
                                        <-> mirror <-> doc embed, plus trailers and the registry invariant
 scripts/sync-versions.py               Propagates pom.xml's version values into README/CONTRIBUTING/docs
 scripts/publish-listings.py            Mirrors stable releases to Modrinth/Hangar
+scripts/export-metrics.py              Pulls the bStats charts to CSV; --check-charts finds discarded ones
 src/main/resources/
   plugin.yml                           Plugin descriptor (Maven-filtered)
   build-info.properties                Build channel/version/date, baked in at package time
@@ -193,6 +194,16 @@ Stable releases are mirrored onto two listings, because that is where server own
 **`command_filter_state` is the one with teeth.** It reports `Reduced` when a command the plugin ships in `filters.ignored_commands` has been removed — `/login` and `/msg` are in there because command logging posts lines verbatim. Tested, including the trap where a *longer* list is still `Reduced`.
 
 **Adding a chart means updating the disclosure.** The README and setup guide both enumerate what is collected. That list is a promise, not decoration.
+
+**A chart must also be created on bStats, by hand, with the id matching exactly.** Registering it in Java is only half the job: bStats accepts a submission for a chart that does not exist on the site and silently discards it — no error, no warning, and the plugin looks perfectly healthy. Four charts sat in that state after the metrics expansion (`release_channel`, `enabled_events`, `output_mode`, `config_schema`), including the one answering "which events do people actually enable". Nothing surfaces this on its own, so after adding charts run:
+
+```bash
+python3 scripts/export-metrics.py --check-charts
+```
+
+It diffs the ids in `PluginMetrics.java` against bStats' own chart list and exits non-zero on any that would be discarded. **Not in CI on purpose** — it needs the network, and it would fail for the entirely normal window between a chart landing in Java and someone creating it on the site.
+
+The same script exports every chart to CSV (`--include-default` for bStats' own, `--per-chart` for one file each). The bStats site has no download of any kind, so reading the data any way other than by eye means going through the public JSON API this wraps.
 
 **Download counting.** The README badge is shields.io's stock `github/downloads/.../total`, which counts GitHub Release assets. Hangar traffic is already inside that number — its versions are `externalUrl` links to the GitHub asset — so only Modrinth's own tally is missing. There used to be a combined endpoint badge written by `publish-listings.py --badge` and committed by `downloads-badge.yml`; it was removed because the commit pushed straight to `main` and branch protection rejects that, so it failed every single day and the number froze. A badge that silently stops updating is worse than one that undercounts by a known amount.
 
