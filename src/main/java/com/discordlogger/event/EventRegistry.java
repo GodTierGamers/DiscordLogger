@@ -16,6 +16,8 @@ public final class EventRegistry {
         PluginManager pm = plugin.getServer().getPluginManager();
 
         // Player events
+        // Inert on 1.20+, where the server distinguishes /kill from a void death.
+        pm.registerEvents(new KillCommandTracker(), plugin);
         pm.registerEvents(new PlayerJoin(plugin), plugin);
         pm.registerEvents(new PlayerQuit(plugin), plugin);
         pm.registerEvents(new PlayerChat(plugin), plugin);
