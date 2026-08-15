@@ -99,7 +99,6 @@ public final class PluginMetrics {
 
             // ---------------------------------------------------------------- environment
             metrics.addCustomChart(new SimplePie("release_channel", BuildInfo::channel));
-            metrics.addCustomChart(new SimplePie("server_fork", PluginMetrics::serverFork));
             metrics.addCustomChart(new SimplePie("config_schema", () -> configSchema(plugin)));
             metrics.addCustomChart(new DrilldownPie("mc_version_by_schema",
                     () -> drilldown(minecraftVersion(), configSchema(plugin))));
@@ -108,8 +107,6 @@ public final class PluginMetrics {
 
             // ----------------------------------------------------------- companion plugins
             metrics.addCustomChart(new SimplePie("proxy_mode", PluginMetrics::proxyMode));
-            metrics.addCustomChart(new SimplePie("online_mode",
-                    () -> Bukkit.getOnlineMode() ? "Online" : "Offline"));
             metrics.addCustomChart(new SimplePie("floodgate",
                     () -> present(installed("floodgate") || installed("Geyser-Spigot"))));
             metrics.addCustomChart(new SimplePie("placeholderapi",
@@ -178,21 +175,10 @@ public final class PluginMetrics {
 
     // ------------------------------------------------------------------ environment
 
-    /**
-     * The server implementation name — Paper, Purpur, Pufferfish, Leaf, and so on.
-     *
-     * <p>bStats reports "Server Software" already, but forks frequently identify as
-     * their upstream there. Issue #161 arrived from Leaf, which is exactly the kind
-     * of fork that would otherwise be invisible.
-     */
-    private static String serverFork() {
-        try {
-            final String name = Bukkit.getName();
-            return (name == null || name.isBlank()) ? UNKNOWN : name;
-        } catch (Throwable t) {
-            return UNKNOWN;
-        }
-    }
+    // NOTE: no server_fork or online_mode chart here. bStats 3.2.1 already collects
+    // bukkitName (which IS Bukkit.getName(), so forks like Purpur and Leaf show up
+    // there correctly) and onlineMode as default charts. Adding our own duplicated
+    // the same values under a second name.
 
     /** "1.21.11" from whatever shape this server reports its version in. */
     private static String minecraftVersion() {
