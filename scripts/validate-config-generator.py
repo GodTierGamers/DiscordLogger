@@ -470,6 +470,44 @@ def check_java_fallbacks_match_shipped_config() -> list[str]:
     return errors
 
 
+def check_website_copies_are_labelled() -> list[str]:
+    """Website copies must say so in their trailer, and must not carry the
+    release-please marker.
+
+    The two rules are the same rule. `(x-release-please-version)` only updates in
+    files release-please is told about; in any other file it freezes at whatever
+    version it was written with and then lies. docs/config/v10/lang.yml.txt sat at
+    "SHIPPED WITH v2.1.6" through two releases for exactly that reason, and the
+    existing copy check could not see it because that check compares everything
+    EXCEPT the trailer -- the one line that differs on purpose.
+    """
+    errors = []
+    for path in sorted(glob.glob("docs/config/v*/*.txt")
+                       + glob.glob("docs/assets/configs/v*/*.yml")):
+        with open(path, encoding="utf-8") as f:
+            lines = f.read().rstrip().splitlines()
+        if not lines:
+            continue
+        trailer = lines[-1]
+        if "CONFIG VERSION" not in trailer.upper():
+            continue
+
+        if "x-release-please-version" in trailer:
+            errors.append(
+                f"{path}: trailer carries the release-please marker, but this file is "
+                f"not in release-please-config.json's extra-files. It will freeze at "
+                f"the version it was written with. Website copies say "
+                f"'DOWNLOADED FROM WEBSITE' or 'GENERATED ON WEBSITE'."
+            )
+        elif not any(k in trailer.upper() for k in ("DOWNLOADED FROM WEBSITE",
+                                                    "GENERATED ON WEBSITE")):
+            errors.append(
+                f"{path}: trailer is {trailer!r}. A copy served by the website should "
+                f"say where it came from, not claim to have shipped with a build."
+            )
+    return errors
+
+
 def check_lang_doc_copy() -> list[str]:
     """Every copy of lang.yml on the site must be the shipped file verbatim.
 
@@ -527,6 +565,7 @@ def main() -> int:
     all_errors.extend(check_doc_page_embedded_configs())
     all_errors.extend(check_java_fallbacks_match_shipped_config())
     all_errors.extend(check_lang_doc_copy())
+    all_errors.extend(check_website_copies_are_labelled())
 
     if all_errors:
         for e in all_errors:
