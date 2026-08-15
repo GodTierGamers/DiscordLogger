@@ -55,8 +55,15 @@ PLUGIN_ID = 33026
 API = "https://bstats.org/api/v1/plugins"
 TIMEOUT = 30
 METRICS_SRC = "src/main/java/com/discordlogger/metrics/PluginMetrics.java"
+# Matches any bStats chart constructor: every one of their classes ends in Pie,
+# Chart or Bar. Two things this must tolerate, both of which have occurred in
+# this file: a fully-qualified name (2.2.0 registered enabled_events as
+# `new org.bstats.charts.AdvancedPie(...)`) and a line break between the
+# constructor and its id. An id this misses is a chart the check silently
+# believes was never declared -- the exact blind spot the check exists to close.
 CHART_DECL = re.compile(
-    r"new\s+(?:Simple|Advanced|SingleLine|MultiLine|Drilldown)\w*\(\s*\"([^\"]+)\""
+    r"new\s+(?:[\w.]+\.)?\w*(?:Pie|Chart|Bar)\s*\(\s*\"([^\"]+)\"",
+    re.MULTILINE,
 )
 
 
