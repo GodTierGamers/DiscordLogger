@@ -88,7 +88,7 @@ Nothing here adds a feature. All of it is the difference between an admin diagno
   - Note: Discord creates a **new webhook on every authorization**, so running the flow repeatedly accumulates webhooks in the channel. The UI has to say so.
   - Requires a Discord application (client ID + secret) registered by the project owner, and a registered redirect URI.
 
-- **Search visibility (ongoing)** — the technical groundwork is in place (sitemap, canonicals, structured data, per-page titles and descriptions), and the Modrinth/Hangar listing bodies were rewritten for 2.2.0. What's left is the slow part: the pages above, listings on the sites Minecraft admins browse, and monitoring real queries once Search Console is connected. This item stays open indefinitely; it isn't a task with a finish line.
+- **Search visibility (ongoing)** — the technical groundwork is in place (sitemap, canonicals, structured data, per-page titles and descriptions), and the Modrinth/Hangar listing bodies were rewritten for 2.2.0. Nine guide pages now exist and Search Console is connected. What's left is the slow part: listings on the sites Minecraft admins browse, screenshots on Modrinth and Hangar (both galleries are still empty, for a plugin whose whole value is what the output looks like), and reading real queries in Search Console once pages are indexed. This item stays open indefinitely; it isn't a task with a finish line.
 
 - **Let the config generator skip the webhook step.** It currently refuses to advance without a valid, confirmed URL, so there is no way to build a config before you have created the webhook — which is the order many people would rather work in.
 
@@ -103,6 +103,6 @@ Nothing here adds a feature. All of it is the difference between an admin diagno
 Recorded so they don't get re-proposed. Each was considered and declined for a reason.
 
 - **Competing with DiscordSRV.** A different product — a two-way bridge with a bot, and 480k Modrinth downloads. DiscordLogger's audience is specifically the people who don't want a bot, which DiscordSRV cannot serve by design.
-- **Backporting to 1.21.x.** It is where most servers still are, but it means giving up the Paper APIs that make the current feature depth possible. Users on older versions still have 2.1.6.
+- **Going below Paper 1.19.** 2.3.0 already reaches 1.19 through 26.2 — 28 versions — and the floor sits there because 1.19.4 is the oldest release the test suite can run against. Below it, Java 8 becomes the constraint: ~91 API replacements plus rewriting the HTTP layer on `HttpURLConnection`, and a Java 8 artifact cannot carry the Velocity entry point, which needs 21+. **Revisit only on evidence** — three genuine requests for below 1.19, or `mc_version_by_schema` showing an audience there. Not on a hunch.
 - **Spigot/CraftBukkit support.** The plugin uses Paper's chat API; supporting Spigot means a second code path through the core of what it does.
 - **Syncing listing descriptions from CI.** Would need `PROJECT_WRITE` on a Modrinth token living in a public repo — a scope that can also unpublish the project — against a recurring cost of one paste per release. Not worth the blast radius.
