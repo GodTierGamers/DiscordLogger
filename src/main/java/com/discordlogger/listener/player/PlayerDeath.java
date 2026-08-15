@@ -94,6 +94,16 @@ public final class PlayerDeath implements Listener {
             return Lang.text("discord.death.slain-by-mob", "killer", mobName(damager));
         }
 
+        // Before 1.20 the server reports /kill as VOID, indistinguishable from
+        // genuinely falling out of the world. KillCommandTracker watches the command
+        // so the two can be told apart; on 1.20+ it is inert and this never fires.
+        if (last != null
+                && last.getCause() == EntityDamageEvent.DamageCause.VOID
+                && KillCommandTracker.wasKilledByCommand(victim)) {
+            final String byCommand = Lang.text("discord.death.causes.kill");
+            if (byCommand != null && !byCommand.isBlank()) return byCommand;
+        }
+
         final String text = last == null ? null : causeText(last.getCause());
         // Only reached when there is no damage cause at all, or Paper has added one
         // we do not know yet. causeTextIsExhaustive() in the tests fails on the latter.
