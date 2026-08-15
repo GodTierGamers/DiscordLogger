@@ -120,7 +120,7 @@ public final class PluginMetrics {
 
             // -------------------------------------------------------------- config health
             metrics.addCustomChart(new SimplePie("webhook_configured",
-                    () -> present(isWebhookSet(plugin))));
+                    () -> configured(isWebhookSet(plugin))));
             metrics.addCustomChart(new SimplePie("config_origin", () -> configOrigin(plugin)));
             metrics.addCustomChart(new SimplePie("migrated_from", () -> migratedFrom(plugin)));
             metrics.addCustomChart(new SimplePie("config_ahead_of_build",
@@ -545,6 +545,18 @@ public final class PluginMetrics {
 
     private static String present(boolean b) {
         return b ? "Installed" : "Not installed";
+    }
+
+    /**
+     * Whether a setting has been filled in — not whether something is installed.
+     *
+     * <p>Distinct from {@link #present(boolean)} because the two answer different
+     * questions and share no vocabulary. A webhook is configured or it isn't; it
+     * is never "installed", and a chart reading "Not installed" invites the
+     * reader to conclude the plugin isn't there at all.
+     */
+    private static String configured(boolean b) {
+        return b ? "Configured" : "Not configured";
     }
 
     private static String yesNo(boolean b) {
