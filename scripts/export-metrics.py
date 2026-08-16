@@ -100,12 +100,24 @@ def flatten(chart: dict, data: Any) -> list[tuple[str, str, str]]:
                 if isinstance(inner, list) and len(inner) >= 2:
                     rows.append((outer.get("name", ""), str(inner[0]), str(inner[1])))
 
+    elif ctype.endswith("map"):
+        # Map charts are the odd one out: [{"code": "DE", "value": 3}, ...] rather
+        # than the {name, y} every other chart uses. Falling through to the pie
+        # branch produced a row with no label and no value -- 149 of them before
+        # this was caught, which is also why the value is asserted below.
+        for entry in data or []:
+            if isinstance(entry, dict) and entry.get("code") is not None:
+                rows.append(("", str(entry["code"]), str(entry.get("value", ""))))
+
     else:  # simple_pie / advanced_pie -- [{"name": ..., "y": ...}, ...]
         for slice_ in data or []:
             if isinstance(slice_, dict):
                 rows.append(("", str(slice_.get("name", "")), str(slice_.get("y", ""))))
 
-    return rows
+    # A row with no value carries nothing and silently breaks any sum over the
+    # column. Dropping it here keeps an unrecognised chart shape from quietly
+    # filling the store with blanks the way simple_map did.
+    return [r for r in rows if r[1] != "" and r[2] != ""]
 
 
 def declared_charts(src: str) -> set[str]:
@@ -219,7 +231,15 @@ def append_snapshot(meta: dict, plugin_id: int, out_dir: str) -> int:
                 rows.append([stamp, cid, ctype, series, label, value, ""])
                 added_line += 1
         else:
-            total = sum(int(v) for _, _, v in flat if v.isdigit())
+            vals = [int(v) for _, _, v in flat if v.isdigit()]
+            # How many servers a chart represents depends on whether its slices are
+            # mutually exclusive. A simple or drilldown pie puts each server in
+            # exactly one slice, so the sum IS the server count. An advanced pie lets
+            # one server contribute to many slices at once -- enabled_events summed to
+            # 201 across 13 servers -- so the sum is a total, not a population. The
+            # largest slice is the honest figure there: a lower bound on how many
+            # servers reported, and within one of the truth in practice.
+            total = max(vals, default=0) if ctype == "advanced_pie" else sum(vals)
             for series, label, value in flat:
                 rows.append([stamp, cid, ctype, series, label, value, total])
                 added_pie += 1
