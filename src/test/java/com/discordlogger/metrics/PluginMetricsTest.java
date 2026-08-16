@@ -113,4 +113,32 @@ class PluginMetricsTest {
         assertNotEquals("discord", PluginMetrics.langSection("discord.death.causes.void"));
         assertNotEquals("discord", PluginMetrics.langSection("discord.death.description"));
     }
+
+    // ------------------------------------------------------------------ proxyMode
+
+    @Test
+    @DisplayName("a default Paper server is not reported as proxied")
+    void defaultPaperServerIsNotProxied() {
+        // The regression this pins: proxies.bungee-cord.online-mode ships as true
+        // everywhere, so reading it made every stock Paper server claim BungeeCord.
+        assertEquals("None", PluginMetrics.proxyModeOf(false, false));
+    }
+
+    @Test
+    @DisplayName("modern Velocity forwarding is named exactly")
+    void velocityIsNamed() {
+        assertEquals("Velocity", PluginMetrics.proxyModeOf(false, true));
+    }
+
+    @Test
+    @DisplayName("the spigot.yml flag cannot tell BungeeCord from legacy Velocity")
+    void bungeeFlagStaysAmbiguous() {
+        assertEquals("BungeeCord or Velocity", PluginMetrics.proxyModeOf(true, false));
+    }
+
+    @Test
+    @DisplayName("modern Velocity wins over the ambiguous flag")
+    void velocityBeatsTheAmbiguousFlag() {
+        assertEquals("Velocity", PluginMetrics.proxyModeOf(true, true));
+    }
 }
