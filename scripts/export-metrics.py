@@ -231,7 +231,15 @@ def append_snapshot(meta: dict, plugin_id: int, out_dir: str) -> int:
                 rows.append([stamp, cid, ctype, series, label, value, ""])
                 added_line += 1
         else:
-            total = sum(int(v) for _, _, v in flat if v.isdigit())
+            vals = [int(v) for _, _, v in flat if v.isdigit()]
+            # How many servers a chart represents depends on whether its slices are
+            # mutually exclusive. A simple or drilldown pie puts each server in
+            # exactly one slice, so the sum IS the server count. An advanced pie lets
+            # one server contribute to many slices at once -- enabled_events summed to
+            # 201 across 13 servers -- so the sum is a total, not a population. The
+            # largest slice is the honest figure there: a lower bound on how many
+            # servers reported, and within one of the truth in practice.
+            total = max(vals, default=0) if ctype == "advanced_pie" else sum(vals)
             for series, label, value in flat:
                 rows.append([stamp, cid, ctype, series, label, value, total])
                 added_pie += 1
