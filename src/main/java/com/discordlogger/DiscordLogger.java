@@ -75,6 +75,10 @@ public final class DiscordLogger extends JavaPlugin {
         // Async update check (console + Discord notice if newer version available)
         UpdateChecker.checkAsync(this);
 
+        // Confirms the configured webhooks still exist, rather than finding out from
+        // the first event that 404s. Async: it must not hold up the server starting.
+        Log.validateWebhooksAsync();
+
         // Server start log will go to console; to Discord only if webhook is valid
         events.fireServerStart();
         getLogger().info("Core loaded.");

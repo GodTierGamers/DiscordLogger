@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -174,6 +175,80 @@ public final class Log {
             plugin.getLogger().info("Per-event webhook routing active for "
                     + wm.size() + " categor" + (wm.size() == 1 ? "y" : "ies") + ".");
         }
+    }
+
+    /**
+     * Confirms every configured webhook still exists, once, at startup.
+     *
+     * <p>Without this, a webhook deleted in Discord is discovered by the first event
+     * that 404s — which can be hours later, looks like the plugin breaking, and loses
+     * everything in between. It happened: 345 events went into a dead webhook across
+     * three and a half hours before anything surfaced, and the only warning went to
+     * console, where nobody was watching.
+     *
+     * <p><b>Never logs a URL.</b> A webhook URL is a bearer credential, so failures
+     * name the config path that holds it and nothing else — enough to fix it, useless
+     * to anyone reading the log.
+     *
+     * <p>Deduplicated by URL: routing many categories to one channel is the common
+     * case, and probing per category would fire a burst of identical requests at
+     * Discord on every boot for no extra information.
+     */
+    public static void validateWebhooksAsync() {
+        final JavaPlugin pl = plugin;
+        if (!ready || pl == null) return;
+
+        // webhookFor(null) rather than webhookUrl: the field is only ever read through
+        // that accessor, and LogRoutingTest enforces it. Reaching past it here would
+        // have been harmless (this enumerates destinations, it does not send) but the
+        // guard cannot tell the two apart, and a rule with exceptions stops being one.
+        final Map<String, String> byUrl = new LinkedHashMap<>();
+        final String main = webhookFor(null);
+        if (main != null && !main.isBlank()) byUrl.put(main, "webhook.url");
+        for (Map.Entry<String, String> e : webhookMap.entrySet()) {
+            byUrl.putIfAbsent(e.getValue(), "log." + e.getKey() + ".webhook");
+        }
+        if (byUrl.isEmpty()) return;
+
+        pl.getServer().getScheduler().runTaskAsynchronously(pl, () -> {
+            for (Map.Entry<String, String> e : byUrl.entrySet()) {
+                describeProbe(pl, e.getValue(), DiscordWebhook.probe(e.getKey()));
+            }
+        });
+    }
+
+    /**
+     * Turns a probe status into console output, or into nothing.
+     *
+     * <p>Split out so the wording is testable without a server. The distinction that
+     * matters: 404 is the admin's problem and must be loud, while an unreachable
+     * Discord proves nothing about the webhook and must not cry wolf — a plugin that
+     * warns about a working webhook during a network blip teaches people to ignore it.
+     */
+    static void describeProbe(JavaPlugin pl, String where, int status) {
+        final String msg = probeMessage(where, status);
+        if (msg == null) return;
+        if (status == 404 || status == 401 || status == 403) pl.getLogger().warning(msg);
+        else pl.getLogger().fine(msg);
+    }
+
+    /** The message for a probe result, or null when the result is unremarkable. */
+    static String probeMessage(String where, int status) {
+        if (status == 404) {
+            return "The webhook set in " + where + " no longer exists in Discord (404)."
+                    + " Everything routed there will be discarded until it is replaced."
+                    + " Set a new one with /discordlogger webhook <url>, or edit config.yml"
+                    + " and run /discordlogger reload.";
+        }
+        if (status == 401 || status == 403) {
+            return "Discord rejected the webhook set in " + where + " (HTTP " + status
+                    + "). It may have been regenerated.";
+        }
+        if (status == 0 || status >= 500) {
+            return "Could not reach Discord to check " + where + " (status " + status
+                    + "). This says nothing about whether the webhook is valid.";
+        }
+        return null;
     }
 
     // ---- Public helpers (used by other components like UpdateChecker) ----
