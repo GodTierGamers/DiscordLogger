@@ -147,9 +147,106 @@ def check_charts(meta: dict, src: str) -> int:
     return 1 if discarded else 0
 
 
+# Charts that shipped in 2.2.0 and are therefore reported by EVERY server.
+# Everything else arrived in 2.3.0 and is reported only by servers running it, so
+# its slices sum to a smaller number. Recorded because a chart with a smaller
+# denominator looks like collapsed adoption if you divide by total server count.
+CHARTS_SINCE_2_2_0 = frozenset({
+    "config_schema", "enabled_events", "output_mode", "release_channel",
+})
+
+
+def append_snapshot(meta: dict, plugin_id: int, out_dir: str) -> int:
+    """Append one poll of every chart to a single running CSV.
+
+    **One file, all chart types, forever.** Splitting pies from line charts, or
+    months from each other, only moves the joining work to analysis time -- and the
+    join that never happens is the one done "later".
+
+    The two chart types need different handling, and conflating them loses data:
+
+    * **Pie / drilldown** carry no time dimension. The endpoint answers "what is true
+      right now" and the previous answer is gone, so every poll is recorded as a new
+      snapshot stamped with the poll time. This is the data that cannot be recovered
+      and the reason the workflow exists at all.
+    * **Line** charts carry their own bStats timestamp per sample and bStats keeps
+      them for years, so re-recording the whole series every poll would add tens of
+      thousands of duplicate rows an hour. Only samples not already stored are
+      appended, keyed on that timestamp.
+
+    `servers_reporting` is written on every pie row: the sum of that chart's slices
+    at that poll, which is the only honest denominator for a percentage. A 2.3.0
+    chart divided by the total server count understates itself by however many
+    servers have not upgraded.
+    """
+    stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    d = Path(out_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    target = d / "bstats.csv"
+
+    # Line samples already stored, so a poll adds only what is new. Keyed on the
+    # bStats timestamp, which is the sample's own identity rather than ours.
+    seen: set[tuple[str, str]] = set()
+    if target.exists():
+        with target.open(encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                if row["chart_type"].endswith("linechart"):
+                    seen.add((row["chart_id"], row["label"]))
+
+    rows, added_line, added_pie = [], 0, 0
+    for chart in sorted(meta.get("charts", {}).values(), key=lambda c: c.get("position", 0)):
+        cid, ctype = chart["idCustom"], chart["type"]
+        url = f"{API}/{plugin_id}/charts/{cid}/data"
+        # Line charts are asked for their full history; the dedupe above keeps that
+        # from mattering after the first run, and it backfills everything on it.
+        if ctype.endswith("linechart"):
+            url += "?maxElements=100000"
+        try:
+            data = fetch(url)
+        except (urllib.error.URLError, json.JSONDecodeError):
+            continue
+
+        flat = flatten(chart, data)
+        if ctype.endswith("linechart"):
+            # Trim the zero padding bStats returns for time before the plugin
+            # existed -- roughly 90,000 rows a chart of "no servers yet".
+            first_real = next((i for i, r in enumerate(flat) if r[2] not in ("0", "")), None)
+            if first_real is None:
+                continue
+            for series, label, value in flat[first_real:]:
+                if (cid, label) in seen:
+                    continue
+                rows.append([stamp, cid, ctype, series, label, value, ""])
+                added_line += 1
+        else:
+            total = sum(int(v) for _, _, v in flat if v.isdigit())
+            for series, label, value in flat:
+                rows.append([stamp, cid, ctype, series, label, value, total])
+                added_pie += 1
+
+    if not rows:
+        print(f"{stamp}: nothing new")
+        return 0
+
+    new_file = not target.exists()
+    with target.open("a", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        if new_file:
+            w.writerow(["polled_at", "chart_id", "chart_type", "series", "label",
+                        "value", "servers_reporting"])
+        w.writerows(rows)
+
+    print(f"{stamp}: +{added_pie} pie, +{added_line} line -> {target}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--snapshot", metavar="DIR",
+                    help="append a timestamped snapshot of the point-in-time (pie) "
+                         "charts to DIR/YYYY-MM.csv, then exit. Line charts are "
+                         "skipped: bStats keeps their full history already")
     ap.add_argument("--check-charts", action="store_true",
                     help="verify every chart the plugin submits exists on bStats, "
                          "then exit (writes no CSV)")
@@ -171,6 +268,9 @@ def main() -> int:
 
     if args.check_charts:
         return check_charts(meta, args.metrics_src)
+
+    if args.snapshot:
+        return append_snapshot(meta, args.plugin_id, args.snapshot)
 
     charts = sorted(meta.get("charts", {}).values(), key=lambda c: c.get("position", 0))
     if not args.include_default:
