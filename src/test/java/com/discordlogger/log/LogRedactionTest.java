@@ -7,6 +7,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -72,5 +74,48 @@ class LogRedactionTest {
                 "plain HTTP would put the token on the wire in clear");
         assertFalse(Log.isValidWebhookUrl(""));
         assertFalse(Log.isValidWebhookUrl(null));
+    }
+
+    // ------------------------------------------------- startup webhook validation
+
+    @Test
+    @DisplayName("a deleted webhook is reported, and says how to fix it")
+    void deletedWebhookIsLoud() {
+        String msg = Log.probeMessage("webhook.url", 404);
+        assertNotNull(msg);
+        assertTrue(msg.contains("no longer exists"), msg);
+        assertTrue(msg.contains("/discordlogger webhook"), msg);
+    }
+
+    @Test
+    @DisplayName("an unreachable Discord does not accuse the webhook")
+    void unreachableDoesNotCryWolf() {
+        // The failure mode this guards: warning that a perfectly good webhook is dead
+        // every time the network blips teaches admins to ignore the warning that matters.
+        for (int status : new int[]{0, 500, 502, 503}) {
+            String msg = Log.probeMessage("webhook.url", status);
+            assertNotNull(msg, "status " + status);
+            assertTrue(msg.contains("says nothing about whether the webhook is valid"),
+                    "status " + status + ": " + msg);
+        }
+    }
+
+    @Test
+    @DisplayName("a healthy webhook produces no output at all")
+    void healthyIsSilent() {
+        assertNull(Log.probeMessage("webhook.url", 200));
+        assertNull(Log.probeMessage("webhook.url", 204));
+    }
+
+    @Test
+    @DisplayName("no probe message ever contains a webhook URL")
+    void probeMessagesNeverLeakTheUrl() {
+        // The message names the config path, never the credential it holds.
+        for (int status : new int[]{0, 200, 401, 403, 404, 500}) {
+            String msg = Log.probeMessage("log.player.join.webhook", status);
+            if (msg == null) continue;
+            assertFalse(msg.contains("discord.com"), msg);
+            assertFalse(msg.contains("https://"), msg);
+        }
     }
 }

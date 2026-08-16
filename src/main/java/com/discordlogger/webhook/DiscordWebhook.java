@@ -212,6 +212,32 @@ public final class DiscordWebhook {
         }
     }
 
+    /**
+     * Asks Discord whether a webhook still exists, without posting anything.
+     *
+     * <p>A GET on a webhook URL returns 200 with its JSON while it lives and 404 once
+     * it has been deleted in Discord. That distinction is the whole point: a deleted
+     * webhook is otherwise only discovered when the first real event 404s, which in
+     * production meant 345 messages posted into a dead webhook across three and a half
+     * hours before anyone noticed.
+     *
+     * <p>Returns the raw status so the caller can tell "gone" (404) from "could not
+     * ask" (0, or a 5xx) — those need different wording, since only one of them is
+     * the admin's problem.
+     */
+    public static int probe(String url) {
+        try {
+            HttpClient client = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(TIMEOUT)
+                    .GET()
+                    .build();
+            return client.send(req, HttpResponse.BodyHandlers.discarding()).statusCode();
+        } catch (Exception unreachable) {
+            return 0;
+        }
+    }
+
     /** Reads a numeric header and scales it (headers are in seconds; we work in millis). */
     private static Long headerAsLong(HttpResponse<String> res, String name, double scale) {
         return res.headers().firstValue(name)
