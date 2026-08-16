@@ -1,12 +1,15 @@
 name: Poll bStats
 
-# Builds the history bStats does not keep.
+# Builds the history bStats does not keep, into one running document.
 #
-# Line charts are safe without this -- ?maxElements=100000 on `servers` returns
-# samples going back years, so they can be pulled in full whenever they are wanted.
-# Pie charts have no time dimension at all: the endpoint answers "what is true now"
-# and the previous answer is gone forever. Everything this workflow exists for is
-# in that second category.
+# Pie, drilldown and map charts have no time dimension: the endpoint answers "what
+# is true now" and the previous answer is gone forever. Those are the reason this
+# exists, and every poll appends a fresh snapshot of them.
+#
+# Line charts are also stored, but deduplicated -- bStats keeps them for years, so
+# the first poll backfills the series and later polls add about a row per chart.
+# They live in the same file rather than being fetched at analysis time, because
+# the join left until "later" is the one that never happens.
 #
 # The schedule is best-effort. GitHub delays scheduled runs under load and skips
 # them outright sometimes, so the series is irregular by nature -- the poll time is

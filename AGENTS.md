@@ -214,7 +214,11 @@ python3 scripts/export-metrics.py --check-charts
 
 It diffs the ids in `PluginMetrics.java` against bStats' own chart list and exits non-zero on any that would be discarded. **Not in CI on purpose** — it needs the network, and it would fail for the entirely normal window between a chart landing in Java and someone creating it on the site.
 
-**bStats keeps line-chart history but not pie history.** `?maxElements=100000` on a line chart returns samples going back years, so those are always recoverable. A pie endpoint answers only "what is true right now" and the previous answer is gone — which is why `poll-metrics.yml` snapshots pies twice an hour onto the orphan **`metrics-data`** branch and deliberately stores no line charts. That branch is data, never code: it shares no history with `main`, and it exists on its own branch because a workflow pushing to `main` is rejected by branch protection and fails every run (see *Gotchas*).
+**bStats keeps line-chart history but not pie history.** `?maxElements=100000` on a line chart returns samples going back years; a pie endpoint answers only "what is true right now" and the previous answer is gone. `poll-metrics.yml` therefore polls twice an hour onto the orphan **`metrics-data`** branch, appending to a single `data/bstats.csv` — pies as a fresh snapshot each poll, line charts deduplicated on their own bStats timestamp so the first run backfills and later runs add almost nothing.
+
+**Every pie row carries `servers_reporting`**, the number of servers reporting *that chart* at that poll. It is the only honest denominator: only four charts (`config_schema`, `enabled_events`, `output_mode`, `release_channel`) shipped in 2.2.0 and are reported by every server — the other 27 arrived in 2.3.0 and are reported only by servers running it, so dividing them by the total server count understates them by however many have not upgraded.
+
+That branch is data, never code: it shares no history with `main`, and it exists on its own branch because a workflow pushing to `main` is rejected by branch protection and fails every run (see *Gotchas*).
 
 The same script exports every chart to CSV (`--include-default` for bStats' own, `--per-chart` for one file each). The bStats site has no download of any kind, so reading the data any way other than by eye means going through the public JSON API this wraps.
 

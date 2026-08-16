@@ -147,55 +147,96 @@ def check_charts(meta: dict, src: str) -> int:
     return 1 if discarded else 0
 
 
+# Charts that shipped in 2.2.0 and are therefore reported by EVERY server.
+# Everything else arrived in 2.3.0 and is reported only by servers running it, so
+# its slices sum to a smaller number. Recorded because a chart with a smaller
+# denominator looks like collapsed adoption if you divide by total server count.
+CHARTS_SINCE_2_2_0 = frozenset({
+    "config_schema", "enabled_events", "output_mode", "release_channel",
+})
+
+
 def append_snapshot(meta: dict, plugin_id: int, out_dir: str) -> int:
-    """Append one timestamped snapshot of the point-in-time charts.
+    """Append one poll of every chart to a single running CSV.
 
-    **Only pie and drilldown charts are stored, and that is the whole point.**
-    bStats keeps the full history of every line chart -- `?maxElements=100000` on
-    `servers` returns samples back to 2020 -- so those can be pulled in full at any
-    time and there is nothing to preserve. Pie charts have no time dimension at all:
-    the endpoint answers "what is true right now" and yesterday's answer is gone.
-    Polling exists to build the history bStats does not keep, so storing line charts
-    too would just be a slow, lossy copy of data that is already safe.
+    **One file, all chart types, forever.** Splitting pies from line charts, or
+    months from each other, only moves the joining work to analysis time -- and the
+    join that never happens is the one done "later".
 
-    Written as one CSV per month, appended to, with the poll time on every row. The
-    poll time is recorded rather than assumed because GitHub's scheduler is
-    best-effort: runs drift and are sometimes skipped, so the series is irregular
-    and any analysis has to read the timestamps rather than count rows.
+    The two chart types need different handling, and conflating them loses data:
+
+    * **Pie / drilldown** carry no time dimension. The endpoint answers "what is true
+      right now" and the previous answer is gone, so every poll is recorded as a new
+      snapshot stamped with the poll time. This is the data that cannot be recovered
+      and the reason the workflow exists at all.
+    * **Line** charts carry their own bStats timestamp per sample and bStats keeps
+      them for years, so re-recording the whole series every poll would add tens of
+      thousands of duplicate rows an hour. Only samples not already stored are
+      appended, keyed on that timestamp.
+
+    `servers_reporting` is written on every pie row: the sum of that chart's slices
+    at that poll, which is the only honest denominator for a percentage. A 2.3.0
+    chart divided by the total server count understates itself by however many
+    servers have not upgraded.
     """
     stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     d = Path(out_dir)
     d.mkdir(parents=True, exist_ok=True)
-    target = d / f"{stamp[:7]}.csv"
+    target = d / "bstats.csv"
 
-    rows, skipped = [], 0
+    # Line samples already stored, so a poll adds only what is new. Keyed on the
+    # bStats timestamp, which is the sample's own identity rather than ours.
+    seen: set[tuple[str, str]] = set()
+    if target.exists():
+        with target.open(encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                if row["chart_type"].endswith("linechart"):
+                    seen.add((row["chart_id"], row["label"]))
+
+    rows, added_line, added_pie = [], 0, 0
     for chart in sorted(meta.get("charts", {}).values(), key=lambda c: c.get("position", 0)):
-        if chart.get("isDefault") and "pie" not in chart["type"]:
-            continue
-        if "pie" not in chart["type"]:
-            skipped += 1
-            continue
-        cid = chart["idCustom"]
+        cid, ctype = chart["idCustom"], chart["type"]
+        url = f"{API}/{plugin_id}/charts/{cid}/data"
+        # Line charts are asked for their full history; the dedupe above keeps that
+        # from mattering after the first run, and it backfills everything on it.
+        if ctype.endswith("linechart"):
+            url += "?maxElements=100000"
         try:
-            data = fetch(f"{API}/{plugin_id}/charts/{cid}/data")
+            data = fetch(url)
         except (urllib.error.URLError, json.JSONDecodeError):
             continue
-        for series, label, value in flatten(chart, data):
-            rows.append([stamp, cid, chart["type"], series, label, value])
+
+        flat = flatten(chart, data)
+        if ctype.endswith("linechart"):
+            # Trim the zero padding bStats returns for time before the plugin
+            # existed -- roughly 90,000 rows a chart of "no servers yet".
+            first_real = next((i for i, r in enumerate(flat) if r[2] not in ("0", "")), None)
+            if first_real is None:
+                continue
+            for series, label, value in flat[first_real:]:
+                if (cid, label) in seen:
+                    continue
+                rows.append([stamp, cid, ctype, series, label, value, ""])
+                added_line += 1
+        else:
+            total = sum(int(v) for _, _, v in flat if v.isdigit())
+            for series, label, value in flat:
+                rows.append([stamp, cid, ctype, series, label, value, total])
+                added_pie += 1
 
     if not rows:
-        print("nothing to record", file=sys.stderr)
-        return 1
+        print(f"{stamp}: nothing new")
+        return 0
 
     new_file = not target.exists()
     with target.open("a", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         if new_file:
-            w.writerow(["polled_at", "chart_id", "chart_type", "series", "label", "value"])
+            w.writerow(["polled_at", "chart_id", "chart_type", "series", "label",
+                        "value", "servers_reporting"])
         w.writerows(rows)
 
-    print(f"{stamp}: +{len(rows)} rows -> {target} ({skipped} line charts skipped, "
-          f"bStats retains those)")
+    print(f"{stamp}: +{added_pie} pie, +{added_line} line -> {target}")
     return 0
 
 
