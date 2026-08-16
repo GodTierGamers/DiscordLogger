@@ -228,19 +228,41 @@ public final class PluginMetrics {
      */
     private static String proxyMode() {
         try {
-            if (Bukkit.spigot().getConfig().getBoolean("settings.bungeecord", false)) {
-                return "BungeeCord or Velocity";
-            }
+            boolean velocity = false;
             final File paperGlobal = new File("config/paper-global.yml");
             if (paperGlobal.isFile()) {
-                final YamlConfiguration y = YamlConfiguration.loadConfiguration(paperGlobal);
-                if (y.getBoolean("proxies.velocity.enabled", false)) return "Velocity";
-                if (y.getBoolean("proxies.bungee-cord.online-mode", false)) return "BungeeCord";
+                velocity = YamlConfiguration.loadConfiguration(paperGlobal)
+                        .getBoolean("proxies.velocity.enabled", false);
             }
-            return "None";
+            return proxyModeOf(
+                    Bukkit.spigot().getConfig().getBoolean("settings.bungeecord", false),
+                    velocity);
         } catch (Throwable t) {
             return UNKNOWN;
         }
+    }
+
+    /**
+     * The proxy verdict, split out from the file reading so it can be tested.
+     *
+     * <p><strong>Do not reintroduce a check on {@code proxies.bungee-cord.online-mode}.</strong>
+     * That key ships as {@code true} in every {@code paper-global.yml} and only means
+     * anything when {@code settings.bungeecord} is already on, so reading it alone
+     * reported "BungeeCord" for every default Paper server. The chart showed 100% of
+     * servers proxied while bStats' own {@code onlineMode} put the ceiling at a
+     * quarter — a proxied backend must run offline-mode, and most of these were online.
+     *
+     * @param bungeeFlag  {@code settings.bungeecord} from spigot.yml
+     * @param velocityOn  {@code proxies.velocity.enabled} from paper-global.yml
+     */
+    static String proxyModeOf(boolean bungeeFlag, boolean velocityOn) {
+        // Modern forwarding is the one unambiguous signal, so it wins outright.
+        if (velocityOn) return "Velocity";
+        // Velocity's legacy forwarding is configured through the same spigot.yml flag
+        // BungeeCord uses, so this genuinely cannot tell them apart. Say so rather
+        // than guessing — a wrong attribution is worse than a vague one.
+        if (bungeeFlag) return "BungeeCord or Velocity";
+        return "None";
     }
 
     // --------------------------------------------------------------- config health
