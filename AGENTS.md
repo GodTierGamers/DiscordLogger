@@ -149,6 +149,7 @@ docs/                                  Jekyll website (GitHub Pages, deploys fro
   nightly.yml                          Cron + manual nightly beta builds from main
   sync-versions.yml                    Runs sync-versions.py on any push to main touching pom.xml
   check-listing-credentials.yml        Weekly --check-auth so a dead Modrinth PAT fails a cron, not a release
+  poll-metrics.yml                     Twice-hourly bStats pie snapshots -> the metrics-data branch
 .github/dependabot.yml                 Weekly maven/github-actions/bundler dependency PRs (paper-api ignored)
 ```
 
@@ -212,6 +213,8 @@ python3 scripts/export-metrics.py --check-charts
 ```
 
 It diffs the ids in `PluginMetrics.java` against bStats' own chart list and exits non-zero on any that would be discarded. **Not in CI on purpose** — it needs the network, and it would fail for the entirely normal window between a chart landing in Java and someone creating it on the site.
+
+**bStats keeps line-chart history but not pie history.** `?maxElements=100000` on a line chart returns samples going back years, so those are always recoverable. A pie endpoint answers only "what is true right now" and the previous answer is gone — which is why `poll-metrics.yml` snapshots pies twice an hour onto the orphan **`metrics-data`** branch and deliberately stores no line charts. That branch is data, never code: it shares no history with `main`, and it exists on its own branch because a workflow pushing to `main` is rejected by branch protection and fails every run (see *Gotchas*).
 
 The same script exports every chart to CSV (`--include-default` for bStats' own, `--per-chart` for one file each). The bStats site has no download of any kind, so reading the data any way other than by eye means going through the public JSON API this wraps.
 

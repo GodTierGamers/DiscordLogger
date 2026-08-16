@@ -1,0 +1,90 @@
+name: Poll bStats
+
+# Builds the history bStats does not keep.
+#
+# Line charts are safe without this -- ?maxElements=100000 on `servers` returns
+# samples going back years, so they can be pulled in full whenever they are wanted.
+# Pie charts have no time dimension at all: the endpoint answers "what is true now"
+# and the previous answer is gone forever. Everything this workflow exists for is
+# in that second category.
+#
+# The schedule is best-effort. GitHub delays scheduled runs under load and skips
+# them outright sometimes, so the series is irregular by nature -- the poll time is
+# written onto every row and analysis must read it rather than assume a cadence.
+on:
+  schedule:
+    # :15 and :45 -- twice an hour, evenly spaced. bStats aggregates on :00 and :30,
+    # so this samples midway between its writes and never catches a half-updated one.
+    - cron: '15,45 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never let two polls race for the same push. Queue rather than cancel: a skipped
+# sample is a hole in the series, and the run is seconds long.
+concurrency:
+  group: poll-metrics
+  cancel-in-progress: false
+
+env:
+  BRANCH: metrics-data
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    # The store lives on its own branch, so this needs write access to push there.
+    # It never touches main -- see the "Why a separate branch" note below.
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out the scripts
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      # Why a separate branch: pushing to main is not possible. Branch protection
+      # rejects direct pushes, and a workflow that pushes to main fails every single
+      # run -- downloads-badge.yml and sync-versions.yml both died that way, silently,
+      # for weeks. An unprotected orphan branch keeps main's history clean and means
+      # 48 commits a day never appear in the plugin's log.
+      - name: Fetch the store, or start it
+        run: |
+          set -euo pipefail
+          REMOTE="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$REMOTE" "$BRANCH" >/dev/null 2>&1; then
+            git clone --quiet --depth 1 --branch "$BRANCH" "$REMOTE" store
+          else
+            echo "No $BRANCH yet — starting one."
+            mkdir store
+            git -C store init --quiet
+            git -C store checkout --quiet -b "$BRANCH"
+            git -C store remote add origin "$REMOTE"
+            cp .github/metrics-store.md store/README.md
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Poll bStats
+        run: python3 scripts/export-metrics.py --snapshot store/data
+
+      - name: Commit the snapshot
+        run: |
+          set -euo pipefail
+          cd store
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          # bStats can answer identically two polls running; nothing to record is a
+          # normal outcome, not a failure.
+          if git diff --cached --quiet; then
+            echo "No change since the last poll."
+            exit 0
+          fi
+          git commit --quiet -m "chore(metrics): snapshot $(date -u '+%Y-%m-%dT%H:%MZ')"
+          git push --quiet origin "$BRANCH"
+          echo "Pushed to $BRANCH."

@@ -147,9 +147,65 @@ def check_charts(meta: dict, src: str) -> int:
     return 1 if discarded else 0
 
 
+def append_snapshot(meta: dict, plugin_id: int, out_dir: str) -> int:
+    """Append one timestamped snapshot of the point-in-time charts.
+
+    **Only pie and drilldown charts are stored, and that is the whole point.**
+    bStats keeps the full history of every line chart -- `?maxElements=100000` on
+    `servers` returns samples back to 2020 -- so those can be pulled in full at any
+    time and there is nothing to preserve. Pie charts have no time dimension at all:
+    the endpoint answers "what is true right now" and yesterday's answer is gone.
+    Polling exists to build the history bStats does not keep, so storing line charts
+    too would just be a slow, lossy copy of data that is already safe.
+
+    Written as one CSV per month, appended to, with the poll time on every row. The
+    poll time is recorded rather than assumed because GitHub's scheduler is
+    best-effort: runs drift and are sometimes skipped, so the series is irregular
+    and any analysis has to read the timestamps rather than count rows.
+    """
+    stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    d = Path(out_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    target = d / f"{stamp[:7]}.csv"
+
+    rows, skipped = [], 0
+    for chart in sorted(meta.get("charts", {}).values(), key=lambda c: c.get("position", 0)):
+        if chart.get("isDefault") and "pie" not in chart["type"]:
+            continue
+        if "pie" not in chart["type"]:
+            skipped += 1
+            continue
+        cid = chart["idCustom"]
+        try:
+            data = fetch(f"{API}/{plugin_id}/charts/{cid}/data")
+        except (urllib.error.URLError, json.JSONDecodeError):
+            continue
+        for series, label, value in flatten(chart, data):
+            rows.append([stamp, cid, chart["type"], series, label, value])
+
+    if not rows:
+        print("nothing to record", file=sys.stderr)
+        return 1
+
+    new_file = not target.exists()
+    with target.open("a", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        if new_file:
+            w.writerow(["polled_at", "chart_id", "chart_type", "series", "label", "value"])
+        w.writerows(rows)
+
+    print(f"{stamp}: +{len(rows)} rows -> {target} ({skipped} line charts skipped, "
+          f"bStats retains those)")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--snapshot", metavar="DIR",
+                    help="append a timestamped snapshot of the point-in-time (pie) "
+                         "charts to DIR/YYYY-MM.csv, then exit. Line charts are "
+                         "skipped: bStats keeps their full history already")
     ap.add_argument("--check-charts", action="store_true",
                     help="verify every chart the plugin submits exists on bStats, "
                          "then exit (writes no CSV)")
@@ -171,6 +227,9 @@ def main() -> int:
 
     if args.check_charts:
         return check_charts(meta, args.metrics_src)
+
+    if args.snapshot:
+        return append_snapshot(meta, args.plugin_id, args.snapshot)
 
     charts = sorted(meta.get("charts", {}).values(), key=lambda c: c.get("position", 0))
     if not args.include_default:
