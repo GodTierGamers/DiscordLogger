@@ -333,7 +333,7 @@ Death causes are keyed by the enum name lowercased with hyphens (`FIRE_TICK` →
 
 Applied in the **listener**, not in `Log` — that is where the player, world and raw command still exist; by the time a message reaches `Log` it is rendered prose. `Filters` holds an immutable snapshot swapped atomically on reload, and `applyRuntimeConfig` reloads it *before* `Log.init` so a reload cannot briefly log something the new config filters.
 
-**14 filters**, in three groups: *who* (`ignored_players`, `exempt_permission`), *where* (`ignored_worlds`), and *what* (commands, chat, advancements, teleports, deaths, explosions). Each listener checks the ones relevant to it — `Filters` holds no event knowledge, and no listener holds filter logic.
+**15 filters**, in three groups: *who* (`ignored_players`, `exempt_permission`, `respect_vanish`), *where* (`ignored_worlds`), and *what* (commands, chat, advancements, teleports, deaths, explosions). Each listener checks the ones relevant to it — `Filters` holds no event knowledge, and no listener holds filter logic.
 
 `only_log_commands` is an allow-list that wins outright when set, with the deny-list applying inside it. `log_recipe_advancements` was a hardcoded skip in `PlayerAdvancement` and is now a setting, defaulting to the old behaviour.
 
@@ -485,7 +485,7 @@ docs/assets/configs/
 
 Live schemas: **v9** (`since: 2.1.5`, frozen) and **v10** (`since: 2.2.0`, current).
 
-**The generator emits every key in both files, and nothing is hardcoded in a template that the wizard cannot reach.** A setting the generator silently bakes in is one the user does not know they have — which is exactly what the fourteen filters were until they were wired up. Concretely: `options.json` carries `filters` (one entry per `filters.*` key, typed `list` / `choices` / `text` / `number` / `bool`) and `lang` (all messages, grouped, each with its shipped default). Adding a fifteenth filter or an eightieth message is a **data** change — one entry plus one `{{TOKEN}}` — never a code change to the bundle.
+**The generator emits every key in both files, and nothing is hardcoded in a template that the wizard cannot reach.** A setting the generator silently bakes in is one the user does not know they have — which is exactly what the filters were until they were wired up. Concretely: `options.json` carries `filters` (one entry per `filters.*` key, typed `list` / `choices` / `text` / `number` / `bool`) and `lang` (all messages, grouped, each with its shipped default). Adding a sixteenth filter or an eightieth message is a **data** change — one entry plus one `{{TOKEN}}` — never a code change to the bundle.
 
 **The invariant that makes this safe: generating and changing nothing must reproduce the shipped files byte for byte.** `validate-config-generator.py` enforces it in both directions — `render_filter()` there is a deliberate reimplementation of the bundle's renderer, so the two must agree, and the lang template is re-substituted with its declared defaults and diffed against `src/main/resources/lang.yml`. It also fails on a filter with no template slot, a template token with no entry, and a filter no Java source reads. Templates therefore may not carry text the shipped file lacks: a stray explanatory comment above `config-version` is enough to break the invariant, and did.
 

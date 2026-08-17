@@ -1,5 +1,6 @@
 package com.discordlogger.filter;
 
+import com.discordlogger.util.Vanish;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -54,11 +55,12 @@ public final class Filters {
             Set<String> ignoredDeathCauses,
             Set<String> ignoredExplosionSources,
             int minExplosionBlocks,
-            String exemptPermission
+            String exemptPermission,
+            boolean respectVanish
     ) {
         static Snapshot empty() {
             return new Snapshot(Set.of(), Set.of(), Set.of(), Set.of(), Set.of(), List.of(), 0,
-                    List.of(), false, Set.of(), 0d, Set.of(), Set.of(), 0, "");
+                    List.of(), false, Set.of(), 0d, Set.of(), Set.of(), 0, "", true);
         }
     }
 
@@ -131,7 +133,8 @@ public final class Filters {
                 constantSet(plugin, "filters.ignored_death_causes"),
                 constantSet(plugin, "filters.ignored_explosion_sources"),
                 Math.max(0, plugin.getConfig().getInt("filters.minimum_explosion_blocks", 0)),
-                perm);
+                perm,
+                plugin.getConfig().getBoolean("filters.respect_vanish", true));
 
         final Snapshot snap = current;
         final int rules = snap.ignoredNames().size() + snap.ignoredUuids().size()
@@ -160,6 +163,11 @@ public final class Filters {
 
         if (snap.ignoredUuids().contains(player.getUniqueId())) return true;
         if (snap.ignoredNames().contains(player.getName().toLowerCase(Locale.ROOT))) return true;
+
+        // Vanish is checked live rather than held in the snapshot, because unlike every
+        // other filter here it is not configuration -- it is state that changes while
+        // the server runs. ignored_players cannot express it for the same reason.
+        if (snap.respectVanish() && Vanish.isVanished(player)) return true;
 
         final String perm = snap.exemptPermission();
         return !perm.isEmpty() && player.hasPermission(perm);

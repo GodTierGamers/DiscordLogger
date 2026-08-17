@@ -50,7 +50,7 @@ class SchemaDetectorTest {
                 .filter(l -> !l.startsWith("config-version:"))
                 .reduce("", (a, b) -> a + b + "\n");
 
-        assertEquals(10, SchemaDetector.infer(flat(stripped)),
+        assertEquals(shippedVersion(), SchemaDetector.infer(flat(stripped)),
                 "with no declaration anywhere, the keys still say what this file is");
     }
 
@@ -92,7 +92,7 @@ class SchemaDetectorTest {
         // treated as an older schema and rewritten.
         String trimmed = shipped().replace("  nicknames: true\n", "")
                                   .replace("      show_coords: false", "");
-        assertEquals(10, SchemaDetector.infer(flat(trimmed)));
+        assertEquals(shippedVersion(), SchemaDetector.infer(flat(trimmed)));
     }
 
     @Test
@@ -101,5 +101,17 @@ class SchemaDetectorTest {
         assertEquals(SchemaDetector.UNKNOWN, SchemaDetector.infer(flat("name: SomePlugin\nversion: 1.0\n")));
         assertEquals(SchemaDetector.UNKNOWN, SchemaDetector.infer(Map.of()));
         assertEquals(SchemaDetector.UNKNOWN, SchemaDetector.infer(null));
+    }
+
+    /**
+     * The schema the plugin currently ships, read from the file rather than typed.
+     *
+     * <p>These assertions mean "the shipped config still identifies as itself", which is
+     * true at every schema. Writing the number in made them fail on the bump that added
+     * v11 — a green suite reporting a problem that did not exist, which is the kind of
+     * failure that teaches people to edit tests without reading them.
+     */
+    private static int shippedVersion() throws Exception {
+        return ConfigMigrator.extractVersion(shipped());
     }
 }

@@ -558,6 +558,43 @@ def check_lang_doc_copy() -> list[str]:
     return errors
 
 
+def check_doc_links_match_their_schema() -> list[str]:
+    """Every config file's documentation URL must point at that file's own schema.
+
+    The link is a comment, so the byte-for-byte copy checks are blind to it being
+    stale: they compare a mirror against the shipped file, and all of them were
+    wrong together. A v11 config shipped pointing users at the v11 docs' predecessor,
+    where the key they were reading about does not appear.
+
+    Checked against the version the file itself declares rather than the live schema,
+    so a frozen bundle keeps pointing at its own page forever -- v9's config should
+    link to /config/v9/, and always should.
+    """
+    link_re = re.compile(r"/config/(v\d+)/")
+    errors = []
+    paths = (["src/main/resources/config.yml", "src/main/resources/lang.yml"]
+             + glob.glob("docs/assets/configs/v*/*.yml")
+             + glob.glob("docs/config/v*/*.txt"))
+    for path in sorted(set(paths)):
+        try:
+            with open(path, encoding="utf-8") as f:
+                text = f.read()
+        except OSError:
+            continue
+        m = VERSION_RE.search(text)
+        if not m:
+            continue
+        own = f"v{m.group(1)}"
+        for linked in set(link_re.findall(text)):
+            if linked != own:
+                errors.append(
+                    f"{path} declares {own.upper()} but links to /config/{linked}/. "
+                    f"A config should document itself -- readers following that link "
+                    f"land on a page that does not describe the file they have."
+                )
+    return errors
+
+
 def check_registry_matches_shipped_schema() -> list[str]:
     """The newest registry entry must be the schema the plugin actually ships.
 
@@ -614,6 +651,7 @@ def main() -> int:
     all_errors.extend(check_lang_doc_copy())
     all_errors.extend(check_website_copies_are_labelled())
     all_errors.extend(check_registry_matches_shipped_schema())
+    all_errors.extend(check_doc_links_match_their_schema())
 
     if all_errors:
         for e in all_errors:

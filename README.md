@@ -28,7 +28,7 @@ Built for **Paper <!-- dl:sync:paper_display -->1.19 – 26.2<!-- /dl:sync -->**
   - **Server**: Start, Stop, Console Command, Explosion
   - **Moderation**: Ban, Unban, Kick, Op, Deop, Whitelist Toggle, Whitelist Add/Remove
 - **Per-event channel routing**: give any single event its own webhook — moderation to a private staff channel, chat to a public one. Everything else keeps using the main webhook.
-- **Fourteen filters**: ignore commands, players, worlds, chat content, advancements, teleport causes, death causes and explosion sources, with minimum-length and minimum-distance thresholds. `/login`, `/register` and `/msg` are filtered **by default** — command logging posts the line exactly as typed, which would otherwise publish passwords and private messages to your channel.
+- **Fifteen filters**: ignore commands, players, worlds, chat content, advancements, teleport causes, death causes and explosion sources, with minimum-length and minimum-distance thresholds, plus staying silent about vanished players. `/login`, `/register` and `/msg` are filtered **by default** — command logging posts the line exactly as typed, which would otherwise publish passwords and private messages to your channel.
 - **Every message is yours**: `lang.yml` holds all of them — in-game text with [MiniMessage](https://docs.advntr.dev/minimessage/format.html) formatting, and the Discord-facing wording separately. Reword or translate anything without touching code.
 - **Commands** (aliases `/dlogger`, `/dlog`):
   - `/discordlogger reload` — reload config and language files (`discordlogger.reload`)
@@ -87,7 +87,7 @@ Full instructions, including creating the webhook in Discord and checking that e
 - **Command logging posts commands verbatim**, which is why `/login`, `/register`, `/msg` and similar ship in `filters.ignored_commands` by default. Removing them publishes passwords and private messages to your channel.
 - **Anonymous metrics** are reported to [bStats](https://bstats.org/plugin/bukkit/DiscordLogger/33026). They answer *"what do people do with this plugin"* and nothing else:
   - **Your setup** — server software, Minecraft version, Java version, online/offline mode, whether you're behind a proxy, and which of a short list of companion plugins are installed (Floodgate, PlaceholderAPI, CoreProtect, and the common punishment and vanish plugins).
-  - **Your configuration** — which events are on, embeds or plain text, how many webhooks you route to, which of the fourteen filters differ from the defaults, whether `lang.yml` was edited and roughly how much, the config schema, and whether the file came from the website generator.
+  - **Your configuration** — which events are on, embeds or plain text, how many webhooks you route to, which of the fifteen filters differ from the defaults, whether `lang.yml` was edited and roughly how much, the config schema, and whether the file came from the website generator.
   - **Whether it's working** — how many sends failed, were rate-limited, or hit a deleted webhook, and roughly how busy the plugin is as a rate band rather than a message count.
   - **Never** — webhook URLs, player names, UUIDs, IP addresses, message content, coordinates, or world names. Counts are reported as ranges rather than exact numbers, so a chart cannot become a fingerprint.
 

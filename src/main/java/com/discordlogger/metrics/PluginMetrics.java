@@ -53,7 +53,7 @@ import java.util.regex.Pattern;
  *       (proxy support, PlaceholderAPI, punishment plugins, vanish, permissions) have an
  *       audience, and how many servers are silently getting nothing from
  *       moderation logging because their punishments bypass the vanilla ban list.</li>
- *   <li><b>Feature usage</b> — which of the fourteen filters, the routing, and the
+ *   <li><b>Feature usage</b> — which of the fifteen filters, the routing, and the
  *       language file are actually used, versus shipped and ignored.</li>
  *   <li><b>Config lifecycle</b> — did setup ever complete, was the config built by
  *       the website generator, and which old schema did it migrate from.</li>

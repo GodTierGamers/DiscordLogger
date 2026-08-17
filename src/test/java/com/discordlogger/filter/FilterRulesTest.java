@@ -46,7 +46,10 @@ class FilterRulesTest {
         Object snap = ctor.newInstance(
                 Set.of(), Set.of(), ignoredCommands, onlyCommands, Set.of(),
                 chatPatterns, minChatLength, advancements, recipes,
-                teleportCauses, minTeleport, deathCauses, explosionSources, minBlocks, "");
+                teleportCauses, minTeleport, deathCauses, explosionSources, minBlocks, "",
+                // respectVanish: these rules are about config, and vanish is live state
+                // no unit test can produce -- false keeps it out of the way entirely.
+                false);
 
         Field current = Filters.class.getDeclaredField("current");
         current.setAccessible(true);

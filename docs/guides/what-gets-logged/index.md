@@ -151,7 +151,7 @@ so a busy chat channel never delays your moderation log.
 Three ways, depending on how much you want to change:
 
 - **One event** — set its `enabled` to `false`
-- **A pattern across events** — use one of the [fourteen filters](/config/): players, worlds, commands, chat content, advancements, teleport causes, death causes, explosion sources
+- **A pattern across events** — use one of the [fifteen filters](/config/): players, worlds, commands, chat content, advancements, teleport causes, death causes, explosion sources
 - **Everything, visually** — the [config generator](/generator/) builds the whole file in your browser
 
 ---

@@ -31,7 +31,7 @@ Longer answers to the questions people actually arrive with.
   </div>
   <div class="dl-card">
     <h3><a href="/guides/reduce-spam/">Reduce logging spam</a></h3>
-    <p>Fourteen filters, matched to the noise each one actually solves.</p>
+    <p>Fifteen filters, matched to the noise each one actually solves.</p>
   </div>
   <div class="dl-card">
     <h3><a href="/guides/translate/">Translate every message</a></h3>

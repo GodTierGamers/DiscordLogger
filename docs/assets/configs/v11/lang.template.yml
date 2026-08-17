@@ -128,86 +128,86 @@ config-version: 11
 chat:
 
   # Put in front of the messages that use a prefix. Set to "" to remove it.
-  prefix: "<gold>[DiscordLogger]</gold> "
+  prefix: "{{LANG_chat.prefix}}"
 
   # ---------------------------------------------------------------- /reload --
 
   # Placeholders: {ms} -- how long the reload took, in milliseconds
-  reload-ok: "<green>DiscordLogger configuration reloaded ({ms} ms).</green>"
+  reload-ok: "{{LANG_chat.reload-ok}}"
 
   # Shown when the config loaded but webhook.url is empty or malformed.
-  reload-no-webhook: "<red>Config reloaded, but webhook.url is missing or invalid.</red>"
-  reload-no-webhook-hint: "<red>Set a valid Discord webhook URL and try again.</red>"
+  reload-no-webhook: "{{LANG_chat.reload-no-webhook}}"
+  reload-no-webhook-hint: "{{LANG_chat.reload-no-webhook-hint}}"
 
   # Shown when reloading detected a config from a NEWER plugin version.
   # Placeholders: {installed} -- the schema in config.yml
   #               {shipped}   -- the schema this build understands
-  reload-config-ahead: "<red>Your config.yml (schema v{installed}) is newer than this build (v{shipped}). Keys it does not recognise are ignored.</red>"
-  reload-config-ahead-fix: "<red>Update the plugin, or run <white>/discordlogger regen</white> to start fresh.</red>"
+  reload-config-ahead: "{{LANG_chat.reload-config-ahead}}"
+  reload-config-ahead-fix: "{{LANG_chat.reload-config-ahead-fix}}"
 
   # Shown when reloading upgraded the config from an older schema.
   # Placeholders: {from}, {to}
-  reload-config-upgraded: "<green>config.yml upgraded from schema v{from} to v{to} (previous file saved as config.old.yml).</green>"
+  reload-config-upgraded: "{{LANG_chat.reload-config-upgraded}}"
 
   # --------------------------------------------------------------- /webhook --
 
   # Shown when the command is run with no URL.
-  webhook-usage: "<yellow>Usage: <white>/discordlogger webhook <url></white></yellow>"
-  webhook-where: "<gray>Create one in Discord under Channel Settings > Integrations > Webhooks.</gray>"
+  webhook-usage: "{{LANG_chat.webhook-usage}}"
+  webhook-where: "{{LANG_chat.webhook-where}}"
   # Shown only to players, not from console -- a reminder that the URL is a secret.
-  webhook-private: "<gray>Anyone who sees the URL can post to that channel, so avoid typing it on a shared screen. It is never shown back to you.</gray>"
+  webhook-private: "{{LANG_chat.webhook-private}}"
 
   # Shown when the URL is not a Discord webhook.
-  webhook-invalid: "<red>That does not look like a Discord webhook URL.</red>"
-  webhook-expected: "<gray>Expected: https://discord.com/api/webhooks/<id>/<token></gray>"
+  webhook-invalid: "{{LANG_chat.webhook-invalid}}"
+  webhook-expected: "{{LANG_chat.webhook-expected}}"
 
   # Success. Placeholders: {channel} -- the channel id from the URL.
   # The full URL is never shown back, on purpose: it is a credential, and this
   # message may be on someone's screen or stream.
-  webhook-set: "<green>Webhook set and reloaded - logging to channel {channel}.</green>"
+  webhook-set: "{{LANG_chat.webhook-set}}"
 
-  webhook-write-failed: "<red>Could not write webhook.url to config.yml. Check the file exists and is writable.</red>"
-  webhook-rejected: "<red>Saved, but the plugin did not accept it. Check config.yml and the console.</red>"
+  webhook-write-failed: "{{LANG_chat.webhook-write-failed}}"
+  webhook-rejected: "{{LANG_chat.webhook-rejected}}"
 
   # ----------------------------------------------------------------- /regen --
 
   # Shown when /discordlogger regen is run without "confirm".
-  regen-warning: "<yellow>This replaces config.yml with the default from this build. Your current file is backed up, but your settings are NOT carried over.</yellow>"
-  regen-confirm: "<yellow>Run <white>/discordlogger regen confirm</white> to go ahead.</yellow>"
+  regen-warning: "{{LANG_chat.regen-warning}}"
+  regen-confirm: "{{LANG_chat.regen-confirm}}"
 
   # Placeholders: {schema} -- the config schema that was written, e.g. "v10"
-  regen-done: "<green>config.yml rebuilt at schema {schema}.</green>"
+  regen-done: "{{LANG_chat.regen-done}}"
   # Placeholders: {file} -- the backup filename
-  regen-backup: "<gray>Previous file saved as {file}</gray>"
-  regen-no-webhook: "<red>The new config has no webhook URL yet - set webhook.url, then run /discordlogger reload.</red>"
+  regen-backup: "{{LANG_chat.regen-backup}}"
+  regen-no-webhook: "{{LANG_chat.regen-no-webhook}}"
 
-  regen-no-bundled: "<red>This build has no bundled config.yml to restore from.</red>"
+  regen-no-bundled: "{{LANG_chat.regen-no-bundled}}"
   # Placeholders: {error}
-  regen-read-failed: "<red>Could not read the bundled config.yml: {error}</red>"
-  regen-write-failed: "<red>Could not rewrite config.yml: {error}</red>"
+  regen-read-failed: "{{LANG_chat.regen-read-failed}}"
+  regen-write-failed: "{{LANG_chat.regen-write-failed}}"
 
   # ------------------------------------------------------- command handling --
 
-  help-header: "<aqua>DiscordLogger Commands:</aqua>"
+  help-header: "{{LANG_chat.help-header}}"
   # One line per subcommand.
   # Placeholders: {label} -- the command as typed (discordlogger, dlog, dlogger)
   #               {command}, {description}
-  help-entry: "<gray>  /{label} {command}<dark_gray> - <white>{description}"
+  help-entry: "{{LANG_chat.help-entry}}"
 
   # Placeholders: {input} -- what they actually typed
-  unknown-subcommand: "<red>Unknown subcommand: {input}</red>"
+  unknown-subcommand: "{{LANG_chat.unknown-subcommand}}"
   # Placeholders: {label}, {command}
-  no-permission: "<red>You do not have permission to use /{label} {command}</red>"
+  no-permission: "{{LANG_chat.no-permission}}"
 
   # ------------------------------------------------------------- on joining --
 
   # Shown to OPS when config.yml is newer than this build understands.
   # Placeholders: {installed}, {shipped}
-  config-ahead: "<gold>[DiscordLogger]</gold> <yellow>Your config.yml (schema v{installed}) is newer than this build (v{shipped}). Settings it does not recognise are being ignored.</yellow>"
-  config-ahead-fix: "<yellow>Update the plugin, or run <white>/discordlogger regen</white> to rebuild the config from this build. Your current file is backed up.</yellow>"
+  config-ahead: "{{LANG_chat.config-ahead}}"
+  config-ahead-fix: "{{LANG_chat.config-ahead-fix}}"
 
   # Shown to OPS once per nightly build. Never appears on a stable release.
-  nightly-notice: "<gold>[DiscordLogger]</gold> <yellow>This is a nightly build - it may be unstable. Upgrade often: <white>https://discordlogger.godtiergamers.xyz</white></yellow>"
+  nightly-notice: "{{LANG_chat.nightly-notice}}"
 
 
 ##############################################################################
@@ -217,35 +217,35 @@ chat:
 discord:
 
   # Placeholders: {player} -- their display name, or nickname if enabled
-  player-join: "{player} joined the server"
-  player-quit: "{player} left the server"
+  player-join: "{{LANG_discord.player-join}}"
+  player-quit: "{{LANG_discord.player-quit}}"
 
   # Placeholders: {player}, {message}
   # ** ** is Discord's bold. The message is escaped before substitution, so a
   # player cannot inject Markdown into your channel.
-  player-chat: "**{player}**: {message}"
+  player-chat: "{{LANG_discord.player-chat}}"
 
   # Placeholders: {player}, {command} -- the command includes its leading slash
   # Commands listed in filters.ignored_commands never reach here at all.
-  player-command: "{player} ran: {command}"
+  player-command: "{{LANG_discord.player-command}}"
 
   # Placeholders: {sender} -- "Server" for the console, or the sender's name
   #               {command}
-  server-command: "{sender} ran: {command}"
+  server-command: "{{LANG_discord.server-command}}"
 
   death:
 
     # The line under the embed title. Placeholders: {player}
-    description: "{player} died"
+    description: "{{LANG_discord.death.description}}"
 
     # Field NAMES, not values -- the bold label above each field in the embed.
-    cause-field: "Cause of Death"
-    coords-field: "Coords"
+    cause-field: "{{LANG_discord.death.cause-field}}"
+    coords-field: "{{LANG_discord.death.coords-field}}"
 
     # Only shown when log.player.death.show_coords is true in config.yml.
     # Placeholders: {x}, {y}, {z} -- block coordinates
     #               {world}           -- the world's folder name
-    coords-value: "{x}, {y}, {z} in {world}"
+    coords-value: "{{LANG_discord.death.coords-value}}"
 
     # ---- how the death happened ------------------------------------------
     # These four cover deaths caused by a player or mob. The causes list below
@@ -256,95 +256,95 @@ discord:
     #               {weapon} -- " [Diamond Sword]", or EMPTY if bare-handed.
     #                             The brackets and leading space are part of the
     #                             value, so remove {weapon} entirely to hide it.
-    slain-by-player: "Slain by {killer}{weapon}"
+    slain-by-player: "{{LANG_discord.death.slain-by-player}}"
 
     # Killed by a mob. Placeholders: {killer} -- e.g. "a zombie"
-    slain-by-mob: "Slain by {killer}"
+    slain-by-mob: "{{LANG_discord.death.slain-by-mob}}"
 
     # Shot from range. Placeholders: {killer} -- a player or a mob
-    shot-by: "Shot by {killer}"
+    shot-by: "{{LANG_discord.death.shot-by}}"
     # Shot, but the shooter is no longer known (they logged off, or despawned).
-    shot: "Shot"
+    shot: "{{LANG_discord.death.shot}}"
 
     # Last resort: the server reported a cause this plugin has no wording for.
     # If you ever see this in your channel, it is worth reporting -- it means
     # Minecraft added a damage type.
-    unknown: "Died"
+    unknown: "{{LANG_discord.death.unknown}}"
 
     # ---- one line per damage cause ---------------------------------------
     # Keys are Minecraft's own damage causes, lowercased with hyphens. Do not
     # rename them; the plugin looks each one up by that exact name.
     causes:
       # Fell too far.
-      fall: "Fell from a high place"
+      fall: "{{LANG_discord.death.causes.fall}}"
       # Swam in lava.
-      lava: "Tried to swim in lava"
+      lava: "{{LANG_discord.death.causes.lava}}"
       # Standing in fire.
-      fire: "Burned to death"
+      fire: "{{LANG_discord.death.causes.fire}}"
       # Still burning after leaving the fire.
-      fire-tick: "Burned to death"
+      fire-tick: "{{LANG_discord.death.causes.fire-tick}}"
       # Ran out of air.
-      drowning: "Drowned"
+      drowning: "{{LANG_discord.death.causes.drowning}}"
       # Inside a solid block.
-      suffocation: "Suffocated in a wall"
+      suffocation: "{{LANG_discord.death.causes.suffocation}}"
       # Fell out of the world.
-      void: "Fell into the void"
+      void: "{{LANG_discord.death.causes.void}}"
       # Touched a cactus or sweet berry bush.
-      contact: "Was pricked to death"
+      contact: "{{LANG_discord.death.causes.contact}}"
       # TNT, a bed in the Nether, a respawn anchor in the Overworld.
-      block-explosion: "Blew up"
+      block-explosion: "{{LANG_discord.death.causes.block-explosion}}"
       # A creeper, a ghast fireball, an end crystal.
-      entity-explosion: "Blew up"
+      entity-explosion: "{{LANG_discord.death.causes.entity-explosion}}"
       # A potion of harming, or an evoker's fangs.
-      magic: "Was killed by magic"
+      magic: "{{LANG_discord.death.causes.magic}}"
       # Poison ran the health down.
-      poison: "Was poisoned"
+      poison: "{{LANG_discord.death.causes.poison}}"
       # The wither effect.
-      wither: "Withered away"
+      wither: "{{LANG_discord.death.causes.wither}}"
       # Hunger reached zero.
-      starvation: "Starved to death"
+      starvation: "{{LANG_discord.death.causes.starvation}}"
       # Powder snow.
-      freeze: "Froze to death"
+      freeze: "{{LANG_discord.death.causes.freeze}}"
       # Struck by lightning.
-      lightning: "Was struck by lightning"
+      lightning: "{{LANG_discord.death.causes.lightning}}"
       # Standing on magma blocks.
-      hot-floor: "Discovered the floor was lava"
+      hot-floor: "{{LANG_discord.death.causes.hot-floor}}"
       # Too many entities in one block.
-      cramming: "Was squished too much"
+      cramming: "{{LANG_discord.death.causes.cramming}}"
       # The ender dragon's breath cloud.
-      dragon-breath: "Was roasted by dragon breath"
+      dragon-breath: "{{LANG_discord.death.causes.dragon-breath}}"
       # Attacking someone wearing Thorns armour.
-      thorns: "Was killed by thorns"
+      thorns: "{{LANG_discord.death.causes.thorns}}"
       # The /kill command.
-      kill: "Killed by command"
+      kill: "{{LANG_discord.death.causes.kill}}"
       # /kill used on yourself.
-      suicide: "Killed by command"
+      suicide: "{{LANG_discord.death.causes.suicide}}"
       # Outside the world border.
-      world-border: "Left the world border"
+      world-border: "{{LANG_discord.death.causes.world-border}}"
       # A warden's ranged attack.
-      sonic-boom: "Hit by a warden's sonic boom"
+      sonic-boom: "{{LANG_discord.death.causes.sonic-boom}}"
       # Standing in a campfire.
-      campfire: "Burned on a campfire"
+      campfire: "{{LANG_discord.death.causes.campfire}}"
       # An anvil or gravel landed on them.
-      falling-block: "Squashed by a falling block"
+      falling-block: "{{LANG_discord.death.causes.falling-block}}"
       # Elytra flight into a wall — kinetic damage.
-      fly-into-wall: "Flew into a wall"
+      fly-into-wall: "{{LANG_discord.death.causes.fly-into-wall}}"
       # An axolotl or dolphin out of water.
-      dryout: "Dried out"
+      dryout: "{{LANG_discord.death.causes.dryout}}"
       # A snow golem in a warm biome.
-      melting: "Melted"
+      melting: "{{LANG_discord.death.causes.melting}}"
       # A mob or player hit them, when the attacker is no longer known.
-      entity-attack: "Slain"
+      entity-attack: "{{LANG_discord.death.causes.entity-attack}}"
       # A sweeping sword attack, attacker no longer known.
-      entity-sweep-attack: "Slain"
+      entity-sweep-attack: "{{LANG_discord.death.causes.entity-sweep-attack}}"
       # An arrow or similar, shooter no longer known.
-      projectile: "Shot"
+      projectile: "{{LANG_discord.death.causes.projectile}}"
       # Damage dealt by another plugin. Nothing truthful can be said about it.
-      custom: "Died"
+      custom: "{{LANG_discord.death.causes.custom}}"
 
   # The field added to a join when the player came from Bedrock, if
   # log.player.join.show_platform is true. It NEVER says "Java" -- see the docs.
-  platform-field: "Platform"
-  platform-bedrock: "Bedrock"
+  platform-field: "{{LANG_discord.platform-field}}"
+  platform-bedrock: "{{LANG_discord.platform-bedrock}}"
 
-# CONFIG VERSION V11, SHIPPED WITH v2.3.0 (x-release-please-version)
+# CONFIG VERSION V11, GENERATED ON WEBSITE ON {{GENERATED_AT}}

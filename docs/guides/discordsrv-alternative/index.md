@@ -98,7 +98,7 @@ a bridge you should use it.
 
 DiscordLogger is narrower on purpose. It does logging, and because that's all it
 does, it does it in more depth: every moderation action verified before it's
-logged, fourteen filters, per-event channels, and a config that migrates itself
+logged, fifteen filters, per-event channels, and a config that migrates itself
 forward when you update.
 
 Not needing a bot isn't a limitation here — it's the point.
