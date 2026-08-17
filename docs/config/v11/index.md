@@ -817,7 +817,7 @@ in code.
 # D O C U M E N T A T I O N #
 #############################
 
-# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v10/
+# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v11/
 
 #########################
 # D O   N O T   E D I T #
