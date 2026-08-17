@@ -40,6 +40,9 @@ public final class SchemaDetector {
     public static int infer(Map<String, Object> flat) {
         if (flat == null || flat.isEmpty()) return UNKNOWN;
 
+        // v11 added exactly one key, so that key is the whole marker.
+        if (flat.containsKey("filters.respect_vanish")) return 11;
+
         // v10 restructured events into sections and added filters. Either is decisive.
         if (flat.containsKey("filters.exempt_permission")
                 || flat.containsKey("log.player.join.enabled")) return 10;

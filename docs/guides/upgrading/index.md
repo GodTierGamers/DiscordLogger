@@ -72,7 +72,7 @@ a section so it could carry its own webhook. One rename to be aware of: v9's
 `embeds.colors.moderation.whitelist` becomes
 `log.moderation.whitelist_edit.color`.
 
-You also gain `lang.yml`, fourteen filters, per-event routing and the Bedrock
+You also gain `lang.yml`, fifteen filters, per-event routing and the Bedrock
 indicator — all at their defaults, so nothing changes until you want it to.
 
 ---

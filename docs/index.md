@@ -69,7 +69,7 @@ Discord channel.
   </div>
   <div class="dl-card">
     <h3>Cut the noise</h3>
-    <p>Fourteen filters for players, worlds, commands, advancements, teleports, deaths and explosions.</p>
+    <p>Fifteen filters for players, worlds, commands, advancements, teleports, deaths and explosions.</p>
   </div>
   <div class="dl-card">
     <h3>No account needed</h3>

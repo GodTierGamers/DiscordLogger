@@ -10,7 +10,7 @@ A logging channel nobody reads is the same as no logging channel. If yours has
 become a wall of teleports, this is how to quieten it without turning things off
 wholesale.
 
-Fourteen filters, grouped by the complaint they solve.
+Fifteen filters, grouped by the complaint they solve.
 
 ---
 

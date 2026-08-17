@@ -15,6 +15,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Where an old key lands in the current schema.
@@ -119,5 +120,28 @@ class ConfigMigratorPathTest {
             org.junit.jupiter.api.Assertions.assertTrue(defaults.containsKey(resolved),
                     resolved + " is not a real key in the shipped config");
         }
+    }
+
+    @Test
+    @DisplayName("v10 settings survive the step to v11")
+    void v10SettingsReachV11() {
+        // v11 only ADDS filters.respect_vanish, so every v10 path must arrive unchanged.
+        // A step that renames nothing still needs proving: step() defaulting to identity
+        // is what makes "only develop the delta" true, and a stray case would break it.
+        for (String path : new String[]{
+                "webhook.url", "embeds.enabled", "format.nicknames",
+                "log.player.join.enabled", "log.player.join.color",
+                "log.moderation.ban.enabled", "filters.ignored_commands",
+                "filters.minimum_explosion_blocks"}) {
+            assertEquals(path, ConfigMigrator.resolvePath(path, defaults, 10, current),
+                    path + " must survive v10 -> v11 untouched");
+        }
+    }
+
+    @Test
+    @DisplayName("the new filter exists in the shipped defaults")
+    void respectVanishIsShipped() {
+        assertTrue(defaults.containsKey("filters.respect_vanish"),
+                "config.yml must ship the key the Java reads");
     }
 }
