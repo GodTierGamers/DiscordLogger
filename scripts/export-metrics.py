@@ -200,6 +200,7 @@ def read_store(target: Path) -> tuple[list[dict], list[str]]:
             return rows, [c for c in header if c != "polled_at"]
 
         by_poll: dict[str, dict] = {}
+        slices: dict[tuple, list[str]] = {}
         for r in reader:
             rec = dict(zip(header, r))
             row = by_poll.setdefault(rec["polled_at"], {"polled_at": rec["polled_at"]})
@@ -209,8 +210,17 @@ def read_store(target: Path) -> tuple[list[dict], list[str]]:
                 row[rec["chart_id"]] = rec["value"]
             else:
                 row[column_for(rec["chart_id"], rec["series"], rec["label"])] = rec["value"]
-                if rec["servers_reporting"]:
-                    row[rec["chart_id"] + ".#servers"] = rec["servers_reporting"]
+                # The stored servers_reporting is NOT carried across. Early rows hold a
+                # sum for advanced pies, later ones the largest slice, and a column that
+                # changes meaning halfway is worse than one that is merely wrong --
+                # enabled_events would read 149 -> 9 and look like a collapse. Recomputed
+                # from the slices so the whole column means one thing.
+                slices.setdefault((rec["polled_at"], rec["chart_id"], rec["chart_type"]),
+                                  []).append(rec["value"])
+        for (poll, cid, ctype), vals in slices.items():
+            nums = [int(v) for v in vals if v.isdigit()]
+            by_poll[poll][cid + ".#servers"] = str(
+                max(nums, default=0) if ctype == "advanced_pie" else sum(nums))
         rows = [by_poll[k] for k in sorted(by_poll)]
         cols = sorted({c for row in rows for c in row if c != "polled_at"})
         print(f"migrated {len(rows)} polls from the long format")
