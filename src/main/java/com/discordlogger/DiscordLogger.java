@@ -1,5 +1,6 @@
 package com.discordlogger;
 
+import com.discordlogger.command.CommandVisibility;
 import com.discordlogger.command.Commands;
 import com.discordlogger.command.Regen;
 import com.discordlogger.command.Reload;
@@ -66,6 +67,10 @@ public final class DiscordLogger extends JavaPlugin {
             Commands router = new Commands(new Reload(this), new Webhook(this), new Regen(this));
             getCommand("discordlogger").setExecutor(router);
             getCommand("discordlogger").setTabCompleter(router);
+            // Strips Bukkit's plugin:command duplicates from tab-completion, and
+            // hides the command from players who hold none of its permissions.
+            getServer().getPluginManager().registerEvents(
+                    new CommandVisibility(this, router), this);
         }
 
         // Anonymous usage metrics (bstats.org). Opt out via plugins/bStats/config.yml.
