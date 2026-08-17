@@ -168,95 +168,132 @@ CHARTS_SINCE_2_2_0 = frozenset({
 })
 
 
+LEGACY_HEADER = ["polled_at", "chart_id", "chart_type", "series", "label",
+                 "value", "servers_reporting"]
+
+
+def column_for(chart_id: str, series: str, label: str) -> str:
+    """One slice's column name: ``chart.label``, or ``chart.series.label``."""
+    return ".".join(x for x in (chart_id, series, label) if x)
+
+
+def read_store(target: Path) -> tuple[list[dict], list[str]]:
+    """Existing rows, pivoted from the old long format if that is what is there.
+
+    The store began as one row per slice, which is the shape a pivot table wants and
+    the shape a human charting adoption does not: every question needed a pivot built
+    first. One row per poll makes "servers running 2.3.0 over time" a single column.
+
+    The migration runs once, in place, rather than starting a new file -- a fresh file
+    would leave the earlier history in a format nothing else reads, which is how data
+    stops being looked at.
+    """
+    if not target.exists():
+        return [], []
+    with target.open(encoding="utf-8") as f:
+        reader = csv.reader(f)
+        header = next(reader, None)
+        if header is None:
+            return [], []
+        if header != LEGACY_HEADER:
+            rows = [dict(zip(header, r)) for r in reader]
+            return rows, [c for c in header if c != "polled_at"]
+
+        by_poll: dict[str, dict] = {}
+        slices: dict[tuple, list[str]] = {}
+        for r in reader:
+            rec = dict(zip(header, r))
+            row = by_poll.setdefault(rec["polled_at"], {"polled_at": rec["polled_at"]})
+            if rec["chart_type"].endswith("linechart"):
+                # Long format kept every historical sample; a poll-row holds the value
+                # as of that poll, so the newest sample wins.
+                row[rec["chart_id"]] = rec["value"]
+            else:
+                row[column_for(rec["chart_id"], rec["series"], rec["label"])] = rec["value"]
+                # The stored servers_reporting is NOT carried across. Early rows hold a
+                # sum for advanced pies, later ones the largest slice, and a column that
+                # changes meaning halfway is worse than one that is merely wrong --
+                # enabled_events would read 149 -> 9 and look like a collapse. Recomputed
+                # from the slices so the whole column means one thing.
+                slices.setdefault((rec["polled_at"], rec["chart_id"], rec["chart_type"]),
+                                  []).append(rec["value"])
+        for (poll, cid, ctype), vals in slices.items():
+            nums = [int(v) for v in vals if v.isdigit()]
+            by_poll[poll][cid + ".#servers"] = str(
+                max(nums, default=0) if ctype == "advanced_pie" else sum(nums))
+        rows = [by_poll[k] for k in sorted(by_poll)]
+        cols = sorted({c for row in rows for c in row if c != "polled_at"})
+        print(f"migrated {len(rows)} polls from the long format")
+        return rows, cols
+
+
 def append_snapshot(meta: dict, plugin_id: int, out_dir: str) -> int:
-    """Append one poll of every chart to a single running CSV.
+    """Append one poll as a single row, every chart across the columns.
 
-    **One file, all chart types, forever.** Splitting pies from line charts, or
-    months from each other, only moves the joining work to analysis time -- and the
-    join that never happens is the one done "later".
+    **One row per check.** Charting adoption is then selecting a column against
+    ``polled_at`` -- no pivot, no reshaping, no join. The previous long format needed
+    all three before any question could be asked, which in practice means the question
+    waits.
 
-    The two chart types need different handling, and conflating them loses data:
+    Columns are ``chart.label`` (``vanish_plugin.Essentials``), or
+    ``chart.series.label`` for drilldowns. Each chart also carries
+    ``chart.#servers``: the servers reporting it at that poll, which is the only
+    honest denominator, since a chart added in 2.3.0 is reported by fewer servers than
+    one from 2.2.0. Line charts hold their latest value under the bare chart id --
+    bStats keeps their full history and it can be pulled at any time, so a poll-row
+    only has to say where the line was.
 
-    * **Pie / drilldown** carry no time dimension. The endpoint answers "what is true
-      right now" and the previous answer is gone, so every poll is recorded as a new
-      snapshot stamped with the poll time. This is the data that cannot be recovered
-      and the reason the workflow exists at all.
-    * **Line** charts carry their own bStats timestamp per sample and bStats keeps
-      them for years, so re-recording the whole series every poll would add tens of
-      thousands of duplicate rows an hour. Only samples not already stored are
-      appended, keyed on that timestamp.
+    **An empty cell means the slice was absent, which is not the same as zero** and
+    cannot be told apart from it afterwards. Pie charts only return slices that
+    currently exist, so a country with no servers simply is not mentioned.
 
-    `servers_reporting` is written on every pie row: the sum of that chart's slices
-    at that poll, which is the only honest denominator for a percentage. A 2.3.0
-    chart divided by the total server count understates itself by however many
-    servers have not upgraded.
+    The whole file is rewritten each poll because a new slice -- a new country, a new
+    Java version -- adds a column, and a CSV cannot gain one without moving every row.
+    At one row per poll that is thousands of rows a year, not millions.
     """
     stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     d = Path(out_dir)
     d.mkdir(parents=True, exist_ok=True)
     target = d / "bstats.csv"
 
-    # Line samples already stored, so a poll adds only what is new. Keyed on the
-    # bStats timestamp, which is the sample's own identity rather than ours.
-    seen: set[tuple[str, str]] = set()
-    if target.exists():
-        with target.open(encoding="utf-8") as f:
-            for row in csv.DictReader(f):
-                if row["chart_type"].endswith("linechart"):
-                    seen.add((row["chart_id"], row["label"]))
-
-    rows, added_line, added_pie = [], 0, 0
+    row: dict[str, str] = {"polled_at": stamp}
     for chart in sorted(meta.get("charts", {}).values(), key=lambda c: c.get("position", 0)):
         cid, ctype = chart["idCustom"], chart["type"]
-        url = f"{API}/{plugin_id}/charts/{cid}/data"
-        # Line charts are asked for their full history; the dedupe above keeps that
-        # from mattering after the first run, and it backfills everything on it.
-        if ctype.endswith("linechart"):
-            url += "?maxElements=100000"
         try:
-            data = fetch(url)
+            data = fetch(f"{API}/{plugin_id}/charts/{cid}/data")
         except (urllib.error.URLError, json.JSONDecodeError):
             continue
 
         flat = flatten(chart, data)
         if ctype.endswith("linechart"):
-            # Trim the zero padding bStats returns for time before the plugin
-            # existed -- roughly 90,000 rows a chart of "no servers yet".
-            first_real = next((i for i, r in enumerate(flat) if r[2] not in ("0", "")), None)
-            if first_real is None:
-                continue
-            for series, label, value in flat[first_real:]:
-                if (cid, label) in seen:
-                    continue
-                rows.append([stamp, cid, ctype, series, label, value, ""])
-                added_line += 1
-        else:
-            vals = [int(v) for _, _, v in flat if v.isdigit()]
-            # How many servers a chart represents depends on whether its slices are
-            # mutually exclusive. A simple or drilldown pie puts each server in
-            # exactly one slice, so the sum IS the server count. An advanced pie lets
-            # one server contribute to many slices at once -- enabled_events summed to
-            # 201 across 13 servers -- so the sum is a total, not a population. The
-            # largest slice is the honest figure there: a lower bound on how many
-            # servers reported, and within one of the truth in practice.
-            total = max(vals, default=0) if ctype == "advanced_pie" else sum(vals)
-            for series, label, value in flat:
-                rows.append([stamp, cid, ctype, series, label, value, total])
-                added_pie += 1
+            if flat:
+                row[cid] = flat[-1][2]
+            continue
 
-    if not rows:
-        print(f"{stamp}: nothing new")
-        return 0
+        vals = [int(v) for _, _, v in flat if v.isdigit()]
+        # Mutually exclusive slices sum to the server count; an advanced pie lets one
+        # server land in several at once, so its sum is a total and the largest slice
+        # is the closer figure. See the store README.
+        row[cid + ".#servers"] = str(
+            max(vals, default=0) if ctype == "advanced_pie" else sum(vals))
+        for series, label, value in flat:
+            row[column_for(cid, series, label)] = value
 
-    new_file = not target.exists()
-    with target.open("a", newline="", encoding="utf-8") as f:
+    if len(row) == 1:
+        print(f"{stamp}: nothing returned", file=sys.stderr)
+        return 1
+
+    rows, cols = read_store(target)
+    rows.append(row)
+    cols = sorted(set(cols) | {c for c in row if c != "polled_at"})
+
+    with target.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        if new_file:
-            w.writerow(["polled_at", "chart_id", "chart_type", "series", "label",
-                        "value", "servers_reporting"])
-        w.writerows(rows)
+        w.writerow(["polled_at"] + cols)
+        for r in rows:
+            w.writerow([r.get("polled_at", "")] + [r.get(c, "") for c in cols])
 
-    print(f"{stamp}: +{added_pie} pie, +{added_line} line -> {target}")
+    print(f"{stamp}: {len(rows)} polls x {len(cols)} columns -> {target}")
     return 0
 
 

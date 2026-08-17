@@ -6,10 +6,13 @@ name: Poll bStats
 # is true now" and the previous answer is gone forever. Those are the reason this
 # exists, and every poll appends a fresh snapshot of them.
 #
-# Line charts are also stored, but deduplicated -- bStats keeps them for years, so
-# the first poll backfills the series and later polls add about a row per chart.
-# They live in the same file rather than being fetched at analysis time, because
-# the join left until "later" is the one that never happens.
+# Line charts hold their latest value in the same row. bStats keeps their full
+# history, so the fine-grained series is always recoverable and a poll row only has
+# to say where the line was.
+#
+# One row per poll, one column per slice: charting adoption is then selecting a
+# column, with no pivot or reshaping first -- which is the difference between a
+# question being asked and being left until later.
 #
 # The schedule is best-effort. GitHub delays scheduled runs under load and skips
 # them outright sometimes, so the series is irregular by nature -- the poll time is
