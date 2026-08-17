@@ -77,6 +77,23 @@ public final class Commands implements CommandExecutor, TabCompleter {
         return sc.tabComplete(sender, tail);
     }
 
+    /**
+     * Whether this sender can run anything at all.
+     *
+     * <p>The root command is deliberately ungated — gating it would lock a
+     * {@code regen}-only admin out of the whole command — so "can use this plugin"
+     * is not a single permission but "holds at least one subcommand's". Used by
+     * {@link CommandVisibility} to keep the command out of tab-completion for
+     * players it would do nothing for.
+     */
+    public boolean isUsableBy(CommandSender sender) {
+        for (Subcommand sc : subs.values()) {
+            final String perm = sc.permission();
+            if (perm == null || perm.isBlank() || sender.hasPermission(perm)) return true;
+        }
+        return false;
+    }
+
     private void sendHelp(CommandSender sender, String label) {
         sender.sendMessage(Lang.chat("chat.help-header"));
         for (Subcommand sc : subs.values()) {
