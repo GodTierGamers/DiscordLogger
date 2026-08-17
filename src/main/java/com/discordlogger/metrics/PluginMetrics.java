@@ -50,7 +50,7 @@ import java.util.regex.Pattern;
  *       combinations exist in the wild. The schema one decides when a frozen
  *       generator bundle can finally be retired.</li>
  *   <li><b>Companion plugins</b> — whether the integrations being considered
- *       (proxy support, PlaceholderAPI, punishment plugins, vanish) have an
+ *       (proxy support, PlaceholderAPI, punishment plugins, vanish, permissions) have an
  *       audience, and how many servers are silently getting nothing from
  *       moderation logging because their punishments bypass the vanilla ban list.</li>
  *   <li><b>Feature usage</b> — which of the fourteen filters, the routing, and the
@@ -83,6 +83,21 @@ public final class PluginMetrics {
     /** Vanish implementations. A vanished admin joining is currently announced anyway. */
     private static final List<String> VANISH_PLUGINS =
             List.of("PremiumVanish", "SuperVanish", "Essentials", "CMI");
+
+    /**
+     * Permission managers, in the order a server running two would want reported.
+     *
+     * <p>Measured because a LuckPerms integration is the one third-party hook worth
+     * hard-wiring — permission grants are the highest-audit-value action on a server,
+     * and unlike a ban they frequently arrive through paths no command sniffer sees:
+     * the web editor, another plugin's API call, or a network-wide database sync. So
+     * the feature cannot be approximated the way {@code /ban} can, and it needs
+     * evidence before it is built. {@code punishment_plugin} came back {@code None}
+     * on every server, which is the outcome this chart exists to find early.
+     */
+    private static final List<String> PERMISSION_PLUGINS =
+            List.of("LuckPerms", "UltraPermissions", "PermissionsEx", "GroupManager",
+                    "zPermissions", "PowerRanks");
 
     private PluginMetrics() {}
 
@@ -117,6 +132,8 @@ public final class PluginMetrics {
                     () -> firstInstalled(PUNISHMENT_PLUGINS)));
             metrics.addCustomChart(new SimplePie("vanish_plugin",
                     () -> firstInstalled(VANISH_PLUGINS)));
+            metrics.addCustomChart(new SimplePie("permission_plugin",
+                    () -> firstInstalled(PERMISSION_PLUGINS)));
 
             // -------------------------------------------------------------- config health
             metrics.addCustomChart(new SimplePie("webhook_configured",
