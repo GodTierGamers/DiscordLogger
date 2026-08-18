@@ -34,6 +34,9 @@ Built for **Paper <!-- dl:sync:paper_display -->1.19 – 26.2<!-- /dl:sync -->**
   - `/discordlogger reload` — reload config and language files (`discordlogger.reload`)
   - `/discordlogger webhook <url>` — set the webhook and reload, without editing YAML (`discordlogger.webhook`). The URL is never echoed back and is redacted from command logging.
   - `/discordlogger regen [confirm]` — rebuild `config.yml` from this build's default, backing up the current one (`discordlogger.regen`)
+  - `/discordlogger status` — queue depth, webhook health, build channel and active custom rules (`discordlogger.status`)
+  - `/discordlogger test [event]` — send a real message through a category's own webhook and colour, to check routing (`discordlogger.test`)
+  - `/discordlogger doctor` — check the config for contradictions a schema cannot catch (`discordlogger.doctor`)
 - **Bedrock/Java indicator**: joins from Bedrock are flagged when the server runs Geyser with Floodgate.
 - **Geyser-friendly death messages**: built from server-side damage context rather than client-localized text, with the cause of death as its own embed field and coordinates optionally alongside it.
 - **Automatic config updater**: migrates `config.yml` and `lang.yml` forward one schema version at a time, preserving your settings and comments, and keeping the previous file. A config from a *newer* build is never silently downgraded — you're told, and nothing is overwritten.

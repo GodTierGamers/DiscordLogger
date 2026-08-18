@@ -4,6 +4,9 @@ import com.discordlogger.metrics.Counters;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -92,6 +95,33 @@ public final class WebhookQueue {
     private static String shortId(String url) {
         final String[] parts = url.split("/");
         return parts.length >= 2 ? parts[parts.length - 2] : "unknown";
+    }
+
+    /** One destination's live state, for {@code /discordlogger status}. */
+    public record Health(String id, int queued, int capacity, long waitMs) {}
+
+    /**
+     * A snapshot of every destination, for reporting only.
+     *
+     * <p>Returns the webhook <em>id</em>, never the URL. A status readout is the kind
+     * of thing an admin pastes into a support thread, and the URL is a bearer
+     * credential — the id is enough to tell two destinations apart and useless to
+     * anyone who reads it. Same reasoning as the worker thread names.
+     */
+    public static List<Health> health() {
+        final long now = System.currentTimeMillis();
+        final List<Health> out = new ArrayList<>();
+        for (Destination d : DESTINATIONS.values()) {
+            out.add(new Health(shortId(d.url), d.queue.size(), CAPACITY,
+                    Math.max(0L, d.nextSendAt - now)));
+        }
+        out.sort(Comparator.comparing(Health::id));
+        return out;
+    }
+
+    /** Whether the queue is accepting work at all. */
+    public static boolean isRunning() {
+        return running;
     }
 
     /**
