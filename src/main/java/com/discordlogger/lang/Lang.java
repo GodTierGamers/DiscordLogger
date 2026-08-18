@@ -3,6 +3,8 @@ package com.discordlogger.lang;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import com.discordlogger.config.ConfigMigrator;
+import com.discordlogger.util.Placeholders;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -90,6 +92,21 @@ public final class Lang {
     /** A message for Discord: plain text, placeholders filled, no MiniMessage. */
     public static String text(String key, Object... placeholders) {
         return fill(raw(key), placeholders);
+    }
+
+    /**
+     * As {@link #text}, then expanded through PlaceholderAPI against this player.
+     *
+     * <p><b>Order matters and is the security property.</b> This plugin's own
+     * {@code {token}} substitution runs first and its results are not re-scanned, so a
+     * player who types {@code %player_name%} into chat gets it logged literally. Only
+     * placeholders the server owner wrote into {@code lang.yml} are ever expanded.
+     *
+     * <p>A no-op when PlaceholderAPI is absent or {@code format.placeholders} is off,
+     * which is why call sites can use it unconditionally.
+     */
+    public static String textFor(OfflinePlayer player, String key, Object... placeholders) {
+        return Placeholders.apply(player, fill(raw(key), placeholders));
     }
 
     /** A message for in game: MiniMessage rendered to a Component. */

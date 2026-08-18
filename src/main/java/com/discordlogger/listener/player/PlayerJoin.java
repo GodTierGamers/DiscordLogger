@@ -26,7 +26,7 @@ public final class PlayerJoin implements Listener {
             Names.capture(e.getPlayer()); // seed/update cache
             final String who = Names.display(e.getPlayer(), plugin);
             final java.util.UUID uuid = e.getPlayer().getUniqueId();
-            final String msg = Lang.text("discord.player-join", "player", who);
+            final String msg = Lang.textFor(e.getPlayer(), "discord.player-join", "player", who);
             final String thumb = Log.playerAvatarUrl(uuid);
 
             // Only ever added for Bedrock. Nothing can prove a player IS Java --

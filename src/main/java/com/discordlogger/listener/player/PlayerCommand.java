@@ -27,7 +27,7 @@ public final class PlayerCommand implements Listener {
 
         String who = Names.display(e.getPlayer(), plugin);
         String cmd = Log.mdEscape(Log.redactWebhooks(e.getMessage())); // includes leading '/'
-        String msg = Lang.text("discord.player-command", "player", who, "command", cmd);
+        String msg = Lang.textFor(e.getPlayer(), "discord.player-command", "player", who, "command", cmd);
         Log.eventWithThumb("Player Command", msg, Log.playerAvatarUrl(e.getPlayer().getUniqueId()));
     }
 }

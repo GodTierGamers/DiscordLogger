@@ -10,6 +10,7 @@ import com.discordlogger.config.ConfigVersionNotice;
 import com.discordlogger.event.EventRegistry;
 import com.discordlogger.custom.CustomLogs;
 import com.discordlogger.filter.Filters;
+import com.discordlogger.util.Placeholders;
 import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
 import com.discordlogger.metrics.PluginMetrics;
@@ -122,6 +123,9 @@ public final class DiscordLogger extends JavaPlugin {
         // Same point as Filters, and for the same reason: a reload must not be able
         // to log something under rules the new config has already changed.
         CustomLogs.reload(this);
+        // Reads format.placeholders and resolves PlaceholderAPI once, so a reload
+        // picks up both the toggle and a plugin installed since startup.
+        Placeholders.reload(this);
         Lang.reload(this);
 
         final String url = getConfig().getString("webhook.url", "");

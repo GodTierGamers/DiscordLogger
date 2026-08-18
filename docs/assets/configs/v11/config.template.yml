@@ -63,6 +63,13 @@ format:
   # Show nicknames (if set) as "Nickname (RealName)" in all player-related logs
   nicknames: {{NICKNAMES}}
 
+  # Expand PlaceholderAPI placeholders in lang.yml, e.g. %vault_prefix% or
+  # %luckperms_primary_group%, so ranks and prefixes appear in your Discord messages.
+  # Ignored when PlaceholderAPI is not installed, so it is safe to leave on.
+  # Only placeholders YOU write into lang.yml are expanded -- a player typing
+  # %player_name% into chat has it logged exactly as they typed it.
+  placeholders: {{PLACEHOLDERS}}
+
 #################
 # EMBED OPTIONS #
 #################
