@@ -18,9 +18,7 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
 
 ## Plugin — advertised but broken
 
-Both of these are features the README and both listings promise, which silently do nothing on a large share of real servers. They rank above new features.
-
-- **Respect vanish.** `PlayerJoin` checks the config toggle, then `Filters.blocksPlayer` and `blocksWorld`, and nothing else — there is no vanish awareness anywhere in the codebase. An admin joining vanished is announced to Discord, which defeats the entire point of vanish. `filters.ignored_players` cannot cover it: vanish is dynamic state, not a static list. Soft-depend on EssentialsX, SuperVanish/PremiumVanish and CMI, check all of them, and treat any "yes" as vanished — the same OR-the-signals reasoning `ClientPlatform` uses for Bedrock, and for the same reason: a false negative announces something that was meant to be hidden.
+A feature the README and both listings promise, which silently does nothing on a large share of real servers. It ranks above new features.
 
 - **Detect punishments made by punishment plugins.** `Ban.java` recognises `ban` and `tempban`, then confirms the punishment landed by checking `Bukkit.getBanList(BanList.Type.NAME)`. LiteBans, LibertyBans, AdvancedBan and CMI store punishments in their own databases, so that check returns false and **nothing is logged, silently**. Two smaller holes in the same file: only `BanList.Type.NAME` is consulted, so `/ban-ip` is missed; and those plugins' own verbs (`/mute`, `/warn`, `/punish`, `/tempmute`) are not recognised at all. LiteBans has proper punishment events — start there, since it converts a silent failure into the best-covered path.
 
@@ -84,8 +82,6 @@ Both of these are features the README and both listings promise, which silently 
 Nothing here adds a feature. All of it is the difference between an admin diagnosing a problem themselves and opening an issue that begins "it just stopped working".
 
 - **`/discordlogger status`** — queue depth per destination, last send result, which webhooks are configured (redacted), and current rate-limit state. None of this is observable today from in-game or console.
-
-- **Validate the webhook on startup.** A `GET` on the URL proves it still exists. A webhook deleted in Discord is currently discovered by the first event 404-ing, which can be hours later and looks like the plugin broke.
 
 - **Tell ops in-game when sends are failing.** `WebhookQueue` already warns once per outage — to console. The person who needs to know is usually in-game, and console is exactly where a warning goes unread.
 
