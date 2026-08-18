@@ -299,20 +299,22 @@
 
 
     /**
-     * Puts a legacy warning on an older schema's docs page.
+     * Puts a legacy warning on a docs page that no longer describes the current build.
      *
-     * <p>The page's schema is taken from the URL rather than from markup, and that is
-     * the whole design. The v9 and v10 bundles are frozen — publication freezes a
-     * schema permanently — so a banner that had to be written into each old page
-     * would mean editing files that must never change, and would have to be
-     * remembered again for every future version. Deriving it means every superseded
-     * page gains the notice the moment a newer schema ships, with nothing to edit and
-     * nothing to remember.
+     * <h3>Keyed on the plugin version, not the schema number</h3>
      *
-     * <p>"Older" means a newer schema exists AND a published release carries it. A
-     * schema that is merely declared in the registry does not make its predecessor
-     * legacy — until you can download the thing, the older page is still the current
-     * one for everybody.
+     * <p>The question a reader has is "does this page describe the DiscordLogger I would
+     * download today", and schema numbers do not answer it — 2.2.0 and 2.3.0 are both
+     * v10, so a reader on a page covering only 2.2.0 is behind even though the schema
+     * is current. The test is therefore whether the newest published release falls
+     * under this page's schema. If it does not, the page is history.
+     *
+     * <p>Written from the URL rather than into each page, and that is deliberate:
+     * publication freezes a schema's files permanently, so a banner in
+     * {@code docs/config/v9/index.md} would mean editing what must never change again.
+     * Deriving it also means every future version gains the notice on release day with
+     * nothing to remember — the failure mode of a hand-written banner is being added
+     * once and forgotten at exactly the release where it starts to matter.
      */
     async function applyLegacyNotice(root) {
         if (root !== document) return;                   // page-level, not per-fragment
@@ -331,27 +333,50 @@
         schemas = schemas.filter(x => parseVer(x.since))
                          .sort((a, b) => cmpVer(parseVer(a.since), parseVer(b.since)));
         const idx = schemas.findIndex(x => String(x.config).toLowerCase() === here);
-        if (idx < 0 || idx === schemas.length - 1) return;   // unknown, or the newest
+        if (idx < 0) return;
 
-        const stables = (api.releases || []).filter(r => !r.prerelease);
-        const newer = schemas.slice(idx + 1).find(x => {
-            const since = parseVer(x.since);
-            return since && stables.some(r => {
-                const v = parseVer(r.version);
-                return v && cmpVer(v, since) >= 0;
-            });
-        });
-        if (!newer) return;
+        // The newest release anyone can actually download. Nightlies are excluded: a
+        // pre-release is not what "the current version" means to a reader.
+        const stables = (api.releases || [])
+            .filter(r => !r.prerelease)
+            .map(r => r.version)
+            .filter(v => parseVer(v))
+            .sort((a, b) => cmpVer(parseVer(b), parseVer(a)));
+        if (!stables.length) return;
+        const newest = stables[0];
+
+        // Which schema covers that release: the newest whose `since` it has reached.
+        let covering = null;
+        for (const sc of schemas) {
+            if (cmpVer(parseVer(newest), parseVer(sc.since)) >= 0) covering = sc;
+        }
+        if (!covering) return;
+        const coveringIdx = schemas.indexOf(covering);
+        if (coveringIdx === idx) return;                 // this page IS the current one
 
         const box = document.createElement('div');
         box.className = 'dl-legacy-notice';
         box.setAttribute('role', 'note');
-        box.innerHTML =
-            '<strong>This is an older config version.</strong> '
-          + 'DiscordLogger now ships <a href="/config/' + newer.config + '/">'
-          + String(newer.config).toUpperCase() + '</a>, and your config is upgraded '
-          + 'automatically when you update the plugin — your settings are kept. '
-          + 'This page stays for anyone still running an older build.';
+
+        if (idx > coveringIdx) {
+            // Ahead of the current release, not behind it. Saying "outdated" here would
+            // be the exact opposite of the truth, and this page is reachable precisely
+            // because unreleased schemas are developed in the open.
+            box.innerHTML =
+                '<strong>This is an upcoming version.</strong> It has not been released '
+              + 'yet \u2014 the current release is <strong>' + newest + '</strong>, which '
+              + 'uses <a href="/config/' + covering.config + '/">'
+              + String(covering.config).toUpperCase() + '</a>. Nothing here applies to a '
+              + 'build you can download today.';
+        } else {
+            box.innerHTML =
+                '<strong>This page is for an older version of DiscordLogger.</strong> '
+              + 'The current release is <strong>' + newest + '</strong>, which uses '
+              + '<a href="/config/' + covering.config + '/">'
+              + String(covering.config).toUpperCase() + '</a>. Updating the plugin '
+              + 'migrates your config for you and keeps your settings. This page stays '
+              + 'for anyone still running an older build.';
+        }
 
         const h1 = document.querySelector('main h1, h1');
         if (h1 && h1.parentNode) h1.parentNode.insertBefore(box, h1.nextSibling);
