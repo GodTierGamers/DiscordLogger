@@ -1,5 +1,6 @@
 package com.discordlogger.event;
 
+import com.discordlogger.listener.custom.CustomCommandLog;
 import com.discordlogger.listener.player.*;
 import com.discordlogger.listener.server.*;
 import com.discordlogger.listener.moderation.*;
@@ -26,6 +27,9 @@ public final class EventRegistry {
         pm.registerEvents(new PlayerAdvancement(plugin), plugin);
         pm.registerEvents(new PlayerTeleport(plugin), plugin);
         pm.registerEvents(new PlayerGamemode(plugin), plugin);
+
+        // Admin-defined command rules (log.custom.*)
+        pm.registerEvents(new CustomCommandLog(plugin), plugin);
 
         // Server events
         pm.registerEvents(new ServerCommand(plugin), plugin);

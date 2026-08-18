@@ -71,6 +71,9 @@ public final class PluginMetrics {
     private static final String NO = "No";
     private static final String UNKNOWN = "Unknown";
 
+    /** The one log group whose keys the admin names rather than this project. */
+    private static final String CUSTOM = "custom";
+
     /**
      * Punishment plugins that keep their own database instead of Bukkit's ban list.
      * On a server running any of these, the moderation listeners verify a ban by
@@ -155,6 +158,9 @@ public final class PluginMetrics {
             metrics.addCustomChart(new AdvancedPie("filters_modified", () -> filtersModified(plugin)));
             metrics.addCustomChart(new SimplePie("command_filter_state",
                     () -> commandFilterState(plugin)));
+            // How MANY custom rules, never which -- the names are the admin's own words.
+            metrics.addCustomChart(new SimplePie("custom_logs",
+                    () -> bucket(customLogCount(plugin))));
 
             // ------------------------------------------------------------- reliability
             // Deltas since the last report, so the line charts show activity rather
@@ -548,10 +554,28 @@ public final class PluginMetrics {
     }
 
     /** Walks {@code log.<category>.<event>}, handing each one its section. */
+    /**
+     * How many custom rules are defined. Bucketed by the caller, never named.
+     *
+     * <p>Answers "does anyone use this feature", which is the only thing worth knowing
+     * and the most that can be known without describing a specific server's setup.
+     */
+    static int customLogCount(JavaPlugin plugin) {
+        final ConfigurationSection sec =
+                plugin.getConfig().getConfigurationSection("log." + CUSTOM);
+        return sec == null ? 0 : sec.getKeys(false).size();
+    }
+
     private static void forEachEvent(JavaPlugin plugin, EventVisitor visitor) {
         final ConfigurationSection log = plugin.getConfig().getConfigurationSection("log");
         if (log == null) return;
         for (String category : log.getKeys(false)) {
+            // log.custom.* is named by the admin, so its keys are THEIR words -- a
+            // server naming a rule after their own staff process would publish that
+            // to bStats through enabled_events. Every other value here is a fixed
+            // string this project chose; these are the only ones that are not, so
+            // they are excluded from every walk and counted as a bucket instead.
+            if (CUSTOM.equals(category)) continue;
             final ConfigurationSection section = log.getConfigurationSection(category);
             if (section == null) continue;
             for (String event : section.getKeys(false)) {

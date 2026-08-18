@@ -281,4 +281,41 @@ log:
       color: "#16A085" # dark teal
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
 
+  # ----------------------------------------------------------------------------------
+  # Your own events, built from any command on the server.
+  #
+  # This is how you log plugins DiscordLogger has never heard of -- Essentials homes,
+  # LuckPerms rank changes, shop purchases, anything with a command behind it. Each
+  # entry becomes a real event with its own colour and its own webhook, exactly like
+  # the built-in ones.
+  #
+  # It watches the command being RUN, not the action succeeding. That is the honest
+  # limit: for a ban, DiscordLogger checks afterwards that the ban list actually
+  # changed, and a custom rule cannot do that. If it matters that the command worked,
+  # this is the wrong tool.
+  #
+  # Placeholders: {player} {command} {args} {world} and {arg1}...{arg9}
+  #
+  # Example -- delete the leading '#' on each line to use it:
+  #
+  #   sethome:
+  #     enabled: true
+  #     match: "sethome"            # Command to watch. Multiple words match a subcommand.
+  #     title: "Home Set"
+  #     message: "{player} set a home called {arg1}"
+  #     color: "#5865F2" # blurple
+  #     webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+  #
+  #   rank_change:
+  #     enabled: true
+  #     match: "lp user"            # Fires on /lp user <name> ...
+  #     title: "Rank Changed"
+  #     message: "{player} ran {command} on {arg2}: {arg3} {arg4}"
+  #     color: "#E67E22" # orange
+  #     webhook: ""
+  #
+  # Commands in filters.ignored_commands are never logged here either -- the deny-list
+  # wins, and the console says so on startup if a rule collides with it.
+  custom: {}
+
 # CONFIG VERSION V11, DOWNLOADED FROM WEBSITE
