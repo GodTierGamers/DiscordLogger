@@ -774,6 +774,68 @@ in code.
 
 ---
 
+### `log.custom` — your own events
+
+Log plugins DiscordLogger has never heard of. Each entry becomes a real event with its
+own colour and its own webhook, exactly like the built-in ones.
+
+```yaml
+log:
+  custom:
+    sethome:
+      enabled: true
+      match: "sethome"
+      title: "Home Set"
+      message: "{player} set a home called {arg1}"
+      color: "#5865F2"
+      webhook: ""
+```
+
+| Key | Meaning |
+|---|---|
+| `match` | The command to watch. **Multiple words match a subcommand** — `"lp user"` fires on `/lp user …` but not `/lp group …`. |
+| `title` | Bold first line of the message. Optional. |
+| `message` | The line itself. |
+| `color` | Embed colour, same as any other event. |
+| `webhook` | Send just this event elsewhere. Empty uses the main webhook. |
+| `enabled` | Turn one rule off without deleting it. |
+
+#### Placeholders
+
+`{player}` · `{command}` · `{args}` · `{world}` · `{arg1}` … `{arg9}`
+
+`{arg1}` is the first argument *after* the command word. An argument that was not typed
+renders as nothing rather than leaving `{arg5}` sitting in the message.
+
+#### What it can and cannot do
+
+> **It logs the command being run, not the action succeeding.**
+>
+> For a ban, DiscordLogger checks on the next tick that the ban list actually changed, so
+> a failed `/ban` from someone without permission is never logged. A custom rule cannot
+> do that — it reports that the command was typed. If it matters that the command
+> *worked*, this is the wrong tool and a proper integration is the right one.
+
+Matching ignores case, spacing, and any plugin qualifier — `/essentials:sethome`,
+`/SetHome` and `  /sethome  ` all match `"sethome"`. It matches whole **words**, so a
+rule for `"sethome"` never fires on `/sethomeall`.
+
+#### The safety rules still apply
+
+Custom events are events, not a way around the filters. `ignored_players`,
+`ignored_worlds`, `respect_vanish` and `ignored_commands` all apply exactly as they do
+elsewhere.
+
+> `filters.ignored_commands` wins. It ships with `/login` and `/msg` in it because
+> command logging posts the line verbatim — a custom rule that quietly overrode that
+> would turn a security default into a trap. If a rule collides with the deny-list, the
+> plugin says so in console on startup and the rule does not fire.
+
+Everything a player typed is escaped and redacted before sending, so a webhook URL
+pasted into a watched command is never published.
+
+---
+
 ---
 
 ## Full config.yml (v11)
@@ -1063,6 +1125,43 @@ log:
       enabled: true
       color: "#16A085" # dark teal
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+
+  # ----------------------------------------------------------------------------------
+  # Your own events, built from any command on the server.
+  #
+  # This is how you log plugins DiscordLogger has never heard of -- Essentials homes,
+  # LuckPerms rank changes, shop purchases, anything with a command behind it. Each
+  # entry becomes a real event with its own colour and its own webhook, exactly like
+  # the built-in ones.
+  #
+  # It watches the command being RUN, not the action succeeding. That is the honest
+  # limit: for a ban, DiscordLogger checks afterwards that the ban list actually
+  # changed, and a custom rule cannot do that. If it matters that the command worked,
+  # this is the wrong tool.
+  #
+  # Placeholders: {player} {command} {args} {world} and {arg1}...{arg9}
+  #
+  # Example -- delete the leading '#' on each line to use it:
+  #
+  #   sethome:
+  #     enabled: true
+  #     match: "sethome"            # Command to watch. Multiple words match a subcommand.
+  #     title: "Home Set"
+  #     message: "{player} set a home called {arg1}"
+  #     color: "#5865F2" # blurple
+  #     webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+  #
+  #   rank_change:
+  #     enabled: true
+  #     match: "lp user"            # Fires on /lp user <name> ...
+  #     title: "Rank Changed"
+  #     message: "{player} ran {command} on {arg2}: {arg3} {arg4}"
+  #     color: "#E67E22" # orange
+  #     webhook: ""
+  #
+  # Commands in filters.ignored_commands are never logged here either -- the deny-list
+  # wins, and the console says so on startup if a rule collides with it.
+  custom: {}
 
 # CONFIG VERSION V11, DOWNLOADED FROM WEBSITE
 ```
