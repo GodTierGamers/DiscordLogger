@@ -1,6 +1,9 @@
 package com.discordlogger;
 
 import com.discordlogger.command.CommandVisibility;
+import com.discordlogger.command.Status;
+import com.discordlogger.command.Test;
+import com.discordlogger.command.Doctor;
 import com.discordlogger.command.Commands;
 import com.discordlogger.command.Regen;
 import com.discordlogger.command.Reload;
@@ -65,7 +68,8 @@ public final class DiscordLogger extends JavaPlugin {
         events.registerAll();
 
         if (getCommand("discordlogger") != null) {
-            Commands router = new Commands(new Reload(this), new Webhook(this), new Regen(this));
+            Commands router = new Commands(new Reload(this), new Webhook(this),
+                    new Regen(this), new Status(this), new Test(this), new Doctor(this));
             getCommand("discordlogger").setExecutor(router);
             getCommand("discordlogger").setTabCompleter(router);
             // Strips Bukkit's plugin:command duplicates from tab-completion, and

@@ -14,7 +14,7 @@ softdepend: [floodgate, Geyser-Spigot]
 commands:
   discordlogger:
     description: DiscordLogger reload command
-    usage: "/discordlogger <reload|webhook|regen>"
+    usage: "/discordlogger <reload|webhook|regen|status|test|doctor>"
     aliases: [dlogger, dlog]
 
 permissions:
@@ -26,4 +26,13 @@ permissions:
     default: op
   discordlogger.regen:
     description: Allows rebuilding config.yml from the version bundled with this build
+    default: op
+  discordlogger.status:
+    description: Allows viewing queue, webhook and build health
+    default: op
+  discordlogger.test:
+    description: Allows sending a test message to a category's webhook
+    default: op
+  discordlogger.doctor:
+    description: Allows checking the config for contradictions
     default: op
