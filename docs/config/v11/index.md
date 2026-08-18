@@ -110,6 +110,33 @@ format:
   time: "[HH:mm:ss dd:MM:yyyy]"     # Java DateTimeFormatter pattern
 ```
 
+#### `format.placeholders`
+Expands [PlaceholderAPI](https://www.spigotmc.org/resources/6245/) placeholders in
+`lang.yml`, so ranks and prefixes appear in your Discord messages. On by default.
+
+```yaml
+format:
+  placeholders: true
+```
+
+```yaml
+# lang.yml
+discord:
+  player-join: "%luckperms_primary_group% {player} joined"
+```
+
+**Ignored when PlaceholderAPI is not installed**, so it is safe to leave on — there is
+nothing to switch off on a server that does not have it.
+
+> **A player cannot inject a placeholder.** `{player}`, `{message}` and the rest are
+> substituted first, and their values are never re-scanned. Someone typing
+> `%player_name%` into chat has it logged exactly as they typed it. Only placeholders
+> *you* write into `lang.yml` are ever expanded.
+
+Applies to the join, quit, chat, command and death messages — the events with a player
+behind them. If an expansion misbehaves, the message is sent with the placeholder
+unexpanded rather than not sent at all.
+
 ---
 
 ### `config-version`
@@ -907,6 +934,13 @@ format:
   name: ""
   # Show nicknames (if set) as "Nickname (RealName)" in all player-related logs
   nicknames: true
+
+  # Expand PlaceholderAPI placeholders in lang.yml, e.g. %vault_prefix% or
+  # %luckperms_primary_group%, so ranks and prefixes appear in your Discord messages.
+  # Ignored when PlaceholderAPI is not installed, so it is safe to leave on.
+  # Only placeholders YOU write into lang.yml are expanded -- a player typing
+  # %player_name% into chat has it logged exactly as they typed it.
+  placeholders: true
 
 #################
 # EMBED OPTIONS #

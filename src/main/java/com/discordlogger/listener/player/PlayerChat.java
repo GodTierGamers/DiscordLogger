@@ -27,7 +27,7 @@ public final class PlayerChat implements Listener {
         if (Filters.blocksChat(plain)) return;
 
         String text = Log.mdEscape(plain);
-        String msg  = Lang.text("discord.player-chat", "player", who, "message", text);
+        String msg  = Lang.textFor(e.getPlayer(), "discord.player-chat", "player", who, "message", text);
         Log.eventWithThumb("Player Chat", msg, Log.playerAvatarUrl(e.getPlayer().getUniqueId()));
     }
 }

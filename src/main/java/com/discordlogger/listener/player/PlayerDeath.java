@@ -52,7 +52,7 @@ public final class PlayerDeath implements Listener {
         Log.eventFieldsWithThumb(
                 "Player Death",
                 "Player Death",
-                Lang.text("discord.death.description", "player", vName),
+                Lang.textFor(victim, "discord.death.description", "player", vName),
                 null,                       // null -> use embeds.author from config
                 fields,
                 Log.playerAvatarUrl(victim.getUniqueId())

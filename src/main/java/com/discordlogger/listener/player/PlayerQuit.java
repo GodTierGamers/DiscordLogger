@@ -22,7 +22,7 @@ public final class PlayerQuit implements Listener {
         if (Filters.blocksPlayer(e.getPlayer()) || Filters.blocksWorld(e.getPlayer().getWorld().getName())) return;
 
         String who = Names.display(e.getPlayer(), plugin);
-        String msg = Lang.text("discord.player-quit", "player", who);
+        String msg = Lang.textFor(e.getPlayer(), "discord.player-quit", "player", who);
         Log.eventWithThumb("Player Quit", msg, Log.playerAvatarUrl(e.getPlayer().getUniqueId()));
 
         // Defer cache eviction to the next tick so that other MONITOR-priority

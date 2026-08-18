@@ -137,6 +137,7 @@
             plainName: '',
             timeFmt: TIME_PRESETS[0].value,
             nicknames: true,
+            placeholders: true,
             options: null,
             template: null,
             langTemplate: null,
@@ -403,6 +404,9 @@
             const nickInput = h('input', { type: 'checkbox', ...(state.nicknames ? { checked: true } : {}) });
             nickInput.addEventListener('change', () => { state.nicknames = nickInput.checked; });
 
+            const papiInput = h('input', { type: 'checkbox', ...(state.placeholders ? { checked: true } : {}) });
+            papiInput.addEventListener('change', () => { state.placeholders = papiInput.checked; });
+
             syncStyle();
             updatePreview();
 
@@ -415,6 +419,12 @@
                     nickInput,
                     h('span', {}, 'Show nicknames as "Nickname (RealName)"'),
                 ]),
+                h('label', { class: 'cfg-check' }, [
+                    papiInput,
+                    h('span', {}, 'Expand PlaceholderAPI placeholders in messages'),
+                ]),
+                h('p', { class: 'cfg-note cfg-note--footnote' },
+                    'Only matters if PlaceholderAPI is installed \u2014 ignored otherwise, so it is safe to leave on.'),
                 actions('Back', h('button', { class: 'cfg-btn cfg-btn--primary', type: 'button', onclick: next }, 'Next')),
             ]);
         };
@@ -915,6 +925,7 @@
             TIME_FORMAT: state.timeFmt,
             PLAIN_NAME: yamlQuote(state.plainName),
             NICKNAMES: state.nicknames ? 'true' : 'false',
+            PLACEHOLDERS: state.placeholders ? 'true' : 'false',
             EMBEDS_ENABLED: state.embedsEnabled ? 'true' : 'false',
             EMBEDS_AUTHOR: yamlQuote(state.embedAuthor),
             GENERATED_AT: generatedAt,
