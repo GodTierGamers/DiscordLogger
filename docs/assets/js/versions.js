@@ -297,12 +297,74 @@
         });
     }
 
+
+    /**
+     * Puts a legacy warning on an older schema's docs page.
+     *
+     * <p>The page's schema is taken from the URL rather than from markup, and that is
+     * the whole design. The v9 and v10 bundles are frozen — publication freezes a
+     * schema permanently — so a banner that had to be written into each old page
+     * would mean editing files that must never change, and would have to be
+     * remembered again for every future version. Deriving it means every superseded
+     * page gains the notice the moment a newer schema ships, with nothing to edit and
+     * nothing to remember.
+     *
+     * <p>"Older" means a newer schema exists AND a published release carries it. A
+     * schema that is merely declared in the registry does not make its predecessor
+     * legacy — until you can download the thing, the older page is still the current
+     * one for everybody.
+     */
+    async function applyLegacyNotice(root) {
+        if (root !== document) return;                   // page-level, not per-fragment
+        const m = location.pathname.match(/\/config\/(v\d+)\/?$/i);
+        if (!m) return;
+        const here = m[1].toLowerCase();
+        if (document.querySelector('.dl-legacy-notice')) return;
+
+        let schemas;
+        try {
+            const res = await fetch('/assets/configs/registry.json');
+            if (!res.ok) return;
+            schemas = (await res.json()).schemas || [];
+        } catch { return; }
+
+        schemas = schemas.filter(x => parseVer(x.since))
+                         .sort((a, b) => cmpVer(parseVer(a.since), parseVer(b.since)));
+        const idx = schemas.findIndex(x => String(x.config).toLowerCase() === here);
+        if (idx < 0 || idx === schemas.length - 1) return;   // unknown, or the newest
+
+        const stables = (api.releases || []).filter(r => !r.prerelease);
+        const newer = schemas.slice(idx + 1).find(x => {
+            const since = parseVer(x.since);
+            return since && stables.some(r => {
+                const v = parseVer(r.version);
+                return v && cmpVer(v, since) >= 0;
+            });
+        });
+        if (!newer) return;
+
+        const box = document.createElement('div');
+        box.className = 'dl-legacy-notice';
+        box.setAttribute('role', 'note');
+        box.innerHTML =
+            '<strong>This is an older config version.</strong> '
+          + 'DiscordLogger now ships <a href="/config/' + newer.config + '/">'
+          + String(newer.config).toUpperCase() + '</a>, and your config is upgraded '
+          + 'automatically when you update the plugin — your settings are kept. '
+          + 'This page stays for anyone still running an older build.';
+
+        const h1 = document.querySelector('main h1, h1');
+        if (h1 && h1.parentNode) h1.parentNode.insertBefore(box, h1.nextSibling);
+        else document.querySelector('main, body').prepend(box);
+    }
+
     function applyAll(root = document) {
         applyVersionBadges(root);
         applyBetaOnly(root);
         applyFills(root);
         renderToggles(root);
         applySchemaCoverage(root);
+        applyLegacyNotice(root);
     }
 
     /* ---- boot ---- */

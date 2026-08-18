@@ -60,10 +60,10 @@ If you're not sure, open your `config.yml` and check the **last line**; it will 
       .map(r => r.version);
     const uniq = [...new Set(hits)].sort((a, b) => cmpBase(parseBase(a), parseBase(b)));
     // Never claim "and newer": the next release may open a new schema, so future
-    // coverage is not ours to promise. With nothing released yet, `since` is still
-    // the honest answer — it is the build that will carry this schema, named by the
-    // registry, and the moment that release lands the API supplies the same string.
-    if (!uniq.length) return 'v' + schema.since.replace(/^v/i, '');
+    // coverage is not ours to promise. An empty list means nothing shipping this
+    // schema has been PUBLISHED yet, and the caller drops the row rather than
+    // naming a version nobody can download.
+    if (!uniq.length) return null;
     return uniq.map(v => 'v' + v).join(', ');
   }
 
@@ -89,12 +89,9 @@ If you're not sure, open your `config.yml` and check the **last line**; it will 
       .sort((a, b) => cmpBase(parseBase(b.since), parseBase(a.since)));
 
     function render() {
-      // Nightly-only schemas are excluded, with no opt-in: a format that has only
-      // ever existed in a nightly can still move before release, so documenting it
-      // as a choice invites someone to write a config against it and be wrong later.
-      // That test is on the `since` STRING, not on whether the build has shipped —
-      // a schema pinned to a stable version is final and frozen, and hiding it until
-      // release day would only hide it from the nightly users already running it.
+      // A schema is listed once a release shipping it has been PUBLISHED, and not
+      // before. Two independent reasons to hide one: its `since` is a nightly, so
+      // the format itself can still move; or nothing published carries it yet.
       let anyBeta = false;
       const rows = [];
 
@@ -103,11 +100,18 @@ If you're not sure, open your `config.yml` and check the **last line**; it will 
         const beta = /-BETA\./i.test(String(s.since));
         if (beta) { anyBeta = true; return; }
 
+        // Nothing published carries this schema yet. The page stays reachable by
+        // URL -- unreleased work is developed in the open -- it is just not
+        // advertised as a choice: a config for a build nobody can download helps
+        // no one.
+        const ships = coverage(s, newer, releases);
+        if (!ships) { anyBeta = true; return; }
+
         const label = s.config.toUpperCase();
         rows.push(
           `<li>
              <a href="/config/${s.config}/"><strong>${label}</strong></a>
-             — ships with DiscordLogger ${coverage(s, newer, releases)}
+             — ships with DiscordLogger ${ships}
            </li>`
         );
       });
