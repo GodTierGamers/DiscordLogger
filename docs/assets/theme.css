@@ -485,6 +485,20 @@ a:hover { text-decoration: underline; }
 .dl-nightly-toggle { display: flex; align-items: center; gap: .55rem; font-size: .93rem; cursor: pointer; }
 .dl-nightly-warning { margin: .5rem 0 0; font-size: .86rem; color: var(--fg-muted); }
 
+/* Legacy-schema banner. Injected by versions.js onto any superseded /config/vN/
+   page -- styled here rather than written into those pages, because publication
+   freezes a schema's files and they must not be edited again. */
+.dl-legacy-notice {
+    margin: 1rem 0 1.75rem;
+    padding: .85rem 1rem;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    background: var(--accent-soft);
+    line-height: 1.55;
+    font-size: .93rem;
+}
+
 /* ------------------------------------------------------------ releases -- */
 
 .dl-downloads-status { color: var(--fg-muted); margin: 1rem 0; }

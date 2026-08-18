@@ -131,20 +131,16 @@
                 beta: !!r.prerelease || (versionApi ? versionApi.isBeta(r.version) : false),
             }));
 
-        /* A schema's `since` is a first-class entry in its own right, whether or
-           not that build has been published yet. Without this, a schema that is
-           finished and frozen stays unreachable until release day purely because
-           the releases API has nothing to match it against — and the people who
-           most need it are exactly the ones already running the nightly that
-           ships it. Only stable `since` values qualify: a schema that debuts in
-           a nightly stays out, in line with the stable-only rule below.
-           Deliberately NOT marked beta — it is the real, final schema for that
-           build, and once the release lands the API supplies the identical entry,
-           so nothing on screen changes. */
-        schemas.forEach(s => {
-            const since = parseVer(s.since);
-            if (since && since.beta === null) list.push({ version: s.since, beta: false });
-        });
+        /* A schema is offered only once a release that ships it has actually been
+           PUBLISHED. An unreleased schema is developed in the open -- its bundle,
+           its mirrors and its docs page all exist and are testable by URL -- but it
+           is not listed, because a version that cannot be downloaded yet has no
+           business appearing in a picker of builds to configure.
+
+           This costs the nightly users who already run it: they get the previous
+           schema's generator until release day. That is the accepted trade, and it
+           is the deliberate reverse of what this did before -- see AGENTS.md, which
+           records both sides so it is not silently flipped back. */
 
         // de-dupe identical tags, keeping the stabler entry
         const byVersion = new Map();
@@ -206,12 +202,20 @@
 
         const detail = h('p', { class: 'cfg-note' });
         const notReady = h('p', { class: 'cfg-note cfg-note--beta' });
+        // Keyed on the PLUGIN version, not the config schema. Someone can pick an old
+        // build whose schema is still current -- 2.2.0 and 2.3.0 are both v10 -- and a
+        // schema-based check would say nothing while they configure a build two
+        // releases behind. What they chose is a build, so that is what is checked.
+        const legacy = h('p', { class: 'cfg-note dl-legacy-notice' });
         const nightlyFootnote = h('p', { class: 'cfg-note cfg-note--footnote' },
             'Nightly builds are not supported here. Their config format can still change '
             + 'before it ships, so only stable releases are listed.');
         const goBtn = h('button', { class: 'cfg-btn cfg-btn--primary', type: 'button' }, 'Continue');
 
         const current = () => visible[Number(select.value)] || visible[0];
+        // visible is sorted newest-first and already excludes nightlies, so index 0 is
+        // the newest published stable release.
+        const newest = visible[0] ? visible[0].version : null;
 
         const sync = () => {
             const v = current();
@@ -228,6 +232,17 @@
             } else {
                 notReady.style.display = 'none';
             }
+            if (newest && v.version !== newest) {
+                legacy.innerHTML =
+                    '<strong>That is not the latest version.</strong> DiscordLogger '
+                  + newest + ' is out. Updating migrates your config for you and keeps '
+                  + 'your settings, so there is rarely a reason to configure an older '
+                  + 'build \u2014 carry on if you have one you cannot update yet.';
+                legacy.style.display = '';
+            } else {
+                legacy.style.display = 'none';
+            }
+
             goBtn.disabled = !ready;
         };
         select.addEventListener('change', sync);
@@ -250,6 +265,7 @@
             h('label', { class: 'cfg-label' }, 'Plugin version'),
             select,
             detail,
+            legacy,
             notReady,
         );
 

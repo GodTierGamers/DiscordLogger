@@ -297,12 +297,99 @@
         });
     }
 
+
+    /**
+     * Puts a legacy warning on a docs page that no longer describes the current build.
+     *
+     * <h3>Keyed on the plugin version, not the schema number</h3>
+     *
+     * <p>The question a reader has is "does this page describe the DiscordLogger I would
+     * download today", and schema numbers do not answer it — 2.2.0 and 2.3.0 are both
+     * v10, so a reader on a page covering only 2.2.0 is behind even though the schema
+     * is current. The test is therefore whether the newest published release falls
+     * under this page's schema. If it does not, the page is history.
+     *
+     * <p>Written from the URL rather than into each page, and that is deliberate:
+     * publication freezes a schema's files permanently, so a banner in
+     * {@code docs/config/v9/index.md} would mean editing what must never change again.
+     * Deriving it also means every future version gains the notice on release day with
+     * nothing to remember — the failure mode of a hand-written banner is being added
+     * once and forgotten at exactly the release where it starts to matter.
+     */
+    async function applyLegacyNotice(root) {
+        if (root !== document) return;                   // page-level, not per-fragment
+        const m = location.pathname.match(/\/config\/(v\d+)\/?$/i);
+        if (!m) return;
+        const here = m[1].toLowerCase();
+        if (document.querySelector('.dl-legacy-notice')) return;
+
+        let schemas;
+        try {
+            const res = await fetch('/assets/configs/registry.json');
+            if (!res.ok) return;
+            schemas = (await res.json()).schemas || [];
+        } catch { return; }
+
+        schemas = schemas.filter(x => parseVer(x.since))
+                         .sort((a, b) => cmpVer(parseVer(a.since), parseVer(b.since)));
+        const idx = schemas.findIndex(x => String(x.config).toLowerCase() === here);
+        if (idx < 0) return;
+
+        // The newest release anyone can actually download. Nightlies are excluded: a
+        // pre-release is not what "the current version" means to a reader.
+        const stables = (api.releases || [])
+            .filter(r => !r.prerelease)
+            .map(r => r.version)
+            .filter(v => parseVer(v))
+            .sort((a, b) => cmpVer(parseVer(b), parseVer(a)));
+        if (!stables.length) return;
+        const newest = stables[0];
+
+        // Which schema covers that release: the newest whose `since` it has reached.
+        let covering = null;
+        for (const sc of schemas) {
+            if (cmpVer(parseVer(newest), parseVer(sc.since)) >= 0) covering = sc;
+        }
+        if (!covering) return;
+        const coveringIdx = schemas.indexOf(covering);
+        if (coveringIdx === idx) return;                 // this page IS the current one
+
+        const box = document.createElement('div');
+        box.className = 'dl-legacy-notice';
+        box.setAttribute('role', 'note');
+
+        if (idx > coveringIdx) {
+            // Ahead of the current release, not behind it. Saying "outdated" here would
+            // be the exact opposite of the truth, and this page is reachable precisely
+            // because unreleased schemas are developed in the open.
+            box.innerHTML =
+                '<strong>This is an upcoming version.</strong> It has not been released '
+              + 'yet \u2014 the current release is <strong>' + newest + '</strong>, which '
+              + 'uses <a href="/config/' + covering.config + '/">'
+              + String(covering.config).toUpperCase() + '</a>. Nothing here applies to a '
+              + 'build you can download today.';
+        } else {
+            box.innerHTML =
+                '<strong>This page is for an older version of DiscordLogger.</strong> '
+              + 'The current release is <strong>' + newest + '</strong>, which uses '
+              + '<a href="/config/' + covering.config + '/">'
+              + String(covering.config).toUpperCase() + '</a>. Updating the plugin '
+              + 'migrates your config for you and keeps your settings. This page stays '
+              + 'for anyone still running an older build.';
+        }
+
+        const h1 = document.querySelector('main h1, h1');
+        if (h1 && h1.parentNode) h1.parentNode.insertBefore(box, h1.nextSibling);
+        else document.querySelector('main, body').prepend(box);
+    }
+
     function applyAll(root = document) {
         applyVersionBadges(root);
         applyBetaOnly(root);
         applyFills(root);
         renderToggles(root);
         applySchemaCoverage(root);
+        applyLegacyNotice(root);
     }
 
     /* ---- boot ---- */
