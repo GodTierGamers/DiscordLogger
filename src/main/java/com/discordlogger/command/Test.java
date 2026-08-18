@@ -20,6 +20,14 @@ import java.util.Locale;
  *
  * <p>It sends through the ordinary path — same queue, same routing, same colours — so
  * a passing test is evidence about the real thing rather than about a test harness.
+ *
+ * <h2>Composing an embed by hand</h2>
+ *
+ * <p>With {@code |}-separated parts it will render any embed asked of it, which is how
+ * the listing galleries get filled. Screenshots of a logging plugin have to show
+ * deaths, bans and joins, and the alternative was staging those on a live server or
+ * publishing screenshots containing real players' names and skins. Invented players
+ * avoid both. See {@link MockEmbed} for the syntax.
  */
 public final class Test implements Subcommand {
 
@@ -28,7 +36,7 @@ public final class Test implements Subcommand {
     public Test(JavaPlugin plugin) { this.plugin = plugin; }
 
     @Override public String name() { return "test"; }
-    @Override public String description() { return "Send a test message to a category's webhook"; }
+    @Override public String description() { return "Send a test or hand-made embed to a category"; }
     @Override public String permission() { return "discordlogger.test"; }
 
     @Override
@@ -39,15 +47,27 @@ public final class Test implements Subcommand {
             return true;
         }
 
-        final String category = args.length > 0 ? args[0].toLowerCase(Locale.ROOT) : "server";
-        final String who = sender.getName();
+        final MockEmbed mock = MockEmbed.parse(String.join(" ", args), sender.getName());
 
-        Log.event(category, "Test message from " + Log.mdEscape(who)
-                + " — if you can read this, `" + Log.mdEscape(category) + "` is working.");
+        if (mock.isPlain() && mock.title().isEmpty()) {
+            // No detail asked for: the original one-line check that the webhook works.
+            Log.event(mock.category(), "Test message from " + Log.mdEscape(sender.getName())
+                    + " — if you can read this, `" + Log.mdEscape(mock.category())
+                    + "` is working.");
+        } else {
+            Log.eventFieldsWithThumb(
+                    mock.category(),
+                    mock.title().isEmpty() ? "Test" : mock.title(),
+                    mock.description(),
+                    mock.author(),
+                    mock.fields(),
+                    mock.thumbnail());
+        }
 
-        sender.sendMessage(ChatColor.GREEN + "Sent a test to " + ChatColor.WHITE + category
-                + ChatColor.GREEN + ". It uses that category's own webhook and colour, so "
-                + "where it appears tells you whether routing is set up as you intended.");
+        sender.sendMessage(ChatColor.GREEN + "Sent a test to " + ChatColor.WHITE
+                + mock.category() + ChatColor.GREEN + ". It uses that category's own webhook "
+                + "and colour, so where it appears tells you whether routing is set up as "
+                + "you intended.");
         return true;
     }
 
@@ -60,6 +80,11 @@ public final class Test implements Subcommand {
      */
     @Override
     public List<String> tabComplete(CommandSender sender, String[] args) {
+        // Past the category the syntax is free-form, so suggest the shape once rather
+        // than nothing at all -- an undiscoverable feature is one nobody uses.
+        if (args.length == 2 && args[1].isEmpty()) {
+            return List.of("|", "| player=Steve", "| title=Player Death", "| field=Cause:Fall");
+        }
         if (args.length > 1) return List.of();
         final List<String> out = new ArrayList<>();
         final ConfigurationSection log = plugin.getConfig().getConfigurationSection("log");
