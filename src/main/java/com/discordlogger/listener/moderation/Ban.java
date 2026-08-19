@@ -100,7 +100,10 @@ public final class Ban implements Listener {
                 Log.eventFieldsWithThumb(
                         "ban",
                         "Player Banned",
-                        "Server Logs",
+                        // null -> embeds.author from config, like every other event.
+                        // Hard-coding it here meant a server that set embeds.author got
+                        // its own name everywhere EXCEPT on bans.
+                        null,
                         fields,
                         thumb
                 );
