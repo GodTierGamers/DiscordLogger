@@ -141,4 +141,39 @@ class MockEmbedTest {
         assertEquals("https://mc-heads.net/avatar/Bad%20Actor/256",
                 MockEmbed.parse("x player=\"Bad Actor\"").thumbnail());
     }
+
+    @Test
+    @DisplayName("a doubled colon keeps the label's own trailing colon")
+    void doubledColonKeepsLabelColon() {
+        // Reproduces the real field names, most of which end in a colon. Before this,
+        // "Player Name::Steve" produced the value ":Steve".
+        Log.Field f = MockEmbed.field("Player Name::TestUser01");
+        assertEquals("Player Name:", f.name);
+        assertEquals("TestUser01", f.value);
+    }
+
+    @Test
+    @DisplayName("a doubled colon still supports :inline")
+    void doubledColonWithInline() {
+        Log.Field f = MockEmbed.field("World::world:inline");
+        assertEquals("World:", f.name);
+        assertEquals("world", f.value);
+        assertTrue(f.inline);
+    }
+
+    @Test
+    @DisplayName("a single colon is unchanged, for labels without one")
+    void singleColonUnchanged() {
+        Log.Field f = MockEmbed.field("Cause of Death:Slain by Zombie");
+        assertEquals("Cause of Death", f.name);
+        assertEquals("Slain by Zombie", f.value);
+    }
+
+    @Test
+    @DisplayName("with a doubled colon, the value may still contain colons")
+    void doubledColonValueKeepsItsColons() {
+        Log.Field f = MockEmbed.field("Location::-241, 71, 508");
+        assertEquals("Location:", f.name);
+        assertEquals("-241, 71, 508", f.value);
+    }
 }

@@ -194,7 +194,8 @@ public final class MockEmbed {
     }
 
     /**
-     * {@code Name:Value} or {@code Name:Value:inline}.
+     * {@code Name:Value}, {@code Name::Value} when the label itself ends in a colon,
+     * or either with a {@code :inline} suffix.
      *
      * <p>Only the first colon separates name from value, so a value may contain
      * colons of its own — timestamps and coordinates both do, and losing them to the
@@ -203,8 +204,14 @@ public final class MockEmbed {
     static Log.Field field(String spec) {
         final int colon = spec.indexOf(':');
         if (colon <= 0) return null;
-        final String name = spec.substring(0, colon).trim();
-        String value = spec.substring(colon + 1).trim();
+
+        // A doubled colon means the LABEL ends in one. Most of this plugin's real field
+        // names do -- "Player Name:", "Banned by:", "Blocks Affected:" -- so without
+        // this there is no way to reproduce them, and "Player Name::Steve" silently
+        // produced the value ":Steve" instead.
+        final boolean labelKeepsColon = colon + 1 < spec.length() && spec.charAt(colon + 1) == ':';
+        final String name = spec.substring(0, labelKeepsColon ? colon + 1 : colon).trim();
+        String value = spec.substring(colon + (labelKeepsColon ? 2 : 1)).trim();
 
         boolean inline = false;
         final int last = value.lastIndexOf(':');
