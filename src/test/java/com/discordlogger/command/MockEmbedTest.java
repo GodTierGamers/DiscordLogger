@@ -15,7 +15,7 @@ class MockEmbedTest {
     @Test
     @DisplayName("a bare category still works, unchanged")
     void bareCategory() {
-        MockEmbed m = MockEmbed.parse("player_join", "Console");
+        MockEmbed m = MockEmbed.parse("player_join");
         assertEquals("player_join", m.category());
         assertTrue(m.isPlain(), "no detail given, so the plain one-liner should be used");
     }
@@ -23,7 +23,7 @@ class MockEmbedTest {
     @Test
     @DisplayName("no arguments at all falls back to the server category")
     void noArgs() {
-        assertEquals("server", MockEmbed.parse("", "Console").category());
+        assertEquals("server", MockEmbed.parse("").category());
     }
 
     @Test
@@ -31,9 +31,9 @@ class MockEmbedTest {
     void fullEmbed() {
         MockEmbed m = MockEmbed.parse(
                 "player_death player=\"Notch\" title=\"Player Death\" "
-              + "desc=\"Notch fell from a high place\" field=\"Cause:Fall\"", "Console");
+              + "desc=\"Notch fell from a high place\" field=\"Cause:Fall\"");
         assertEquals("player_death", m.category());
-        assertEquals("Notch", m.author());
+        assertNull(m.author(), "a real event leaves the author to embeds.author");
         assertEquals("Player Death", m.title());
         assertEquals("Notch fell from a high place", m.description());
         assertEquals(1, m.fields().size());
@@ -48,15 +48,14 @@ class MockEmbedTest {
         // The point of the feature: several fake accounts produce visibly different
         // heads with nothing to host or look up.
         assertEquals("https://mc-heads.net/avatar/Notch/256",
-                MockEmbed.parse("x player=\"Notch\"", "Console").thumbnail());
+                MockEmbed.parse("x player=\"Notch\"").thumbnail());
     }
 
     @Test
     @DisplayName("an explicit avatar overrides the derived one")
     void avatarOverride() {
         assertEquals("https://example.test/a.png",
-                MockEmbed.parse("x player=Notch avatar=https://example.test/a.png",
-                        "Console").thumbnail());
+                MockEmbed.parse("x player=Notch avatar=https://example.test/a.png").thumbnail());
     }
 
     @Test
@@ -83,28 +82,29 @@ class MockEmbedTest {
     void malformedIgnored() {
         assertNull(MockEmbed.field("nocolon"));
         assertNull(MockEmbed.field(":novalue"));
-        MockEmbed m = MockEmbed.parse("x unknown=\"thing\"", "Console");
+        MockEmbed m = MockEmbed.parse("x unknown=\"thing\"");
         assertEquals("x", m.category());
         assertTrue(m.fields().isEmpty());
     }
 
     @Test
-    @DisplayName("with no player, the sender is the author")
+    @DisplayName("author= overrides embeds.author; player= never does")
     void fallbackAuthor() {
-        assertEquals("Lachlan", MockEmbed.parse("x title=\"Hi\"", "Lachlan").author());
+        assertEquals("Lachlan", MockEmbed.parse("x title=\"Hi\" author=\"Lachlan\"").author());
     }
 
     @Test
     @DisplayName("a quoted value keeps its spaces")
     void quotedValueKeepsSpaces() {
-        MockEmbed m = MockEmbed.parse("x desc=\"Notch fell from a high place\"", "Console");
+        MockEmbed m = MockEmbed.parse("x desc=\"Notch fell from a high place\"");
         assertEquals("Notch fell from a high place", m.description());
     }
 
     @Test
     @DisplayName("an unquoted value still works when it has no spaces")
     void unquotedStillWorks() {
-        assertEquals("Notch", MockEmbed.parse("x player=Notch", "Console").author());
+        assertEquals("https://mc-heads.net/avatar/Notch/256",
+                MockEmbed.parse("x player=Notch").thumbnail());
     }
 
     @Test
@@ -112,8 +112,8 @@ class MockEmbedTest {
     void multipleQuoted() {
         MockEmbed m = MockEmbed.parse(
                 "player_ban player=\"Bad Actor\" title=\"Player Banned\" "
-              + "field=\"Reason:Griefing spawn\" field=\"By:Lachlan:inline\"", "Console");
-        assertEquals("Bad Actor", m.author());
+              + "field=\"Reason:Griefing spawn\" field=\"By:Lachlan:inline\"");
+        assertNull(m.author());
         assertEquals("Player Banned", m.title());
         assertEquals(2, m.fields().size());
         assertEquals("Griefing spawn", m.fields().get(0).value);
@@ -125,13 +125,13 @@ class MockEmbedTest {
     @DisplayName("an unterminated quote takes the rest of the line rather than failing")
     void unterminatedQuote() {
         // Half-typed input should still render something to look at.
-        assertEquals("Notch fell", MockEmbed.parse("x desc=\"Notch fell", "Console").description());
+        assertEquals("Notch fell", MockEmbed.parse("x desc=\"Notch fell").description());
     }
 
     @Test
     @DisplayName("curly quotes work, since phones and docs produce them")
     void curlyQuotes() {
-        MockEmbed m = MockEmbed.parse("x title=\u201CPlayer Death\u201D", "Console");
+        MockEmbed m = MockEmbed.parse("x title=\u201CPlayer Death\u201D");
         assertEquals("Player Death", m.title());
     }
 
@@ -139,6 +139,6 @@ class MockEmbedTest {
     @DisplayName("a name with a space still resolves an avatar")
     void spacedNameAvatar() {
         assertEquals("https://mc-heads.net/avatar/Bad%20Actor/256",
-                MockEmbed.parse("x player=\"Bad Actor\"", "Console").thumbnail());
+                MockEmbed.parse("x player=\"Bad Actor\"").thumbnail());
     }
 }

@@ -77,16 +77,23 @@ public final class MockEmbed {
     /**
      * Parses the whole argument tail.
      *
-     * @param raw   everything after {@code test}, already joined with spaces
-     * @param fallbackAuthor who ran the command, used when no {@code player=} was given
+     * <p><b>{@code player=} sets the avatar, not the author.</b> A real event puts
+     * {@code embeds.author} in the author slot — "Server Logs" by default — and the
+     * player's name in the description or a field. Writing the name into the author
+     * would produce embeds that look nothing like the ones the plugin actually sends,
+     * which for screenshots is the whole failure. {@code author=} overrides it for the
+     * rare case that matters.
+     *
+     * @param raw everything after {@code test}, already joined with spaces
      */
-    public static MockEmbed parse(String raw, String fallbackAuthor) {
+    public static MockEmbed parse(String raw) {
         final String text = raw == null ? "" : raw.trim();
 
         String title = "";
         String description = "";
         String player = null;
         String avatar = null;
+        String author = null;
         final List<Log.Field> fields = new ArrayList<>();
 
         // Everything before the first key= is the category. Taking it positionally
@@ -111,6 +118,7 @@ public final class MockEmbed {
             switch (key) {
                 case "player" -> player = value;
                 case "avatar" -> avatar = value;
+                case "author" -> author = value;
                 case "title"  -> title = value;
                 case "desc", "description" -> description = value;
                 case "field"  -> {
@@ -128,11 +136,12 @@ public final class MockEmbed {
             thumb = String.format(AVATAR_BY_NAME, player.trim().replace(" ", "%20"));
         }
 
-        final boolean detailed = player != null || avatar != null
+        final boolean detailed = player != null || avatar != null || author != null
                 || !title.isEmpty() || !description.isEmpty() || !fields.isEmpty();
 
-        return new MockEmbed(category, title, description,
-                player != null ? player : fallbackAuthor, thumb, fields, detailed);
+        // author stays null unless asked for: Log then uses embeds.author from the
+        // config, exactly as every real event does.
+        return new MockEmbed(category, title, description, author, thumb, fields, detailed);
     }
 
     /** Where the first {@code key=} starts, or -1 when the line is only a category. */

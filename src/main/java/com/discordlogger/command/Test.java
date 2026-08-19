@@ -47,7 +47,7 @@ public final class Test implements Subcommand {
             return true;
         }
 
-        final MockEmbed mock = MockEmbed.parse(String.join(" ", args), sender.getName());
+        final MockEmbed mock = MockEmbed.parse(String.join(" ", args));
 
         if (mock.isPlain() && mock.title().isEmpty()) {
             // No detail asked for: the original one-line check that the webhook works.
