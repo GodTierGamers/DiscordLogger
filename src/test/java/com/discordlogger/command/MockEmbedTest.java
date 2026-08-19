@@ -30,8 +30,8 @@ class MockEmbedTest {
     @DisplayName("a full embed parses every part")
     void fullEmbed() {
         MockEmbed m = MockEmbed.parse(
-                "player_death | player=Notch | title=Player Death "
-              + "| desc=Notch fell from a high place | field=Cause:Fall", "Console");
+                "player_death player=\"Notch\" title=\"Player Death\" "
+              + "desc=\"Notch fell from a high place\" field=\"Cause:Fall\"", "Console");
         assertEquals("player_death", m.category());
         assertEquals("Notch", m.author());
         assertEquals("Player Death", m.title());
@@ -48,14 +48,14 @@ class MockEmbedTest {
         // The point of the feature: several fake accounts produce visibly different
         // heads with nothing to host or look up.
         assertEquals("https://mc-heads.net/avatar/Notch/256",
-                MockEmbed.parse("x | player=Notch", "Console").thumbnail());
+                MockEmbed.parse("x player=\"Notch\"", "Console").thumbnail());
     }
 
     @Test
     @DisplayName("an explicit avatar overrides the derived one")
     void avatarOverride() {
         assertEquals("https://example.test/a.png",
-                MockEmbed.parse("x | player=Notch | avatar=https://example.test/a.png",
+                MockEmbed.parse("x player=Notch avatar=https://example.test/a.png",
                         "Console").thumbnail());
     }
 
@@ -83,7 +83,7 @@ class MockEmbedTest {
     void malformedIgnored() {
         assertNull(MockEmbed.field("nocolon"));
         assertNull(MockEmbed.field(":novalue"));
-        MockEmbed m = MockEmbed.parse("x | garbage | =novalue | unknown=thing", "Console");
+        MockEmbed m = MockEmbed.parse("x unknown=\"thing\"", "Console");
         assertEquals("x", m.category());
         assertTrue(m.fields().isEmpty());
     }
@@ -91,6 +91,54 @@ class MockEmbedTest {
     @Test
     @DisplayName("with no player, the sender is the author")
     void fallbackAuthor() {
-        assertEquals("Lachlan", MockEmbed.parse("x | title=Hi", "Lachlan").author());
+        assertEquals("Lachlan", MockEmbed.parse("x title=\"Hi\"", "Lachlan").author());
+    }
+
+    @Test
+    @DisplayName("a quoted value keeps its spaces")
+    void quotedValueKeepsSpaces() {
+        MockEmbed m = MockEmbed.parse("x desc=\"Notch fell from a high place\"", "Console");
+        assertEquals("Notch fell from a high place", m.description());
+    }
+
+    @Test
+    @DisplayName("an unquoted value still works when it has no spaces")
+    void unquotedStillWorks() {
+        assertEquals("Notch", MockEmbed.parse("x player=Notch", "Console").author());
+    }
+
+    @Test
+    @DisplayName("several quoted values in one line stay separate")
+    void multipleQuoted() {
+        MockEmbed m = MockEmbed.parse(
+                "player_ban player=\"Bad Actor\" title=\"Player Banned\" "
+              + "field=\"Reason:Griefing spawn\" field=\"By:Lachlan:inline\"", "Console");
+        assertEquals("Bad Actor", m.author());
+        assertEquals("Player Banned", m.title());
+        assertEquals(2, m.fields().size());
+        assertEquals("Griefing spawn", m.fields().get(0).value);
+        assertEquals("Lachlan", m.fields().get(1).value);
+        assertTrue(m.fields().get(1).inline);
+    }
+
+    @Test
+    @DisplayName("an unterminated quote takes the rest of the line rather than failing")
+    void unterminatedQuote() {
+        // Half-typed input should still render something to look at.
+        assertEquals("Notch fell", MockEmbed.parse("x desc=\"Notch fell", "Console").description());
+    }
+
+    @Test
+    @DisplayName("curly quotes work, since phones and docs produce them")
+    void curlyQuotes() {
+        MockEmbed m = MockEmbed.parse("x title=\u201CPlayer Death\u201D", "Console");
+        assertEquals("Player Death", m.title());
+    }
+
+    @Test
+    @DisplayName("a name with a space still resolves an avatar")
+    void spacedNameAvatar() {
+        assertEquals("https://mc-heads.net/avatar/Bad%20Actor/256",
+                MockEmbed.parse("x player=\"Bad Actor\"", "Console").thumbnail());
     }
 }

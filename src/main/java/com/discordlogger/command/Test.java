@@ -23,8 +23,8 @@ import java.util.Locale;
  *
  * <h2>Composing an embed by hand</h2>
  *
- * <p>With {@code |}-separated parts it will render any embed asked of it, which is how
- * the listing galleries get filled. Screenshots of a logging plugin have to show
+ * <p>With quoted {@code key="value"} parts it will render any embed asked of it, which
+ * is how the listing galleries get filled. Screenshots of a logging plugin have to show
  * deaths, bans and joins, and the alternative was staging those on a live server or
  * publishing screenshots containing real players' names and skins. Invented players
  * avoid both. See {@link MockEmbed} for the syntax.
@@ -83,7 +83,8 @@ public final class Test implements Subcommand {
         // Past the category the syntax is free-form, so suggest the shape once rather
         // than nothing at all -- an undiscoverable feature is one nobody uses.
         if (args.length == 2 && args[1].isEmpty()) {
-            return List.of("|", "| player=Steve", "| title=Player Death", "| field=Cause:Fall");
+            return List.of("player=\"Steve\"", "title=\"Player Death\"",
+                    "desc=\"...\"", "field=\"Cause:Fall\"");
         }
         if (args.length > 1) return List.of();
         final List<String> out = new ArrayList<>();

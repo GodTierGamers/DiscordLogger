@@ -18,14 +18,15 @@ import java.util.Locale;
  * <h2>Syntax</h2>
  *
  * <pre>
- * /discordlogger test player_death | player=Notch | title=Player Death
- *     | desc=Notch fell from a high place | field=Cause:Fall | field=Coords:123, 64, -90:inline
+ * /discordlogger test player_death player="Notch" title="Player Death"
+ *     desc="Notch fell from a high place" field="Cause:Fall" field="Coords:123, 64, -90:inline"
  * </pre>
  *
- * <p>Parts are split on {@code |} rather than spaces, because every value worth
- * typing here contains them — a death message, a coordinate list, a ban reason. A
- * space-delimited syntax would need quoting, and quoting inside Minecraft chat is
- * where this would stop being usable.
+ * <p>Values are quoted because almost every one worth typing contains spaces — a death
+ * message, a coordinate list, a ban reason. Quotes are what anyone would reach for
+ * without being told, which matters for something used occasionally and from memory.
+ * An unquoted value is still accepted when it has no spaces, so {@code player=Notch}
+ * works.
  *
  * <p>Split from the command so the parsing is testable without a server, which is
  * most of the behaviour: the command itself only sends what this returns.
@@ -80,10 +81,7 @@ public final class MockEmbed {
      * @param fallbackAuthor who ran the command, used when no {@code player=} was given
      */
     public static MockEmbed parse(String raw, String fallbackAuthor) {
-        final String[] parts = (raw == null ? "" : raw).split("\\|", -1);
-
-        String category = parts.length > 0 ? parts[0].trim().toLowerCase(Locale.ROOT) : "";
-        if (category.isEmpty()) category = "server";
+        final String text = raw == null ? "" : raw.trim();
 
         String title = "";
         String description = "";
@@ -91,12 +89,23 @@ public final class MockEmbed {
         String avatar = null;
         final List<Log.Field> fields = new ArrayList<>();
 
-        for (int i = 1; i < parts.length; i++) {
-            final String part = parts[i].trim();
-            final int eq = part.indexOf('=');
-            if (eq <= 0) continue;
-            final String key = part.substring(0, eq).trim().toLowerCase(Locale.ROOT);
-            final String value = part.substring(eq + 1).trim();
+        // Everything before the first key= is the category. Taking it positionally
+        // keeps the common case -- "/discordlogger test player_join" -- exactly as it
+        // was, so the quick webhook check never grew a syntax.
+        final int firstKey = indexOfKey(text);
+        String category = (firstKey < 0 ? text : text.substring(0, firstKey))
+                .trim().toLowerCase(Locale.ROOT);
+        if (category.isEmpty()) category = "server";
+
+        int i = firstKey < 0 ? text.length() : firstKey;
+        while (i < text.length()) {
+            final int eq = text.indexOf('=', i);
+            if (eq < 0) break;
+            final String key = text.substring(i, eq).trim().toLowerCase(Locale.ROOT);
+
+            final String[] read = readValue(text, eq + 1);
+            final String value = read[0];
+            i = Integer.parseInt(read[1]);
             if (value.isEmpty()) continue;
 
             switch (key) {
@@ -116,7 +125,7 @@ public final class MockEmbed {
         // produce visibly different avatars with nothing to look up or host.
         String thumb = avatar;
         if (thumb == null && player != null) {
-            thumb = String.format(AVATAR_BY_NAME, player.replace(" ", "%20"));
+            thumb = String.format(AVATAR_BY_NAME, player.trim().replace(" ", "%20"));
         }
 
         final boolean detailed = player != null || avatar != null
@@ -124,6 +133,55 @@ public final class MockEmbed {
 
         return new MockEmbed(category, title, description,
                 player != null ? player : fallbackAuthor, thumb, fields, detailed);
+    }
+
+    /** Where the first {@code key=} starts, or -1 when the line is only a category. */
+    private static int indexOfKey(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) != '=') continue;
+            // Walk back over the key to whitespace: that is where the pair begins.
+            int start = i;
+            while (start > 0 && !Character.isWhitespace(text.charAt(start - 1))) start--;
+            if (start < i) return start;
+        }
+        return -1;
+    }
+
+    /**
+     * Reads one value, quoted or not, and where it ended.
+     *
+     * <p>Returns {@code [value, nextIndex]} as strings so the caller can advance — a
+     * two-field record for a private helper used once would be more ceremony than the
+     * problem deserves.
+     *
+     * <p>An unterminated quote takes the rest of the line rather than failing. Someone
+     * mid-way through typing a long embed should see what they have so far, not an
+     * error telling them something they already know.
+     */
+    private static String[] readValue(String text, int from) {
+        int i = from;
+        while (i < text.length() && Character.isWhitespace(text.charAt(i))) i++;
+        if (i >= text.length()) return new String[]{"", String.valueOf(text.length())};
+
+        final char c = text.charAt(i);
+        if (c == '"' || c == '\u201C') {
+            final int close = indexOfClosingQuote(text, i + 1);
+            if (close < 0) return new String[]{text.substring(i + 1).trim(),
+                                               String.valueOf(text.length())};
+            return new String[]{text.substring(i + 1, close), String.valueOf(close + 1)};
+        }
+        int end = i;
+        while (end < text.length() && !Character.isWhitespace(text.charAt(end))) end++;
+        return new String[]{text.substring(i, end), String.valueOf(end)};
+    }
+
+    /** Closing quote, accepting the curly kind a phone keyboard or a doc paste produces. */
+    private static int indexOfClosingQuote(String text, int from) {
+        for (int i = from; i < text.length(); i++) {
+            final char c = text.charAt(i);
+            if (c == '"' || c == '\u201D') return i;
+        }
+        return -1;
     }
 
     /**
