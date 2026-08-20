@@ -479,6 +479,17 @@ public final class ConfigMigrator {
         LeafPos pos = findLeafLine(defLines, path);
         if (pos == null) return;
 
+        // A key with NO value at all -- "custom:" -- flattens to a null leaf. Writing
+        // renderScalar(null) produced "custom:null", and YAML with no space after the
+        // colon is a plain SCALAR, not a mapping: the whole block below it stopped
+        // parsing and migration corrupted the file it was meant to preserve.
+        //
+        // Leaving the default's own line untouched is also the right answer on its
+        // merits. A null leaf carries nothing to transplant, so there is no user value
+        // being dropped here -- only a rewrite that could never improve on what the
+        // shipped default already says.
+        if (userVal == null) return;
+
         String line = newLines.get(pos.index);
 
         // find the colon after the key at the known indent
