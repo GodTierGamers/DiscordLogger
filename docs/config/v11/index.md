@@ -1175,7 +1175,8 @@ log:
   #
   # Placeholders: {player} {command} {args} {world} and {arg1}...{arg9}
   #
-  # Example -- delete the leading '#' on each line to use it:
+  # Example -- delete the leading '#' and one space from each line to use it.
+  # Indentation matters: each rule sits under 'custom:', and its settings under it.
   #
   #   sethome:
   #     enabled: true
@@ -1195,7 +1196,7 @@ log:
   #
   # Commands in filters.ignored_commands are never logged here either -- the deny-list
   # wins, and the console says so on startup if a rule collides with it.
-  custom: {}
+  custom:
 
 # CONFIG VERSION V11, DOWNLOADED FROM WEBSITE
 ```
