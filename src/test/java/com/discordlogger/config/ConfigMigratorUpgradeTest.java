@@ -116,6 +116,10 @@ class ConfigMigratorUpgradeTest {
         Map<?, ?> log = (Map<?, ?>) r.get("log");
         for (Object groupName : log.keySet()) {
             Map<?, ?> group = (Map<?, ?>) log.get(groupName);
+            // log.custom ships with no rules, so it is legitimately null. Every other
+            // group is a populated map, and a null one anywhere else is a real fault --
+            // hence skipping rather than defaulting to an empty map.
+            if (group == null) continue;
             for (Object eventName : group.keySet()) {
                 Map<?, ?> ev = (Map<?, ?>) group.get(eventName);
                 assertTrue(ev.containsKey("webhook"),
