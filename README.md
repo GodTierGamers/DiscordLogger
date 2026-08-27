@@ -18,6 +18,43 @@ Built for **Paper <!-- dl:sync:paper_display -->1.19 – 26.2<!-- /dl:sync -->**
 
 ---
 
+## 📸 What it looks like
+
+Rich embeds with per-event colours, player heads and a configurable author line.
+
+<img src="https://discordlogger.godtiergamers.xyz/assets/screenshots/overview.webp" alt="Join, chat, advancement and quit events posted to a Discord channel" width="480">
+
+Events with detail get their own fields — the cause of death is built from server-side
+damage context, so it reads the same for Java and Bedrock players.
+
+<img src="https://discordlogger.godtiergamers.xyz/assets/screenshots/death.webp" alt="A death embed showing cause of death and coordinates" width="380">
+
+Moderation logs every action that actually succeeded, with who did it and why.
+
+<img src="https://discordlogger.godtiergamers.xyz/assets/screenshots/moderation.webp" alt="Ban and kick embeds showing player, reason, staff member and duration" width="380">
+
+<details>
+<summary>More examples — explosions, custom events, server lifecycle</summary>
+
+<br>
+
+Explosions record the source, the blocks destroyed and who was nearby.
+
+<img src="https://discordlogger.godtiergamers.xyz/assets/screenshots/explosion.webp" alt="An explosion embed showing world, location, blocks affected, yield and nearby players" width="380">
+
+Custom events log any command on the server — Essentials homes, LuckPerms rank changes,
+anything with a command behind it.
+
+<img src="https://discordlogger.godtiergamers.xyz/assets/screenshots/custom-logs.webp" alt="A custom rank change event posted to Discord" width="480">
+
+Server start and stop.
+
+<img src="https://discordlogger.godtiergamers.xyz/assets/screenshots/server-events.webp" alt="Server started and stopped embeds" width="380">
+
+</details>
+
+---
+
 ## ✨ Features
 
 - **Discord webhook logging** — no bot to invite, no token to manage, no third-party service.
