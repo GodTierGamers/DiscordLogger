@@ -16,15 +16,8 @@ Got an idea that isn't here? Open a [feature request](https://github.com/GodTier
   - Then mint a token at runtime with `actions/create-github-app-token` and pass it to the `token:` input of `googleapis/release-please-action`.
   - A fine-grained PAT works too, but expires — and a silent expiry puts releases straight back to needing manual overrides.
 
-## Plugin — advertised but broken
-
-A feature the README and both listings promise, which silently does nothing on a large share of real servers. It ranks above new features.
-
-- **Detect punishments made by punishment plugins.** `Ban.java` recognises `ban` and `tempban`, then confirms the punishment landed by checking `Bukkit.getBanList(BanList.Type.NAME)`. LiteBans, LibertyBans, AdvancedBan and CMI store punishments in their own databases, so that check returns false and **nothing is logged, silently**. Two smaller holes in the same file: only `BanList.Type.NAME` is consulted, so `/ban-ip` is missed; and those plugins' own verbs (`/mute`, `/warn`, `/punish`, `/tempmute`) are not recognised at all. LiteBans has proper punishment events — start there, since it converts a silent failure into the best-covered path.
-
 ## Plugin
 
-- **PlaceholderAPI support** — the one feature a server owner comparing DiscordLogger against WebhookLogger side by side would pick the other for. MiniMessage formatting already exists in `lang.yml`; what's missing is placeholder *expansion*, so rank prefixes, nicknames and the like appear in relayed messages. Soft-depend and expand `lang.yml` values before sending, skipping silently when the plugin is absent — the same reflection pattern `ClientPlatform` uses for Floodgate. Opens config schema v11.
 - **Velocity support, in the same JAR.** One download that works on the proxy and the backends, so installing it on a network means dropping the same file in one more place rather than learning a second plugin. Design settled, not yet built:
 
   - **One JAR, two entry points.** Paper reads `plugin.yml`; Velocity ignores that entirely and reads `velocity-plugin.json`, generated at build time by the `@Plugin` annotation processor. Each platform ignores the other's descriptor, and the class referencing the absent API is simply never loaded. Both APIs go in at `provided` scope. Velocity needs Java 21+, which we already exceed.
@@ -51,19 +44,19 @@ A feature the README and both listings promise, which silently does nothing on a
 
 - **Periodic digest** — one embed a day: joins, deaths, bans, top chatters. Low volume, high glanceability, and closer to what most admins actually read than the individual events are.
 
-- **`/discordlogger preview <event>`** — render an embed without having to die or ban someone to see it. Also turns colour tuning into a feedback loop instead of a guess, which is currently only possible through the website generator.
-
 - **Ship translated `lang.yml` bundles** — de, fr, es, pt-BR to start. Every string is already externalised, so this is pure community contribution with no code behind it, and no competitor offers it. Needs a convention for how a translation is selected and how it falls back to the bundled English per key, not per file.
 
 - **Fan-out: multiple webhooks per event.** Routing is one-to-one today. Sending moderation to both a staff channel and a long-term archive is a real ask, and `WebhookQueue` already keys destinations independently, so the queueing side is mostly there.
 
+- **Drop the Paper requirement, targeting Bukkit 1.13+.** *Agreed for after 2.3.1 ships.* Measured, not estimated: the Paper-only surface is **16 lines across 3 files** out of 6,954 — `Lang` (9, MiniMessage), `PlayerChat` (4, `AsyncChatEvent`), `Platform` (3, the startup gate). Five features have landed since that was last measured and it has not grown.
+
+  - **1.13 is the floor worth taking.** `api-version` exists there, the flattening is behind it, and the only `Material` reference in the codebase is `Material.AIR` — so no reflection is needed and the compiler keeps working. Below 1.13 means a reflection layer in every listener and losing what `compat-floor` currently proves.
+  - **MiniMessage survives.** `adventure-platform-bukkit` is shaded and works from 1.8.8 up, so `lang.yml` keeps its formatting rather than degrading to `&`-codes. That was the main feature cost assumed when Spigot support was previously declined, and it does not apply.
+  - **Chat is the one genuinely hard part.** `AsyncPlayerChatEvent` is the only Bukkit option and is deprecated-for-removal on modern Paper, where signed chat can bypass it. DiscordSRV ships *two* listeners, picks between them by reading the `@Warning` annotation off the event class, and still exposes a config toggle because chat-plugin hooks break either way. Expect the same shape.
+  - **Java 8 is not required** for 1.13 and should not be adopted: it would cost 10 records converted to classes, and with them the compiler-enforced immutability that makes `Filters.Snapshot`'s atomic reload swap safe.
+  - **The gain is distribution.** `bukkit` and `spigot` loader tags on Modrinth, and the Spigot/CraftBukkit users the startup gate currently turns away.
+
 - **Deeper logging modes** — option to relay the full server console rather than only the specific events currently supported.
-
-- **Stop `UpdateChecker` recommending builds the server cannot run.** It ranks releases by version string alone and knows nothing about which Minecraft versions a build supports. Harmless so far because the floor has only ever moved *down* — but the first release that drops a Minecraft version tells every server still on it, in game, to install a JAR that will not load.
-
-  - The two things that normally protect users both miss this path: `api-version` turns it into a clean refusal rather than a corruption, and Modrinth/Hangar filter by `game_versions` so platform users are never offered it. The in-game notice bypasses both, and it is the path most users actually see.
-  - **The hard part is that a GitHub release does not declare its supported versions.** The running build knows its own range (`<dl.game.versions>` is baked in at package time) but that says nothing about the *new* one. Three options, none free: parse a marker out of the release body, attach a small manifest as a release asset, or query Modrinth's API for that version's `game_versions` — authoritative and already correct, at the cost of a runtime dependency on Modrinth for a check that currently needs only GitHub.
-  - Not urgent. It becomes urgent the same day a version gets dropped, so decide the mechanism before that release, not during it.
 
 - **If a developer API ever ships, version it as its own artifact.** Not planned — recorded so the reasoning is not re-derived. Plugin versions here are generational (v1 was the first attempt, v2 is this codebase) precisely because nothing compiles against DiscordLogger, so semver's MAJOR has nothing to protect. Publishing hooks for other plugins to call creates dependent code and switches MAJOR's literal meaning back on, which would collide with that convention. A separate artifact with its own semver keeps both intact. Let it float independently rather than tracking the plugin version, so an unchanged API does not get bumped just because the plugin shipped a bug fix.
 
@@ -80,10 +73,6 @@ A feature the README and both listings promise, which silently does nothing on a
 ## Diagnostics
 
 Nothing here adds a feature. All of it is the difference between an admin diagnosing a problem themselves and opening an issue that begins "it just stopped working".
-
-- **`/discordlogger status`** — queue depth per destination, last send result, which webhooks are configured (redacted), and current rate-limit state. None of this is observable today from in-game or console.
-
-- **Tell ops in-game when sends are failing.** `WebhookQueue` already warns once per outage — to console. The person who needs to know is usually in-game, and console is exactly where a warning goes unread.
 
 - **Report unclean shutdowns.** If the previous run never logged a stop, say so on the next start. Cheap crash visibility, and nothing else in this category offers it.
 
@@ -117,5 +106,5 @@ Nothing here adds a feature. All of it is the difference between an admin diagno
 Recorded so they don't get re-proposed. Each was considered and declined for a reason.
 
 - **Competing with DiscordSRV.** A different product — a two-way bridge with a bot, and 480k Modrinth downloads. DiscordLogger's audience is specifically the people who don't want a bot, which DiscordSRV cannot serve by design.
-- **Going below Paper 1.19 / Spigot / CraftBukkit.** *Partly superseded — see "Scope dropping the Paper requirement" above, which now holds the current reasoning.* Still not being done, and still gated on the same evidence (three genuine requests below 1.19, or `mc_version_by_schema` showing an audience there — currently 8 of 8 servers are on 26.2). What changed is **why**: this was recorded as needing a second code path through the core and a Java 8 rewrite, on the assumption that one JAR could not span the range. DiscordSRV's source disproves that. The real objection is narrower and worth stating correctly — it trades `compat-floor`'s compile-time guarantee for runtime reflection, and Paper's chat API is the one place a second code path is genuinely unavoidable. One correction worth keeping: a Java 8 artifact still cannot carry the Velocity entry point, which needs 21+, so that tension is real regardless.
+- **Going below Minecraft 1.19.** *The Spigot/CraftBukkit half of this is no longer declined — see "Drop the Paper requirement" above, agreed for after 2.3.1.* What stays declined is going below **1.19**, and the gate is unchanged: three genuine requests, or `mc_version_by_schema` showing an audience there. The spread is now 26.2=21, 1.21.11=5, 1.21.5=1, 1.21.1=1, 26.1.2=1 — real diversity, and nothing anywhere near 1.12. Below 1.13 also trades `compat-floor`'s compile-time guarantee for runtime reflection, which is the actual objection rather than any claim that one JAR cannot span the range.
 - **Syncing listing descriptions from CI.** Would need `PROJECT_WRITE` on a Modrinth token living in a public repo — a scope that can also unpublish the project — against a recurring cost of one paste per release. Not worth the blast radius.

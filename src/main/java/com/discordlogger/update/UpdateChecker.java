@@ -98,6 +98,14 @@ public final class UpdateChecker {
             SemVer latest = SemVer.parse(r.tag());
             if (latest == null) return;
             if (latest.compareTo(current) > 0) {
+                // Do not recommend a build this server cannot load. Fails open, so an
+                // unreachable Modrinth means the notice still goes out -- see ServerCompat.
+                if (!ServerCompat.canRun(latest.toString())) {
+                    plugin.getLogger().info("DiscordLogger " + latest + " is out, but it does "
+                            + "not list support for Minecraft " + ServerCompat.serverVersion()
+                            + ". Staying on " + current + " until a compatible release.");
+                    return;
+                }
                 notify(plugin, current, latest, "A new stable release is available.");
             }
             return; // first non-prerelease encountered (list is newest-first) is latest stable
