@@ -1,5 +1,61 @@
 # Changelog
 
+## [2.3.1](https://github.com/GodTierGamers/DiscordLogger/compare/v2.3.0...v2.3.1) (2026-08-28)
+
+
+### ✨ Features
+
+* add status, test and doctor diagnostics commands ([#198](https://github.com/GodTierGamers/DiscordLogger/issues/198)) ([59bc31c](https://github.com/GodTierGamers/DiscordLogger/commit/59bc31cf49f34b8995d8853f6c637b41420d4604))
+* check the configured webhooks still exist at startup ([#187](https://github.com/GodTierGamers/DiscordLogger/issues/187)) ([66a17b7](https://github.com/GodTierGamers/DiscordLogger/commit/66a17b72843f6b84f4a51d8776636e0473716fae))
+* **docs:** hide unreleased schemas, and mark superseded ones as legacy ([#195](https://github.com/GodTierGamers/DiscordLogger/issues/195)) ([ecedc8a](https://github.com/GodTierGamers/DiscordLogger/commit/ecedc8a78768c53b6231ed3d9883fcb418c9f346))
+* expand PlaceholderAPI placeholders in lang.yml ([#197](https://github.com/GodTierGamers/DiscordLogger/issues/197)) ([e186369](https://github.com/GodTierGamers/DiscordLogger/commit/e1863696a6bde40ea8523513ce1e916d9f2d5d23))
+* export bStats charts to CSV, and catch charts that discard their data ([#179](https://github.com/GodTierGamers/DiscordLogger/issues/179)) ([5577f71](https://github.com/GodTierGamers/DiscordLogger/commit/5577f712d108dcc55108ad1f53747b92ce304a96))
+* log any plugin's commands with your own events ([#194](https://github.com/GodTierGamers/DiscordLogger/issues/194)) ([5dc0213](https://github.com/GodTierGamers/DiscordLogger/commit/5dc02131c2d9ec2284901148a43f2108bd23016f))
+* **metrics:** measure which permission plugin a server runs ([#192](https://github.com/GodTierGamers/DiscordLogger/issues/192)) ([7c09f3a](https://github.com/GodTierGamers/DiscordLogger/commit/7c09f3acb7659f6215168100b96618e0e47ee61f))
+* stay silent about vanished players ([#191](https://github.com/GodTierGamers/DiscordLogger/issues/191)) ([5cf6b04](https://github.com/GodTierGamers/DiscordLogger/commit/5cf6b04958ee2e37f2e671905227e0735e871e8e))
+* tell staff in game when logging has stopped working ([#205](https://github.com/GodTierGamers/DiscordLogger/issues/205)) ([ed2b296](https://github.com/GodTierGamers/DiscordLogger/commit/ed2b296e1649ba9c2eac39687cbbbd6adf6e0c96))
+
+
+### 🐛 Fixes
+
+* **commands:** strip Bukkit's plugin:command duplicates from tab-completion ([#190](https://github.com/GodTierGamers/DiscordLogger/issues/190)) ([2699343](https://github.com/GodTierGamers/DiscordLogger/commit/26993432f698d2f0ad7f78219bf7ba6f293134b5))
+* **config:** custom: {} could not take rules, and migration corrupted the fix ([#202](https://github.com/GodTierGamers/DiscordLogger/issues/202)) ([dfbc85a](https://github.com/GodTierGamers/DiscordLogger/commit/dfbc85a811e61e7c93716cab1b41e5f4cac625d1))
+* **death:** make /kill read as a command on Paper 1.19 ([#175](https://github.com/GodTierGamers/DiscordLogger/issues/175)) ([6f0335c](https://github.com/GodTierGamers/DiscordLogger/commit/6f0335cb9d737fa8f35b0b2f088b742e9d040cdd))
+* **docs:** the website's lang.yml said it shipped with 2.1.6 ([#177](https://github.com/GodTierGamers/DiscordLogger/issues/177)) ([4c667c2](https://github.com/GodTierGamers/DiscordLogger/commit/4c667c25f44bef152daa575ec7736ae09722ce12))
+* **embeds:** footer named a version, and bans ignored embeds.author ([#201](https://github.com/GodTierGamers/DiscordLogger/issues/201)) ([888b1c6](https://github.com/GodTierGamers/DiscordLogger/commit/888b1c6ada22f4b0c39e398473794ccd81eb9bd4))
+* **metrics:** drop two charts that duplicate bStats defaults ([#172](https://github.com/GodTierGamers/DiscordLogger/issues/172)) ([b727524](https://github.com/GodTierGamers/DiscordLogger/commit/b72752459e1e6cafceba42827da0531ebacd48bc))
+* **metrics:** proxy_mode reported every Paper server as proxied ([#186](https://github.com/GodTierGamers/DiscordLogger/issues/186)) ([7d6927c](https://github.com/GodTierGamers/DiscordLogger/commit/7d6927c76de28f8116287ac1ccef856be85a046c))
+* **metrics:** the store recorded blank rows and a wrong denominator ([#189](https://github.com/GodTierGamers/DiscordLogger/issues/189)) ([6d9b51e](https://github.com/GodTierGamers/DiscordLogger/commit/6d9b51efe29d61d920f72a5bcab41d4b8a4fb2e9))
+* **metrics:** webhook_configured reported "Not installed" ([#181](https://github.com/GodTierGamers/DiscordLogger/issues/181)) ([6a10ba2](https://github.com/GodTierGamers/DiscordLogger/commit/6a10ba20fc0c5c566d934492ab0beff562baa46b))
+* **moderation:** log bans on servers running a punishment plugin ([#206](https://github.com/GodTierGamers/DiscordLogger/issues/206)) ([789cf0d](https://github.com/GodTierGamers/DiscordLogger/commit/789cf0dcbdd2e0a9ba0fdc189b27c1c7e5bf8f3e))
+* **seo:** stop robots.txt blocking the generator's own assets ([#176](https://github.com/GodTierGamers/DiscordLogger/issues/176)) ([fc3b99e](https://github.com/GodTierGamers/DiscordLogger/commit/fc3b99eef3e0660c76cbef9cc5ebf40ea51958af))
+* **update:** do not recommend a release this server cannot run ([#207](https://github.com/GodTierGamers/DiscordLogger/issues/207)) ([5bd9630](https://github.com/GodTierGamers/DiscordLogger/commit/5bd96302e337f36e2c3df8d84a30610099f9b758))
+
+
+### 📝 Docs
+
+* AGENTS.md described a version of this repo that no longer exists ([#178](https://github.com/GodTierGamers/DiscordLogger/issues/178)) ([c2b50da](https://github.com/GodTierGamers/DiscordLogger/commit/c2b50da06d701bc01b6d1a4a8c2b03407cd0728b))
+* bring every doc up to date with the last two weeks of work ([#208](https://github.com/GodTierGamers/DiscordLogger/issues/208)) ([8a8c6a4](https://github.com/GodTierGamers/DiscordLogger/commit/8a8c6a4186528165dfbe63092058aa30b1ccf013))
+* correct two TODO entries that shipping made wrong ([#174](https://github.com/GodTierGamers/DiscordLogger/issues/174)) ([0297bd6](https://github.com/GodTierGamers/DiscordLogger/commit/0297bd66a844b6ad39a730b40cc0498f7b65c5ed))
+* drop two TODO entries that have shipped ([#196](https://github.com/GodTierGamers/DiscordLogger/issues/196)) ([2017b41](https://github.com/GodTierGamers/DiscordLogger/commit/2017b413e5d03e30d85b08ab04544b032d7229e0))
+* publish the gallery screenshots, and show them in the README ([#203](https://github.com/GodTierGamers/DiscordLogger/issues/203)) ([6783a63](https://github.com/GodTierGamers/DiscordLogger/commit/6783a630326b568f1e57b18555343031ebda42d7))
+* re-encode the banner from source, and keep the source in the repo ([#204](https://github.com/GodTierGamers/DiscordLogger/issues/204)) ([5f921aa](https://github.com/GodTierGamers/DiscordLogger/commit/5f921aadde2da0580bb80be6fde477176afdb51f))
+* record the pure-Bukkit question, and correct why it was declined ([#182](https://github.com/GodTierGamers/DiscordLogger/issues/182)) ([b578211](https://github.com/GodTierGamers/DiscordLogger/commit/b578211797a15323efd505060c46bb23fc339969))
+* record the update-checker compatibility gap ([#185](https://github.com/GodTierGamers/DiscordLogger/issues/185)) ([5503ade](https://github.com/GodTierGamers/DiscordLogger/commit/5503ade67956daa986f39d41c340306bf80943cd))
+
+
+### 🧰 Maintenance
+
+* bump actions/setup-python from 6 to 7 ([#200](https://github.com/GodTierGamers/DiscordLogger/issues/200)) ([68b2d6e](https://github.com/GodTierGamers/DiscordLogger/commit/68b2d6eed0792d44947e3937bf26d67b9965d799))
+* retarget the release to 2.3.1 ([#183](https://github.com/GodTierGamers/DiscordLogger/issues/183)) ([48e7abc](https://github.com/GodTierGamers/DiscordLogger/commit/48e7abcbf3ec77d7a5f05393ee87aba6a1fb1df0))
+* stop commit types deciding the version ([#184](https://github.com/GodTierGamers/DiscordLogger/issues/184)) ([b7caac4](https://github.com/GodTierGamers/DiscordLogger/commit/b7caac4af2faac60ae77848a68d4aeb6f2a38678))
+
+
+### ⚙️ CI/CD
+
+* snapshot the bStats pie charts twice an hour ([#188](https://github.com/GodTierGamers/DiscordLogger/issues/188)) ([70d17f3](https://github.com/GodTierGamers/DiscordLogger/commit/70d17f3d498219c637385aaea072b5bdbb5a140b))
+* store one row per poll instead of one row per slice ([#193](https://github.com/GodTierGamers/DiscordLogger/issues/193)) ([267160a](https://github.com/GodTierGamers/DiscordLogger/commit/267160a4d465c8470fe1247f08798f96d2d1bd63))
+
 ## [2.3.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.2.0...v2.3.0) (2026-08-14)
 
 
