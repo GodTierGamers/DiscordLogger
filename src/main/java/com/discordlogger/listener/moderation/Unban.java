@@ -2,7 +2,6 @@ package com.discordlogger.listener.moderation;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -54,12 +53,14 @@ public final class Unban implements Listener {
 
         final String targetName = parts.length > 1 ? parts[1] : "(unknown)";
 
-        final BanList nameBans = Bukkit.getBanList(BanList.Type.NAME);
-        final boolean wasBanned = nameBans.isBanned(targetName);
+        final boolean wasBanned = PunishmentPlugins.isBanned(targetName);
 
         // Only log if it actually changed from banned -> not banned on next tick
         Bukkit.getScheduler().runTask(plugin, () -> {
-            final boolean nowBanned = nameBans.isBanned(targetName);
+            // Mirror of Ban: with a punishment plugin the list never changes, so the
+            // unban is taken on the command rather than never logged at all.
+            final boolean nowBanned = !PunishmentPlugins.installed()
+                    && PunishmentPlugins.isBanned(targetName);
             if (wasBanned && !nowBanned) {
                 final String moderatorName = (actorPlayer != null)
                         ? Names.display(actorPlayer, plugin)

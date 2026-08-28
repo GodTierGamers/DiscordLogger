@@ -2,7 +2,6 @@ package com.discordlogger.listener.moderation;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -70,8 +69,9 @@ public final class Ban implements Listener {
             banReason = remainder;
         }
 
-        final BanList nameBans = Bukkit.getBanList(BanList.Type.NAME);
-        final boolean wasBanned = nameBans.isBanned(targetName);
+        // Covers /ban-ip too: an IP ban writes to a different list, which this never
+        // consulted, so it was a second way to be punished without being logged.
+        final boolean wasBanned = PunishmentPlugins.isBanned(targetName);
 
         // Snapshot mutable values for lambda
         final String reasonSnap   = banReason;
@@ -79,7 +79,12 @@ public final class Ban implements Listener {
 
         // Verify ban took effect on the next tick
         Bukkit.getScheduler().runTask(plugin, () -> {
-            final boolean nowBanned = nameBans.isBanned(targetName);
+            // A punishment plugin keeps its own database and never writes to Bukkit's
+            // ban list, so the confirmation below can only ever be false there. Skipping
+            // it trades a rare over-report for the alternative those servers have today,
+            // which is no moderation logging whatsoever. See PunishmentPlugins.
+            final boolean nowBanned = PunishmentPlugins.installed()
+                    || PunishmentPlugins.isBanned(targetName);
             if (!wasBanned && nowBanned) {
                 final String moderatorName = (actorPlayer != null)
                         ? Names.display(actorPlayer, plugin)
