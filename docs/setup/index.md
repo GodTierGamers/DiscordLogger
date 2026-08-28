@@ -86,8 +86,11 @@ webhook:
 
 ## 4. Check it works
 
-Join and leave the server. You should get an embed in your channel with your skin
-as the thumbnail.
+Run `/discordlogger test` — it sends a real message through the same path a real
+event uses, so if it arrives, your webhook works.
+
+Then join and leave the server. You should get an embed in your channel with your
+skin as the thumbnail.
 
 If nothing arrives, in order of likelihood:
 
@@ -100,6 +103,16 @@ If nothing arrives, in order of likelihood:
 
 Console always logs the event, whether or not Discord accepted it — so if you see it
 in console but not in Discord, the problem is the webhook, not the plugin.
+
+Two commands answer most of this without reading logs:
+
+| Command | Tells you |
+|---|---|
+| `/discordlogger status` | whether Discord is reachable, how deep the send queue is, and whether you are rate limited |
+| `/discordlogger doctor` | contradictions in your config that are valid YAML but not what you meant |
+
+DiscordLogger also checks your webhooks on startup and warns staff **in game** if one
+stops working, so a webhook deleted months later doesn't go unnoticed.
 
 ---
 

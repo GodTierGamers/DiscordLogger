@@ -9,7 +9,7 @@ Everything below was verified against the actual source at the time of writing; 
 **DiscordLogger** is a Minecraft **Paper** server plugin (Java 17 bytecode) that posts server events to a Discord channel via **webhooks** — either as rich embeds (per-event colors, player-head thumbnails, timestamps) or as plain Markdown text. It ships two versioned files, `config.yml` and `lang.yml`, both of which auto-migrate between schema versions, plus a channel-aware update checker and a companion **Jekyll website** (in `docs/`) hosted on GitHub Pages at `https://discordlogger.godtiergamers.xyz` that includes an interactive config generator.
 
 - **Current plugin version:** tracked by `pom.xml` / `.release-please-manifest.json` — never hand-edit either, see **Releases** below.
-- **Current config schema:** **v10** (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V10, SHIPPED WITH v2.3.0 (x-release-please-version)`). v9 is published and frozen.
+- **Current config schema:** **v11**, open and unpublished (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V11, SHIPPED WITH v2.3.0 (x-release-please-version)`). v9 and v10 are published and frozen; v11 freezes when 2.3.1 ships.
 - **Paper API:** three deliberately different numbers, all in `pom.xml` — see *Three floors* under Metrics. The short version: **compile against the oldest supported API, never the newest**, since compiling against the newest and declaring an older `api-version` is how a plugin loads and then dies on `NoSuchMethodError`.
 - **GitHub:** `GodTierGamers/DiscordLogger`
 
@@ -67,7 +67,7 @@ To add a new synced location: wrap the value in `<!-- dl:sync:KEY -->` markers (
 
 ## Build & test
 
-**Tests exist and gate CI** (JUnit 5 + surefire; `ci.yml` runs `mvn clean package` with tests on). `mvn test` runs them in ~10s — currently 17 classes, 209 tests.
+**Tests exist and gate CI** (JUnit 5 + surefire; `ci.yml` runs `mvn clean package` with tests on). `mvn test` runs them in ~10s — currently 29 classes, 264 tests.
 
 They are concentrated where a silent failure is most expensive rather than spread for coverage: five classes on `ConfigMigrator` alone (decision table, step chain, path resolution, list splicing, single-line rewrites), the rest on filters, lang loading, death causes, routing, webhook redaction, metrics bucketing and Bedrock detection. Several exist because the bug they describe actually shipped.
 
@@ -107,6 +107,9 @@ src/main/java/com/discordlogger/
   log/Log.java                         Static logging facade (the API everything calls)
   lang/Lang.java                        Message lookup: chat() = MiniMessage, text() = plain
   filter/Filters.java                  Immutable filter snapshot, swapped atomically on reload
+  alert/OpAlert.java                   Warns staff IN GAME when logging breaks; rate limited, never a URL
+  custom/CustomLogs.java               Admin-defined command rules (log.custom.*), immutable snapshot
+  custom/CustomTemplate.java           Fills {player}/{args}/{argN} in a rule's message; escapes + redacts
   webhook/DiscordWebhook.java          Manual JSON building + one HTTP POST, reports outcome
   webhook/WebhookQueue.java            Single-threaded send queue: rate limiting, retries, ordering
   config/ConfigMigrator.java           Comment-preserving config version migration
@@ -120,20 +123,29 @@ src/main/java/com/discordlogger/
   command/Reload.java                  /discordlogger reload
   command/Webhook.java                 /discordlogger webhook <url> — never echoes the URL
   command/Regen.java                   /discordlogger regen confirm — destructive, hence the literal
-  metrics/PluginMetrics.java           31 bStats charts; carries the privacy contract in its Javadoc
+  command/Status.java                  /discordlogger status — queue, webhook and build health
+  command/Test.java                    /discordlogger test [event] — sends through the real path
+  command/Doctor.java                  /discordlogger doctor — config contradictions a schema cannot catch
+  command/CommandVisibility.java       Strips Bukkit's plugin:command tab-complete duplicates
+  metrics/PluginMetrics.java           33 bStats charts; carries the privacy contract in its Javadoc
   metrics/Counters.java                Runtime tallies; reads are destructive (see Metrics)
   update/BuildInfo.java                Reads build-info.properties (channel/version/built)
   update/NightlyNotice.java            Nightly-channel warnings (console + first-boot op chat)
   update/UpdateChecker.java            Async, channel-aware GitHub release check on startup
+  update/ServerCompat.java             Whether a release lists this server's Minecraft version (Modrinth)
   util/Names.java                      Nickname resolution + cache ("Nick (Real)")
   util/Platform.java                   Server-side capability probes
   util/ClientPlatform.java             Bedrock detection via Floodgate, never guesses "Java"
+  util/Vanish.java                     Reads the `vanished` metadata every vanish plugin sets
+  util/Placeholders.java               PlaceholderAPI expansion by reflection; inert when absent
   listener/player/                     PlayerJoin, PlayerQuit, PlayerChat, PlayerCommand,
                                         PlayerDeath, PlayerAdvancement, PlayerTeleport, PlayerGamemode,
                                         KillCommandTracker (pre-1.20 /kill vs VOID, see Listeners)
   listener/server/                     ServerCommand, Explosion
-  listener/moderation/                 Ban, Unban, Kick, Op, Deop, Whitelist
-src/test/java/com/discordlogger/       JUnit 5; 17 classes, 209 tests — see Build & test
+  listener/moderation/                 Ban, Unban, Kick, Op, Deop, Whitelist,
+                                        PunishmentPlugins (LiteBans et al. bypass the ban list)
+  listener/custom/CustomCommandLog.java Fires the log.custom.* rules; same filters as every event
+src/test/java/com/discordlogger/       JUnit 5; 29 classes, 264 tests — see Build & test
 docs/                                  Jekyll website (GitHub Pages, deploys from main)
   config/v10/index.md                   Config docs page — embeds file 4 of 4, see dictionary
   config/v10/lang.yml.txt               The lang.yml the page embeds and serves for download
@@ -192,7 +204,7 @@ Stable releases are mirrored onto two listings, because that is where server own
 
 ### Metrics
 
-31 bStats charts in `metrics/PluginMetrics.java`, with runtime tallies in `metrics/Counters.java`.
+33 bStats charts in `metrics/PluginMetrics.java`, with runtime tallies in `metrics/Counters.java`.
 
 **Check bStats' defaults before adding a chart.** It already collects `bukkitName`, `onlineMode`, `bukkitVersion`, `javaVersion`, `playerAmount`, `coreCount` and the OS fields on its own. A `server_fork` and an `online_mode` chart were added here and removed again once it turned out `bukkitName` *is* `Bukkit.getName()` — the same value under a second name, on every server, forever.
 
@@ -354,7 +366,7 @@ Every event takes an optional `log.<group>.<event>.webhook`. Empty means the mai
 - **Proactive pacing:** reads `X-RateLimit-Remaining` / `X-RateLimit-Reset-After` from each response and waits out a spent budget *before* sending, so 429s are usually avoided rather than handled. A 429 is still handled (honours `Retry-After`, retries the same payload without consuming an attempt).
 - Transient failures (5xx, network — status `0`) retry with exponential backoff, max 4 attempts. Other 4xx aren't retried; a 404 says the webhook URL is gone.
 - **Not a Bukkit scheduler task** — it must keep draining during `onDisable`, and the scheduler refuses tasks once disabled.
-- Bounded at 1000 messages; beyond that it drops and warns once per outage rather than growing until the server dies.
+- Bounded at 1000 messages; beyond that it drops and warns once per outage rather than growing until the server dies. **Both that and a 404 also alert staff in game** through `OpAlert` — eleven days of metrics showed 7,957 of 8,721 failures were dead webhooks across 130 separate windows, with the console warning reaching nobody. Alerts are capped at one per problem per 30 minutes, because a dead webhook fails on every event and an unthrottled alert gets muted immediately.
 - `onDisable` order matters: `fireServerStop()` queues the stop message, *then* `WebhookQueue.shutdown()` drains (5s budget). Reversing that loses the message.
 - HTTP 200/204 = success; 10-second timeouts; footer icon hard-coded to the website-hosted logo.
 
@@ -368,13 +380,14 @@ Every event takes an optional `log.<group>.<event>.webhook`. Empty means the mai
 - First line of every handler: live config gate, e.g. `if (!plugin.getConfig().getBoolean("log.player.join", true)) return;` — never cached.
 - `@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)` on almost everything (exceptions: `PlayerChat`, `PlayerCommand` use default priority).
 - Player text → `Names.display(player, plugin)` + `Log.mdEscape(...)`; player embeds get `Log.playerAvatarUrl(uuid)` thumbnails; server events use the hosted `server.png`.
-- **Moderation listeners are command sniffers, not API hooks:** they watch `PlayerCommandPreprocessEvent` + `ServerCommandEvent`, parse the raw command, gate on vanilla/Bukkit/Essentials permission nodes (console always allowed), then **verify the state actually changed on the next tick** before logging. `Kick` is two-phase (intent map keyed by target UUID → confirmed by `PlayerKickEvent`, stale entries cleaned after 2 ticks).
+- **Moderation listeners are command sniffers, not API hooks:** they watch `PlayerCommandPreprocessEvent` + `ServerCommandEvent`, parse the raw command, gate on vanilla/Bukkit/Essentials permission nodes (console always allowed), then **verify the state actually changed on the next tick** before logging — *except where a punishment plugin owns bans*. LiteBans, LibertyBans, AdvancedBan, BanManager and CMI keep their own databases and never write to Bukkit's ban list, so that check could only ever be false there and 4 of 25 reporting servers were getting no moderation logging at all. `PunishmentPlugins.installed()` skips the verification on those servers and logs on the command; the permission gate still applies. The trade is an occasional over-report instead of silent total omission, and `PunishmentPlugins.isBanned` now consults `BanList.Type.IP` too, since `/ban-ip` was unlogged everywhere. `Kick` is two-phase (intent map keyed by target UUID → confirmed by `PlayerKickEvent`, stale entries cleaned after 2 ticks).
 - Notable: `PlayerJoin` delays 2 ticks for nickname plugins; `PlayerQuit` defers cache eviction 1 tick; `PlayerChat` uses Paper `AsyncChatEvent` + Adventure serializer (why Paper API is required); `PlayerAdvancement` skips `recipes/*` and `*/root`; `PlayerDeath` builds Geyser-friendly messages from damage context; `Explosion` handles entity+block explosions with CDN icons and a 20-block nearby-player list; `ServerStart`/`ServerStop` are static handlers called by `EventRegistry`, not listeners.
 - **`KillCommandTracker` is a version-gated workaround, not a feature.** `DamageCause.KILL` arrived in 1.20; before it, the server reports `/kill` as `VOID`, so a command death read as "Fell into the void". It watches the command and lets `PlayerDeath` correlate a `VOID` death against it within 250ms. `ACTIVE` is `false` wherever `KILL` exists — running correlation where the real information is available could only turn a correct answer into a guess. Keep it that way; the parsing (`targetOf`) is unit-tested precisely because the awkward cases are textual (`/minecraft:kill`, `/killall`, selectors, leading whitespace).
 
 ### Commands
 - Root `/discordlogger` (aliases `/dlogger`, `/dlog`). The **command itself is deliberately ungated** — it used to require `discordlogger.reload`, which would have locked a `regen`-only admin out of the whole command once a second subcommand existed. `Commands` routes `Subcommand` implementations (LinkedHashMap) and filters both help and tab-complete by each subcommand's own permission, so an unprivileged sender sees nothing and can run nothing.
-- Subcommands, all default op: `reload`, `webhook <url>`, `regen confirm`, `status`, `test [event]`, `doctor` — each gated by `discordlogger.<name>`. `regen` requires the literal `confirm` — it is destructive and one keystroke from `reload`.
+- Subcommands, all default op: `reload`, `webhook <url>`, `regen confirm`, `status`, `test [event]`, `doctor` — each gated by `discordlogger.<name>`.
+- **Tab-completion is filtered twice, in two different places.** `Commands.onTabComplete` filters *arguments* by permission. `CommandVisibility` filters the *command list itself* via `PlayerCommandSendEvent` — that is the only hook that can remove Bukkit's automatic `plugin:command` duplicates, because command-name completion never consults the plugin. It also hides the command from players holding none of the subcommand permissions. It touches only this plugin's entries: editing another plugin's makes that plugin's behaviour unexplainable from its own source. `regen` requires the literal `confirm` — it is destructive and one keystroke from `reload`.
 - **`webhook` never echoes the URL.** It is a bearer credential, so confirmation names the channel id only, tab-complete returns nothing, and `Log.redactWebhooks` masks the token in command logging — without which running the command would publish the new URL to the channel currently configured, i.e. the old webhook. Redacting rather than suppressing keeps the audit trail: you still see that someone changed it.
 - **Never write config with `saveConfig()`.** Bukkit's YAML writer re-serialises the whole file and drops every comment, including the `CONFIG VERSION V<n>` trailer `ConfigMigrator` reads — a config saved that way looks like it has no schema at all. Use `ConfigMigrator.setScalar(file, path, value)`, which rewrites exactly one line (verified: one line changed, comment and line counts unchanged, trailer intact).
 - Adding one: implement `Subcommand`, add to the `new Commands(...)` varargs in `onEnable`, register any new permission in `plugin.yml`.

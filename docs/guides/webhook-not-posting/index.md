@@ -18,6 +18,25 @@ things, and console tells you which.
 That split matters because DiscordLogger logs every event to console whether or
 not Discord accepted it. If console is silent, Discord was never the issue.
 
+**Before reading further, run these two.** They answer most of what follows without
+you having to go through logs at all:
+
+```
+/discordlogger status
+/discordlogger doctor
+```
+
+`status` shows whether Discord is reachable, how deep the send queue is, and whether
+you're being rate limited. `doctor` finds config contradictions that are valid YAML
+but not what you meant — an allow-list quietly cancelling your deny-list, or every
+event switched off.
+
+To test a specific event's routing and colour without waiting for one to happen:
+
+```
+/discordlogger test player_death
+```
+
 ---
 
 ## 1. The URL didn't save, or has stray characters
@@ -55,6 +74,11 @@ deleted. The URL keeps its shape, so nothing looks wrong until you check.
 
 Recreate it: **Edit Channel → Integrations → Webhooks → New Webhook → Copy
 Webhook URL**, then set it again.
+
+You shouldn't have to notice this yourself. DiscordLogger checks every configured
+webhook on startup, and warns staff **in game** when one stops working while the
+server is running — a deleted webhook is by far the most common way logging quietly
+stops, and console is exactly where that warning went unread.
 
 ---
 
