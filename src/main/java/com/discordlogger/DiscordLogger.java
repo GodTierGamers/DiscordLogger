@@ -1,5 +1,6 @@
 package com.discordlogger;
 
+import com.discordlogger.alert.OpAlert;
 import com.discordlogger.command.CommandVisibility;
 import com.discordlogger.command.Status;
 import com.discordlogger.command.Test;
@@ -33,6 +34,8 @@ public final class DiscordLogger extends JavaPlugin {
     @Override
     public void onEnable() {
         BuildInfo.load(this);
+        // Before anything can fail, so an early failure still has somewhere to go.
+        OpAlert.init(this);
 
         // Bail out before touching the data folder — no point writing a config
         // to a server that can't run the plugin anyway.

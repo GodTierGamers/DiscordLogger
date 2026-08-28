@@ -1,5 +1,6 @@
 package com.discordlogger.webhook;
 
+import com.discordlogger.alert.OpAlert;
 import com.discordlogger.metrics.Counters;
 
 import org.bukkit.plugin.java.JavaPlugin;
@@ -149,6 +150,7 @@ public final class WebhookQueue {
                         + " is full (" + CAPACITY + " pending) — dropping messages until it "
                         + "drains. Discord may be unreachable, or this server is logging "
                         + "faster than that webhook allows.");
+                OpAlert.queueFull("..." + shortId(url));
             }
             return;
         }
@@ -264,7 +266,12 @@ public final class WebhookQueue {
             // 4xx that isn't 429: bad/deleted webhook, malformed payload — retrying
             // can't help, so say something actionable and move on.
             Counters.failed();
-            if (res.status() == 404) Counters.notFound();
+            if (res.status() == 404) {
+                Counters.notFound();
+                // The failure that dominates the live metrics, and the one console has
+                // demonstrably failed to surface.
+                OpAlert.deadWebhook("..." + shortId(dest.url));
+            }
             log().warning("[DiscordWebhook] Discord rejected a message with HTTP " + res.status()
                     + (res.status() == 404
                         ? " — webhook ..." + shortId(dest.url) + " no longer exists. Check the"
