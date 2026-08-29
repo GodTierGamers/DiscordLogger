@@ -132,12 +132,12 @@ filters:
 
   # Advancements never logged. Matched on the full key, and a trailing * matches a
   # whole tab -- "minecraft:husbandry/*" is every farming advancement.
-  # Only does anything on Minecraft 1.12 or newer, where advancements exist.
+  # Supports 1.12 or newer
   ignored_advancements: []
 
   # Recipe unlocks and tab roots fire constantly and mean nothing to a reader, so
   # they are skipped. Set true only if you genuinely want them.
-  # Only does anything on Minecraft 1.12 or newer, where advancements exist.
+  # Supports 1.12 or newer
   log_recipe_advancements: false
 
   # Teleport causes never logged. Teleports are the noisiest event on most servers.
@@ -148,9 +148,6 @@ filters:
   #         END_GATEWAY, SPECTATE, DISMOUNT, EXIT_BED, CONSUMABLE_EFFECT, UNKNOWN
   # Add PLUGIN if you use Essentials or similar -- /home, /warp and /spawn all
   # arrive as PLUGIN and are usually the bulk of what is left.
-  # Some of these arrived in later Minecraft versions -- CHORUS_FRUIT and
-  # END_GATEWAY in 1.9, CONSUMABLE_EFFECT much later. Naming one your server
-  # does not have is harmless: it never fires, so the entry simply does nothing.
   ignored_teleport_causes:
     - EXIT_BED      # standing up from a bed
     - DISMOUNT      # getting off a horse, boat or minecart
@@ -163,15 +160,12 @@ filters:
   # Deaths with these causes are never logged. Same names as the death causes in
   # lang.yml, upper case: VOID, FALL, LAVA, KILL, ENTITY_ATTACK, and so on.
   # A void world or a parkour course can produce a lot of VOID and FALL deaths.
-  # Newer causes only exist on newer servers -- FREEZE from 1.17, SONIC_BOOM from
-  # 1.19. Listing one your server does not have is harmless; it never fires.
   ignored_death_causes: []
 
   # Explosions from these sources are never logged. Use the entity name for mob and
   # TNT explosions (CREEPER, PRIMED_TNT, END_CRYSTAL, FIREBALL, WITHER_SKULL) or the
   # block name for block ones (BED, RESPAWN_ANCHOR).
-  # The block ones need Minecraft 1.8.3 or newer, and RESPAWN_ANCHOR 1.16 -- below
-  # that there is no block explosion to filter, so those entries do nothing.
+  # BED and RESPAWN_ANCHOR support 1.8.3 or newer (RESPAWN_ANCHOR 1.16)
   ignored_explosion_sources: []
 
   # Skip explosions that destroyed fewer than this many blocks. 0 disables it.
@@ -226,11 +220,7 @@ log:
       show_coords: false # Adds where the player died. Anyone who can see the channel can find the body
 
     advancement: # Logs when a player gets an advancement
-      # Needs Minecraft 1.12 or newer, which is when advancements replaced
-      # achievements. This one switch covers both: on a server old enough to have
-      # achievements instead, they are reported here too rather than under a
-      # separate setting, since they mean the same thing to a reader.
-      # (Achievement support is not built yet -- on 1.8 to 1.11 this logs nothing.)
+      # Supports 1.12 or newer
       enabled: true
       color: "#2ECC71" # green
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
@@ -262,10 +252,7 @@ log:
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
 
     explosion: # Log when an explosion occurs
-      # Explosions with something behind them -- creepers, TNT, fireballs -- are
-      # logged on every supported server. Block explosions with no entity, such as
-      # a bed or a respawn anchor in the wrong dimension, need Minecraft 1.8.3 or
-      # newer; below that only the entity kind is reported.
+      # Block explosions (beds, respawn anchors) support 1.8.3 or newer
       enabled: true
       color: "#E74C3C" # red
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
