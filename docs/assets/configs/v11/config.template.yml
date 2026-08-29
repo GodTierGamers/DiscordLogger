@@ -122,10 +122,12 @@ filters:
 
   # Advancements never logged. Matched on the full key, and a trailing * matches a
   # whole tab -- "minecraft:husbandry/*" is every farming advancement.
+  # Only does anything on Minecraft 1.12 or newer, where advancements exist.
 {{FILTER_ignored_advancements}}
 
   # Recipe unlocks and tab roots fire constantly and mean nothing to a reader, so
   # they are skipped. Set true only if you genuinely want them.
+  # Only does anything on Minecraft 1.12 or newer, where advancements exist.
 {{FILTER_log_recipe_advancements}}
 
   # Teleport causes never logged. Teleports are the noisiest event on most servers.
@@ -136,6 +138,9 @@ filters:
   #         END_GATEWAY, SPECTATE, DISMOUNT, EXIT_BED, CONSUMABLE_EFFECT, UNKNOWN
   # Add PLUGIN if you use Essentials or similar -- /home, /warp and /spawn all
   # arrive as PLUGIN and are usually the bulk of what is left.
+  # Some of these arrived in later Minecraft versions -- CHORUS_FRUIT and
+  # END_GATEWAY in 1.9, CONSUMABLE_EFFECT much later. Naming one your server
+  # does not have is harmless: it never fires, so the entry simply does nothing.
 {{FILTER_ignored_teleport_causes}}
 
   # Skip teleports shorter than this many blocks. 0 disables it.
@@ -145,11 +150,15 @@ filters:
   # Deaths with these causes are never logged. Same names as the death causes in
   # lang.yml, upper case: VOID, FALL, LAVA, KILL, ENTITY_ATTACK, and so on.
   # A void world or a parkour course can produce a lot of VOID and FALL deaths.
+  # Newer causes only exist on newer servers -- FREEZE from 1.17, SONIC_BOOM from
+  # 1.19. Listing one your server does not have is harmless; it never fires.
 {{FILTER_ignored_death_causes}}
 
   # Explosions from these sources are never logged. Use the entity name for mob and
   # TNT explosions (CREEPER, PRIMED_TNT, END_CRYSTAL, FIREBALL, WITHER_SKULL) or the
   # block name for block ones (BED, RESPAWN_ANCHOR).
+  # The block ones need Minecraft 1.8.3 or newer, and RESPAWN_ANCHOR 1.16 -- below
+  # that there is no block explosion to filter, so those entries do nothing.
 {{FILTER_ignored_explosion_sources}}
 
   # Skip explosions that destroyed fewer than this many blocks. 0 disables it.
@@ -205,8 +214,10 @@ log:
 
     advancement: # Logs when a player gets an advancement
       # Needs Minecraft 1.12 or newer, which is when advancements replaced
-      # achievements. On older servers this simply does nothing -- achievements
-      # are a different event that the plugin does not yet listen for.
+      # achievements. This one switch covers both: on a server old enough to have
+      # achievements instead, they are reported here too rather than under a
+      # separate setting, since they mean the same thing to a reader.
+      # (Achievement support is not built yet -- on 1.8 to 1.11 this logs nothing.)
       enabled: {{LOG_player.advancement.enabled}}
       color: "{{COLOR_player.advancement}}" # green
       webhook: "{{HOOK_player.advancement}}" # Send just this event elsewhere. Empty = use webhook.url above
