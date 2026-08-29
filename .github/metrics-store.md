@@ -23,6 +23,19 @@ needed the pivot built before it could be asked.
 | `<chart>.<series>.<label>` | `mc_version_by_java.26.2.25` | drilldown, outer then inner |
 | `<chart>.#servers` | `vanish_plugin.#servers` | servers reporting **that chart** |
 | `<chart>` | `servers`, `players` | a line chart's value at that poll |
+| `downloads.<source>` | `downloads.modrinth` | lifetime downloads from that source |
+
+## Download counts do not partition
+
+Three sources, and they overlap — which matters before reading them:
+
+- **`downloads.modrinth`** — Modrinth hosts its own copy, so this is downloads of that copy.
+- **`downloads.hangar`** — Hangar registers versions by `externalUrl` pointing at the GitHub asset, so a Hangar download *also* increments GitHub's counter. Hangar records its own too, so both are real and **the overlap is Hangar's figure**.
+- **`downloads.github`** — direct downloads *plus* Hangar click-throughs. It cannot be separated further.
+
+Pre-releases are excluded from the GitHub figure: nightlies are a different audience and counting them would inflate it against two sources that never see one.
+
+The figure worth watching is not any single source but the **ratio against `servers`**. Downloads are lifetime and cumulative; `servers` is how many are running right now.
 
 ## ⚠️ Two things that will mislead you
 

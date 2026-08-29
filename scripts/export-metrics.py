@@ -53,6 +53,13 @@ from typing import Any
 
 PLUGIN_ID = 33026
 API = "https://bstats.org/api/v1/plugins"
+# Download counts, one per place the plugin can be obtained. Kept alongside the
+# bStats data because the interesting figure is the RATIO -- roughly 470 lifetime
+# downloads against 29 running servers says most downloads never become an install,
+# which no single source can tell you.
+GITHUB_RELEASES = "https://api.github.com/repos/GodTierGamers/DiscordLogger/releases?per_page=100"
+MODRINTH_PROJECT = "https://api.modrinth.com/v2/project/discordlogger"
+HANGAR_PROJECT = "https://hangar.papermc.io/api/v1/projects/LVCHLANN/DiscordLogger"
 TIMEOUT = 30
 METRICS_SRC = "src/main/java/com/discordlogger/metrics/PluginMetrics.java"
 # Matches any bStats chart constructor: every one of their classes ends in Pie,
@@ -227,6 +234,50 @@ def read_store(target: Path) -> tuple[list[dict], list[str]]:
         return rows, cols
 
 
+def download_counts() -> dict:
+    """Downloads per source, as ``downloads.<source>`` columns.
+
+    Three sources, and they do not partition cleanly -- which is the thing to know
+    before reading them:
+
+    * **Modrinth** hosts its own copy, so its count is downloads of that copy.
+    * **Hangar** registers a version by ``externalUrl`` pointing at the GitHub asset,
+      so a Hangar download *also* increments GitHub's counter. Hangar still records
+      its own, so both numbers are real and the overlap is Hangar's figure.
+    * **GitHub** is therefore direct downloads plus Hangar click-throughs, and cannot
+      be separated further.
+
+    Every source fails independently: one being unreachable costs that column for that
+    poll, not the whole row. These sit beside the bStats charts rather than in their
+    own file for the same reason everything else does -- a number in a second file is
+    a number nobody joins.
+    """
+    out = {}
+    try:
+        rel = fetch(GITHUB_RELEASES)
+        total = 0
+        for r in rel or []:
+            if r.get("prerelease"):
+                continue          # nightlies are a different audience, counted apart
+            for a in r.get("assets", []):
+                if str(a.get("name", "")).endswith(".jar"):
+                    total += int(a.get("download_count", 0))
+        out["downloads.github"] = str(total)
+    except Exception:
+        pass
+    try:
+        out["downloads.modrinth"] = str(int(fetch(MODRINTH_PROJECT).get("downloads", 0)))
+    except Exception:
+        pass
+    try:
+        stats = fetch(HANGAR_PROJECT).get("stats", {})
+        out["downloads.hangar"] = str(int(stats.get("downloads", 0)))
+        out["downloads.hangar_views"] = str(int(stats.get("views", 0)))
+    except Exception:
+        pass
+    return out
+
+
 def append_snapshot(meta: dict, plugin_id: int, out_dir: str) -> int:
     """Append one poll as a single row, every chart across the columns.
 
@@ -257,6 +308,7 @@ def append_snapshot(meta: dict, plugin_id: int, out_dir: str) -> int:
     target = d / "bstats.csv"
 
     row: dict[str, str] = {"polled_at": stamp}
+    row.update(download_counts())
     for chart in sorted(meta.get("charts", {}).values(), key=lambda c: c.get("position", 0)):
         cid, ctype = chart["idCustom"], chart["type"]
         try:
