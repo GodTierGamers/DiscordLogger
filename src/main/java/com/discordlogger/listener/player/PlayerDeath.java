@@ -1,11 +1,10 @@
 package com.discordlogger.listener.player;
 
-import com.discordlogger.util.Strings;
-
 import com.discordlogger.filter.Filters;
 import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import com.discordlogger.util.Strings;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;

@@ -1,14 +1,13 @@
 package com.discordlogger.update;
 
+import com.discordlogger.util.Http;
 import org.bukkit.Bukkit;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -83,14 +82,10 @@ public final class ServerCompat {
         final String wanted = releaseVersion.startsWith("v")
                 ? releaseVersion.substring(1) : releaseVersion;
         try {
-            final HttpClient client = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
-            final HttpRequest req = HttpRequest.newBuilder(URI.create(VERSIONS_API))
-                    .timeout(TIMEOUT)
-                    .header("User-Agent", "DiscordLogger")
-                    .GET().build();
-            final HttpResponse<String> resp =
-                    client.send(req, HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() != 200) return out;
+            final Map<String, String> headers = new LinkedHashMap<>();
+            headers.put("User-Agent", "DiscordLogger");
+            final Http.Result resp = Http.get(VERSIONS_API, headers, (int) TIMEOUT.toMillis());
+            if (resp.status() != 200) return out;
             return parse(resp.body(), wanted);
         } catch (Exception unreachable) {
             return out;

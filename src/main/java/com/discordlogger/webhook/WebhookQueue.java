@@ -1,10 +1,8 @@
 package com.discordlogger.webhook;
 
-import com.discordlogger.util.Strings;
-
 import com.discordlogger.alert.OpAlert;
 import com.discordlogger.metrics.Counters;
-
+import com.discordlogger.util.Strings;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;

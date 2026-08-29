@@ -1,20 +1,18 @@
 package com.discordlogger.update;
 
-import com.discordlogger.util.Strings;
-
 import com.discordlogger.log.Log;
+import com.discordlogger.util.Http;
+import com.discordlogger.util.Strings;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,26 +50,18 @@ public final class UpdateChecker {
         }
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            // Deliberately NOT try-with-resources. HttpClient only became
-            // AutoCloseable in Java 21, and this is compiled for 17 so the plugin
-            // loads on servers older than 1.20.5. Nothing leaks: one request is
-            // made and the client is unreachable immediately afterwards.
-            final HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(TIMEOUT)
-                    .build();
+            // Http closes and disconnects each connection itself, so there is nothing
+            // to manage here -- see the finally blocks in Http.get.
             try {
+                final Map<String, String> headers = new LinkedHashMap<>();
+                headers.put("Accept", "application/vnd.github+json");
+                headers.put("User-Agent", "DiscordLogger/" + current);
 
-                HttpRequest req = HttpRequest.newBuilder(URI.create(RELEASES_LIST_API_URL))
-                        .timeout(TIMEOUT)
-                        .header("Accept", "application/vnd.github+json")
-                        .header("User-Agent", "DiscordLogger/" + current)
-                        .GET()
-                        .build();
+                final Http.Result resp =
+                        Http.get(RELEASES_LIST_API_URL, headers, (int) TIMEOUT.toMillis());
 
-                HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
-
-                if (resp.statusCode() != 200) {
-                    plugin.getLogger().fine("Update check returned HTTP " + resp.statusCode());
+                if (resp.status() != 200) {
+                    plugin.getLogger().fine("Update check returned HTTP " + resp.status());
                     return;
                 }
 

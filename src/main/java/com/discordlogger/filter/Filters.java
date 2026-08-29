@@ -1,7 +1,6 @@
 package com.discordlogger.filter;
 
 import com.discordlogger.util.Strings;
-
 import com.discordlogger.util.Vanish;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -11,8 +10,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Decides what never reaches Discord, regardless of which events are enabled.

@@ -1,8 +1,7 @@
 package com.discordlogger.update;
 
-import com.discordlogger.util.Io;
-
 import com.discordlogger.lang.Lang;
+import com.discordlogger.util.Io;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

@@ -1,7 +1,6 @@
 package com.discordlogger.log;
 
 import com.discordlogger.util.Strings;
-
 import com.discordlogger.webhook.DiscordWebhook;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;

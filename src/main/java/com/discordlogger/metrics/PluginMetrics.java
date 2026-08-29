@@ -1,14 +1,8 @@
 package com.discordlogger.metrics;
 
-import com.discordlogger.util.Io;
-
-import java.util.Collections;
-
-import java.util.Arrays;
-
-import com.discordlogger.util.Strings;
-
 import com.discordlogger.update.BuildInfo;
+import com.discordlogger.util.Io;
+import com.discordlogger.util.Strings;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.AdvancedPie;
 import org.bstats.charts.DrilldownPie;
@@ -24,6 +18,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;

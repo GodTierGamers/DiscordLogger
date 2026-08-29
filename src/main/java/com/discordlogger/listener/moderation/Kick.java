@@ -1,9 +1,8 @@
 package com.discordlogger.listener.moderation;
 
-import com.discordlogger.util.Strings;
-
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import com.discordlogger.util.Strings;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

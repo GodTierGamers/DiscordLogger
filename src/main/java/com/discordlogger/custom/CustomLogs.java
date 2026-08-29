@@ -1,12 +1,11 @@
 package com.discordlogger.custom;
 
-import java.util.Collections;
-
 import com.discordlogger.filter.Filters;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 

@@ -1,9 +1,8 @@
 package com.discordlogger.command;
 
-import com.discordlogger.util.Strings;
-
 import com.discordlogger.lang.Lang;
 import com.discordlogger.metrics.Counters;
+import com.discordlogger.util.Strings;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

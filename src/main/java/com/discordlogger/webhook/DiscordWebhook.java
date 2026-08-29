@@ -1,13 +1,9 @@
 package com.discordlogger.webhook;
 
+import com.discordlogger.util.Http;
 import com.discordlogger.util.Strings;
-
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
@@ -194,36 +190,26 @@ public final class DiscordWebhook {
      * the decision to retry, wait or give up, and only it knows the surrounding context.
      */
     static Response post(String url, String json) {
-        try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(TIMEOUT)
-                    .build();
-            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                    .timeout(TIMEOUT)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
-                    .build();
-            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
-
-            final int status = res.statusCode();
-            final Long remaining = headerAsLong(res, "x-ratelimit-remaining", 1.0);
-            final Long resetAfterMs = headerAsLong(res, "x-ratelimit-reset-after", 1000.0);
-
-            long retryAfterMs = 0L;
-            if (status == 429) {
-                // Retry-After is seconds (possibly fractional); reset-after is the same
-                // value under a different name. Fall back to a second if neither parses.
-                final Long fromRetryAfter = headerAsLong(res, "retry-after", 1000.0);
-                retryAfterMs = (fromRetryAfter != null) ? fromRetryAfter
-                        : (resetAfterMs != null ? resetAfterMs : 1000L);
-            }
-
-            return new Response(status, remaining, resetAfterMs, retryAfterMs);
-
-        } catch (Exception e) {
-            // Status 0 = never reached Discord (DNS, timeout, TLS). Retryable.
+        final Http.Result res = Http.postJson(url, json, (int) TIMEOUT.toMillis());
+        if (res.status() == 0) {
+            // Never reached Discord (DNS, timeout, TLS). Retryable.
             return new Response(0, null, null, 0L);
         }
+
+        final int status = res.status();
+        final Long remaining = headerAsLong(res, "x-ratelimit-remaining", 1.0);
+        final Long resetAfterMs = headerAsLong(res, "x-ratelimit-reset-after", 1000.0);
+
+        long retryAfterMs = 0L;
+        if (status == 429) {
+            // Retry-After is seconds (possibly fractional); reset-after is the same
+            // value under a different name. Fall back to a second if neither parses.
+            final Long fromRetryAfter = headerAsLong(res, "retry-after", 1000.0);
+            retryAfterMs = (fromRetryAfter != null) ? fromRetryAfter
+                    : (resetAfterMs != null ? resetAfterMs : 1000L);
+        }
+
+        return new Response(status, remaining, resetAfterMs, retryAfterMs);
     }
 
     /**
@@ -240,29 +226,18 @@ public final class DiscordWebhook {
      * the admin's problem.
      */
     public static int probe(String url) {
-        try {
-            HttpClient client = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
-            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                    .timeout(TIMEOUT)
-                    .GET()
-                    .build();
-            return client.send(req, HttpResponse.BodyHandlers.discarding()).statusCode();
-        } catch (Exception unreachable) {
-            return 0;
-        }
+        return Http.get(url, null, (int) TIMEOUT.toMillis()).status();
     }
 
     /** Reads a numeric header and scales it (headers are in seconds; we work in millis). */
-    private static Long headerAsLong(HttpResponse<String> res, String name, double scale) {
-        return res.headers().firstValue(name)
-                .map(v -> {
-                    try {
-                        return (long) Math.ceil(Double.parseDouble(v.trim()) * scale);
-                    } catch (NumberFormatException e) {
-                        return null;
-                    }
-                })
-                .orElse(null);
+    private static Long headerAsLong(Http.Result res, String name, double scale) {
+        final String v = res.header(name);
+        if (v == null) return null;
+        try {
+            return (long) Math.ceil(Double.parseDouble(v.trim()) * scale);
+        } catch (NumberFormatException notANumber) {
+            return null;
+        }
     }
 
     /** JSON string escaper. Handles all control characters correctly. */

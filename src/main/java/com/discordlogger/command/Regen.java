@@ -1,10 +1,9 @@
 package com.discordlogger.command;
 
-import com.discordlogger.util.Io;
-
 import com.discordlogger.DiscordLogger;
 import com.discordlogger.config.ConfigMigrator;
 import com.discordlogger.lang.Lang;
+import com.discordlogger.util.Io;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 

@@ -1,13 +1,7 @@
 package com.discordlogger.config;
 
 import com.discordlogger.util.Io;
-
-import java.util.ArrayList;
-
-import java.util.Collections;
-
 import com.discordlogger.util.Strings;
-
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
@@ -16,6 +10,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
