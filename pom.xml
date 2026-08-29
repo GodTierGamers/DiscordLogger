@@ -47,18 +47,28 @@
 
              Spigot rather than Paper, so one JAR serves both — Paper implements the
              Bukkit API, so nothing is given up by compiling against the smaller of
-             the two. The old note here about 1.19.4 being the floor because older
-             Bukkit needed SnakeYAML 1.x no longer applies: SnakeYAML is the server's
-             now rather than shaded, so there is nothing left to collide with. -->
-        <spigot.api.version>1.13.2-R0.1-SNAPSHOT</spigot.api.version>
+             the two.
 
-        <!-- The oldest API the plugin promises to compile against, checked by CI's
-             compat-floor job. It is LOWER than spigot.api.version above, and the gap
-             is deliberate: api-version cannot express a patch before 1.20.5, so
-             declaring 1.13 admits 1.13.0 onward while the normal build uses 1.13.2.
-             Compiling against this floor is what makes advertising the whole 1.13
-             line honest rather than hopeful — it fails the build the moment anyone
-             uses an API added after the oldest server that can load the plugin. -->
+             This is 1.13.0, the lowest artifact that exists for the 1.13 line, and it
+             is deliberately the same number as dl.compat.floor below. They used to
+             differ because the test suite could not run at the floor — Bukkit below
+             1.19.4 wanted SnakeYAML 1.x and collided with our shaded 2.x on the
+             unrelocated test classpath. SnakeYAML is the server's now rather than
+             shaded, so that reason is gone and there is no longer any excuse for
+             building above the floor: 1.13.1 and 1.13.2 each added API that a 1.13.0
+             server does not have, and compiling against them would let it in. -->
+        <spigot.api.version>1.13-R0.1-SNAPSHOT</spigot.api.version>
+
+        <!-- The oldest API the plugin promises to compile against, enforced by CI's
+             compat-floor job. It currently EQUALS spigot.api.version above, which is
+             the goal state rather than a redundancy: the normal build already sits on
+             the floor, so the job passes trivially today.
+
+             It stays because it is the thing that fails if the two ever drift apart —
+             raise the build to a newer API without raising this, and the job rebuilds
+             at the floor and catches the API that a floor-version server would not
+             have. That is a cheap guard against exactly the mistake that is easy to
+             make while lowering support further. -->
         <dl.compat.floor>1.13-R0.1-SNAPSHOT</dl.compat.floor>
 
         <!-- SINGLE SOURCE OF TRUTH for the versions humans would otherwise retype.
