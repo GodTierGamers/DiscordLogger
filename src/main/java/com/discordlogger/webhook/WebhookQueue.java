@@ -1,5 +1,7 @@
 package com.discordlogger.webhook;
 
+import com.discordlogger.util.Strings;
+
 import com.discordlogger.alert.OpAlert;
 import com.discordlogger.metrics.Counters;
 
@@ -156,7 +158,7 @@ public final class WebhookQueue {
 
     /** Queue a payload. Never blocks the caller — the main thread must not wait on Discord. */
     public static void enqueue(String url, String json) {
-        if (url == null || url.isBlank() || json == null) return;
+        if (url == null || Strings.isBlank(url) || json == null) return;
 
         final Destination dest = DESTINATIONS.computeIfAbsent(url, Destination::new);
 

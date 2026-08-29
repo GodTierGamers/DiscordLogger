@@ -1,5 +1,7 @@
 package com.discordlogger.filter;
 
+import com.discordlogger.util.Strings;
+
 import com.discordlogger.util.Vanish;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -137,7 +139,7 @@ public final class Filters {
     private static Set<String> constantSet(JavaPlugin plugin, String path) {
         final Set<String> out = new LinkedHashSet<>();
         for (String entry : plugin.getConfig().getStringList(path)) {
-            if (entry == null || entry.isBlank()) continue;
+            if (entry == null || Strings.isBlank(entry)) continue;
             out.add(entry.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_'));
         }
         return out;
@@ -151,7 +153,7 @@ public final class Filters {
         // One list accepts both names and UUIDs: asking an admin which one they have
         // is friction, and the two are trivially distinguishable.
         for (String entry : plugin.getConfig().getStringList("filters.ignored_players")) {
-            if (entry == null || entry.isBlank()) continue;
+            if (entry == null || Strings.isBlank(entry)) continue;
             final String trimmed = entry.trim();
             try {
                 uuids.add(UUID.fromString(trimmed));
@@ -162,31 +164,31 @@ public final class Filters {
 
         final Set<String> commands = new LinkedHashSet<>();
         for (String entry : plugin.getConfig().getStringList("filters.ignored_commands")) {
-            if (entry == null || entry.isBlank()) continue;
+            if (entry == null || Strings.isBlank(entry)) continue;
             commands.add(normaliseCommand(entry));
         }
 
         final Set<String> worlds = new LinkedHashSet<>();
         for (String entry : plugin.getConfig().getStringList("filters.ignored_worlds")) {
-            if (entry == null || entry.isBlank()) continue;
+            if (entry == null || Strings.isBlank(entry)) continue;
             worlds.add(entry.trim().toLowerCase(Locale.ROOT));
         }
 
         final List<String> patterns = plugin.getConfig()
                 .getStringList("filters.ignored_chat_containing").stream()
-                .filter(s -> s != null && !s.isBlank())
+                .filter(s -> s != null && !Strings.isBlank(s))
                 .map(s -> s.toLowerCase(Locale.ROOT))
                 .collect(Collectors.toList());
 
         final Set<String> onlyCommands = new LinkedHashSet<>();
         for (String entry : plugin.getConfig().getStringList("filters.only_log_commands")) {
-            if (entry == null || entry.isBlank()) continue;
+            if (entry == null || Strings.isBlank(entry)) continue;
             onlyCommands.add(normaliseCommand(entry));
         }
 
         final List<String> advancements = plugin.getConfig()
                 .getStringList("filters.ignored_advancements").stream()
-                .filter(a -> a != null && !a.isBlank())
+                .filter(a -> a != null && !Strings.isBlank(a))
                 .map(a -> a.trim().toLowerCase(Locale.ROOT))
                 .collect(Collectors.toList());
 
@@ -259,7 +261,7 @@ public final class Filters {
      * @param raw the command as typed, with or without a leading slash and arguments
      */
     public static boolean blocksCommand(String raw) {
-        if (raw == null || raw.isBlank()) return false;
+        if (raw == null || Strings.isBlank(raw)) return false;
         final Snapshot snap = current;
         final String word = normaliseCommand(raw);
 
@@ -338,7 +340,7 @@ public final class Filters {
         if (message == null || message.isEmpty()) return false;
         final Snapshot snap = current;
 
-        if (snap.minChatLength() > 0 && message.strip().length() < snap.minChatLength()) return true;
+        if (snap.minChatLength() > 0 && Strings.strip(message).length() < snap.minChatLength()) return true;
 
         final String haystack = message.toLowerCase(Locale.ROOT);
         for (String needle : snap.chatPatterns()) {

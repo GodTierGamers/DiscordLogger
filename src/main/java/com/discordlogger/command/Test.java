@@ -1,5 +1,7 @@
 package com.discordlogger.command;
 
+import java.util.Collections;
+
 import com.discordlogger.log.Log;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -60,7 +62,7 @@ public final class Test implements Subcommand {
      */
     @Override
     public List<String> tabComplete(CommandSender sender, String[] args) {
-        if (args.length > 1) return List.of();
+        if (args.length > 1) return Collections.emptyList();
         final List<String> out = new ArrayList<>();
         final ConfigurationSection log = plugin.getConfig().getConfigurationSection("log");
         if (log != null) {

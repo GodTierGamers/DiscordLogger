@@ -26,11 +26,11 @@ public final class Names {
 
         // Prefer live displayName, else cached nick
         String nick = cleanDisplay(player.getDisplayName());
-        if (nick == null || nick.isBlank() || nick.equalsIgnoreCase(real)) {
+        if (nick == null || Strings.isBlank(nick) || nick.equalsIgnoreCase(real)) {
             nick = NICK_CACHE.get(player.getUniqueId());
         }
 
-        if (nick == null || nick.isBlank() || nick.equalsIgnoreCase(real)) {
+        if (nick == null || Strings.isBlank(nick) || nick.equalsIgnoreCase(real)) {
             return real; // no distinct nickname
         }
         return Log.mdEscape(nick) + " (" + Log.mdEscape(real) + ")";
@@ -41,7 +41,7 @@ public final class Names {
         if (player == null) return;
         final String real = player.getName();
         String nick = cleanDisplay(player.getDisplayName());
-        if (nick != null && !nick.isBlank() && !nick.equalsIgnoreCase(real)) {
+        if (nick != null && !Strings.isBlank(nick) && !nick.equalsIgnoreCase(real)) {
             NICK_CACHE.put(player.getUniqueId(), nick);
         }
     }

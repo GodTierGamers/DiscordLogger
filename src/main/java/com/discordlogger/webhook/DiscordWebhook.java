@@ -1,5 +1,7 @@
 package com.discordlogger.webhook;
 
+import com.discordlogger.util.Strings;
+
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.net.URI;
@@ -24,7 +26,7 @@ public final class DiscordWebhook {
 
     /** Plain content message. */
     public static void sendAsync(JavaPlugin plugin, String url, String content) {
-        if (url == null || url.isBlank()) return;
+        if (url == null || Strings.isBlank(url)) return;
         dispatch(plugin, url, "{\"content\":\"" + escape(content) + "\"}");
     }
 
@@ -34,30 +36,30 @@ public final class DiscordWebhook {
             String title, String description, int color,
             String isoTimestampUtc, String authorName, String footerText, String thumbnailUrl
     ) {
-        if (url == null || url.isBlank()) return;
+        if (url == null || Strings.isBlank(url)) return;
 
         StringBuilder sb = new StringBuilder(1024);
         sb.append("{\"embeds\":[{");
 
-        if (title != null && !title.isBlank()) {
+        if (title != null && !Strings.isBlank(title)) {
             sb.append("\"title\":\"").append(escape(title)).append("\",");
         }
         sb.append("\"description\":\"").append(escape(description == null ? "" : description)).append("\",");
         sb.append("\"color\":").append(color).append(",");
 
-        if (authorName != null && !authorName.isBlank()) {
+        if (authorName != null && !Strings.isBlank(authorName)) {
             sb.append("\"author\":{\"name\":\"").append(escape(authorName)).append("\"},");
         }
-        if (footerText != null && !footerText.isBlank()) {
+        if (footerText != null && !Strings.isBlank(footerText)) {
             sb.append("\"footer\":{")
                     .append("\"text\":\"").append(escape(footerText)).append("\",")
                     .append("\"icon_url\":\"").append(escape(FOOTER_ICON_URL)).append("\"")
                     .append("},");
         }
-        if (thumbnailUrl != null && !thumbnailUrl.isBlank()) {
+        if (thumbnailUrl != null && !Strings.isBlank(thumbnailUrl)) {
             sb.append("\"thumbnail\":{\"url\":\"").append(escape(thumbnailUrl)).append("\"},");
         }
-        if (isoTimestampUtc != null && !isoTimestampUtc.isBlank()) {
+        if (isoTimestampUtc != null && !Strings.isBlank(isoTimestampUtc)) {
             sb.append("\"timestamp\":\"").append(escape(isoTimestampUtc)).append("\",");
         }
 
@@ -80,7 +82,7 @@ public final class DiscordWebhook {
             String thumbnailUrl,
             String[][] fields // each element: { name, value, inline("true"/"false") }
     ) {
-        if (url == null || url.isBlank()) return;
+        if (url == null || Strings.isBlank(url)) return;
         dispatch(plugin, url, buildEmbedJson(title, description, color, timestampIso,
                 author, footer, thumbnailUrl, fields));
     }

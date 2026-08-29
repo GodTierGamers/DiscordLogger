@@ -1,5 +1,7 @@
 package com.discordlogger.listener.moderation;
 
+import com.discordlogger.util.Strings;
+
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.Bukkit;
@@ -62,7 +64,7 @@ public final class Kick implements Listener {
 
     private void handleCommand(Player actorPlayer, String rawWithSlash) {
         final String raw = rawWithSlash.startsWith("/") ? rawWithSlash.substring(1) : rawWithSlash;
-        if (raw.isBlank()) return;
+        if (Strings.isBlank(raw)) return;
 
         final String[] parts = raw.split("\\s+", 3);
         if (!parts[0].toLowerCase(Locale.ROOT).equals("kick")) return;
@@ -114,7 +116,7 @@ public final class Kick implements Listener {
         List<Log.Field> fields = new ArrayList<>();
         fields.add(new Log.Field("Player Kicked:", targetName));
         fields.add(new Log.Field("Kick Reason:",
-                (data.reason() == null || data.reason().isBlank()) ? "N/A" : data.reason()));
+                (data.reason() == null || Strings.isBlank(data.reason())) ? "N/A" : data.reason()));
         fields.add(new Log.Field("Kicked by:", data.actorName()));
 
         Log.eventFieldsWithThumb("kick", "Player Kicked", null, fields, thumb);

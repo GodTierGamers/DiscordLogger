@@ -40,7 +40,7 @@ public final class PlayerJoin implements Listener {
                         "Player Join",
                         msg,
                         null,
-                        java.util.List.of(new Log.Field("Platform", "Bedrock")),
+                        java.util.Collections.singletonList(new Log.Field("Platform", "Bedrock")),
                         thumb
                 );
             } else {

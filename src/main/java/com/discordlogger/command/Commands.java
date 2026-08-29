@@ -1,5 +1,7 @@
 package com.discordlogger.command;
 
+import com.discordlogger.util.Strings;
+
 import com.discordlogger.lang.Lang;
 import com.discordlogger.metrics.Counters;
 import org.bukkit.ChatColor;
@@ -37,7 +39,7 @@ public final class Commands implements CommandExecutor, TabCompleter {
 
         // Permission check
         String perm = sc.permission();
-        if (perm != null && !perm.isBlank() && !sender.hasPermission(perm)) {
+        if (perm != null && !Strings.isBlank(perm) && !sender.hasPermission(perm)) {
             sender.sendMessage(Lang.chat("chat.no-permission", "label", label, "command", sc.name()));
             return true;
         }
@@ -57,7 +59,7 @@ public final class Commands implements CommandExecutor, TabCompleter {
             return subs.values().stream()
                     .filter(sc -> {
                         String perm = sc.permission();
-                        return perm == null || perm.isBlank() || sender.hasPermission(perm);
+                        return perm == null || Strings.isBlank(perm) || sender.hasPermission(perm);
                     })
                     .map(Subcommand::name)
                     .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(prefix))
@@ -69,7 +71,7 @@ public final class Commands implements CommandExecutor, TabCompleter {
         if (sc == null) return Collections.emptyList();
 
         String perm = sc.permission();
-        if (perm != null && !perm.isBlank() && !sender.hasPermission(perm)) {
+        if (perm != null && !Strings.isBlank(perm) && !sender.hasPermission(perm)) {
             return Collections.emptyList();
         }
 
@@ -89,7 +91,7 @@ public final class Commands implements CommandExecutor, TabCompleter {
     public boolean isUsableBy(CommandSender sender) {
         for (Subcommand sc : subs.values()) {
             final String perm = sc.permission();
-            if (perm == null || perm.isBlank() || sender.hasPermission(perm)) return true;
+            if (perm == null || Strings.isBlank(perm) || sender.hasPermission(perm)) return true;
         }
         return false;
     }
@@ -98,7 +100,7 @@ public final class Commands implements CommandExecutor, TabCompleter {
         sender.sendMessage(Lang.chat("chat.help-header"));
         for (Subcommand sc : subs.values()) {
             String perm = sc.permission();
-            if (perm == null || perm.isBlank() || sender.hasPermission(perm)) {
+            if (perm == null || Strings.isBlank(perm) || sender.hasPermission(perm)) {
                 sender.sendMessage(Lang.chat("chat.help-entry",
                         "label", label, "command", sc.name(), "description", sc.description()));
             }

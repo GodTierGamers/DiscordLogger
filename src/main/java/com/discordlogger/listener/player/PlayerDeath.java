@@ -1,5 +1,7 @@
 package com.discordlogger.listener.player;
 
+import com.discordlogger.util.Strings;
+
 import com.discordlogger.filter.Filters;
 import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
@@ -105,7 +107,7 @@ public final class PlayerDeath implements Listener {
                 && last.getCause() == EntityDamageEvent.DamageCause.VOID
                 && KillCommandTracker.wasKilledByCommand(victim)) {
             final String byCommand = Lang.text("discord.death.causes.kill");
-            if (byCommand != null && !byCommand.isBlank()) return byCommand;
+            if (byCommand != null && !Strings.isBlank(byCommand)) return byCommand;
         }
 
         final String text = last == null ? null : causeText(last.getCause());

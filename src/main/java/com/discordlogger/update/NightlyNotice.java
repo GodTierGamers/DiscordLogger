@@ -1,5 +1,7 @@
 package com.discordlogger.update;
 
+import com.discordlogger.util.Io;
+
 import com.discordlogger.lang.Lang;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -62,11 +64,11 @@ public final class NightlyNotice implements Listener {
         String version = BuildInfo.version();
         try {
             if (marker.exists()) {
-                String seen = Files.readString(marker.toPath(), StandardCharsets.UTF_8).trim();
+                String seen = Io.readString(marker.toPath()).trim();
                 if (seen.equals(version)) return false;
             }
             Files.createDirectories(marker.getParentFile().toPath());
-            Files.writeString(marker.toPath(), version, StandardCharsets.UTF_8);
+            Io.writeString(marker.toPath(), version, StandardCharsets.UTF_8);
         } catch (Exception ignored) {
             // If we can't persist the marker, fail open (announce) rather than closed.
         }

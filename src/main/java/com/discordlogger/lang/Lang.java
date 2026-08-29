@@ -1,5 +1,7 @@
 package com.discordlogger.lang;
 
+import java.util.Collections;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import com.discordlogger.config.ConfigMigrator;
@@ -159,6 +161,6 @@ public final class Lang {
         final ConfigurationSection sec = lang.getConfigurationSection(path);
         if (sec != null) return sec.getValues(false);
         final ConfigurationSection fallback = BUNDLED.getConfigurationSection(path);
-        return fallback != null ? fallback.getValues(false) : Map.of();
+        return fallback != null ? fallback.getValues(false) : Collections.<String, Object>emptyMap();
     }
 }

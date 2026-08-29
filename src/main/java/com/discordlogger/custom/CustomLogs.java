@@ -1,5 +1,7 @@
 package com.discordlogger.custom;
 
+import java.util.Collections;
+
 import com.discordlogger.filter.Filters;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -63,7 +65,7 @@ public final class CustomLogs {
         }
     }
 
-    private static volatile List<Rule> rules = List.of();
+    private static volatile List<Rule> rules = Collections.emptyList();
 
     private CustomLogs() {}
 
@@ -111,7 +113,7 @@ public final class CustomLogs {
             }
         }
 
-        rules = List.copyOf(parsed);
+        rules = Collections.unmodifiableList(new ArrayList<>(parsed));
         if (!parsed.isEmpty()) {
             plugin.getLogger().info("Custom logs active: " + parsed.size() + " rule(s).");
         }
@@ -150,7 +152,7 @@ public final class CustomLogs {
      * typing the long form.
      */
     public static List<String> words(String s) {
-        if (s == null) return List.of();
+        if (s == null) return Collections.emptyList();
         final List<String> out = new ArrayList<>();
         for (String w : s.trim().split("\\s+")) {
             if (!w.isEmpty()) out.add(w.toLowerCase(Locale.ROOT));

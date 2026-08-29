@@ -1,5 +1,13 @@
 package com.discordlogger.config;
 
+import com.discordlogger.util.Io;
+
+import java.util.ArrayList;
+
+import java.util.Collections;
+
+import com.discordlogger.util.Strings;
+
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
@@ -165,9 +173,9 @@ public final class ConfigMigrator {
         int end = pos.index() + 1;
         while (end < lines.size()) {
             final String line = lines.get(end);
-            if (line.isBlank()) break;
+            if (Strings.isBlank(line)) break;
             if (leadingSpaces(line) <= pos.keyIndent()) break;
-            if (!line.strip().startsWith("-")) break;
+            if (!Strings.strip(line).startsWith("-")) break;
             end++;
         }
         return new int[]{pos.index(), end};
@@ -190,12 +198,12 @@ public final class ConfigMigrator {
         final Map<String, String> comments = new LinkedHashMap<>();
         for (int i = 1; i < defaultBlock.size(); i++) {
             final String line = defaultBlock.get(i);
-            final String trimmed = line.strip();
+            final String trimmed = Strings.strip(line);
             if (!trimmed.startsWith("-")) continue;
             final String afterDash = trimmed.substring(1);
             final int hash = findUnquotedHash(afterDash, 0);
             if (hash < 0) continue;
-            final String value = afterDash.substring(0, hash).strip();
+            final String value = Strings.strip(afterDash.substring(0, hash));
             if (value.isEmpty()) continue;
             // Keep the original spacing between the value and its comment, so an
             // unchanged file round-trips byte for byte rather than being reindented.
@@ -212,7 +220,7 @@ public final class ConfigMigrator {
             return out;
         }
         out.add(key + comment);
-        final String indent = " ".repeat(keyIndent + 2);
+        final String indent = Strings.repeat(" ", keyIndent + 2);
         for (Object v : values) {
             final String rendered = renderListItem(v);
             final String itemComment = comments.get(rendered);
@@ -234,7 +242,7 @@ public final class ConfigMigrator {
     private static String renderListItem(Object v) {
         if (!(v instanceof String)) return renderScalar(v);
         final String s = (String) v;
-        if (s.isEmpty() || !s.equals(s.strip())) return renderScalar(s);
+        if (s.isEmpty() || !s.equals(Strings.strip(s))) return renderScalar(s);
         if (PLAIN_SAFE.matcher(s).matches() && !YAML_RESERVED.matcher(s).matches()) return s;
         return renderScalar(s);
     }
@@ -272,13 +280,13 @@ public final class ConfigMigrator {
     public static boolean setScalar(File configFile, String path, Object value) {
         try {
             List<String> lines = new ArrayList<>(
-                    Arrays.asList(Files.readString(configFile.toPath(), StandardCharsets.UTF_8)
+                    Arrays.asList(Io.readString(configFile.toPath())
                             .split("\r?\n", -1)));
-            List<String> reference = List.copyOf(lines);
+            List<String> reference = Collections.unmodifiableList(new ArrayList<>(lines));
             if (findLeafLine(reference, path) == null) return false;
 
             replaceLeafValueInDefault(lines, reference, path, value);
-            Files.writeString(configFile.toPath(), String.join("\n", lines),
+            Io.writeString(configFile.toPath(), String.join("\n", lines),
                     StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             return true;
@@ -297,7 +305,7 @@ public final class ConfigMigrator {
     public static Integer shippedVersion(JavaPlugin plugin, String resourcePath) {
         try (InputStream in = plugin.getResource(resourcePath)) {
             if (in == null) return null;
-            return extractVersion(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+            return extractVersion(Io.readString(in));
         } catch (Exception ex) {
             return null;
         }
@@ -314,7 +322,7 @@ public final class ConfigMigrator {
                     plugin.getLogger().warning("Default resource not found: " + resourcePath);
                     return new Result(Status.UNKNOWN, null, null);
                 }
-                defaultText = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                defaultText = Io.readString(in);
             }
             final Map<String, Object> defFlat = flattenYaml(new Yaml().load(defaultText));
             final Integer newVer = detectVersion(defaultText, defFlat, m -> {});
@@ -322,13 +330,13 @@ public final class ConfigMigrator {
             // If user file missing → write default and return (fresh install; no migration)
             if (!userFile.exists()) {
                 Files.createDirectories(userFile.getParentFile().toPath());
-                Files.writeString(userFile.toPath(), defaultText, StandardCharsets.UTF_8,
+                Io.writeString(userFile.toPath(), defaultText, StandardCharsets.UTF_8,
                         StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                 return new Result(Status.FRESH_INSTALL, newVer, newVer);
             }
 
             // Read user's current config (verbatim)
-            final String userText = Files.readString(userFile.toPath(), StandardCharsets.UTF_8);
+            final String userText = Io.readString(userFile.toPath());
             Map<String, Object> userFlat;
             try {
                 userFlat = flattenYaml(new Yaml().load(userText));
@@ -358,7 +366,7 @@ public final class ConfigMigrator {
             final String base = stripExtension(userFile.getName());
 
             File newFile = new File(userFile.getParentFile(), base + ".new.yml");
-            Files.writeString(newFile.toPath(), merged, StandardCharsets.UTF_8,
+            Io.writeString(newFile.toPath(), merged, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
             // Rotate: <name>.yml -> <name>.old.yml, new -> <name>.yml
@@ -591,11 +599,11 @@ public final class ConfigMigrator {
         // search for "leafKey:" at expectedIndent
         for (int idx = i; idx < lines.size(); idx++) {
             String ln = lines.get(idx);
-            if (ln.strip().isEmpty() || ln.strip().startsWith("#")) continue;
+            if (Strings.strip(ln).isEmpty() || Strings.strip(ln).startsWith("#")) continue;
             int ind = leadingSpaces(ln);
             if (ind < expectedIndent) break;      // out of section
             if (ind > expectedIndent) continue;   // deeper child
-            String trimmed = ln.strip();
+            String trimmed = Strings.strip(ln);
             if (trimmed.startsWith(leafKey + ":")) {
                 return new LeafPos(idx, expectedIndent);
             }
@@ -607,11 +615,11 @@ public final class ConfigMigrator {
     private static int findSectionHeader(List<String> lines, int from, int indent, String key) {
         for (int i = from; i < lines.size(); i++) {
             String ln = lines.get(i);
-            if (ln.strip().isEmpty() || ln.strip().startsWith("#")) continue;
+            if (Strings.strip(ln).isEmpty() || Strings.strip(ln).startsWith("#")) continue;
             int ind = leadingSpaces(ln);
             if (ind < indent) return -1;
             if (ind != indent) continue;
-            String trimmed = ln.strip();
+            String trimmed = Strings.strip(ln);
             if (trimmed.startsWith(key + ":")) return i;
         }
         return -1;

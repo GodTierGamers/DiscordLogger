@@ -1,5 +1,7 @@
 package com.discordlogger.log;
 
+import com.discordlogger.util.Strings;
+
 import com.discordlogger.webhook.DiscordWebhook;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -130,19 +132,19 @@ public final class Log {
                     ConfigurationSection eventSec = groupSec.getConfigurationSection(event);
                     if (eventSec == null) continue;   // v9-shaped boolean
                     String v = eventSec.getString("color");
-                    if (v == null || v.isBlank()) continue;
+                    if (v == null || Strings.isBlank(v)) continue;
                     int c = hex(v, currentDefault);
 
                     cm.put(normalizeKey(group + "_" + event), c);
 
                     final String hook = eventSec.getString("webhook");
-                    if (hook != null && !hook.isBlank() && isValidWebhookUrl(hook.trim())) {
+                    if (hook != null && !Strings.isBlank(hook) && isValidWebhookUrl(hook.trim())) {
                         wm.put(normalizeKey(group + "_" + event), hook.trim());
                         if ("moderation".equals(group)) {
                             wm.put(normalizeKey(event), hook.trim());
                             if ("whitelist_edit".equals(event)) wm.put("whitelist", hook.trim());
                         }
-                    } else if (hook != null && !hook.isBlank()) {
+                    } else if (hook != null && !Strings.isBlank(hook)) {
                         plugin.getLogger().warning("log." + group + "." + event
                                 + ".webhook is not a valid Discord webhook URL — that event will "
                                 + "use the main webhook instead.");
@@ -200,7 +202,7 @@ public final class Log {
         // guard cannot tell the two apart, and a rule with exceptions stops being one.
         final Map<String, String> byUrl = new LinkedHashMap<>();
         final String main = webhookFor(null);
-        if (main != null && !main.isBlank()) byUrl.put(main, "webhook.url");
+        if (main != null && !Strings.isBlank(main)) byUrl.put(main, "webhook.url");
         for (Map.Entry<String, String> e : webhookMap.entrySet()) {
             byUrl.putIfAbsent(e.getValue(), "log." + e.getKey() + ".webhook");
         }
@@ -255,7 +257,7 @@ public final class Log {
     // ---- Internal utilities ----
 
     public static boolean isValidWebhookUrl(String url) {
-        if (url == null || url.isBlank()) return false;
+        if (url == null || Strings.isBlank(url)) return false;
         return url.startsWith("https://discord.com/api/webhooks/")
                 || url.startsWith("https://discordapp.com/api/webhooks/")
                 || url.startsWith("https://ptb.discord.com/api/webhooks/")
@@ -291,7 +293,7 @@ public final class Log {
      */
     private static String webhookFor(String categoryKey) {
         final String routed = webhookMap.get(normalizeKey(categoryKey));
-        return (routed != null && !routed.isBlank()) ? routed : webhookUrl;
+        return (routed != null && !Strings.isBlank(routed)) ? routed : webhookUrl;
     }
 
     // NOTE: webhookUrl must be read ONLY through webhookFor above. Every send site
@@ -309,7 +311,7 @@ public final class Log {
 
     /** Server name segment for plain-text messages. */
     private static String nameSegment() {
-        if (plainServerName == null || plainServerName.isBlank()) return "";
+        if (plainServerName == null || Strings.isBlank(plainServerName)) return "";
         return " [" + mdEscape(plainServerName) + "]";
     }
 
@@ -454,8 +456,8 @@ public final class Log {
         // Console echo
         StringBuilder console = new StringBuilder();
         console.append("[").append(now).append("] ")
-                .append(title == null || title.isBlank() ? category : title).append(": ");
-        if (description != null && !description.isBlank()) {
+                .append(title == null || Strings.isBlank(title) ? category : title).append(": ");
+        if (description != null && !Strings.isBlank(description)) {
             console.append(description);
             if (fields != null && !fields.isEmpty()) console.append(" | ");
         }
@@ -464,7 +466,7 @@ public final class Log {
             for (Field f : fields) {
                 if (!first) console.append(" | ");
                 console.append(f.name).append(" ")
-                        .append(f.value == null || f.value.isBlank() ? "N/A" : mdEscape(f.value));
+                        .append(f.value == null || Strings.isBlank(f.value) ? "N/A" : mdEscape(f.value));
                 first = false;
             }
         }
@@ -476,11 +478,11 @@ public final class Log {
             DiscordWebhook.sendEmbedWithFields(
                     plugin,
                     webhookFor(category),
-                    /*title*/        (title == null || title.isBlank()) ? category : title,
+                    /*title*/        (title == null || Strings.isBlank(title)) ? category : title,
                     /*description*/  description == null ? "" : description,
                     /*color*/        colorFor(category),
                     /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                    /*author*/       (author == null || author.isBlank()) ? embedAuthorName : author,
+                    /*author*/       (author == null || Strings.isBlank(author)) ? embedAuthorName : author,
                     /*footer*/       embedFooterText,
                     /*thumbnailUrl*/ thumbnailUrl,
                     /*fields*/       toFieldsArray(fields)
@@ -489,14 +491,14 @@ public final class Log {
             StringBuilder sb = new StringBuilder();
             sb.append("`").append(now).append("`").append(nameSegment())
                     .append(" - **").append(category).append("**: ")
-                    .append(title == null || title.isBlank() ? "" : title + "\n");
-            if (description != null && !description.isBlank()) {
+                    .append(title == null || Strings.isBlank(title) ? "" : title + "\n");
+            if (description != null && !Strings.isBlank(description)) {
                 sb.append(description).append("\n");
             }
             if (fields != null) {
                 for (Field f : fields) {
                     sb.append("- ").append(f.name).append(" ")
-                            .append(f.value == null || f.value.isBlank() ? "N/A" : mdEscape(f.value))
+                            .append(f.value == null || Strings.isBlank(f.value) ? "N/A" : mdEscape(f.value))
                             .append("\n");
                 }
             }
@@ -515,7 +517,7 @@ public final class Log {
         for (int i = 0; i < fields.size(); i++) {
             Field f = fields.get(i);
             arr[i][0] = f.name;
-            arr[i][1] = (f.value == null || f.value.isBlank()) ? "N/A" : f.value;
+            arr[i][1] = (f.value == null || Strings.isBlank(f.value)) ? "N/A" : f.value;
             arr[i][2] = Boolean.toString(f.inline);
         }
         return arr;
@@ -548,7 +550,7 @@ public final class Log {
                 color,
                 timestampIso,
                 author,
-                (footer == null || footer.isBlank()) ? embedFooterText : footer,
+                (footer == null || Strings.isBlank(footer)) ? embedFooterText : footer,
                 null,
                 new String[][]{
                         {"Current Version", currentVersion, "false"},

@@ -1,5 +1,7 @@
 package com.discordlogger.listener.moderation;
 
+import com.discordlogger.util.Strings;
+
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.Bukkit;
@@ -36,7 +38,7 @@ public final class Ban implements Listener {
 
     private void handle(Player actorPlayer, String rawWithSlash) {
         final String raw = rawWithSlash.startsWith("/") ? rawWithSlash.substring(1) : rawWithSlash;
-        if (raw.isBlank()) return;
+        if (Strings.isBlank(raw)) return;
 
         // <cmd> <player> [duration/reason...]
         final String[] parts = raw.split("\\s+", 3);
@@ -97,10 +99,10 @@ public final class Ban implements Listener {
                 List<Log.Field> fields = new ArrayList<>();
                 fields.add(new Log.Field("Player Name:", targetName));
                 fields.add(new Log.Field("Ban Reason (if provided):",
-                        (reasonSnap == null || reasonSnap.isBlank()) ? "N/A" : reasonSnap));
+                        (reasonSnap == null || Strings.isBlank(reasonSnap)) ? "N/A" : reasonSnap));
                 fields.add(new Log.Field("Banned by:", moderatorName));
                 fields.add(new Log.Field("Ban Duration:",
-                        (durationSnap == null || durationSnap.isBlank()) ? "N/A" : durationSnap));
+                        (durationSnap == null || Strings.isBlank(durationSnap)) ? "N/A" : durationSnap));
 
                 Log.eventFieldsWithThumb(
                         "ban",

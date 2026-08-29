@@ -1,5 +1,7 @@
 package com.discordlogger.listener.moderation;
 
+import com.discordlogger.util.Strings;
+
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
 import org.bukkit.Bukkit;
@@ -40,7 +42,7 @@ public final class Whitelist implements Listener {
 
     private void handle(Player actorPlayer, String rawWithSlash) {
         final String raw = rawWithSlash.startsWith("/") ? rawWithSlash.substring(1) : rawWithSlash;
-        if (raw.isBlank()) return;
+        if (Strings.isBlank(raw)) return;
 
         // Format: whitelist <sub> [player]
         final String[] parts = raw.split("\\s+", 3);
@@ -122,7 +124,7 @@ public final class Whitelist implements Listener {
     /* ---------- edit (add/remove) ---------- */
 
     private void editWhitelist(Player actorPlayer, String targetName, boolean adding) {
-        if (targetName == null || targetName.isBlank()) return;
+        if (targetName == null || Strings.isBlank(targetName)) return;
 
         final OfflinePlayer off = Bukkit.getOfflinePlayer(targetName);
         final boolean was = off.isWhitelisted();

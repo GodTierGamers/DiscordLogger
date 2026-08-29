@@ -1,5 +1,7 @@
 package com.discordlogger.command;
 
+import com.discordlogger.util.Io;
+
 import com.discordlogger.DiscordLogger;
 import com.discordlogger.config.ConfigMigrator;
 import com.discordlogger.lang.Lang;
@@ -63,7 +65,7 @@ public final class Regen implements Subcommand {
                 sender.sendMessage(Lang.chat("chat.regen-no-bundled"));
                 return true;
             }
-            defaultText = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            defaultText = Io.readString(in);
         } catch (Exception ex) {
             sender.sendMessage(Lang.chat("chat.regen-read-failed", "error", ex.getMessage()));
             return true;
@@ -77,7 +79,7 @@ public final class Regen implements Subcommand {
                         StandardCopyOption.REPLACE_EXISTING);
             }
             Files.createDirectories(dataFolder.toPath());
-            Files.writeString(config.toPath(), defaultText, StandardCharsets.UTF_8,
+            Io.writeString(config.toPath(), defaultText, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (Exception ex) {
             sender.sendMessage(Lang.chat("chat.regen-write-failed", "error", ex.getMessage()));
@@ -104,6 +106,6 @@ public final class Regen implements Subcommand {
 
     @Override
     public List<String> tabComplete(CommandSender sender, String[] args) {
-        return args.length == 1 ? List.of("confirm") : Collections.emptyList();
+        return args.length == 1 ? Collections.singletonList("confirm") : Collections.emptyList();
     }
 }

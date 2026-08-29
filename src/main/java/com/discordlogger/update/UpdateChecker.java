@@ -1,5 +1,7 @@
 package com.discordlogger.update;
 
+import com.discordlogger.util.Strings;
+
 import com.discordlogger.log.Log;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -273,7 +275,7 @@ public final class UpdateChecker {
             }
 
             String[] parts = v.split("\\.");
-            if (parts.length == 0 || parts[0].isBlank()) return null;
+            if (parts.length == 0 || Strings.isBlank(parts[0])) return null;
 
             return new SemVer(part(parts, 0), part(parts, 1), part(parts, 2), betaNum);
         }

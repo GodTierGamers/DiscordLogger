@@ -1,5 +1,13 @@
 package com.discordlogger.metrics;
 
+import com.discordlogger.util.Io;
+
+import java.util.Collections;
+
+import java.util.Arrays;
+
+import com.discordlogger.util.Strings;
+
 import com.discordlogger.update.BuildInfo;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.AdvancedPie;
@@ -81,11 +89,13 @@ public final class PluginMetrics {
      * chart measures how many installs silently get no moderation logging at all.
      */
     private static final List<String> PUNISHMENT_PLUGINS =
-            List.of("LiteBans", "LibertyBans", "AdvancedBan", "BanManager", "CMI");
+            Collections.unmodifiableList(Arrays.asList(
+                    "LiteBans", "LibertyBans", "AdvancedBan", "BanManager", "CMI"));
 
     /** Vanish implementations. A vanished admin joining is currently announced anyway. */
     private static final List<String> VANISH_PLUGINS =
-            List.of("PremiumVanish", "SuperVanish", "Essentials", "CMI");
+            Collections.unmodifiableList(Arrays.asList(
+                    "PremiumVanish", "SuperVanish", "Essentials", "CMI"));
 
     /**
      * Permission managers, in the order a server running two would want reported.
@@ -99,8 +109,9 @@ public final class PluginMetrics {
      * on every server, which is the outcome this chart exists to find early.
      */
     private static final List<String> PERMISSION_PLUGINS =
-            List.of("LuckPerms", "UltraPermissions", "PermissionsEx", "GroupManager",
-                    "zPermissions", "PowerRanks");
+            Collections.unmodifiableList(Arrays.asList(
+                    "LuckPerms", "UltraPermissions", "PermissionsEx", "GroupManager",
+                    "zPermissions", "PowerRanks"));
 
     private PluginMetrics() {}
 
@@ -218,7 +229,7 @@ public final class PluginMetrics {
         try {
             final String v = System.getProperty("java.version", "");
             final String major = v.startsWith("1.") ? v.substring(2, 3) : v.split("[.\\-+]")[0];
-            return major.isBlank() ? UNKNOWN : major;
+            return Strings.isBlank(major) ? UNKNOWN : major;
         } catch (Throwable t) {
             return UNKNOWN;
         }
@@ -355,7 +366,7 @@ public final class PluginMetrics {
     private static String shippedSchema(JavaPlugin plugin) {
         try (InputStream in = plugin.getResource("config.yml")) {
             if (in == null) return null;
-            final Matcher m = SCHEMA_RE.matcher(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+            final Matcher m = SCHEMA_RE.matcher(Io.readString(in));
             return m.find() ? m.group(1).toUpperCase() : null;
         } catch (Exception e) {
             return null;
@@ -365,7 +376,7 @@ public final class PluginMetrics {
     private static String schemaIn(File file) {
         try {
             if (!file.isFile()) return null;
-            final Matcher m = SCHEMA_RE.matcher(Files.readString(file.toPath(), StandardCharsets.UTF_8));
+            final Matcher m = SCHEMA_RE.matcher(Io.readString(file.toPath()));
             return m.find() ? m.group(1).toUpperCase() : null;
         } catch (Exception e) {
             return null;
@@ -430,7 +441,7 @@ public final class PluginMetrics {
         final Map<String, Integer> counts = new HashMap<>();
         forEachEvent(plugin, (path, section) -> {
             final String hook = section == null ? null : section.getString("webhook", "");
-            if (hook != null && !hook.isBlank()) counts.put(path, 1);
+            if (hook != null && !Strings.isBlank(hook)) counts.put(path, 1);
         });
         return counts;
     }
