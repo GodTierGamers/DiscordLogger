@@ -1,6 +1,7 @@
 package com.discordlogger.config;
 
 import com.discordlogger.lang.Lang;
+import com.discordlogger.util.Chat;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -91,7 +92,7 @@ public final class ConfigVersionNotice implements Listener {
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
         if (!p.isOp()) return;
-        p.sendMessage(Lang.chat("chat.config-ahead", "installed", installed, "shipped", shipped));
-        p.sendMessage(Lang.chat("chat.config-ahead-fix"));
+        Chat.send(p, Lang.chat("chat.config-ahead", "installed", installed, "shipped", shipped));
+        Chat.send(p, Lang.chat("chat.config-ahead-fix"));
     }
 }

@@ -9,42 +9,51 @@
     <url>https://github.com/GodTierGamers/DiscordLogger</url>
 
     <properties>
-        <!-- Java 17, not 25. Bytecode is a hard gate: a Java 17 runtime physically
-             cannot load a class file compiled for 25, so targeting 25 restricted the
-             plugin to servers on 1.20.5+. Nothing in this codebase needs anything
-             newer than 17 — see UpdateChecker for the single exception, which was
-             a library API rather than a language feature. -->
-        <maven.compiler.release>17</maven.compiler.release>
+        <!-- Java 8. Bytecode is a hard gate: a runtime physically cannot load a class
+             file compiled for a newer release, and Minecraft 1.13 through 1.16 run on
+             Java 8. Targeting anything higher would mean the plugin loads on none of
+             them, whatever plugin.yml claims.
+
+             This is what the backport actually cost in the source: 15 records became
+             final classes, and three small shims stand in for JDK 9-11 APIs —
+             util.Strings, util.Io and util.Http. -->
+        <maven.compiler.release>8</maven.compiler.release>
+
+        <!-- Tests are compiled at 17, deliberately.
+             Only the plugin bytecode has to be Java 8; the tests never enter the
+             JAR and only ever run on the build JDK. Dragging them down to 8 as
+             well would mean rewriting working text blocks and pattern matches for
+             no gain, and would make the test sources harder to read than the code
+             they cover. -->
+        <maven.compiler.testRelease>17</maven.compiler.testRelease>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Compile against the OLDEST supported API, never the newest. Building
              against a newer one and declaring an older api-version is how you ship a
              plugin that loads and then dies on NoSuchMethodError: the compiler
-             happily links methods the old server does not have. 1.19.4 is the floor
-             because it is the oldest release where the full test suite runs — 1.18.x
-             and 1.19.0 to 1.19.2 ship a Bukkit whose YamlConfiguration needs SnakeYAML
-             1.x, which collides with ours on the (unrelocated) test classpath.
-             That collision is a test artifact only, since SnakeYAML is shaded and
-             relocated in the JAR, but support we cannot run the suite against is
-             support we cannot honestly claim. -->
-        <paper.api.version>1.19.4-R0.1-SNAPSHOT</paper.api.version>
+             happily links methods the old server does not have.
+
+             Spigot rather than Paper, so one JAR serves both — Paper implements the
+             Bukkit API, so nothing is given up by compiling against the smaller of
+             the two. The old note here about 1.19.4 being the floor because older
+             Bukkit needed SnakeYAML 1.x no longer applies: SnakeYAML is the server's
+             now rather than shaded, so there is nothing left to collide with. -->
+        <spigot.api.version>1.13.2-R0.1-SNAPSHOT</spigot.api.version>
 
         <!-- The oldest API the plugin promises to compile against, checked by CI's
-             compat-floor job. It is LOWER than paper.api.version above, and the gap
+             compat-floor job. It is LOWER than spigot.api.version above, and the gap
              is deliberate: api-version cannot express a patch before 1.20.5, so
-             declaring 1.19 admits 1.19.0 onward, while the test suite only runs from
-             1.19.4 (Bukkit switched to SnakeYAML 2.x there, and older ones collide
-             with ours on the unrelocated test classpath). Compiling against this
-             floor is what makes advertising the whole 1.19 line honest rather than
-             hopeful — it fails the build the moment anyone uses an API newer than
-             the oldest server that can load the plugin. -->
-        <dl.compat.floor>1.19-R0.1-SNAPSHOT</dl.compat.floor>
+             declaring 1.13 admits 1.13.0 onward while the normal build uses 1.13.2.
+             Compiling against this floor is what makes advertising the whole 1.13
+             line honest rather than hopeful — it fails the build the moment anyone
+             uses an API added after the oldest server that can load the plugin. -->
+        <dl.compat.floor>1.13-R0.1-SNAPSHOT</dl.compat.floor>
 
         <!-- SINGLE SOURCE OF TRUTH for the versions humans would otherwise retype.
              Everything downstream derives from these: plugin.yml via Maven
              filtering, the CI workflows by reading this file, and the website +
              README via scripts/sync-versions.py. Change them here, nowhere else. -->
-        <dl.api.version>1.19</dl.api.version>
+        <dl.api.version>1.13</dl.api.version>
 
         <!-- Minecraft versions advertised on the Modrinth and Hangar listings when a
              stable release is published. This is the one value that cannot be derived
@@ -72,6 +81,22 @@
         </repository>
     </repositories>
 
+    <!-- Adventure ships as many small artifacts and the platform module pulls an
+         older line of them than MiniMessage does (4.13.1 against 4.17.0). Mixing
+         those is how you get a NoSuchMethodError at runtime rather than a compile
+         error, so pin the whole family from the BOM. -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>net.kyori</groupId>
+                <artifactId>adventure-bom</artifactId>
+                <version>4.17.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <!-- Tests. ConfigMigrator is the reason this exists: it decides whether a
              user's settings survive an upgrade, and a silent break there is the
@@ -87,10 +112,42 @@
         <!-- Paper API provided by the server at runtime; paper-api is required
              for Paper-specific events such as AsyncChatEvent. -->
         <dependency>
-            <groupId>io.papermc.paper</groupId>
-            <artifactId>paper-api</artifactId>
-            <version>${paper.api.version}</version>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>${spigot.api.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- Adventure, shaded.
+             Paper hands these out for free; Spigot does not, and the plugin now
+             compiles against Spigot so that one JAR serves both. lang.yml is
+             documented as accepting hex, gradients, click and hover, so
+             serialising to legacy section codes on the way out is not an option:
+             it would silently drop all four on the 1.19+ servers that are the
+             entire current audience. adventure-platform-bukkit keeps Components
+             all the way to the player and downsamples them itself on servers too
+             old to render them. It supports 1.8.8 up, so the later phases of the
+             backport are already covered. -->
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-platform-bukkit</artifactId>
+            <version>4.3.4</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-text-minimessage</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Test scope only. LangTest renders every chat message to plain text to
+             prove its MiniMessage actually parses (an unclosed tag does not throw,
+             it just shows up literally in game). Nothing in the plugin needs the
+             plain serializer, so it stays out of the shaded JAR. -->
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-text-serializer-plain</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <!-- Anonymous usage metrics (bstats.org). Shaded + relocated below:
@@ -104,10 +161,21 @@
         </dependency>
 
         <!-- YAML parsing for config migration (parsing-only) -->
+        <!-- Bukkit has bundled SnakeYAML since forever, so take the server's copy
+             rather than shading one. Shading a second, newer SnakeYAML is what broke
+             the build the moment the API moved to Spigot: Bukkit's own
+             YamlConfiguration calls `new Representer()`, which 2.x removed, so the
+             shaded copy won the classpath and Bukkit could no longer read a YAML
+             file. Using the platform's copy also drops it from the JAR.
+
+             The constraint this puts on us: only API present in every bundled
+             version, 1.23 through 2.x. That is `new Yaml().load(String)` and
+             nothing else, which is all ConfigMigrator ever used. -->
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>2.6</version>
+            <version>1.23</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -150,12 +218,12 @@
                         <configuration>
                             <relocations>
                                 <relocation>
-                                    <pattern>org.yaml.snakeyaml</pattern>
-                                    <shadedPattern>com.discordlogger.shaded.snakeyaml</shadedPattern>
-                                </relocation>
-                                <relocation>
                                     <pattern>org.bstats</pattern>
                                     <shadedPattern>com.discordlogger.shaded.bstats</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>net.kyori</pattern>
+                                    <shadedPattern>com.discordlogger.shaded.kyori</shadedPattern>
                                 </relocation>
                             </relocations>
                             <!-- Disable to avoid ASM parsing issues with modern bytecode -->
@@ -165,16 +233,6 @@
                                  plugin ships as a JAR on GitHub Releases and is never consumed
                                  as a Maven artifact, so don't generate it at all. -->
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <filters>
-                                <!-- Exclude snakeyaml's META-INF to avoid MANIFEST.MF overlap warning.
-                                     We only need the snakeyaml classes, not its manifest. -->
-                                <filter>
-                                    <artifact>org.yaml:snakeyaml</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/**</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
                         </configuration>
                     </execution>
                 </executions>

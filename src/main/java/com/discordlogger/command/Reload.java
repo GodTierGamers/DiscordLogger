@@ -2,6 +2,7 @@ package com.discordlogger.command;
 
 import com.discordlogger.DiscordLogger;
 import com.discordlogger.lang.Lang;
+import com.discordlogger.util.Chat;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import com.discordlogger.config.ConfigMigrator;
@@ -33,20 +34,20 @@ public final class Reload implements Subcommand {
         // A reload is exactly when someone has just swapped a config in, so the
         // same schema check that runs at startup has to run here too.
         if (configState.status() == ConfigMigrator.Status.AHEAD) {
-            sender.sendMessage(Lang.chat("chat.reload-config-ahead",
+            Chat.send(sender, Lang.chat("chat.reload-config-ahead",
                     "installed", configState.installed(), "shipped", configState.shipped()));
-            sender.sendMessage(Lang.chat("chat.reload-config-ahead-fix"));
+            Chat.send(sender, Lang.chat("chat.reload-config-ahead-fix"));
         } else if (configState.migrated()) {
-            sender.sendMessage(Lang.chat("chat.reload-config-upgraded",
+            Chat.send(sender, Lang.chat("chat.reload-config-upgraded",
                     "from", configState.installed(), "to", configState.shipped()));
         }
 
         if (ok) {
             long ms = System.currentTimeMillis() - start;
-            sender.sendMessage(Lang.chat("chat.reload-ok", "ms", ms));
+            Chat.send(sender, Lang.chat("chat.reload-ok", "ms", ms));
         } else {
-            sender.sendMessage(Lang.chat("chat.reload-no-webhook"));
-            sender.sendMessage(Lang.chat("chat.reload-no-webhook-hint"));
+            Chat.send(sender, Lang.chat("chat.reload-no-webhook"));
+            Chat.send(sender, Lang.chat("chat.reload-no-webhook-hint"));
         }
         return true;
     }

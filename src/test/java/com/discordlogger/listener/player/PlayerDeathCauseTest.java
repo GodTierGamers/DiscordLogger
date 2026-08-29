@@ -1,5 +1,6 @@
 package com.discordlogger.listener.player;
 
+import com.discordlogger.lang.Lang;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,8 +9,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,6 +45,55 @@ class PlayerDeathCauseTest {
         }
         assertEquals(List.of(), unhandled,
                 "these damage causes have no phrasing and would report as \"Died\"");
+    }
+
+    /**
+     * Causes that exist on servers newer than the API this compiles against.
+     *
+     * <p>The plugin compiles against the oldest API it supports, so
+     * {@code DamageCause.values()} only knows the causes that existed then — the two
+     * tests above went from thirty cases to twenty-eight the moment the build moved
+     * to 1.13, and neither noticed. Nothing broke at runtime, because the phrasing is
+     * looked up by {@code cause.name()} rather than by enum constant, but the CI
+     * guarantee those tests exist to provide had quietly stopped covering the newest
+     * causes — which are exactly the ones most likely to be missing.
+     *
+     * <p>So they are listed by name instead. This has to be extended whenever
+     * Minecraft adds a damage cause, which is the same obligation as before; the
+     * difference is that forgetting now fails here rather than showing a player
+     * "Cause of Death: Died".
+     */
+    private static final List<String> CAUSES_NEWER_THAN_THE_COMPILE_FLOOR = List.of(
+            "FREEZE",       // 1.17
+            "SONIC_BOOM");  // 1.19
+
+    @Test
+    @DisplayName("causes added after the compile floor still have phrasing")
+    void causesNewerThanTheApiAreHandled() {
+        final List<String> missing = new ArrayList<>();
+        for (String name : CAUSES_NEWER_THAN_THE_COMPILE_FLOOR) {
+            final String key = "discord.death.causes."
+                    + name.toLowerCase(Locale.ROOT).replace('_', '-');
+            if (!Lang.has(key)) missing.add(name);
+        }
+        assertEquals(List.of(), missing,
+                "these causes exist on servers newer than the compiled API and have no "
+                        + "phrasing, so a player dying this way would be reported as \"Died\"");
+    }
+
+    @Test
+    @DisplayName("the hardcoded list only names causes the compiled API lacks")
+    void theListDoesNotDuplicateTheEnum() {
+        // If the compile floor is later raised past one of these, the enum covers it
+        // again and the entry here is dead weight -- say so rather than let it rot.
+        for (String name : CAUSES_NEWER_THAN_THE_COMPILE_FLOOR) {
+            boolean inEnum = false;
+            for (DamageCause c : DamageCause.values()) {
+                if (c.name().equals(name)) { inEnum = true; break; }
+            }
+            assertFalse(inEnum, name + " is in the compiled API now, so the enum-driven "
+                    + "tests already cover it. Remove it from the hardcoded list.");
+        }
     }
 
     @Test

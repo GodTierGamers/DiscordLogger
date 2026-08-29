@@ -105,7 +105,7 @@ def pom_values() -> dict[str, str]:
         "plugin": vm.group(1).strip(),
         "schema": schema,
         "java": prop("maven.compiler.release"),
-        "paper_api": prop("paper.api.version"),
+        "paper_api": prop("spigot.api.version"),
         "min_paper": prop("dl.api.version"),
         "paper_display": display,
         "paper_badge": badge,

@@ -1,6 +1,7 @@
 package com.discordlogger.update;
 
 import com.discordlogger.lang.Lang;
+import com.discordlogger.util.Chat;
 import com.discordlogger.util.Io;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -54,7 +55,7 @@ public final class NightlyNotice implements Listener {
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
         if (p.isOp()) {
-            p.sendMessage(Lang.chat("chat.nightly-notice"));
+            Chat.send(p, Lang.chat("chat.nightly-notice"));
         }
     }
 

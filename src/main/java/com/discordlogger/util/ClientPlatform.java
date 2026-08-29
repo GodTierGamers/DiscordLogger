@@ -18,8 +18,8 @@ import java.util.UUID;
  *   <li><b>Floodgate's API</b>, called reflectively. It is the documented,
  *       supported answer ({@code FloodgateApi#isFloodgatePlayer}). Reflection
  *       rather than a compile-time dependency keeps a Maven repository and an
- *       artifact out of the build for what is an optional integration — the same
- *       reasoning as {@link Platform}, which probes for classes it cannot assume.</li>
+ *       artifact out of the build for what is an optional integration — probe for
+ *       what you cannot assume rather than depending on it.</li>
  *   <li><b>The UUID shape</b>, if Floodgate is absent or its API changes shape.
  *       Floodgate issues Bedrock players UUIDs whose most significant bits are
  *       zero. This is <i>not documented</i>, so it is the fallback and not the
