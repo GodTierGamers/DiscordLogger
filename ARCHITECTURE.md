@@ -6,7 +6,7 @@ A tour of how DiscordLogger is actually built — for contributors, curious user
 
 ## What DiscordLogger is
 
-A Paper server plugin (Java 17 bytecode, running on Paper 1.19 through 26.x) that watches server events and posts them to a Discord channel over a webhook, either as rich embeds or plain Markdown text. It ships two versioned files — `config.yml` (what to log, where, and how it looks) and `lang.yml` (every string it says) — both of which migrate themselves forward automatically. It checks for updates in a way that's aware of which release channel it's running on, and is accompanied by a Jekyll website (this `docs/` folder) with an interactive config generator.
+A Bukkit server plugin (Java 8 bytecode, running on Paper, Spigot or a fork) that watches server events and posts them to a Discord channel over a webhook, either as rich embeds or plain Markdown text. It ships two versioned files — `config.yml` (what to log, where, and how it looks) and `lang.yml` (every string it says) — both of which migrate themselves forward automatically. It checks for updates in a way that's aware of which release channel it's running on, and is accompanied by a Jekyll website (this `docs/` folder) with an interactive config generator.
 
 ## How a request flows through the plugin at startup
 

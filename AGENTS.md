@@ -44,10 +44,11 @@ Everything below was verified against the actual source at the time of writing; 
 | Property | Current | Meaning |
 |---|---|---|
 | `<version>` | — | the plugin version — **release-please owns it**, never hand-edit |
-| `<maven.compiler.release>` | `17` | Java the plugin is built for |
-| `<dl.api.version>` | `1.19` | minimum Paper; becomes `plugin.yml`'s `api-version` |
-| `<dl.compat.floor>` | `1.19-R0.1-SNAPSHOT` | the oldest API the build promises to compile against; CI's `compat-floor` job enforces it |
-| `<paper.api.version>` | `1.19.4-R0.1-SNAPSHOT` | what the normal build and the **test suite** compile against |
+| `<maven.compiler.release>` | `8` | bytecode the plugin ships as — 1.13-1.16 run on Java 8 |
+| `<dl.build.jdk>` | `17` | the JDK the build **runs on**; every workflow installs this. Not the same as the line above, and the workflows used to read that one — which silently became wrong when the two numbers diverged |
+| `<dl.api.version>` | `1.13` | minimum Bukkit API; becomes `plugin.yml`'s `api-version` |
+| `<dl.compat.floor>` | `1.13-R0.1-SNAPSHOT` | the oldest API the build promises to compile against; CI's `compat-floor` job enforces it |
+| `<spigot.api.version>` | `1.13.2-R0.1-SNAPSHOT` | what the normal build and the **test suite** compile against. Spigot, not Paper: Paper implements the Bukkit API, so compiling against the smaller of the two gives up nothing and one JAR serves both |
 | `<dl.game.versions>` | 28 entries, `1.19`–`26.2` | the supported range; the listings advertise it, and the prose + badge in README/CONTRIBUTING are derived from its first and last entries |
 
 The sync script derives three values no property owns: **`plugin`** (the released version, from `<version>`), **`schema`** (the config schema, read from `config.yml`'s trailer), and **`paper_display`** (how Paper is written in prose, e.g. `1.19 – 26.2`, built from the first and last of `<dl.game.versions>`). Docs examples of the config trailer use these, so they can't go stale when a release ships or the schema moves. `paper_display` is derived rather than hand-set because a standalone property would drift the moment a Minecraft version is added — the listings would advertise the new ceiling while every badge and requirements table still named the old one. (A `<dl.paper.display>` property did exist and has been removed; if you see it referenced, that's stale.)
@@ -251,7 +252,9 @@ The downloads badge does **not** use analytics — Modrinth's public project end
 
 Modrinth PATs expire. `check-listing-credentials.yml` runs `publish-listings.py --check-auth` weekly so a dead token is caught by a failed scheduled run rather than by a release that has already tagged. Note that `--dry-run` makes no authenticated call at all and proves nothing about the tokens; `--check-auth` is the mode that does.
 
-**Three floors exist and are deliberately different numbers.** `api-version: 1.19` admits 1.19.0 onward, because api-version cannot express a patch before 1.20.5. `<dl.compat.floor>` is 1.19.0 and CI compiles against it on every Java change — without that job, using an API added in 1.19.1+ would compile, test, ship, and only then `NoSuchMethodError` on the servers the listings promise. `<paper.api.version>` is 1.19.4 because that is the oldest release the *test suite* can run against: below it, Bukkit's `YamlConfiguration` wants SnakeYAML 1.x and collides with ours on the unrelocated test classpath. That collision cannot happen in the shipped JAR, where SnakeYAML is shaded and relocated.
+**Three floors exist and are deliberately different numbers.** `api-version: 1.13` admits 1.13.0 onward, because api-version cannot express a patch before 1.20.5. `<dl.compat.floor>` is 1.13.0 and CI compiles against it on every Java change — without that job, using an API added in 1.13.1+ would compile, test, ship, and only then `NoSuchMethodError` on the servers the listings promise. `<spigot.api.version>` is 1.13.2 because that is what the normal build and the test suite use. The old reason for the gap between the last two — that Bukkit below 1.19.4 wanted SnakeYAML 1.x and collided with our shaded 2.x on the unrelocated test classpath — no longer applies: SnakeYAML is the server's now rather than shaded, so there is nothing left to collide with.
+
+**A fourth number, `<dl.game.versions>`, is editorial and is not derived from any of them.** It is what the Modrinth and Hangar listings advertise, and it still reads 1.19–26.2 even though the plugin now compiles at 1.13. Supporting more than you advertise is the safe direction; widening what is advertised is a decision about what has actually been tested, so it is made deliberately rather than as a side effect of lowering the compile floor.
 
 **Dependabot is told to ignore `paper-api`** in `.github/dependabot.yml`. It is not a dependency to keep current — it is the oldest server the plugin promises to run on, pinned low on purpose. A bot bumping it to the newest build silently undoes the whole arrangement.
 
@@ -280,7 +283,7 @@ Path-filtered (`dorny/paths-filter`), three jobs behind a `changes` gate:
 | Job | Runs on | What it proves |
 |---|---|---|
 | `build` | `src/**`, `pom.xml` | compiles and the test suite passes; uploads the JAR as a PR artifact |
-| `compat-floor` | same | recompiles with `-Dpaper.api.version=<dl.compat.floor>`, so using an API added after the advertised floor fails here instead of `NoSuchMethodError`-ing on a user's server |
+| `compat-floor` | same | recompiles with `-Dspigot.api.version=<dl.compat.floor>`, so using an API added after the advertised floor fails here instead of `NoSuchMethodError`-ing on a user's server |
 | `validate-generator-data` | `docs/assets/configs/**` | `validate-config-generator.py` |
 
 Concurrency cancels superseded runs. Branch protection requires `build`, `validate-generator-data` and `lint`; `compat-floor` is not (yet) in the required list.

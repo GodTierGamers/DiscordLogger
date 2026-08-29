@@ -10,7 +10,7 @@ Values, and where each comes from:
 
     <project.version>          the plugin version           (release-please owns it)
     <maven.compiler.release>   Java the plugin is built for
-    <dl.api.version>           minimum Paper (plugin.yml's api-version)
+    <dl.api.version>           minimum Bukkit API (plugin.yml's api-version)
     <dl.game.versions>         the supported range; prose + badge are derived from it
 
 Targets:
@@ -105,6 +105,11 @@ def pom_values() -> dict[str, str]:
         "plugin": vm.group(1).strip(),
         "schema": schema,
         "java": prop("maven.compiler.release"),
+        # The JDK a contributor needs installed, which is NOT what the plugin is
+        # compiled for. Those were the same number until the Bukkit backport dropped
+        # the target to 8; CONTRIBUTING then told people to install a JDK that cannot
+        # build the project.
+        "build_jdk": prop("dl.build.jdk"),
         "paper_api": prop("spigot.api.version"),
         "min_paper": prop("dl.api.version"),
         "paper_display": display,

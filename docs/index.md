@@ -126,7 +126,7 @@ builds both `config.yml` and `lang.yml` in your browser.
 
 | Requirement | Version |
 |---|---|
-| Server | **Paper {{ site.data.versions.paper_display }}** or a fork such as Purpur |
+| Server | **Paper, Spigot or a fork such as Purpur**, {{ site.data.versions.paper_display }} |
 | Minimum API | `{{ site.data.versions.min_paper }}` |
 | Java | **{{ site.data.versions.java }}** or newer |
 | Discord | A webhook URL — no bot required |

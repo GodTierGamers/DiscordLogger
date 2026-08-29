@@ -26,6 +26,18 @@
              no gain, and would make the test sources harder to read than the code
              they cover. -->
         <maven.compiler.testRelease>17</maven.compiler.testRelease>
+
+        <!-- The JDK the build RUNS on, which is not the same thing as the bytecode
+             it produces. Every workflow reads this to decide which Temurin to
+             install.
+
+             It used to read <maven.compiler.release> for that, which was fine while
+             the two were the same number and became a build-breaking bug the moment
+             they were not: dropping the target to 8 would have had CI install JDK 8,
+             which cannot compile the tests at 17 and cannot run the current Maven
+             plugins at all. Keep this at the JDK the project is developed on; change
+             the release property, above, to change what the plugin runs on. -->
+        <dl.build.jdk>17</dl.build.jdk>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Compile against the OLDEST supported API, never the newest. Building

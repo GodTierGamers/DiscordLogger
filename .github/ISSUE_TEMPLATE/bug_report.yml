@@ -37,11 +37,12 @@ body:
     id: platform
     attributes:
       label: Server platform
-      description: "DiscordLogger requires Paper or a Paper fork."
+      description: "Any Bukkit-compatible server. Paper is recommended but not required."
       options:
         - Paper
+        - Spigot
         - Purpur
-        - Other Paper fork
+        - Other Bukkit fork
     validations:
       required: true
 
