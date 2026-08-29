@@ -31,7 +31,18 @@ public final class Kick implements Listener {
 
     public Kick(JavaPlugin plugin) { this.plugin = plugin; }
 
-    private record KickData(String actorName, String reason) {}
+    private static final class KickData {
+        private final String actorName;
+        private final String reason;
+
+        KickData(String actorName, String reason) {
+            this.actorName = actorName;
+            this.reason = reason;
+        }
+
+        String actorName() { return actorName; }
+        String reason() { return reason; }
+    }
 
     // -------------------------------------------------------------------------
     // Command interception — records intent

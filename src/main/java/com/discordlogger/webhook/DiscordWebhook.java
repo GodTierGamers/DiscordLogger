@@ -163,12 +163,24 @@ public final class DiscordWebhook {
     }
 
     /** Outcome of a single POST, with the rate-limit facts the queue needs to pace itself. */
-    public record Response(
-            int status,
-            Long remaining,      // X-RateLimit-Remaining, null if absent
-            Long resetAfterMs,   // X-RateLimit-Reset-After, null if absent
-            long retryAfterMs    // from Retry-After on a 429; 0 otherwise
-    ) {
+    public static final class Response {
+        private final int status;
+        private final Long remaining;      // X-RateLimit-Remaining, null if absent
+        private final Long resetAfterMs;   // X-RateLimit-Reset-After, null if absent
+        private final long retryAfterMs;   // from Retry-After on a 429; 0 otherwise
+
+        public Response(int status, Long remaining, Long resetAfterMs, long retryAfterMs) {
+            this.status = status;
+            this.remaining = remaining;
+            this.resetAfterMs = resetAfterMs;
+            this.retryAfterMs = retryAfterMs;
+        }
+
+        public int status()          { return status; }
+        public Long remaining()      { return remaining; }
+        public Long resetAfterMs()   { return resetAfterMs; }
+        public long retryAfterMs()   { return retryAfterMs; }
+
         public boolean success()      { return status == 200 || status == 204; }
         public boolean rateLimited()  { return status == 429; }
         /** Transient: worth retrying the same payload. Network failures use status 0. */

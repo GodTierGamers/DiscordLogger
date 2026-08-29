@@ -99,7 +99,25 @@ public final class WebhookQueue {
     }
 
     /** One destination's live state, for {@code /discordlogger status}. */
-    public record Health(String id, int queued, int capacity, long waitMs) {}
+    /** One destination's live state, for {@code /discordlogger status}. */
+    public static final class Health {
+        private final String id;
+        private final int queued;
+        private final int capacity;
+        private final long waitMs;
+
+        public Health(String id, int queued, int capacity, long waitMs) {
+            this.id = id;
+            this.queued = queued;
+            this.capacity = capacity;
+            this.waitMs = waitMs;
+        }
+
+        public String id() { return id; }
+        public int queued() { return queued; }
+        public int capacity() { return capacity; }
+        public long waitMs() { return waitMs; }
+    }
 
     /**
      * A snapshot of every destination, for reporting only.

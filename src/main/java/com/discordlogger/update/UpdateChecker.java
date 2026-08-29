@@ -186,7 +186,18 @@ public final class UpdateChecker {
     // string-scanning approach this class has always used)
     // -------------------------------------------------------------------------
 
-    private record ReleaseInfo(String tag, boolean prerelease) {}
+    private static final class ReleaseInfo {
+        private final String tag;
+        private final boolean prerelease;
+
+        ReleaseInfo(String tag, boolean prerelease) {
+            this.tag = tag;
+            this.prerelease = prerelease;
+        }
+
+        String tag() { return tag; }
+        boolean prerelease() { return prerelease; }
+    }
 
     /**
      * Pairs each "tag_name" with the "prerelease" flag that appears before the NEXT
@@ -224,7 +235,24 @@ public final class UpdateChecker {
     // of the same major.minor.patch; higher BETA numbers rank above lower ones)
     // -------------------------------------------------------------------------
 
-    private record SemVer(int major, int minor, int patch, Integer beta) implements Comparable<SemVer> {
+    private static final class SemVer implements Comparable<SemVer> {
+        private final int major;
+        private final int minor;
+        private final int patch;
+        private final Integer beta;
+
+        SemVer(int major, int minor, int patch, Integer beta) {
+            this.major = major;
+            this.minor = minor;
+            this.patch = patch;
+            this.beta = beta;
+        }
+
+        int major()     { return major; }
+        int minor()     { return minor; }
+        int patch()     { return patch; }
+        Integer beta()  { return beta; }
+
         static SemVer parse(String raw) {
             if (raw == null) return null;
             String v = raw.trim();

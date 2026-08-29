@@ -34,12 +34,24 @@ import java.util.Locale;
 public final class CustomLogs {
 
     /** One admin-defined rule. */
-    public record Rule(
-            String name,
-            List<String> match,
-            String title,
-            String message
-    ) {
+    public static final class Rule {
+        private final String name;
+        private final List<String> match;
+        private final String title;
+        private final String message;
+
+        public Rule(String name, List<String> match, String title, String message) {
+            this.name = name;
+            this.match = match;
+            this.title = title;
+            this.message = message;
+        }
+
+        public String name()         { return name; }
+        public List<String> match()  { return match; }
+        public String title()        { return title; }
+        public String message()      { return message; }
+
         /**
          * The category this logs under, which is also how {@code Log} finds its colour
          * and webhook — {@code log.custom.<name>} is walked by exactly the same code

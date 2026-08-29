@@ -38,7 +38,21 @@ public final class ConfigMigrator {
     }
 
     /** Outcome plus the two schema numbers, for messaging. Either may be null when UNKNOWN. */
-    public record Result(Status status, Integer installed, Integer shipped) {
+    public static final class Result {
+        private final Status status;
+        private final Integer installed;
+        private final Integer shipped;
+
+        public Result(Status status, Integer installed, Integer shipped) {
+            this.status = status;
+            this.installed = installed;
+            this.shipped = shipped;
+        }
+
+        public Status status()     { return status; }
+        public Integer installed() { return installed; }
+        public Integer shipped()   { return shipped; }
+
         public boolean migrated() { return status == Status.UPGRADED; }
     }
 
@@ -84,14 +98,29 @@ public final class ConfigMigrator {
         // aligned with defLines. Lists change the line count, so they are collected
         // and spliced afterwards from the bottom up — applying them top-down would
         // invalidate every index after the first splice.
-        record ListEdit(int from, int to, List<String> block) {}
+        final class ListEdit {
+            private final int from;
+            private final int to;
+            private final List<String> block;
+
+            ListEdit(int from, int to, List<String> block) {
+                this.from = from;
+                this.to = to;
+                this.block = block;
+            }
+
+            int from() { return from; }
+            int to() { return to; }
+            List<String> block() { return block; }
+        }
         final List<ListEdit> listEdits = new ArrayList<>();
 
         for (Map.Entry<String, Object> e : usrMap.entrySet()) {
             String target = resolvePath(e.getKey(), defMap, fromVersion, toVersion);
             if (target == null) continue;  // genuinely removed -> keep the default
 
-            if (e.getValue() instanceof List<?> userList) {
+            if (e.getValue() instanceof List<?>) {
+                final List<?> userList = (List<?>) e.getValue();
                 final int[] span = listSpanInDefault(defLines, target);
                 if (span != null) {
                     listEdits.add(new ListEdit(span[0], span[1],
@@ -203,7 +232,8 @@ public final class ConfigMigrator {
      * number rather than the command name someone typed.
      */
     private static String renderListItem(Object v) {
-        if (!(v instanceof String s)) return renderScalar(v);
+        if (!(v instanceof String)) return renderScalar(v);
+        final String s = (String) v;
         if (s.isEmpty() || !s.equals(s.strip())) return renderScalar(s);
         if (PLAIN_SAFE.matcher(s).matches() && !YAML_RESERVED.matcher(s).matches()) return s;
         return renderScalar(s);
@@ -631,8 +661,9 @@ public final class ConfigMigrator {
     /** The version the file claims: the config-version key first, else the trailer. */
     private static Integer declaredVersion(String text, Map<String, Object> flat) {
         final Object key = flat == null ? null : flat.get("config-version");
-        if (key instanceof Number n) return n.intValue();
-        if (key instanceof String str) {
+        if (key instanceof Number) return ((Number) key).intValue();
+        if (key instanceof String) {
+            final String str = (String) key;
             try {
                 return Integer.parseInt(str.trim());
             } catch (NumberFormatException ignored) {
@@ -649,5 +680,16 @@ public final class ConfigMigrator {
     }
 
     /** Simple struct for leaf position. */
-    private record LeafPos(int index, int keyIndent) {}
+    private static final class LeafPos {
+        private final int index;
+        private final int keyIndent;
+
+        LeafPos(int index, int keyIndent) {
+            this.index = index;
+            this.keyIndent = keyIndent;
+        }
+
+        int index() { return index; }
+        int keyIndent() { return keyIndent; }
+    }
 }

@@ -77,16 +77,20 @@ public final class PlayerDeath implements Listener {
         }
 
         EntityDamageEvent last = victim.getLastDamageCause();
-        if (last instanceof EntityDamageByEntityEvent byEntity) {
+        if (last instanceof EntityDamageByEntityEvent) {
+            final EntityDamageByEntityEvent byEntity = (EntityDamageByEntityEvent) last;
             Entity damager = byEntity.getDamager();
 
-            if (damager instanceof Projectile proj) {
+            if (damager instanceof Projectile) {
+                final Projectile proj = (Projectile) damager;
                 Object shooter = proj.getShooter();
-                if (shooter instanceof Player pShooter) {
+                if (shooter instanceof Player) {
+                    final Player pShooter = (Player) shooter;
                     return Lang.text("discord.death.shot-by",
                             "killer", Names.display(pShooter, (JavaPlugin) plugin));
                 }
-                if (shooter instanceof Entity eShooter) {
+                if (shooter instanceof Entity) {
+                    final Entity eShooter = (Entity) shooter;
                     return Lang.text("discord.death.shot-by", "killer", mobName(eShooter));
                 }
                 return Lang.text("discord.death.shot");

@@ -42,25 +42,31 @@ public final class ConfigVersionNotice implements Listener {
      */
     public static void report(JavaPlugin plugin, ConfigMigrator.Result result) {
         switch (result.status()) {
-            case UPGRADED -> plugin.getLogger().info(
-                    "config.yml was upgraded from schema v" + result.installed()
-                            + " to v" + result.shipped() + ". Your settings were carried over; "
-                            + "the previous file is saved as config.old.yml.");
+            case UPGRADED:
+                plugin.getLogger().info(
+                        "config.yml was upgraded from schema v" + result.installed()
+                                + " to v" + result.shipped() + ". Your settings were carried over; "
+                                + "the previous file is saved as config.old.yml.");
+                break;
 
-            case AHEAD -> {
+            case AHEAD: {
                 ConfigVersionNotice notice =
                         new ConfigVersionNotice(result.installed(), result.shipped());
                 notice.warnConsole(plugin);
                 plugin.getServer().getPluginManager().registerEvents(notice, plugin);
+                break;
             }
 
-            case UNKNOWN -> plugin.getLogger().warning(
-                    "Could not determine the config schema version. If config.yml has been "
-                            + "edited heavily, check that its last line still reads "
-                            + "\"# CONFIG VERSION V<number>, SHIPPED WITH v<plugin version>\".");
+            case UNKNOWN:
+                plugin.getLogger().warning(
+                        "Could not determine the config schema version. If config.yml has been "
+                                + "edited heavily, check that its last line still reads "
+                                + "\"# CONFIG VERSION V<number>, SHIPPED WITH v<plugin version>\".");
+                break;
 
             // FRESH_INSTALL and UP_TO_DATE are the normal paths and say nothing.
-            default -> { }
+            default:
+                break;
         }
     }
 

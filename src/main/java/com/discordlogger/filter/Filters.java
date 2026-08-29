@@ -4,10 +4,12 @@ import com.discordlogger.util.Vanish;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 /**
@@ -40,27 +42,94 @@ public final class Filters {
 
     private Filters() {}
 
-    private record Snapshot(
-            Set<String> ignoredNames,
-            Set<UUID> ignoredUuids,
-            Set<String> ignoredCommands,
-            Set<String> onlyCommands,
-            Set<String> ignoredWorlds,
-            List<String> chatPatterns,
-            int minChatLength,
-            List<String> ignoredAdvancements,
-            boolean logRecipeAdvancements,
-            Set<String> ignoredTeleportCauses,
-            double minTeleportDistance,
-            Set<String> ignoredDeathCauses,
-            Set<String> ignoredExplosionSources,
-            int minExplosionBlocks,
-            String exemptPermission,
-            boolean respectVanish
-    ) {
+    /**
+     * The filter configuration as of the last reload.
+     *
+     * <p><b>Every field is final and this class is never mutated.</b> That was free when
+     * this was a record and has to be maintained by hand now: {@code current} is swapped
+     * in one volatile write, and a reader that could observe a half-updated Snapshot
+     * would be able to filter against a mix of the old config and the new. Adding a
+     * non-final field here reintroduces exactly that, silently.
+     *
+     * <p>The collections are not defensively copied because every caller passes one it
+     * has just built and then discards. Reusing a caller's mutable collection after
+     * construction would defeat the immutability above just as effectively.
+     */
+    private static final class Snapshot {
+        private final Set<String> ignoredNames;
+        private final Set<UUID> ignoredUuids;
+        private final Set<String> ignoredCommands;
+        private final Set<String> onlyCommands;
+        private final Set<String> ignoredWorlds;
+        private final List<String> chatPatterns;
+        private final int minChatLength;
+        private final List<String> ignoredAdvancements;
+        private final boolean logRecipeAdvancements;
+        private final Set<String> ignoredTeleportCauses;
+        private final double minTeleportDistance;
+        private final Set<String> ignoredDeathCauses;
+        private final Set<String> ignoredExplosionSources;
+        private final int minExplosionBlocks;
+        private final String exemptPermission;
+        private final boolean respectVanish;
+
+        Snapshot(Set<String> ignoredNames,
+                 Set<UUID> ignoredUuids,
+                 Set<String> ignoredCommands,
+                 Set<String> onlyCommands,
+                 Set<String> ignoredWorlds,
+                 List<String> chatPatterns,
+                 int minChatLength,
+                 List<String> ignoredAdvancements,
+                 boolean logRecipeAdvancements,
+                 Set<String> ignoredTeleportCauses,
+                 double minTeleportDistance,
+                 Set<String> ignoredDeathCauses,
+                 Set<String> ignoredExplosionSources,
+                 int minExplosionBlocks,
+                 String exemptPermission,
+                 boolean respectVanish) {
+            this.ignoredNames = ignoredNames;
+            this.ignoredUuids = ignoredUuids;
+            this.ignoredCommands = ignoredCommands;
+            this.onlyCommands = onlyCommands;
+            this.ignoredWorlds = ignoredWorlds;
+            this.chatPatterns = chatPatterns;
+            this.minChatLength = minChatLength;
+            this.ignoredAdvancements = ignoredAdvancements;
+            this.logRecipeAdvancements = logRecipeAdvancements;
+            this.ignoredTeleportCauses = ignoredTeleportCauses;
+            this.minTeleportDistance = minTeleportDistance;
+            this.ignoredDeathCauses = ignoredDeathCauses;
+            this.ignoredExplosionSources = ignoredExplosionSources;
+            this.minExplosionBlocks = minExplosionBlocks;
+            this.exemptPermission = exemptPermission;
+            this.respectVanish = respectVanish;
+        }
+
+        Set<String> ignoredNames() { return ignoredNames; }
+        Set<UUID> ignoredUuids() { return ignoredUuids; }
+        Set<String> ignoredCommands() { return ignoredCommands; }
+        Set<String> onlyCommands() { return onlyCommands; }
+        Set<String> ignoredWorlds() { return ignoredWorlds; }
+        List<String> chatPatterns() { return chatPatterns; }
+        int minChatLength() { return minChatLength; }
+        List<String> ignoredAdvancements() { return ignoredAdvancements; }
+        boolean logRecipeAdvancements() { return logRecipeAdvancements; }
+        Set<String> ignoredTeleportCauses() { return ignoredTeleportCauses; }
+        double minTeleportDistance() { return minTeleportDistance; }
+        Set<String> ignoredDeathCauses() { return ignoredDeathCauses; }
+        Set<String> ignoredExplosionSources() { return ignoredExplosionSources; }
+        int minExplosionBlocks() { return minExplosionBlocks; }
+        String exemptPermission() { return exemptPermission; }
+        boolean respectVanish() { return respectVanish; }
+
         static Snapshot empty() {
-            return new Snapshot(Set.of(), Set.of(), Set.of(), Set.of(), Set.of(), List.of(), 0,
-                    List.of(), false, Set.of(), 0d, Set.of(), Set.of(), 0, "", true);
+            return new Snapshot(Collections.<String>emptySet(), Collections.<UUID>emptySet(),
+                    Collections.<String>emptySet(), Collections.<String>emptySet(),
+                    Collections.<String>emptySet(), Collections.<String>emptyList(), 0,
+                    Collections.<String>emptyList(), false, Collections.<String>emptySet(), 0d,
+                    Collections.<String>emptySet(), Collections.<String>emptySet(), 0, "", true);
         }
     }
 
@@ -107,7 +176,7 @@ public final class Filters {
                 .getStringList("filters.ignored_chat_containing").stream()
                 .filter(s -> s != null && !s.isBlank())
                 .map(s -> s.toLowerCase(Locale.ROOT))
-                .toList();
+                .collect(Collectors.toList());
 
         final Set<String> onlyCommands = new LinkedHashSet<>();
         for (String entry : plugin.getConfig().getStringList("filters.only_log_commands")) {
@@ -119,7 +188,7 @@ public final class Filters {
                 .getStringList("filters.ignored_advancements").stream()
                 .filter(a -> a != null && !a.isBlank())
                 .map(a -> a.trim().toLowerCase(Locale.ROOT))
-                .toList();
+                .collect(Collectors.toList());
 
         final String perm = plugin.getConfig().getString("filters.exempt_permission", "").trim();
 
