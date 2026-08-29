@@ -49,27 +49,29 @@
              Bukkit API, so nothing is given up by compiling against the smaller of
              the two.
 
-             This is 1.13.0, the lowest artifact that exists for the 1.13 line, and it
-             is deliberately the same number as dl.compat.floor below. They used to
-             differ because the test suite could not run at the floor — Bukkit below
-             1.19.4 wanted SnakeYAML 1.x and collided with our shaded 2.x on the
-             unrelocated test classpath. SnakeYAML is the server's now rather than
-             shaded, so that reason is gone and there is no longer any excuse for
-             building above the floor: 1.13.1 and 1.13.2 each added API that a 1.13.0
-             server does not have, and compiling against them would let it in. -->
+             This is 1.13.0, the lowest artifact of the 1.13 line and the lowest at
+             which the two post-floor listeners still compile. Everything else is held
+             to dl.compat.floor below by the compat-floor job, so building here does
+             not quietly widen what the core may call. 1.13.1 and 1.13.2 each added
+             API a 1.13.0 server lacks, which is why this is not simply "1.13.x". -->
         <spigot.api.version>1.13-R0.1-SNAPSHOT</spigot.api.version>
 
-        <!-- The oldest API the plugin promises to compile against, enforced by CI's
-             compat-floor job. It currently EQUALS spigot.api.version above, which is
-             the goal state rather than a redundancy: the normal build already sits on
-             the floor, so the job passes trivially today.
+        <!-- The oldest API the plugin promises to run on, enforced by CI's
+             compat-floor job. It is LOWER than spigot.api.version above, and the gap
+             is the point rather than an oversight.
 
-             It stays because it is the thing that fails if the two ever drift apart —
-             raise the build to a newer API without raising this, and the job rebuilds
-             at the floor and catches the API that a floor-version server would not
-             have. That is a cheap guard against exactly the mistake that is easy to
-             make while lowering support further. -->
-        <dl.compat.floor>1.13-R0.1-SNAPSHOT</dl.compat.floor>
+             Two listeners name events that arrived after the floor:
+             PlayerAdvancementDoneEvent (1.12) and PlayerCommandSendEvent (1.13).
+             They are built against the 1.13 API like everything else, so their logic
+             stays compile-checked and unit-tested, and util.Compat only reflects over
+             their construction, so a server without the event never loads the class.
+
+             The compat-floor job compiles everything EXCEPT those two against this
+             version (see the compat-floor profile below), which is what proves the
+             other eighty-odd files really are floor-clean. Without that job, a core
+             file reaching for a 1.9+ API would compile, test, ship, and only then
+             NoSuchMethodError on the servers the listings promise. -->
+        <dl.compat.floor>1.8.8-R0.1-SNAPSHOT</dl.compat.floor>
 
         <!-- SINGLE SOURCE OF TRUTH for the versions humans would otherwise retype.
              Everything downstream derives from these: plugin.yml via Maven
@@ -276,4 +278,32 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Used only by CI's compat-floor job: mvn compile -Pcompat-floor
+             -Dspigot.api.version=${dl.compat.floor}
+
+             The two excluded files are the ones that legitimately name post-floor
+             events. Everything else must compile against the floor, and this profile
+             is what makes that a machine-checked claim rather than an intention.
+             Excluding them here is safe precisely because nothing references them
+             directly any more: util.Compat builds them by name. -->
+        <profile>
+            <id>compat-floor</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/listener/player/PlayerAdvancement.java</exclude>
+                                <exclude>**/command/CommandVisibility.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

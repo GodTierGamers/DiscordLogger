@@ -99,7 +99,7 @@ jobs:
         run: echo "version=$(grep -oE '<dl.compat.floor>[^<]+' pom.xml | cut -d'>' -f2)" >> "$GITHUB_OUTPUT"
 
       - name: Compile against the oldest supported API
-        run: mvn -B -ntp clean compile -Dspigot.api.version=${{ steps.floor.outputs.version }}
+        run: mvn -B -ntp clean compile -Pcompat-floor -Dspigot.api.version=${{ steps.floor.outputs.version }}
 
   validate-generator-data:
     needs: changes

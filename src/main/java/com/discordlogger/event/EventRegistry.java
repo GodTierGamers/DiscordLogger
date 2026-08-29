@@ -1,5 +1,7 @@
 package com.discordlogger.event;
 
+import com.discordlogger.util.Compat;
+import org.bukkit.event.Listener;
 import com.discordlogger.listener.custom.CustomCommandLog;
 import com.discordlogger.listener.player.*;
 import com.discordlogger.listener.server.*;
@@ -24,7 +26,12 @@ public final class EventRegistry {
         pm.registerEvents(new PlayerChat(plugin), plugin);
         pm.registerEvents(new PlayerCommand(plugin), plugin);
         pm.registerEvents(new PlayerDeath(plugin), plugin);
-        pm.registerEvents(new PlayerAdvancement(plugin), plugin);
+        // PlayerAdvancementDoneEvent arrived in 1.12; before that advancements did not
+        // exist. Naming the class directly here would stop the plugin loading at all
+        // on an older server -- see util.Compat.
+        final Listener advancement = Compat.listenerIfPresent(
+                Compat.ADVANCEMENT_EVENT, Compat.ADVANCEMENT_LISTENER, plugin);
+        if (advancement != null) pm.registerEvents(advancement, plugin);
         pm.registerEvents(new PlayerTeleport(plugin), plugin);
         pm.registerEvents(new PlayerGamemode(plugin), plugin);
 

@@ -1,7 +1,6 @@
 package com.discordlogger;
 
 import com.discordlogger.alert.OpAlert;
-import com.discordlogger.command.CommandVisibility;
 import com.discordlogger.command.Status;
 import com.discordlogger.command.Test;
 import com.discordlogger.command.Doctor;
@@ -22,6 +21,7 @@ import com.discordlogger.update.BuildInfo;
 import com.discordlogger.update.NightlyNotice;
 import com.discordlogger.update.UpdateChecker;
 import com.discordlogger.util.Chat;
+import com.discordlogger.util.Compat;
 import com.discordlogger.webhook.WebhookQueue;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -73,8 +73,14 @@ public final class DiscordLogger extends JavaPlugin {
             getCommand("discordlogger").setTabCompleter(router);
             // Strips Bukkit's plugin:command duplicates from tab-completion, and
             // hides the command from players who hold none of its permissions.
-            getServer().getPluginManager().registerEvents(
-                    new CommandVisibility(this, router), this);
+            // PlayerCommandSendEvent arrived in 1.13. Older servers simply keep the
+            // plugin:command duplicates in tab-completion, which is cosmetic.
+            final org.bukkit.event.Listener visibility = Compat.listenerIfPresent(
+                    Compat.COMMAND_SEND_EVENT, Compat.COMMAND_SEND_LISTENER,
+                    new Class<?>[] { JavaPlugin.class, Commands.class }, this, router);
+            if (visibility != null) {
+                getServer().getPluginManager().registerEvents(visibility, this);
+            }
         }
 
         // Anonymous usage metrics (bstats.org). Opt out via plugins/bStats/config.yml.
