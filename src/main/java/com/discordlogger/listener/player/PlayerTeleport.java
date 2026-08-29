@@ -98,28 +98,23 @@ public final class PlayerTeleport implements Listener {
         return wn + " (" + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ() + ")";
     }
 
+    /**
+     * A teleport cause as words.
+     *
+     * <p>This was a switch over every {@code TeleportCause} constant, each arm
+     * returning the string {@link #toTitle} already produces from the constant's own
+     * name — all eight were byte-identical to the default arm. The redundancy was
+     * harmless until the compile floor dropped: {@code END_GATEWAY} arrived in 1.9
+     * and {@code SPECTATE} later still, so naming them made the file impossible to
+     * compile against an older API for no behavioural gain.
+     *
+     * <p>Deriving the text from the name instead means a cause added in some future
+     * version reads correctly without anyone editing this, which is what the default
+     * arm was already doing for the ones nobody had thought of.
+     */
     private static String prettyCause(PlayerTeleportEvent.TeleportCause c) {
         if (c == null) return "Unknown";
-        switch (c) {
-            case COMMAND:
-                return "Command";
-            case PLUGIN:
-                return "Plugin";
-            case ENDER_PEARL:
-                return "Ender Pearl";
-            case NETHER_PORTAL:
-                return "Nether Portal";
-            case END_PORTAL:
-                return "End Portal";
-            case END_GATEWAY:
-                return "End Gateway";
-            case SPECTATE:
-                return "Spectate";
-            case UNKNOWN:
-                return "Unknown";
-            default:
-                return toTitle(c.name());
-        }
+        return toTitle(c.name());
     }
 
     private static String toTitle(String s) {

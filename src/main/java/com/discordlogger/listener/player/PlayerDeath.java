@@ -71,7 +71,7 @@ public final class PlayerDeath implements Listener {
         final Player killer = victim.getKiller();
         if (killer != null) {
             String kName = Names.display(killer, (JavaPlugin) plugin);
-            String weapon = weaponName(killer.getInventory().getItemInMainHand());
+            String weapon = weaponName(killer.getInventory().getItemInHand());
             return Lang.text("discord.death.slain-by-player",
                     "killer", kName,
                     "weapon", weapon.isEmpty() ? "" : " [" + weapon + "]");
