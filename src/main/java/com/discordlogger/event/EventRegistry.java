@@ -42,6 +42,12 @@ public final class EventRegistry {
         pm.registerEvents(new ServerCommand(plugin), plugin);
         pm.registerEvents(new Explosion(plugin), plugin);
 
+        // BlockExplodeEvent arrived in 1.8.3. Entity explosions above work on 1.8.0,
+        // which is why the two are separate classes rather than one.
+        final Listener blockExplosion = Compat.listenerIfPresent(
+                Compat.BLOCK_EXPLODE_EVENT, Compat.BLOCK_EXPLODE_LISTENER, plugin);
+        if (blockExplosion != null) pm.registerEvents(blockExplosion, plugin);
+
         // Moderation events
         pm.registerEvents(new Ban(plugin), plugin);
         pm.registerEvents(new Unban(plugin), plugin);

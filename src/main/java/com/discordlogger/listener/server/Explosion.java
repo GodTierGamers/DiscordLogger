@@ -12,7 +12,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -44,7 +43,12 @@ public final class Explosion implements Listener {
     private final JavaPlugin plugin;
     public Explosion(JavaPlugin plugin) { this.plugin = plugin; }
 
-    private boolean enabled() {
+    boolean enabled() {
+        return enabled(plugin);
+    }
+
+    /** Package-private so the gated block-explosion listener shares one answer. */
+    static boolean enabled(JavaPlugin plugin) {
         return plugin.getConfig().getBoolean("log.server.explosion.enabled", true);
     }
 
@@ -53,7 +57,7 @@ public final class Explosion implements Listener {
      * applies — otherwise "don't log anything in creative_plot" would silently leak
      * every TNT blast from it.
      */
-    private static boolean filteredWorld(org.bukkit.Location loc) {
+    static boolean filteredWorld(org.bukkit.Location loc) {
         final org.bukkit.World w = (loc == null) ? null : loc.getWorld();
         return w != null && Filters.blocksWorld(w.getName());
     }
@@ -94,44 +98,6 @@ public final class Explosion implements Listener {
         );
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBlockExplode(BlockExplodeEvent e) {
-        if (!enabled()) return;
-        if (filteredWorld(e.getBlock() == null ? null : e.getBlock().getLocation())) return;
-
-        final Block b = e.getBlock();
-        final Material mat = (b == null) ? null : b.getType();
-        final String srcMat = (mat == null) ? "Unknown Block" : toTitle(mat.name());
-        final String source  = "Block: " + srcMat;
-        final String thumb   = getBlockThumb(mat);
-
-        final Location loc = (b == null) ? null : b.getLocation();
-        final World w = (b == null) ? null : b.getWorld();
-        final String world = (w == null) ? "unknown" : w.getName();
-
-        final int affected = (e.blockList() == null) ? 0 : e.blockList().size();
-        // A block explosion has a Material rather than an EntityType, so "BED"
-        // and "RESPAWN_ANCHOR" filter the same way "CREEPER" does.
-        if (Filters.blocksExplosion(mat == null ? null : mat.name(), affected)) return;
-
-        final String yield  = fmtYield(e.getYield());
-
-        List<Log.Field> fields = new ArrayList<>();
-        fields.add(new Log.Field("Source:", source));
-        fields.add(new Log.Field("World:", world, true));
-        fields.add(new Log.Field("Location:", fmtLoc(loc)));
-        fields.add(new Log.Field("Blocks Affected:", String.valueOf(affected), true));
-        fields.add(new Log.Field("Yield:", yield, true));
-        fields.add(new Log.Field("Players Nearby:", playersNearbyString(w, loc)));
-
-        Log.eventFieldsWithThumb(
-                "server_explosion",
-                "Explosion",
-                null,
-                fields,
-                thumb                // dynamic icon or null if unknown
-        );
-    }
 
     // ---------- icon selection (version-safe; name matching) ----------
 
@@ -148,7 +114,7 @@ public final class Explosion implements Listener {
         return null; // unknown -> no thumbnail
     }
 
-    private static String getBlockThumb(Material mat) {
+    static String getBlockThumb(Material mat) {
         if (mat == null) return null;
         final String m = mat.name();
         if (m.equals("RESPAWN_ANCHOR")) return ICON_RESPAWN_ANCHOR;
@@ -159,7 +125,12 @@ public final class Explosion implements Listener {
 
     // ---------- helpers ----------
 
-    private String playersNearbyString(World world, Location center) {
+    String playersNearbyString(World world, Location center) {
+        return playersNearbyString(plugin, world, center);
+    }
+
+    /** Package-private so the gated block-explosion listener shares one answer. */
+    static String playersNearbyString(JavaPlugin plugin, World world, Location center) {
         if (world == null || center == null) return "None";
 
         final double r2 = (double) NEARBY_RADIUS_BLOCKS * (double) NEARBY_RADIUS_BLOCKS;
@@ -204,18 +175,18 @@ public final class Explosion implements Listener {
         return String.join(", ", parts);
     }
 
-    private static String fmtYield(float yield) {
+    static String fmtYield(float yield) {
         return String.format(Locale.ROOT, "%.2f", yield);
     }
 
-    private static String fmtLoc(Location loc) {
+    static String fmtLoc(Location loc) {
         if (loc == null) return "Unknown";
         World w = loc.getWorld();
         String wn = (w == null) ? "unknown" : w.getName();
         return wn + " (" + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ() + ")";
     }
 
-    private static String toTitle(String s) {
+    static String toTitle(String s) {
         String t = s.toLowerCase(Locale.ROOT).replace('_', ' ');
         String[] parts = t.split("\\s+");
         StringBuilder out = new StringBuilder(t.length());

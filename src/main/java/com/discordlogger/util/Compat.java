@@ -53,6 +53,10 @@ public final class Compat {
             "org.bukkit.event.player.PlayerCommandSendEvent";
     public static final String COMMAND_SEND_LISTENER =
             "com.discordlogger.command.CommandVisibility";
+    public static final String BLOCK_EXPLODE_EVENT =
+            "org.bukkit.event.block.BlockExplodeEvent";
+    public static final String BLOCK_EXPLODE_LISTENER =
+            "com.discordlogger.listener.server.BlockExplosion";
 
     private Compat() {}
 

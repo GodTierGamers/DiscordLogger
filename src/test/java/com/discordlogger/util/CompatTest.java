@@ -31,6 +31,8 @@ class CompatTest {
     private static final String ADVANCEMENT_LISTENER = Compat.ADVANCEMENT_LISTENER;
     private static final String COMMAND_SEND_EVENT = Compat.COMMAND_SEND_EVENT;
     private static final String COMMAND_SEND_LISTENER = Compat.COMMAND_SEND_LISTENER;
+    private static final String BLOCK_EXPLODE_EVENT = Compat.BLOCK_EXPLODE_EVENT;
+    private static final String BLOCK_EXPLODE_LISTENER = Compat.BLOCK_EXPLODE_LISTENER;
 
     @Test
     @DisplayName("the event classes the gates look for exist on the build API")
@@ -39,6 +41,7 @@ class CompatTest {
         // the feature would never register on any server.
         assertTrue(Compat.hasClass(ADVANCEMENT_EVENT), ADVANCEMENT_EVENT);
         assertTrue(Compat.hasClass(COMMAND_SEND_EVENT), COMMAND_SEND_EVENT);
+        assertTrue(Compat.hasClass(BLOCK_EXPLODE_EVENT), BLOCK_EXPLODE_EVENT);
     }
 
     @Test
@@ -48,6 +51,8 @@ class CompatTest {
         final Class<?> vis = Class.forName(COMMAND_SEND_LISTENER);
         assertTrue(Listener.class.isAssignableFrom(adv), ADVANCEMENT_LISTENER + " is a Listener");
         assertTrue(Listener.class.isAssignableFrom(vis), COMMAND_SEND_LISTENER + " is a Listener");
+        final Class<?> exp = Class.forName(BLOCK_EXPLODE_LISTENER);
+        assertTrue(Listener.class.isAssignableFrom(exp), BLOCK_EXPLODE_LISTENER + " is a Listener");
     }
 
     @Test
@@ -63,6 +68,10 @@ class CompatTest {
         final Constructor<?> vis = Class.forName(COMMAND_SEND_LISTENER)
                 .getConstructor(JavaPlugin.class, commands);
         assertNotNull(vis);
+
+        final Constructor<?> exp = Class.forName(BLOCK_EXPLODE_LISTENER)
+                .getConstructor(JavaPlugin.class);
+        assertNotNull(exp);
     }
 
     @Test

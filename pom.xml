@@ -60,8 +60,9 @@
              compat-floor job. It is LOWER than spigot.api.version above, and the gap
              is the point rather than an oversight.
 
-             Two listeners name events that arrived after the floor:
-             PlayerAdvancementDoneEvent (1.12) and PlayerCommandSendEvent (1.13).
+             Three listeners name events that arrived after the floor:
+             PlayerAdvancementDoneEvent (1.12), PlayerCommandSendEvent (1.13) and
+             BlockExplodeEvent (1.8.3).
              They are built against the 1.13 API like everything else, so their logic
              stays compile-checked and unit-tested, and util.Compat only reflects over
              their construction, so a server without the event never loads the class.
@@ -71,7 +72,7 @@
              other eighty-odd files really are floor-clean. Without that job, a core
              file reaching for a 1.9+ API would compile, test, ship, and only then
              NoSuchMethodError on the servers the listings promise. -->
-        <dl.compat.floor>1.8.8-R0.1-SNAPSHOT</dl.compat.floor>
+        <dl.compat.floor>1.8-R0.1-SNAPSHOT</dl.compat.floor>
 
         <!-- SINGLE SOURCE OF TRUTH for the versions humans would otherwise retype.
              Everything downstream derives from these: plugin.yml via Maven
@@ -299,6 +300,7 @@
                             <excludes>
                                 <exclude>**/listener/player/PlayerAdvancement.java</exclude>
                                 <exclude>**/command/CommandVisibility.java</exclude>
+                                <exclude>**/listener/server/BlockExplosion.java</exclude>
                             </excludes>
                         </configuration>
                     </plugin>
