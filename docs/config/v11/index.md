@@ -1089,6 +1089,9 @@ log:
       show_coords: false # Adds where the player died. Anyone who can see the channel can find the body
 
     advancement: # Logs when a player gets an advancement
+      # Needs Minecraft 1.12 or newer, which is when advancements replaced
+      # achievements. On older servers this simply does nothing -- achievements
+      # are a different event that the plugin does not yet listen for.
       enabled: true
       color: "#2ECC71" # green
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
@@ -1120,6 +1123,10 @@ log:
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
 
     explosion: # Log when an explosion occurs
+      # Explosions with something behind them -- creepers, TNT, fireballs -- are
+      # logged on every supported server. Block explosions with no entity, such as
+      # a bed or a respawn anchor in the wrong dimension, need Minecraft 1.8.3 or
+      # newer; below that only the entity kind is reported.
       enabled: true
       color: "#E74C3C" # red
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
