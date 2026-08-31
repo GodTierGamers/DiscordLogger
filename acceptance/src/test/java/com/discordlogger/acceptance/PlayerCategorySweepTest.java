@@ -22,6 +22,12 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * Every setting under {@code log.player.*}, driven on a real server.
  *
+ * <p>The name ends in Test because Surefire only collects classes matching {@code *Test},
+ * {@code Test*}, {@code *Tests} or {@code *TestCase}. Named PlayerCategorySweep it was
+ * never collected, never skipped and never reported -- it simply did not run, on any
+ * version, while the suite went green. A test that silently does nothing is worse than
+ * one that fails.
+ *
  * <h2>One server, many cases</h2>
  *
  * <p>Booting per case would cost forty seconds each and buy nothing: the plugin reloads
@@ -35,7 +41,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.MethodName.class)
-class PlayerCategorySweep {
+class PlayerCategorySweepTest {
 
     /** An event the driver can fire, and how to recognise what it produces. */
     private record Category(String name, String driverCommand, String marker) {}

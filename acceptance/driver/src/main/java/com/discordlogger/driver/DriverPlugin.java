@@ -44,6 +44,13 @@ public final class DriverPlugin extends JavaPlugin {
             return true;
         }
         final Player player = Fake.player(world);
+        if (player == null) {
+            // The suite reads this and skips the player-driven cases for this version
+            // rather than reporting them as plugin faults, which they are not.
+            sender.sendMessage("DRIVER-UNSUPPORTED no fake player on this server build");
+            getLogger().warning("DRIVER-UNSUPPORTED no fake player on this server build");
+            return true;
+        }
         final String what = args[0].toLowerCase(Locale.ROOT);
         final String rest = args.length > 1
                 ? String.join(" ", Arrays.copyOfRange(args, 1, args.length)) : "";

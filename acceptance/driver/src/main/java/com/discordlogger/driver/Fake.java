@@ -68,8 +68,22 @@ public final class Fake {
                 }
             }
         };
-        return (Player) Proxy.newProxyInstance(
-                Fake.class.getClassLoader(), new Class<?>[]{Player.class}, handler);
+        try {
+            return (Player) Proxy.newProxyInstance(
+                    Fake.class.getClassLoader(), new Class<?>[]{Player.class}, handler);
+        } catch (IllegalArgumentException cannotProxy) {
+            // Some 1.8 server builds carry a Bukkit from the era when health moved from
+            // int to double, and declare getHealth() twice with different return types.
+            // java.lang.reflect.Proxy refuses to generate a class for that, and no
+            // amount of handler code changes it -- the restriction is in Proxy itself,
+            // and only bytecode generation could get past it.
+            //
+            // The published 1.8 API this compiles against has one getHealth(), so this
+            // is invisible until it runs on such a server. Reported plainly rather than
+            // thrown, so a version that cannot host a fake player says so instead of
+            // failing as an unhandled command.
+            return null;
+        }
     }
 
     /** The first loaded world, which every server has by the time plugins are enabled. */

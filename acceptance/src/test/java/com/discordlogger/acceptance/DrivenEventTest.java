@@ -75,6 +75,14 @@ class DrivenEventTest {
                 discord.reset();
 
                 server.command("dldriver join");
+                // A server build that cannot host a fake player is a limitation of the
+                // harness on that version, not a fault in the plugin, so it is skipped
+                // with the reason rather than failed.
+                if (server.awaitLine("DRIVER-UNSUPPORTED", 15, TimeUnit.SECONDS)) {
+                    org.junit.jupiter.api.Assumptions.abort(
+                            "this server build cannot host a fake player, so driver-based "
+                                    + "events cannot be tested on " + mc);
+                }
                 assertTrue(server.awaitLine("DRIVER-OK join", 30, TimeUnit.SECONDS),
                         "the driver could not fire the join:\n" + server.tail(30));
 

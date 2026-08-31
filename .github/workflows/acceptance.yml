@@ -48,6 +48,12 @@ jobs:
           - mc: "1.8"
             server_java: "8"
             source: buildtools
+          # 1.8.8 as well as 1.8.0: Paper publishes it, so no BuildTools, and its
+          # Bukkit is late enough to be past the int-to-double health migration that
+          # stops a dynamic proxy implementing Player on early 1.8 builds.
+          - mc: "1.8.8"
+            server_java: "8"
+            source: paper
           - mc: "1.12.2"
             server_java: "8"
             source: paper
