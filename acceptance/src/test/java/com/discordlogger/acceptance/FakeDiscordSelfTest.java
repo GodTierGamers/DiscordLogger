@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
+import javax.net.ssl.HttpsURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -34,14 +34,17 @@ class FakeDiscordSelfTest {
         try (FakeDiscord discord = FakeDiscord.start(tmp)) {
             System.setProperty("https.proxyHost", "127.0.0.1");
             System.setProperty("https.proxyPort", String.valueOf(discord.proxyPort()));
-            System.setProperty("javax.net.ssl.trustStore",
-                    discord.trustStorePath().toAbsolutePath().toString());
-            System.setProperty("javax.net.ssl.trustStorePassword", discord.trustStorePassword());
-            System.setProperty("javax.net.ssl.trustStoreType", "PKCS12");
 
             final String payload = "{\"content\":null,\"embeds\":[{\"title\":\"Player Join\"}]}";
 
-            final HttpURLConnection c = (HttpURLConnection) new URL(discord.webhookUrl()).openConnection();
+            final HttpsURLConnection c =
+                    (HttpsURLConnection) new URL(discord.webhookUrl()).openConnection();
+            // Trust configured on this connection rather than through system properties.
+            // javax.net.ssl.trustStore is read once, when the default SSLContext first
+            // initialises, so setting it here would be silently ignored the moment any
+            // earlier test had already made an HTTPS call. The server subprocess gets it
+            // as a launch flag, where the ordering problem cannot arise.
+            c.setSSLSocketFactory(discord.clientSocketFactory());
             c.setRequestMethod("POST");
             c.setRequestProperty("Content-Type", "application/json");
             c.setRequestProperty("User-Agent", "DiscordLogger (test)");

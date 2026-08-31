@@ -56,17 +56,31 @@ final class Certs {
         keytool(dir, "-importcert", "-alias", "discord", "-keystore", server.toString(),
                 "-file", signed.toString(), "-noprompt");
 
+        // The truststore must be the JDK's own CAs PLUS ours, never ours alone.
+        //
+        // Handing a server a truststore holding only this CA breaks every legitimate
+        // TLS connection it makes. That is not hypothetical: Paper ships as a
+        // Paperclip launcher that downloads the vanilla server over HTTPS on first
+        // run, and it died on PKIX path building before the plugin ever loaded. The
+        // fake needs to be trusted IN ADDITION to the real world, not instead of it.
+        final Path cacerts = Path.of(System.getProperty("java.home"), "lib", "security", "cacerts");
+        final Path trust = dir.resolve("truststore.p12");
+        keytool(dir, "-importkeystore",
+                "-srckeystore", cacerts.toString(), "-srcstorepass", "changeit",
+                "-destkeystore", trust.toString(), "-deststoretype", "PKCS12", "-noprompt");
         keytool(dir, "-importcert", "-alias", "testca",
-                "-keystore", dir.resolve("truststore.p12").toString(),
-                "-storetype", "PKCS12", "-file", caPem.toString(), "-noprompt");
+                "-keystore", trust.toString(), "-file", caPem.toString(), "-noprompt");
     }
 
     private static void keytool(Path dir, String... args) throws IOException, InterruptedException {
         final List<String> cmd = new ArrayList<>();
         cmd.add(Path.of(System.getProperty("java.home"), "bin", "keytool").toString());
         for (String a : args) cmd.add(a);
+        // -importkeystore names the source password itself, so only add the
+        // destination ones when the caller has not already supplied them.
+        final boolean hasSrcPass = cmd.contains("-srcstorepass");
         cmd.add("-storepass"); cmd.add(PASSWORD);
-        cmd.add("-keypass");   cmd.add(PASSWORD);
+        if (!hasSrcPass) { cmd.add("-keypass"); cmd.add(PASSWORD); }
 
         final Process p = new ProcessBuilder(cmd)
                 .directory(dir.toFile())

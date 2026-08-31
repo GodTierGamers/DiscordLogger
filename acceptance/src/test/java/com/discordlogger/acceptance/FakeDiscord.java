@@ -4,6 +4,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -121,6 +122,27 @@ public final class FakeDiscord implements AutoCloseable {
     /** A webhook URL the plugin will accept, pointing at a webhook that does not exist. */
     public String webhookUrl() {
         return "https://discord.com/api/webhooks/1234567890123456789/acceptance-test-token";
+    }
+
+    /**
+     * A socket factory trusting this fake, for callers inside the test JVM.
+     *
+     * <p>Needed because {@code javax.net.ssl.trustStore} is read once, when the default
+     * SSLContext first initialises. Any earlier HTTPS call in the same JVM -- a server
+     * JAR download, say -- fixes it before a later test can set it, and the failure is
+     * an opaque PKIX error rather than anything pointing at the ordering.
+     */
+    public SSLSocketFactory clientSocketFactory() throws Exception {
+        final KeyStore trust = KeyStore.getInstance("PKCS12");
+        try (InputStream in = Files.newInputStream(trustStore)) {
+            trust.load(in, Certs.PASSWORD.toCharArray());
+        }
+        final TrustManagerFactory tmf =
+                TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(trust);
+        final SSLContext ctx = SSLContext.getInstance("TLS");
+        ctx.init(null, tmf.getTrustManagers(), null);
+        return ctx.getSocketFactory();
     }
 
     /** The JVM flags a server must be started with for its traffic to arrive here. */
