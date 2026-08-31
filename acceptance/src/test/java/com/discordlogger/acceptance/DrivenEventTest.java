@@ -50,7 +50,7 @@ class DrivenEventTest {
 
         final Path cache = Path.of(System.getProperty("dl.acceptance.cache",
                 System.getProperty("user.home") + "/.cache/dl-acceptance"));
-        final Path serverJar = ServerJars.paper(mc, cache);
+        final Path serverJar = ServerJars.forVersion(mc, cache);
 
         try (FakeDiscord discord = FakeDiscord.start(tmp)) {
             try (MinecraftServer server = MinecraftServer.boot(

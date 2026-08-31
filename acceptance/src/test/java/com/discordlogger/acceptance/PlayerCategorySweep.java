@@ -68,7 +68,7 @@ class PlayerCategorySweep {
         work = Files.createTempDirectory("dl-sweep-player");
         discord = FakeDiscord.start(work);
         server = MinecraftServer.boot(work.resolve("server"),
-                ServerJars.paper(mc, Sweeps.cache()), jar, driver,
+                ServerJars.forVersion(mc, Sweeps.cache()), jar, driver,
                 Jdks.javaFor(mc), discord.jvmArgs());
         server.awaitStartup(4, TimeUnit.MINUTES);
         Sweeps.prepare(server, discord);

@@ -1,0 +1,137 @@
+# Runs the shipped JAR on real Minecraft servers and asserts what Discord receives.
+#
+# Separate from ci.yml on purpose. This boots servers and takes minutes per version,
+# which has no place in the feedback loop of a pull request; CI stays fast and this
+# runs nightly, or on demand from the Actions tab.
+#
+# Free on this repository: it is public, and these are standard runners.
+name: Acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: "Which versions to run (all, or one of 1.8 / 1.12.2 / 1.16.5 / 26.2)"
+        required: false
+        default: all
+  schedule:
+    # 03:20 UTC. Off the hour because everything schedules on the hour and the runner
+    # queue is shorter a little after it.
+    - cron: "20 3 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sweep:
+    name: ${{ matrix.mc }}
+    runs-on: ubuntu-latest
+    # Boots several servers and, for 1.8, compiles Spigot from source.
+    timeout-minutes: 90
+    strategy:
+      # Every version reports independently. One failing floor should not hide the
+      # results for the other three, which is the whole reason for testing a range.
+      fail-fast: false
+      matrix:
+        include:
+          # Paper's oldest build is 1.8.8, so the floor comes from BuildTools.
+          - mc: "1.8"
+            server_java: "8"
+            source: buildtools
+          - mc: "1.12.2"
+            server_java: "8"
+            source: paper
+          - mc: "1.16.5"
+            server_java: "16"
+            source: paper
+          - mc: "26.2"
+            server_java: "25"
+            source: paper
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the build JDK from pom.xml
+        id: javaver
+        run: echo "version=$(grep -oE '<dl.build.jdk>[0-9]+' pom.xml | grep -oE '[0-9]+')" >> "$GITHUB_OUTPUT"
+
+      # The server's JDK first, then the build's, so JAVA_HOME ends up on the build one
+      # while JAVA_HOME_<n>_X64 is exported for both. Jdks.javaBinary reads the latter.
+      - name: Install the JDK this Minecraft version needs
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.server_java }}
+
+      - name: Install the build JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ steps.javaver.outputs.version }}
+          cache: maven
+
+      - name: Cache server JARs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/dl-acceptance
+          # Keyed by version so a Spigot build compiled once is not recompiled nightly.
+          key: servers-${{ matrix.mc }}-v1
+
+      - name: Build the plugin and the driver
+        run: |
+          mvn -B -ntp clean package -DskipTests
+          mvn -B -ntp -f acceptance/driver/pom.xml clean package
+
+      # Spigot cannot redistribute its JARs, so BuildTools compiles one from source.
+      # Ten minutes on a cold cache and nothing on a warm one.
+      - name: Build Spigot ${{ matrix.mc }} with BuildTools
+        if: matrix.source == 'buildtools'
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_8_X64 }}
+        run: |
+          set -euo pipefail
+          CACHE="$HOME/.cache/dl-acceptance"
+          mkdir -p "$CACHE"
+          if [ -f "$CACHE/spigot-${{ matrix.mc }}.jar" ]; then
+            echo "already built, using the cached JAR"
+            exit 0
+          fi
+          # BuildTools uses git and refuses to run without an identity.
+          git config --global user.email "acceptance@example.invalid"
+          git config --global user.name "acceptance"
+          mkdir -p /tmp/buildtools && cd /tmp/buildtools
+          curl -fsSL -o BuildTools.jar \
+            https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
+          "$JAVA_HOME/bin/java" -jar BuildTools.jar --rev ${{ matrix.mc }} --compile SPIGOT
+          # BuildTools names the output with the full version; normalise it.
+          found=$(ls spigot-*.jar | head -1)
+          cp "$found" "$CACHE/spigot-${{ matrix.mc }}.jar"
+          ls -lh "$CACHE/spigot-${{ matrix.mc }}.jar"
+
+      - name: Sweep ${{ matrix.mc }}
+        run: |
+          mvn -B -ntp -f acceptance/pom.xml clean test \
+            -DskipTests=false \
+            -Ddl.acceptance.version=${{ matrix.mc }} \
+            -Ddl.acceptance.results=target/acceptance
+
+      - name: Results and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-${{ matrix.mc }}
+          path: |
+            acceptance/target/acceptance/**
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Server log on failure
+        if: failure()
+        run: |
+          echo "::group::surefire reports"
+          find acceptance/target/surefire-reports -name "*.txt" -exec tail -60 {} + || true
+          echo "::endgroup::"

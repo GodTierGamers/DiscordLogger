@@ -31,6 +31,24 @@ final class ServerJars {
     private ServerJars() {}
 
     /**
+     * A server JAR for {@code mcVersion}, however it has to be obtained.
+     *
+     * <p>Prefers one already in the cache. That is how 1.8.0 is served: Paper's oldest
+     * build is 1.8.8, so the floor has to come from Spigot's BuildTools, which compiles
+     * it from source because Spigot cannot redistribute the JAR. CI does that once and
+     * caches the result; here it just shows up as a file that is already present.
+     */
+    static Path forVersion(String mcVersion, Path cacheDir) throws Exception {
+        Files.createDirectories(cacheDir);
+        for (String name : new String[]{
+                "spigot-" + mcVersion + ".jar", "craftbukkit-" + mcVersion + ".jar"}) {
+            final Path local = cacheDir.resolve(name);
+            if (Files.isRegularFile(local) && Files.size(local) > 1_000_000) return local;
+        }
+        return paper(mcVersion, cacheDir);
+    }
+
+    /**
      * A Paper JAR for {@code mcVersion}, downloaded on first use.
      *
      * <p>Paper publishes 1.8.8 upward. 1.8.0 is not available from anyone and has to be
