@@ -64,10 +64,12 @@ class ServerBootTest {
                 assertTrue(server.stockConfig().contains("config-version:"),
                         "the config it wrote does not look like the shipped one");
 
-                // Set the webhook through the plugin's own command, as an admin would.
+                // Set the webhook through the plugin's own command, as an admin would,
+                // and wait for the plugin to confirm rather than for a fixed delay.
                 server.command("discordlogger webhook " + discord.webhookUrl());
-                assertTrue(server.awaitLine("discordlogger", 30, TimeUnit.SECONDS)
-                        || true, "command dispatched");
+                assertTrue(server.awaitLine("Webhook set", 30, TimeUnit.SECONDS)
+                                || server.awaitLine("reloaded", 5, TimeUnit.SECONDS),
+                        "the plugin never acknowledged the webhook:\n" + server.tail(20));
             }
 
             discord.reset();

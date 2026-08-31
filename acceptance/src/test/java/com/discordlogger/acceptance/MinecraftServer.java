@@ -41,7 +41,6 @@ final class MinecraftServer implements AutoCloseable {
      * Lays out a server directory and boots it.
      *
      * @param pluginJar the shipped JAR, exactly as released
-     * @param config    contents of plugins/DiscordLogger/config.yml, already pointed at the fake
      */
     static MinecraftServer boot(Path dir, Path serverJar, Path pluginJar,
                                 int javaFeature, List<String> extraJvmArgs)

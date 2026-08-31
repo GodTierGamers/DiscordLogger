@@ -122,7 +122,7 @@ final class EmbedImage {
                 drawSteveHead(g, WIDTH - PAD - THUMB - 4, embedTop + 18, THUMB);
             }
         }
-        drawFooterIcon(g, lines, embedTop, captionH);
+        drawFooterIcon(g, lines, captionH);
 
         if (caption != null) {
             g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
@@ -223,7 +223,7 @@ final class EmbedImage {
     }
 
     /** The small round icon Discord shows beside the footer text. */
-    private static void drawFooterIcon(Graphics2D g, List<Line> lines, int embedTop, int captionH) {
+    private static void drawFooterIcon(Graphics2D g, List<Line> lines, int captionH) {
         Line footer = null;
         for (Line l : lines) if (l.footer) footer = l;
         if (footer == null) return;

@@ -145,6 +145,14 @@ public final class FakeDiscord implements AutoCloseable {
         return ctx.getSocketFactory();
     }
 
+    /** A second webhook id, for proving a per-event route actually went elsewhere. */
+    public static final String ALTERNATE_ID = "9876543210987654321";
+
+    /** A different, equally valid Discord URL. Routing shows up as a different path. */
+    public String alternateWebhookUrl() {
+        return "https://discord.com/api/webhooks/" + ALTERNATE_ID + "/acceptance-alt-token";
+    }
+
     /** The JVM flags a server must be started with for its traffic to arrive here. */
     public List<String> jvmArgs() {
         final List<String> args = new ArrayList<>();
@@ -232,6 +240,10 @@ public final class FakeDiscord implements AutoCloseable {
 
     private void handle(Socket raw) {
         try (Socket client = raw) {
+            // Not closed deliberately: closing the reader closes the socket, and the
+            // socket must survive to carry the tunnelled TLS session. The try-with
+            // -resources on the socket itself is what releases both.
+            @SuppressWarnings("resource")
             final BufferedReader head = new BufferedReader(
                     new InputStreamReader(client.getInputStream(), StandardCharsets.ISO_8859_1));
             final String requestLine = head.readLine();
@@ -269,6 +281,7 @@ public final class FakeDiscord implements AutoCloseable {
         try (SSLSocket tls = (SSLSocket) tlsAsDiscord.createSocket(
                 client, null, client.getPort(), false)) {
             tls.setUseClientMode(false);
+            @SuppressWarnings("resource")   // closed with the SSLSocket above
             final BufferedReader in = new BufferedReader(
                     new InputStreamReader(tls.getInputStream(), StandardCharsets.UTF_8));
 
@@ -285,7 +298,15 @@ public final class FakeDiscord implements AutoCloseable {
                     final String name = line.substring(0, colon).trim().toLowerCase(Locale.ROOT);
                     final String value = line.substring(colon + 1).trim();
                     headers.put(name, value);
-                    if (name.equals("content-length")) length = Integer.parseInt(value);
+                    if (name.equals("content-length")) {
+                        try {
+                            length = Integer.parseInt(value);
+                        } catch (NumberFormatException notANumber) {
+                            // A malformed header is the client's problem, not a reason to
+                            // take down the listener the whole suite depends on.
+                            length = 0;
+                        }
+                    }
                 }
             }
 
@@ -316,8 +337,23 @@ public final class FakeDiscord implements AutoCloseable {
         }
     }
 
-    /** Anything that is not Discord is passed through untouched. */
+    /**
+     * Anything that is not Discord is passed through untouched.
+     *
+     * <p>Flagged as request forgery, and the shape is real: a host named by the client
+     * is dialled. It is also the entire point -- this is a proxy, and the client is a
+     * Minecraft server this suite launched itself, on a loopback port, inside a test.
+     * Refusing would break the server's own update checks, which is what the tunnel
+     * exists to preserve.
+     *
+     * <p>Bounded rather than trusted: only 443, and only a plausible hostname, so a
+     * malformed CONNECT cannot turn the listener into a port scanner.
+     */
+    @SuppressWarnings("java:S5144")
     private void tunnel(Socket client, String host, int port) throws IOException {
+        if (port != 443 || !host.matches("[A-Za-z0-9._-]{1,253}")) {
+            return;
+        }
         try (Socket upstream = new Socket(host, port)) {
             final Thread up = pipe(client.getInputStream(), upstream.getOutputStream());
             pipe(upstream.getInputStream(), client.getOutputStream()).join();

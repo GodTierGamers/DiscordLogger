@@ -49,7 +49,13 @@ final class ServerJars {
                     + ". Response began: " + listing.substring(0, Math.min(200, listing.length())));
         }
         final String jarUrl = url.group(1);
-        final String name = url.group(2);
+        // The filename comes out of a remote response and is then used to build a path,
+        // so it is reduced to its last segment and checked. A response containing
+        // "../../etc/something.jar" would otherwise write outside the cache directory.
+        final String name = Path.of(url.group(2)).getFileName().toString();
+        if (!name.matches("paper-[0-9A-Za-z._-]+\\.jar")) {
+            throw new IOException("refusing a server JAR with an unexpected name: " + name);
+        }
 
         final Matcher sha = Pattern.compile("\"sha256\"\\s*:\\s*\"([0-9a-f]{64})\"").matcher(listing);
         final String expected = sha.find() ? sha.group(1) : null;
