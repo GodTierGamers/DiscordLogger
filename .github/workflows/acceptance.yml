@@ -18,6 +18,12 @@ on:
     # 03:20 UTC. Off the hour because everything schedules on the hour and the runner
     # queue is shorter a little after it.
     - cron: "20 3 * * *"
+  push:
+    # Temporary, and only this branch. workflow_dispatch can only be triggered for
+    # workflows that already exist on the default branch, so until this merges there
+    # is no other way to run it. Remove this trigger once it is on main.
+    branches:
+      - feat/bukkit-port
 
 permissions:
   contents: read
