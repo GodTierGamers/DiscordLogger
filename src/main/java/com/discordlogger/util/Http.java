@@ -106,10 +106,24 @@ public final class Http {
         }
     }
 
+    /**
+     * Sent on every request unless a caller overrides it.
+     *
+     * <p>Discord requires a User-Agent and, being behind Cloudflare, answers
+     * <b>403</b> to the JVM's default of {@code Java/1.8.0_502}. That default only
+     * appeared when this class replaced {@code java.net.http}, whose own agent got
+     * through, so every webhook POST from a Java 8 server was rejected while every
+     * unit test and every request from a modern JDK passed. It is set here rather
+     * than at the call sites so a new caller cannot forget it.
+     */
+    private static final String USER_AGENT =
+            "DiscordLogger (+https://github.com/GodTierGamers/DiscordLogger)";
+
     private static HttpURLConnection open(String url, String method, int timeoutMs,
                                           Map<String, String> headers) throws Exception {
         final HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setRequestMethod(method);
+        conn.setRequestProperty("User-Agent", USER_AGENT);
         conn.setConnectTimeout(timeoutMs);
         conn.setReadTimeout(timeoutMs);
         // HttpClient's default policy is NEVER; match it rather than inherit

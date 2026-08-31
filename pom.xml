@@ -56,6 +56,11 @@
              API a 1.13.0 server lacks, which is why this is not simply "1.13.x". -->
         <spigot.api.version>1.13-R0.1-SNAPSHOT</spigot.api.version>
 
+        <!-- The API artifact itself, so CI can swap Spigot for pure Bukkit rather than
+             only changing the version. See the bukkit-api profile below. -->
+        <dl.api.groupId>org.spigotmc</dl.api.groupId>
+        <dl.api.artifactId>spigot-api</dl.api.artifactId>
+
         <!-- The oldest API the plugin promises to run on, enforced by CI's
              compat-floor job. It is LOWER than spigot.api.version above, and the gap
              is the point rather than an oversight.
@@ -137,8 +142,8 @@
         <!-- Paper API provided by the server at runtime; paper-api is required
              for Paper-specific events such as AsyncChatEvent. -->
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
+            <groupId>${dl.api.groupId}</groupId>
+            <artifactId>${dl.api.artifactId}</artifactId>
             <version>${spigot.api.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -158,10 +163,37 @@
             <artifactId>adventure-platform-bukkit</artifactId>
             <version>4.3.4</version>
             <scope>compile</scope>
+            <exclusions>
+                <!-- A build-time annotation only. It is never read at runtime and it
+                     is the one com.google package the relocation does not cover, so
+                     shipping it would put an unrelocated class in the JAR for nothing. -->
+                <exclusion>
+                    <groupId>com.google.auto.service</groupId>
+                    <artifactId>auto-service-annotations</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-text-minimessage</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Gson, shaded.
+             Adventure's Bukkit serialiser needs it, and spigot-api declares it as
+             provided, so the build was quietly relying on the server to supply it.
+             Modern Paper does; CraftBukkit 1.8 does not expose it to the plugin
+             classloader, and the first chat line there died with
+             NoClassDefFoundError: com/google/gson/JsonParseException.
+
+             Bundling it removes the assumption entirely rather than degrading to
+             legacy colour codes on servers that would otherwise render Components
+             perfectly well. Relocated with the rest, so it cannot collide with
+             whatever Gson the server has. -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
             <scope>compile</scope>
         </dependency>
 
@@ -249,6 +281,10 @@
                                 <relocation>
                                     <pattern>net.kyori</pattern>
                                     <shadedPattern>com.discordlogger.shaded.kyori</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.google.gson</pattern>
+                                    <shadedPattern>com.discordlogger.shaded.gson</shadedPattern>
                                 </relocation>
                             </relocations>
                             <!-- Disable to avoid ASM parsing issues with modern bytecode -->

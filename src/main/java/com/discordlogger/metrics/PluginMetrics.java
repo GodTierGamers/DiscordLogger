@@ -264,11 +264,35 @@ public final class PluginMetrics {
                 velocity = YamlConfiguration.loadConfiguration(paperGlobal)
                         .getBoolean("proxies.velocity.enabled", false);
             }
-            return proxyModeOf(
-                    Bukkit.spigot().getConfig().getBoolean("settings.bungeecord", false),
-                    velocity);
+            return proxyModeOf(bungeeForwardingEnabled(), velocity);
         } catch (Throwable t) {
             return UNKNOWN;
+        }
+    }
+
+    /**
+     * {@code settings.bungeecord} from spigot.yml, or false where there is no spigot.yml.
+     *
+     * <p>Reached by name because {@code Bukkit.spigot()} is Spigot's own extension and
+     * does not exist on CraftBukkit. That single call was the only thing in the plugin
+     * that could not compile against bare Bukkit, and keeping it off the compiler's
+     * path is what lets CI prove the rest runs on all three platforms: Paper
+     * implements Spigot implements Bukkit, so what compiles against the smallest of
+     * them runs on every server that matters.
+     *
+     * <p>Only the {@code spigot()} hop is reflective. Its config is an ordinary Bukkit
+     * {@link ConfigurationSection}, so the value is read with normal type checking.
+     */
+    static boolean bungeeForwardingEnabled() {
+        try {
+            final Object spigot = Bukkit.class.getMethod("spigot").invoke(null);
+            final Object cfg = spigot.getClass().getMethod("getConfig").invoke(spigot);
+            return (cfg instanceof ConfigurationSection)
+                    && ((ConfigurationSection) cfg).getBoolean("settings.bungeecord", false);
+        } catch (Throwable notSpigot) {
+            // CraftBukkit, or a fork that dropped it. No spigot.yml means no legacy
+            // BungeeCord forwarding to report.
+            return false;
         }
     }
 

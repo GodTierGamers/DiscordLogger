@@ -49,6 +49,7 @@ Everything below was verified against the actual source at the time of writing; 
 | `<dl.api.version>` | `1.13` | minimum Bukkit API; becomes `plugin.yml`'s `api-version` |
 | `<dl.compat.floor>` | `1.8-R0.1-SNAPSHOT` | the oldest server the plugin promises to **run on** — the lowest `spigot-api` that exists at all; CI's `compat-floor` job compiles against it with the three gated files excluded |
 | `<spigot.api.version>` | `1.13-R0.1-SNAPSHOT` | what the normal build and the **test suite** compile against. Spigot, not Paper: Paper implements the Bukkit API, so compiling against the smaller of the two gives up nothing and one JAR serves both. Higher than the floor, because three listeners name events that arrived after it |
+| `<dl.api.groupId>` / `<dl.api.artifactId>` | `org.spigotmc` / `spigot-api` | the API artifact, parameterised so CI's `bukkit-api` job can swap the whole dependency rather than only its version |
 | `<dl.game.versions>` | 28 entries, `1.19`–`26.2` | the supported range; the listings advertise it, and the prose + badge in README/CONTRIBUTING are derived from its first and last entries |
 
 The sync script derives three values no property owns: **`plugin`** (the released version, from `<version>`), **`schema`** (the config schema, read from `config.yml`'s trailer), and **`paper_display`** (how Paper is written in prose, e.g. `1.19 – 26.2`, built from the first and last of `<dl.game.versions>`). Docs examples of the config trailer use these, so they can't go stale when a release ships or the schema moves. `paper_display` is derived rather than hand-set because a standalone property would drift the moment a Minecraft version is added — the listings would advertise the new ceiling while every badge and requirements table still named the old one. (A `<dl.paper.display>` property did exist and has been removed; if you see it referenced, that's stale.)
@@ -294,6 +295,7 @@ Path-filtered (`dorny/paths-filter`), three jobs behind a `changes` gate:
 |---|---|---|
 | `build` | `src/**`, `pom.xml` | compiles and the test suite passes; uploads the JAR as a PR artifact |
 | `compat-floor` | same | recompiles with `-Pcompat-floor -Dspigot.api.version=<dl.compat.floor>`, so using an API added after the floor fails here instead of `NoSuchMethodError`-ing on a user's server. The profile excludes the three gated files; **everything else must compile at 1.8.0** |
+| `bukkit-api` | same | recompiles against **pure `org.bukkit:bukkit`** rather than Spigot. Paper implements Spigot implements Bukkit, so what compiles against the smallest runs on all three — and one `Bukkit.spigot()` call is all it takes to lose that silently, since the normal build would still pass. The only such call, in `PluginMetrics`, is reached by name for exactly this reason |
 | `validate-generator-data` | `docs/assets/configs/**` | `validate-config-generator.py` |
 
 Concurrency cancels superseded runs. Branch protection requires `build`, `validate-generator-data` and `lint`; `compat-floor` is not (yet) in the required list.

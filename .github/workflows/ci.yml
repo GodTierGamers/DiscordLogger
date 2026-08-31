@@ -101,6 +101,36 @@ jobs:
       - name: Compile against the oldest supported API
         run: mvn -B -ntp clean compile -Pcompat-floor -Dspigot.api.version=${{ steps.floor.outputs.version }}
 
+  bukkit-api:
+    name: Compiles against pure Bukkit
+    needs: changes
+    if: needs.changes.outputs.java == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the build JDK from pom.xml
+        id: javaver
+        run: echo "version=$(grep -oE '<dl.build.jdk>[0-9]+' pom.xml | grep -oE '[0-9]+')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ steps.javaver.outputs.version }}
+          cache: maven
+
+      # Paper implements Spigot implements Bukkit, so whatever compiles against the
+      # smallest of the three runs on all of them. One Bukkit.spigot() call is all it
+      # takes to lose that quietly, and it would compile fine here because the normal
+      # build uses spigot-api. Reuses the compat-floor profile because the files it
+      # excludes are excluded for version reasons that apply equally here.
+      - name: Compile against org.bukkit:bukkit
+        run: >
+          mvn -B -ntp clean compile -Pcompat-floor
+          -Ddl.api.groupId=org.bukkit
+          -Ddl.api.artifactId=bukkit
+          -Dspigot.api.version=1.8-R0.1-SNAPSHOT
+
   validate-generator-data:
     needs: changes
     if: needs.changes.outputs.docs == 'true'

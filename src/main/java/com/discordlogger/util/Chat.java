@@ -42,9 +42,12 @@ public final class Chat {
         try {
             audiences = BukkitAudiences.create(plugin);
         } catch (Exception | LinkageError tooOld) {
-            // adventure-platform-bukkit supports 1.8.8 and up, and the plugin now runs
-            // from 1.8.0. Rather than assume it copes below its own supported range,
-            // fall back to legacy section codes -- see send().
+            // adventure-platform-bukkit documents 1.8.8 and up, and the plugin runs
+            // from 1.8.0. In practice it works on 1.8.0 too -- verified on CraftBukkit
+            // 1.8, where hex, gradients, hover and click all render once Gson is on the
+            // classpath -- so this is a safety net rather than the expected path. It is
+            // kept because "works today, below its supported range" is not a promise the
+            // library made, and see send() for what happens when it breaks mid-flight.
             audiences = null;
             plugin.getLogger().info("Adventure is unavailable on this server; "
                     + "chat messages will use legacy colour codes.");
@@ -60,24 +63,46 @@ public final class Chat {
     /**
      * Sends {@code message}, degrading rather than disappearing.
      *
-     * <p>Three tiers, in order: Adventure when it came up, legacy section codes when
-     * it did not, and silence only if even that throws. The middle tier is what makes
-     * 1.8.0 through 1.8.7 honest — below Adventure's own supported range, a player
-     * still gets a coloured, readable message. What it cannot carry is hover, click
-     * and true hex, none of which a client that old can render anyway.
+     * <p>Three tiers, in order: Adventure when it works, legacy section codes when it
+     * does not, and silence only if even that fails. What makes the middle tier reachable
+     * is catching {@link Throwable} rather than {@link Exception}.
+     *
+     * <p>That distinction was found the hard way on CraftBukkit 1.8.
+     * {@code BukkitAudiences.create} succeeded, so this looked healthy, and the failure
+     * came later inside Adventure's own send path as a {@link NoClassDefFoundError} for
+     * a Gson class the server does not expose. An Error is not an Exception, so it went
+     * straight past the old catch, out of the command handler, and printed "Unhandled
+     * exception executing command" instead of a reload confirmation. Errors are exactly
+     * what a missing class on an old server looks like, so they are the case this most
+     * needs to survive.
+     *
+     * <p>The first such failure also switches Adventure off for the rest of the run. It
+     * will not fix itself, and retrying it per message would repeat the cost and the
+     * stack trace on every line the plugin sends.
      */
     public static void send(CommandSender to, Component message) {
         if (to == null || message == null) return;
+
         final BukkitAudiences a = audiences;
-        try {
-            if (a != null) {
+        if (a != null) {
+            try {
                 a.sender(to).sendMessage(message);
-            } else {
-                to.sendMessage(LegacyComponentSerializer.legacySection().serialize(message));
+                return;
+            } catch (Throwable adventureFailed) {
+                audiences = null;
+                try {
+                    a.close();
+                } catch (Throwable ignored) {
+                    // Already failing; closing is best effort.
+                }
             }
-        } catch (Exception ignored) {
-            // A chat line is never worth propagating an exception into a command
-            // handler or an event listener.
+        }
+
+        try {
+            to.sendMessage(LegacyComponentSerializer.legacySection().serialize(message));
+        } catch (Throwable ignored) {
+            // A chat line is never worth propagating out of a command handler or an
+            // event listener.
         }
     }
 }
