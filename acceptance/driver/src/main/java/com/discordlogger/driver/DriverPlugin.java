@@ -9,7 +9,9 @@ import org.bukkit.event.Event;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -134,9 +136,8 @@ public final class DriverPlugin extends JavaPlugin {
             final org.bukkit.event.entity.EntityDamageEvent damage =
                     new org.bukkit.event.entity.EntityDamageEvent(player, cause, 100.0);
             player.setLastDamageCause(damage);
-            fire("org.bukkit.event.entity.PlayerDeathEvent",
-                    new Object[]{player, new java.util.ArrayList<org.bukkit.inventory.ItemStack>(),
-                            0, Fake.NAME + " died"});
+            fireBestEffort("org.bukkit.event.entity.PlayerDeathEvent",
+                    player, Fake.NAME + " died");
             fired++;
             pause();
         }
@@ -230,6 +231,60 @@ public final class DriverPlugin extends JavaPlugin {
      * works everywhere, and an event whose shape has moved fails with a clear message
      * naming it rather than a NoSuchMethodError from the class loader.
      */
+    /**
+     * Builds an event by filling whatever constructor this version offers.
+     *
+     * <p>PlayerDeathEvent has changed shape repeatedly -- a damage source was added,
+     * parameters reordered -- so naming one argument list works on some versions and
+     * fails on others with NoSuchMethodException, which is what happened here on 26.2.
+     * Rather than keep a list of shapes in step with Minecraft, this fills each
+     * parameter by type: the player where a Player is wanted, the message where a
+     * String is, an empty list, a zero, and null for anything else.
+     *
+     * <p>Nulls are acceptable because the plugin reads the victim and the cause, not
+     * the drops or the damage source. If a version ever needs one of those, it fails
+     * naming the constructor it tried rather than silently sending a wrong event.
+     */
+    private void fireBestEffort(String eventClass, Player player, String message)
+            throws Exception {
+        final Class<?> type = Class.forName(eventClass);
+        final List<String> tried = new ArrayList<>();
+
+        Constructor<?> best = null;
+        Object[] bestArgs = null;
+        for (Constructor<?> c : type.getConstructors()) {
+            final Class<?>[] p = c.getParameterTypes();
+            final Object[] args = new Object[p.length];
+            for (int i = 0; i < p.length; i++) {
+                if (p[i].isAssignableFrom(Player.class)) args[i] = player;
+                else if (p[i] == String.class) args[i] = message;
+                else if (java.util.List.class.isAssignableFrom(p[i])) args[i] = new ArrayList<Object>();
+                else if (p[i] == int.class) args[i] = 0;
+                else if (p[i] == double.class) args[i] = 0.0d;
+                else if (p[i] == float.class) args[i] = 0.0f;
+                else if (p[i] == boolean.class) args[i] = Boolean.FALSE;
+                else if (p[i].isPrimitive()) args[i] = 0;
+                else args[i] = null;
+            }
+            tried.add(Arrays.toString(p));
+            // Fewest parameters wins: the shortest constructor is the one least likely
+            // to want something only a real death could supply.
+            if (best == null || p.length < best.getParameterCount()) {
+                best = c;
+                bestArgs = args;
+            }
+        }
+        if (best == null) {
+            throw new NoSuchMethodException(eventClass + " has no public constructor");
+        }
+        try {
+            Bukkit.getPluginManager().callEvent((Event) best.newInstance(bestArgs));
+        } catch (Throwable t) {
+            throw new IllegalStateException(eventClass + " would not construct. Tried "
+                    + best.getParameterCount() + " args; this version offers " + tried, t);
+        }
+    }
+
     private void fire(String eventClass, Object[] args) throws Exception {
         final Class<?> type = Class.forName(eventClass);
         Constructor<?> best = null;

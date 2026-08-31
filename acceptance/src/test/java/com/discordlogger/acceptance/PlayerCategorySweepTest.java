@@ -96,10 +96,10 @@ class PlayerCategorySweepTest {
         final String key = "log.player." + c.name() + ".enabled";
         server.editConfig(key, "true");
         Sweeps.reload(server);
-        discord.reset();
+        Sweeps.quiesce(discord, 2000);
         server.command("dldriver " + c.driverCommand());
 
-        final String captured = Sweeps.captureOne(discord, 30);
+        final String captured = Sweeps.captureMatching(discord, c.marker(), 30);
         RESULTS.add(Grader.grade(
                 new Grader.Expectation(key, true, null).requiring("embeds"),
                 captured, Sweeps.errorsSince(server)));
@@ -112,12 +112,12 @@ class PlayerCategorySweepTest {
         final String key = "log.player." + c.name() + ".enabled";
         server.editConfig(key, "false");
         Sweeps.reload(server);
-        discord.reset();
+        Sweeps.quiesce(discord, 2000);
         server.command("dldriver " + c.driverCommand());
 
         // A shorter window than the enabled case on purpose: this waits to prove absence,
         // and every second of it is spent on every category.
-        final String captured = Sweeps.captureOne(discord, 8);
+        final String captured = Sweeps.captureMatching(discord, c.marker(), 8);
         RESULTS.add(Grader.grade(
                 new Grader.Expectation(key, false, null), captured, Sweeps.errorsSince(server)));
 
@@ -132,15 +132,20 @@ class PlayerCategorySweepTest {
         // than coinciding with what the plugin would have sent anyway.
         final String key = "log.player." + c.name() + ".color";
         server.editConfig("log.player." + c.name() + ".enabled", "true");
-        server.editConfig(key, "\"#AB12CD\"");
+        final String hex = "AB12CD";
+        server.editConfig(key, "\"#" + hex + "\"");
         Sweeps.reload(server);
-        discord.reset();
+        Sweeps.quiesce(discord, 2000);
         server.command("dldriver " + c.driverCommand());
 
-        final String captured = Sweeps.captureOne(discord, 30);
+        final String captured = Sweeps.captureMatching(discord, c.marker(), 30);
         RESULTS.add(Grader.grade(
                 new Grader.Expectation(key, true, null)
-                        .requiring("\"color\":11211981"),
+                        // Converted rather than written out. The first version of this
+                        // hardcoded the decimal and got it wrong by 512, so six
+                        // categories reported WRONG against a number that was never
+                        // right. A test asserting a miscalculation is worse than none.
+                        .requiring("\"color\":" + Integer.parseInt(hex, 16)),
                 captured, Sweeps.errorsSince(server)));
     }
 
@@ -152,11 +157,13 @@ class PlayerCategorySweepTest {
         server.editConfig("log.player." + c.name() + ".enabled", "true");
         server.editConfig(key, "\"" + discord.alternateWebhookUrl() + "\"");
         Sweeps.reload(server);
-        discord.reset();
+        Sweeps.quiesce(discord, 2000);
         server.command("dldriver " + c.driverCommand());
 
+        // Matched on this category, not on "any embed". Taking whatever arrived first
+        // is what let a leftover post from the previous case be read as this one's.
         final FakeDiscord.Recorded post = discord.awaitPostMatching(
-                r -> r.bodyContains("embeds"), 30, TimeUnit.SECONDS);
+                r -> r.bodyContains(c.marker()), 30, TimeUnit.SECONDS);
         // Routing is visible in the path: a different webhook id is a different URL.
         final boolean routed = post.path.contains(FakeDiscord.ALTERNATE_ID);
         RESULTS.add(new Grader.Result(key,

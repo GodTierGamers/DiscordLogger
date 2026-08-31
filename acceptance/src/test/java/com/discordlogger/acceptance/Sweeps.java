@@ -68,9 +68,42 @@ final class Sweeps {
         discord.reset();
     }
 
+    /**
+     * Waits until nothing has arrived for a moment, then clears what did.
+     *
+     * <p>Without this the cases race each other. The plugin queues sends and drains
+     * them on its own thread, so a post from the previous case can arrive after
+     * reset() and be read as the result of the current one. That is how the routing
+     * check reported "went to the default webhook" in CI and "no post at all" locally
+     * on the same commit: it was picking up whatever happened to be in flight.
+     *
+     * <p>Two runs disagreeing about which case failed is the signature of a race, and
+     * it is worth naming rather than retrying until it passes.
+     */
+    static void quiesce(FakeDiscord discord, long quietMillis) throws InterruptedException {
+        long lastSeen = System.currentTimeMillis();
+        while (System.currentTimeMillis() - lastSeen < quietMillis) {
+            final int before = discord.all().size();
+            Thread.sleep(200);
+            if (discord.all().size() != before) lastSeen = System.currentTimeMillis();
+        }
+        discord.reset();
+    }
+
     static void reload(MinecraftServer server) throws Exception {
         server.command("discordlogger reload");
         Thread.sleep(1200);
+    }
+
+    /** The next embed naming {@code marker}, or null when none arrives in time. */
+    static String captureMatching(FakeDiscord discord, String marker, int seconds)
+            throws InterruptedException {
+        try {
+            return discord.awaitPostMatching(r -> r.bodyContains(marker),
+                    seconds, TimeUnit.SECONDS).body;
+        } catch (AssertionError nothingArrived) {
+            return null;
+        }
     }
 
     /** The next embed, or null when nothing arrives in time. */
