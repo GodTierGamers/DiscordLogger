@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -43,7 +44,7 @@ public final class Regen implements Subcommand {
     }
 
     @Override public String name() { return "regen"; }
-    @Override public String description() { return "Rebuilds config.yml from this build's default (backs up the current one)."; }
+    @Override public String description() { return "Rebuilds config.yml and lang.yml from this build's defaults (backs up the current ones)."; }
     @Override public String permission() { return "discordlogger.regen"; }
 
     @Override
@@ -57,50 +58,65 @@ public final class Regen implements Subcommand {
         }
 
         final File dataFolder = plugin.getDataFolder();
-        final File config = new File(dataFolder, "config.yml");
 
-        final String defaultText;
-        try (InputStream in = plugin.getResource("config.yml")) {
-            if (in == null) {
-                Chat.send(sender, Lang.chat("chat.regen-no-bundled"));
+        // Both managed files, not just config.yml. They share a version and migrate
+        // together, so rebuilding one and leaving the other is how you end up with a
+        // fresh config beside a lang file that predates it.
+        final String[] managed = { "config.yml", "lang.yml" };
+        final List<String> backups = new ArrayList<>();
+
+        for (String name : managed) {
+            final String defaultText;
+            try (InputStream in = plugin.getResource(name)) {
+                if (in == null) {
+                    Chat.send(sender, Lang.chat("chat.regen-no-bundled", "file", name));
+                    return true;
+                }
+                defaultText = Io.readString(in);
+            } catch (Exception ex) {
+                Chat.send(sender, Lang.chat("chat.regen-read-failed",
+                        "file", name, "error", String.valueOf(ex.getMessage())));
                 return true;
             }
-            defaultText = Io.readString(in);
-        } catch (Exception ex) {
-            Chat.send(sender, Lang.chat("chat.regen-read-failed", "error", ex.getMessage()));
-            return true;
-        }
 
-        String backupName = null;
-        try {
-            if (config.exists()) {
-                backupName = "config.backup-" + LocalDateTime.now().format(STAMP) + ".yml";
-                Files.move(config.toPath(), new File(dataFolder, backupName).toPath(),
-                        StandardCopyOption.REPLACE_EXISTING);
+            final File target = new File(dataFolder, name);
+            try {
+                if (target.exists()) {
+                    final String backupName = name.replace(".yml", "")
+                            + ".backup-" + LocalDateTime.now().format(STAMP) + ".yml";
+                    Files.move(target.toPath(), new File(dataFolder, backupName).toPath(),
+                            StandardCopyOption.REPLACE_EXISTING);
+                    backups.add(backupName);
+                }
+                Files.createDirectories(dataFolder.toPath());
+                Io.writeString(target.toPath(), defaultText, StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            } catch (Exception ex) {
+                Chat.send(sender, Lang.chat("chat.regen-write-failed",
+                        "file", name, "error", String.valueOf(ex.getMessage())));
+                plugin.getLogger().severe("Regen of " + name + " failed: " + ex);
+                return true;
             }
-            Files.createDirectories(dataFolder.toPath());
-            Io.writeString(config.toPath(), defaultText, StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        } catch (Exception ex) {
-            Chat.send(sender, Lang.chat("chat.regen-write-failed", "error", ex.getMessage()));
-            plugin.getLogger().severe("Config regen failed: " + ex);
-            return true;
         }
 
         plugin.reloadConfig();
+        // Reloaded before the confirmation is sent, so the reply below is worded by the
+        // file that was just written rather than the one it replaced.
+        Lang.reload(plugin);
         boolean ok = plugin.applyRuntimeConfig();
 
         Integer shipped = ConfigMigrator.shippedVersion(plugin, "config.yml");
         Chat.send(sender, Lang.chat("chat.regen-done",
                 "schema", shipped != null ? "v" + shipped : "unknown"));
-        if (backupName != null) {
+        for (String backupName : backups) {
             Chat.send(sender, Lang.chat("chat.regen-backup", "file", backupName));
         }
         if (!ok) {
             Chat.send(sender, Lang.chat("chat.regen-no-webhook"));
         }
-        plugin.getLogger().info("config.yml was regenerated by " + sender.getName()
-                + (backupName != null ? " (backup: " + backupName + ")" : ""));
+        plugin.getLogger().info("config.yml and lang.yml were regenerated by "
+                + sender.getName()
+                + (backups.isEmpty() ? "" : " (backups: " + String.join(", ", backups) + ")"));
         return true;
     }
 

@@ -567,13 +567,37 @@ public final class PluginMetrics {
             final YamlConfiguration theirs = bundledYaml(plugin, "lang.yml");
             if (theirs == null) return changed;
 
-            for (String key : theirs.getKeys(true)) {
-                if (theirs.isConfigurationSection(key)) continue;
-                if (key.equals("config-version")) continue;
-                if (!Objects.equals(mine.get(key), theirs.get(key))) changed.add(key);
-            }
+            changed.addAll(changedKeys(mine, theirs));
         } catch (Throwable ignored) {
             // A malformed lang.yml is the user's problem, not a reason to fail metrics.
+        }
+        return changed;
+    }
+
+    /**
+     * Keys the user has actually reworded, split out so it can be tested.
+     *
+     * <p><strong>A key the user's file does not contain is not a changed key.</strong>
+     * That distinction was missing and it inflated the number badly: comparing
+     * {@code mine.get(key)} to the bundled value returns null for an absent key, which
+     * is unequal to every string, so a lang.yml predating a release that added keys
+     * reported every one of them as reworded. A server that had changed a single
+     * message was reported in the "50 or more" bucket.
+     *
+     * <p>Absent is the case {@code Lang} exists to tolerate: it keeps the bundled file
+     * loaded as a fallback precisely so an older lang.yml still resolves every key. A
+     * file missing a key behaves identically to one carrying the default, so counting
+     * it as customised measures the plugin's own release history rather than anything
+     * the admin did.
+     */
+    static List<String> changedKeys(ConfigurationSection mine, ConfigurationSection theirs) {
+        final List<String> changed = new java.util.ArrayList<>();
+        if (mine == null || theirs == null) return changed;
+        for (String key : theirs.getKeys(true)) {
+            if (theirs.isConfigurationSection(key)) continue;
+            if (key.equals("config-version")) continue;
+            if (!mine.contains(key)) continue;
+            if (!Objects.equals(mine.get(key), theirs.get(key))) changed.add(key);
         }
         return changed;
     }

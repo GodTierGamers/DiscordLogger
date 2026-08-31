@@ -36,6 +36,14 @@ public final class PlayerTeleport implements Listener {
         final Location from = e.getFrom();
         final Location to = e.getTo();
 
+        // A teleport that does not move the player is not a teleport. Dropped before
+        // any filter, because this is not a preference an admin should have to
+        // discover: on 1.8 a single /kill fires a burst of these, same world, same
+        // block, cause UNKNOWN, distance 0.0, and they filled a 1000-message queue
+        // faster than it could drain. minimum_teleport_distance would have caught it
+        // only if someone had already raised it from its default of 0.
+        if (isSamePlace(from, to)) return;
+
         final boolean worldChange = worldsDifferent(from, to);
 
         // Distance is null across a world change, which is never a "short hop".
@@ -112,6 +120,24 @@ public final class PlayerTeleport implements Listener {
      * version reads correctly without anyone editing this, which is what the default
      * arm was already doing for the ones nobody had thought of.
      */
+    /**
+     * Whether both ends are the same block of the same world.
+     *
+     * <p>Compared by block coordinate rather than exact position: a respawn or a
+     * plugin nudging someone a fraction of a block has not taken them anywhere worth
+     * a Discord message, and neither has a change of facing.
+     */
+    static boolean isSamePlace(Location from, Location to) {
+        if (from == null || to == null) return false;
+        final World fw = from.getWorld();
+        final World tw = to.getWorld();
+        if (fw == null || tw == null) return false;
+        if (!fw.getName().equals(tw.getName())) return false;
+        return from.getBlockX() == to.getBlockX()
+                && from.getBlockY() == to.getBlockY()
+                && from.getBlockZ() == to.getBlockZ();
+    }
+
     private static String prettyCause(PlayerTeleportEvent.TeleportCause c) {
         if (c == null) return "Unknown";
         return toTitle(c.name());

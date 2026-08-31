@@ -172,19 +172,19 @@ chat:
   # ----------------------------------------------------------------- /regen --
 
   # Shown when /discordlogger regen is run without "confirm".
-  regen-warning: "<yellow>This replaces config.yml with the default from this build. Your current file is backed up, but your settings are NOT carried over.</yellow>"
+  regen-warning: "<yellow>This replaces config.yml and lang.yml with the defaults from this build. Both are backed up, but your settings are NOT carried over.</yellow>"
   regen-confirm: "<yellow>Run <white>/discordlogger regen confirm</white> to go ahead.</yellow>"
 
   # Placeholders: {schema} -- the config schema that was written, e.g. "v10"
-  regen-done: "<green>config.yml rebuilt at schema {schema}.</green>"
+  regen-done: "<green>config.yml and lang.yml rebuilt at schema {schema}.</green>"
   # Placeholders: {file} -- the backup filename
   regen-backup: "<gray>Previous file saved as {file}</gray>"
   regen-no-webhook: "<red>The new config has no webhook URL yet - set webhook.url, then run /discordlogger reload.</red>"
 
-  regen-no-bundled: "<red>This build has no bundled config.yml to restore from.</red>"
+  regen-no-bundled: "<red>This build has no bundled {file} to restore from.</red>"
   # Placeholders: {error}
-  regen-read-failed: "<red>Could not read the bundled config.yml: {error}</red>"
-  regen-write-failed: "<red>Could not rewrite config.yml: {error}</red>"
+  regen-read-failed: "<red>Could not read the bundled {file}: {error}</red>"
+  regen-write-failed: "<red>Could not rewrite {file}: {error}</red>"
 
   # ------------------------------------------------------- command handling --
 
