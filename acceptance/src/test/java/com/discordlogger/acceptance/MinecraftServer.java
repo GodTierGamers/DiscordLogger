@@ -46,6 +46,19 @@ final class MinecraftServer implements AutoCloseable {
     static MinecraftServer boot(Path dir, Path serverJar, Path pluginJar,
                                 int javaFeature, List<String> extraJvmArgs)
             throws Exception {
+        return boot(dir, serverJar, pluginJar, null, javaFeature, extraJvmArgs);
+    }
+
+    /**
+     * As above, plus the acceptance driver.
+     *
+     * <p>The driver is what makes a headless server able to produce a join, a death or a
+     * chat line. It is a separate plugin on purpose: the two never call each other, so a
+     * fault in the driver cannot fake a passing result for DiscordLogger.
+     */
+    static MinecraftServer boot(Path dir, Path serverJar, Path pluginJar, Path driverJar,
+                                int javaFeature, List<String> extraJvmArgs)
+            throws Exception {
         Files.createDirectories(dir);
 
         // A server refuses to start without this, and saying so is the point of the file.
@@ -74,6 +87,10 @@ final class MinecraftServer implements AutoCloseable {
         Files.createDirectories(dir.resolve("plugins"));
         Files.copy(pluginJar, dir.resolve("plugins").resolve("DiscordLogger.jar"),
                 StandardCopyOption.REPLACE_EXISTING);
+        if (driverJar != null) {
+            Files.copy(driverJar, dir.resolve("plugins").resolve("DiscordLoggerDriver.jar"),
+                    StandardCopyOption.REPLACE_EXISTING);
+        }
 
         // bStats would post real telemetry from a test run. Switching it off here is
         // both correct and necessary: the charts are used to make decisions, and a
@@ -168,12 +185,38 @@ final class MinecraftServer implements AutoCloseable {
                 final String comment = line.contains("#")
                         ? " " + line.substring(line.indexOf('#')) : "";
                 lines.set(i, " ".repeat(indent) + parts[depth] + ": " + value + comment);
+
+                // Several settings ship as block lists -- ignored_commands is six lines
+                // of "- login" and friends. Replacing only the key line leaves those
+                // orphaned and the file no longer parses, which the plugin reports by
+                // silently logging nothing at all.
+                int j = i + 1;
+                while (j < lines.size()) {
+                    final String next = lines.get(j);
+                    final String nt = next.trim();
+                    if (nt.isEmpty() || nt.startsWith("#")) break;
+                    final int ni = next.length() - next.stripLeading().length();
+                    if (ni > indent || nt.startsWith("- ")) { lines.remove(j); continue; }
+                    break;
+                }
+
                 Files.write(file, lines);
+                verifyParses(file, path);
                 return;
             }
             depth++;
         }
         throw new IOException("no key '" + path + "' in the shipped config.yml");
+    }
+
+    /** Fails at the edit rather than letting a broken config surface as silence. */
+    private static void verifyParses(Path file, String justChanged) throws IOException {
+        try (java.io.InputStream in = Files.newInputStream(file)) {
+            new org.yaml.snakeyaml.Yaml().load(in);
+        } catch (Exception malformed) {
+            throw new IOException("editing '" + justChanged + "' left config.yml unparseable: "
+                    + malformed.getMessage(), malformed);
+        }
     }
 
     /** Runs a console command, as an operator would. */

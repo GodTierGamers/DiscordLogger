@@ -168,6 +168,31 @@ public final class FakeDiscord implements AutoCloseable {
         return r;
     }
 
+    /**
+     * Waits for a post whose body matches, ignoring anything else that arrives.
+     *
+     * <p>Needed because a server is never doing only the thing under test. Driving an
+     * event from the console makes the plugin log the console command too, so the first
+     * post to arrive is frequently not the one being asserted. Matching on content
+     * rather than taking the first is the difference between a test that means something
+     * and one that passes on whatever happened to be quickest.
+     */
+    public Recorded awaitPostMatching(java.util.function.Predicate<Recorded> wanted,
+                                      long timeout, TimeUnit unit) throws InterruptedException {
+        final long deadline = System.nanoTime() + unit.toNanos(timeout);
+        final List<Recorded> seen = new ArrayList<>();
+        while (System.nanoTime() < deadline) {
+            final Recorded r = received.poll(500, TimeUnit.MILLISECONDS);
+            if (r == null) continue;
+            seen.add(r);
+            if (wanted.test(r)) return r;
+        }
+        throw new AssertionError("no matching post within " + timeout + " " + unit
+                + ". Saw " + seen.size() + " other post(s):\n  "
+                + seen.stream().map(Object::toString)
+                      .collect(java.util.stream.Collectors.joining("\n  ")));
+    }
+
     /** Everything captured so far, oldest first. */
     public List<Recorded> all() { return new ArrayList<>(received); }
 

@@ -1,0 +1,13 @@
+name: DiscordLoggerDriver
+main: com.discordlogger.driver.DriverPlugin
+version: ${project.version}
+author: acceptance-suite
+description: Fires events on demand so the acceptance suite can assert what DiscordLogger does with them.
+# Deliberately absent: api-version. Declaring one would make servers older than 1.13
+# refuse to load this, and 1.8 is exactly where it is most needed. Older servers ignore
+# the key; newer ones treat its absence as "legacy", which for a plugin that touches no
+# materials costs nothing.
+commands:
+  dldriver:
+    description: Fire a synthetic event.
+    usage: /dldriver <event> [args]
