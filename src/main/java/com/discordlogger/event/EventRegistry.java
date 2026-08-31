@@ -39,6 +39,14 @@ public final class EventRegistry {
         final Listener achievement = Compat.listenerIfPresent(
                 Compat.ACHIEVEMENT_EVENT, Compat.ACHIEVEMENT_LISTENER, plugin);
         if (achievement != null) pm.registerEvents(achievement, plugin);
+
+        // Said once at startup rather than left to be discovered. A gate that quietly
+        // does not register is indistinguishable from a plugin that is broken, and the
+        // admin most likely to hit one is on an old server with no reason to suspect
+        // version gating. Silent on anything modern -- there is nothing to report.
+        for (String gap : Compat.unavailableFeatures(plugin)) {
+            plugin.getLogger().info(gap);
+        }
         pm.registerEvents(new PlayerTeleport(plugin), plugin);
         pm.registerEvents(new PlayerGamemode(plugin), plugin);
 

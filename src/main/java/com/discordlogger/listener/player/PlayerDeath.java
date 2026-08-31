@@ -110,7 +110,7 @@ public final class PlayerDeath implements Listener {
         }
 
         final String text = last == null ? null : causeText(last.getCause());
-        // Only reached when there is no damage cause at all, or Paper has added one
+        // Only reached when there is no damage cause at all, or Minecraft has added one
         // we do not know yet. causeTextIsExhaustive() in the tests fails on the latter.
         return text == null ? Lang.text("discord.death.unknown") : text;
     }
@@ -144,7 +144,7 @@ public final class PlayerDeath implements Listener {
      *
      * <p>Returning null rather than a generic string is what makes the gap
      * detectable: a test walks every {@code DamageCause} the API declares and fails
-     * on any that returns null, so a cause added by a future Paper release is caught
+     * on any that returns null, so a cause added by a future Minecraft release is caught
      * in CI instead of surfacing as "Cause of Death: Died" on someone's server.
      */
     /**
@@ -154,7 +154,7 @@ public final class PlayerDeath implements Listener {
      * name lowercased with underscores as hyphens. Returning null rather than a
      * generic string is what keeps the gap detectable: a test walks every
      * {@code DamageCause} the API declares and fails on any without an entry, so a
-     * cause added by a future Paper release is caught in CI instead of surfacing as
+     * cause added by a future Minecraft release is caught in CI instead of surfacing as
      * "Cause of Death: Died" on someone's server.
      */
     static String causeText(EntityDamageEvent.DamageCause cause) {

@@ -1,5 +1,6 @@
 package com.discordlogger.command;
 
+import com.discordlogger.util.Compat;
 import com.discordlogger.custom.CustomLogs;
 import com.discordlogger.log.Log;
 import org.bukkit.ChatColor;
@@ -90,6 +91,10 @@ public final class Doctor implements Subcommand {
                     + "startup. A rule with no 'match', or one whose command is in "
                     + "filters.ignored_commands, never fires.");
         }
+        // Settings that are on but cannot fire on this server version. Doctor exists to
+        // explain a problem plainly, and "enabled but silent" is exactly that.
+        out.addAll(Compat.unavailableFeatures(plugin));
+
         return out;
     }
 

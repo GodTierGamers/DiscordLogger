@@ -4,6 +4,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Registers listeners whose event does not exist on every supported server.
@@ -63,6 +65,43 @@ public final class Compat {
             "com.discordlogger.listener.player.PlayerAchievement";
 
     private Compat() {}
+
+    /**
+     * Log categories that are switched on but cannot fire on this server.
+     *
+     * <p>The gates above make an old server work; they do not make it explain itself.
+     * An admin who enables a category and sees nothing has no way to tell a broken
+     * plugin from a version that never had the feature, and the config comment only
+     * helps someone who thinks to reread the file. This is what {@code /discordlogger
+     * doctor} reports and what startup logs, so the answer is in both places someone
+     * would look.
+     *
+     * <p>Deliberately narrow. A gate is only a hole when nothing else covers the same
+     * setting: advancements and achievements share one switch and between them span
+     * 1.8 upward, so neither is ever reported, and the tab-completion gate has no
+     * setting to contradict. Today exactly one case survives that test.
+     */
+    public static List<String> unavailableFeatures(JavaPlugin plugin) {
+        final List<String> out = new ArrayList<>();
+        if (plugin == null) return out;
+
+        if (plugin.getConfig().getBoolean("log.server.explosion.enabled", true)
+                && !hasClass(BLOCK_EXPLODE_EVENT)) {
+            out.add("Block explosions (beds, respawn anchors) need Minecraft 1.8.3, so they "
+                    + "are not logged here. Explosions with an entity behind them -- creepers, "
+                    + "TNT -- still are.");
+        }
+
+        // Unreachable on any released server, because the two events between them cover
+        // 1.8 upward. Kept so the method means "every enabled category this server cannot
+        // deliver" rather than "the one case that happened to exist when it was written".
+        if (plugin.getConfig().getBoolean("log.player.advancement.enabled", true)
+                && !hasClass(ADVANCEMENT_EVENT) && !hasClass(ACHIEVEMENT_EVENT)) {
+            out.add("Neither advancements nor achievements are available on this server, so "
+                    + "log.player.advancement has nothing to report.");
+        }
+        return out;
+    }
 
     /** Whether this server provides {@code className}. */
     public static boolean hasClass(String className) {
