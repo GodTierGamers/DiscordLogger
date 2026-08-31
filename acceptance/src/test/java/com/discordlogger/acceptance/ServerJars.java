@@ -49,13 +49,15 @@ final class ServerJars {
                     + ". Response began: " + listing.substring(0, Math.min(200, listing.length())));
         }
         final String jarUrl = url.group(1);
-        // The filename comes out of a remote response and is then used to build a path,
-        // so it is reduced to its last segment and checked. A response containing
-        // "../../etc/something.jar" would otherwise write outside the cache directory.
-        final String name = Path.of(url.group(2)).getFileName().toString();
-        if (!name.matches("paper-[0-9A-Za-z._-]+\\.jar")) {
-            throw new IOException("refusing a server JAR with an unexpected name: " + name);
-        }
+        // The cache filename is derived from a hash of the URL, not from the response.
+        //
+        // Validating the name out of the response was the first attempt and was still
+        // wrong: it left a remote value flowing into a path, which is the thing to
+        // avoid rather than something to sanitise, and this downloads a JAR that is
+        // then executed. A hex digest cannot escape a directory whatever the server
+        // says, and a changed build produces a different name on its own.
+        final String name = "paper-" + sha256Hex(jarUrl.getBytes(StandardCharsets.UTF_8))
+                .substring(0, 24) + ".jar";
 
         final Matcher sha = Pattern.compile("\"sha256\"\\s*:\\s*\"([0-9a-f]{64})\"").matcher(listing);
         final String expected = sha.find() ? sha.group(1) : null;
@@ -77,11 +79,14 @@ final class ServerJars {
 
     private static boolean matches(Path file, String expectedSha256) throws Exception {
         if (expectedSha256 == null) return true;   // nothing published to compare against
-        final MessageDigest md = MessageDigest.getInstance("SHA-256");
-        final byte[] digest = md.digest(Files.readAllBytes(file));
+        return sha256Hex(Files.readAllBytes(file)).equals(expectedSha256);
+    }
+
+    private static String sha256Hex(byte[] bytes) throws Exception {
+        final byte[] digest = MessageDigest.getInstance("SHA-256").digest(bytes);
         final StringBuilder hex = new StringBuilder(64);
         for (byte b : digest) hex.append(String.format("%02x", b));
-        return hex.toString().equals(expectedSha256);
+        return hex.toString();
     }
 
     private static String get(String url) throws IOException {

@@ -349,7 +349,6 @@ public final class FakeDiscord implements AutoCloseable {
      * <p>Bounded rather than trusted: only 443, and only a plausible hostname, so a
      * malformed CONNECT cannot turn the listener into a port scanner.
      */
-    @SuppressWarnings("java:S5144")
     private void tunnel(Socket client, String host, int port) throws IOException {
         if (port != 443 || !host.matches("[A-Za-z0-9._-]{1,253}")) {
             return;

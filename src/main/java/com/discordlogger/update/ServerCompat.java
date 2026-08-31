@@ -47,8 +47,13 @@ public final class ServerCompat {
     private static final Duration TIMEOUT = Duration.ofSeconds(8);
 
     /** {@code "version_number":"2.3.1"} … {@code "game_versions":["1.19", …]} */
+    // The array body is matched as "anything that is not a closing bracket" rather than
+    // a lazy .*?. Both accept the same JSON, but the lazy form backtracks quadratically
+    // on input with many repeated "game_versions":[ prefixes, and this parses a response
+    // from a third party -- so the cost of a hostile or merely broken body should be
+    // linear. There are no nested arrays inside game_versions, so nothing is given up.
     private static final Pattern BLOCK_RE = Pattern.compile(
-            "\"game_versions\"\\s*:\\s*\\[(.*?)]|\"version_number\"\\s*:\\s*\"([^\"]+)\"",
+            "\"game_versions\"\\s*:\\s*\\[([^]]*)]|\"version_number\"\\s*:\\s*\"([^\"]+)\"",
             Pattern.DOTALL);
     private static final Pattern QUOTED = Pattern.compile("\"([^\"]+)\"");
 

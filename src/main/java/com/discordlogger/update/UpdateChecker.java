@@ -256,8 +256,17 @@ public final class UpdateChecker {
             int betaIdx = v.toUpperCase(Locale.ROOT).indexOf("-BETA.");
             if (betaIdx >= 0) {
                 String betaPart = v.substring(betaIdx + "-BETA.".length());
+                // Leading digits, taken directly. The regex this replaces was
+                // "\\D.*$", which backtracks on a long run of non-digits -- and the
+                // string comes from a release name on GitHub, so its shape is somebody
+                // else's decision. A character loop is linear and says what it means.
+                int digits = 0;
+                while (digits < betaPart.length()
+                        && Character.isDigit(betaPart.charAt(digits))) {
+                    digits++;
+                }
                 try {
-                    betaNum = Integer.parseInt(betaPart.replaceAll("\\D.*$", ""));
+                    betaNum = digits == 0 ? 0 : Integer.parseInt(betaPart.substring(0, digits));
                 } catch (NumberFormatException ignored) {
                     betaNum = 0;
                 }
