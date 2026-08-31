@@ -38,6 +38,18 @@
             <version>5.11.3</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Reading captured payloads back. The plugin builds its JSON by hand and
+             ships a shaded Gson for Adventure's sake; here it is only ever used to
+             parse what the plugin produced, so the two never meet. Regex was fine for
+             pulling two fields out of a build listing, and is the wrong tool for an
+             embed with a nested field array. -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
