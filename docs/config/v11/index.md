@@ -1004,7 +1004,6 @@ filters:
 
   # Advancements never logged. Matched on the full key, and a trailing * matches a
   # whole tab -- "minecraft:husbandry/*" is every farming advancement.
-  # Supports 1.12 or newer
   ignored_advancements: []
 
   # Recipe unlocks and tab roots fire constantly and mean nothing to a reader, so
@@ -1092,7 +1091,6 @@ log:
       show_coords: false # Adds where the player died. Anyone who can see the channel can find the body
 
     advancement: # Logs when a player gets an advancement
-      # Supports 1.12 or newer
       enabled: true
       color: "#2ECC71" # green
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above

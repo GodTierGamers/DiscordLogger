@@ -57,6 +57,10 @@ public final class Compat {
             "org.bukkit.event.block.BlockExplodeEvent";
     public static final String BLOCK_EXPLODE_LISTENER =
             "com.discordlogger.listener.server.BlockExplosion";
+    public static final String ACHIEVEMENT_EVENT =
+            "org.bukkit.event.player.PlayerAchievementAwardedEvent";
+    public static final String ACHIEVEMENT_LISTENER =
+            "com.discordlogger.listener.player.PlayerAchievement";
 
     private Compat() {}
 

@@ -33,6 +33,8 @@ class CompatTest {
     private static final String COMMAND_SEND_LISTENER = Compat.COMMAND_SEND_LISTENER;
     private static final String BLOCK_EXPLODE_EVENT = Compat.BLOCK_EXPLODE_EVENT;
     private static final String BLOCK_EXPLODE_LISTENER = Compat.BLOCK_EXPLODE_LISTENER;
+    private static final String ACHIEVEMENT_EVENT = Compat.ACHIEVEMENT_EVENT;
+    private static final String ACHIEVEMENT_LISTENER = Compat.ACHIEVEMENT_LISTENER;
 
     @Test
     @DisplayName("the event classes the gates look for exist on the build API")
@@ -42,6 +44,7 @@ class CompatTest {
         assertTrue(Compat.hasClass(ADVANCEMENT_EVENT), ADVANCEMENT_EVENT);
         assertTrue(Compat.hasClass(COMMAND_SEND_EVENT), COMMAND_SEND_EVENT);
         assertTrue(Compat.hasClass(BLOCK_EXPLODE_EVENT), BLOCK_EXPLODE_EVENT);
+        assertTrue(Compat.hasClass(ACHIEVEMENT_EVENT), ACHIEVEMENT_EVENT);
     }
 
     @Test
@@ -53,6 +56,8 @@ class CompatTest {
         assertTrue(Listener.class.isAssignableFrom(vis), COMMAND_SEND_LISTENER + " is a Listener");
         final Class<?> exp = Class.forName(BLOCK_EXPLODE_LISTENER);
         assertTrue(Listener.class.isAssignableFrom(exp), BLOCK_EXPLODE_LISTENER + " is a Listener");
+        final Class<?> ach = Class.forName(ACHIEVEMENT_LISTENER);
+        assertTrue(Listener.class.isAssignableFrom(ach), ACHIEVEMENT_LISTENER + " is a Listener");
     }
 
     @Test
@@ -72,6 +77,10 @@ class CompatTest {
         final Constructor<?> exp = Class.forName(BLOCK_EXPLODE_LISTENER)
                 .getConstructor(JavaPlugin.class);
         assertNotNull(exp);
+
+        final Constructor<?> ach = Class.forName(ACHIEVEMENT_LISTENER)
+                .getConstructor(JavaPlugin.class);
+        assertNotNull(ach);
     }
 
     @Test

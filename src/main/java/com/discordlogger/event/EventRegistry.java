@@ -32,6 +32,13 @@ public final class EventRegistry {
         final Listener advancement = Compat.listenerIfPresent(
                 Compat.ADVANCEMENT_EVENT, Compat.ADVANCEMENT_LISTENER, plugin);
         if (advancement != null) pm.registerEvents(advancement, plugin);
+
+        // The other half of the same feature: achievements existed from 1.8 and the API
+        // outlived them until 1.15. On 1.12 to 1.14 both are registered and only the
+        // advancement one fires, which costs nothing.
+        final Listener achievement = Compat.listenerIfPresent(
+                Compat.ACHIEVEMENT_EVENT, Compat.ACHIEVEMENT_LISTENER, plugin);
+        if (achievement != null) pm.registerEvents(achievement, plugin);
         pm.registerEvents(new PlayerTeleport(plugin), plugin);
         pm.registerEvents(new PlayerGamemode(plugin), plugin);
 
