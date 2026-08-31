@@ -78,6 +78,22 @@ public final class DriverPlugin extends JavaPlugin {
                     fire("org.bukkit.event.player.PlayerGameModeChangeEvent",
                             new Object[]{player, org.bukkit.GameMode.CREATIVE});
                     break;
+                case "death":
+                    // Every cause the server actually has, so the sweep covers what this
+                    // version can produce rather than what a newer one could.
+                    fireDeaths(sender, player, rest);
+                    break;
+                case "explosion":
+                    fireExplosions(sender, player, world, rest);
+                    break;
+                case "advancement":
+                    fireAdvancements(sender, player, rest);
+                    break;
+                case "teleport":
+                    fire("org.bukkit.event.player.PlayerTeleportEvent",
+                            new Object[]{player, player.getLocation(),
+                                    new org.bukkit.Location(world, 100, 70, 100)});
+                    break;
                 default:
                     sender.sendMessage("DRIVER-ERROR unknown event " + what);
                     return true;
@@ -91,6 +107,110 @@ public final class DriverPlugin extends JavaPlugin {
             getLogger().warning("DRIVER-ERROR " + what + ": " + t);
         }
         return true;
+    }
+
+    /**
+     * One death per damage cause this server declares.
+     *
+     * <p>Enumerated from the enum rather than listed, so a version with fewer causes is
+     * swept for exactly what it has and a cause added by a future release is covered
+     * without editing this. Naming them here would make the driver a second place to
+     * keep in step with Minecraft.
+     */
+    private void fireDeaths(CommandSender sender, Player player, String only) throws Exception {
+        int fired = 0;
+        for (org.bukkit.event.entity.EntityDamageEvent.DamageCause cause
+                : org.bukkit.event.entity.EntityDamageEvent.DamageCause.values()) {
+            if (!only.isEmpty() && !only.equalsIgnoreCase(cause.name())) continue;
+            // The listener reads the cause off the victim's last damage, which is how a
+            // real death carries it, so it is set the same way here.
+            final org.bukkit.event.entity.EntityDamageEvent damage =
+                    new org.bukkit.event.entity.EntityDamageEvent(player, cause, 100.0);
+            player.setLastDamageCause(damage);
+            fire("org.bukkit.event.entity.PlayerDeathEvent",
+                    new Object[]{player, new java.util.ArrayList<org.bukkit.inventory.ItemStack>(),
+                            0, Fake.NAME + " died"});
+            fired++;
+            pause();
+        }
+        sender.sendMessage("DRIVER-COUNT death " + fired);
+    }
+
+    /**
+     * One explosion per source that can cause one here.
+     *
+     * <p>Entity explosions are fired for every entity type the version knows; block
+     * explosions only where BlockExplodeEvent exists, which is 1.8.3 and up.
+     */
+    private void fireExplosions(CommandSender sender, Player player, World world, String only)
+            throws Exception {
+        int fired = 0;
+        for (org.bukkit.entity.EntityType type : org.bukkit.entity.EntityType.values()) {
+            if (!EXPLOSIVE.contains(type.name())) continue;
+            if (!only.isEmpty() && !only.equalsIgnoreCase(type.name())) continue;
+            final org.bukkit.entity.Entity source = FakeEntity.of(type, world);
+            if (source == null) continue;
+            fire("org.bukkit.event.entity.EntityExplodeEvent",
+                    new Object[]{source, player.getLocation(),
+                            new java.util.ArrayList<org.bukkit.block.Block>(), 0.0f});
+            fired++;
+            pause();
+        }
+        sender.sendMessage("DRIVER-COUNT explosion " + fired);
+    }
+
+    /** Entity types that produce an explosion, by name so the list spans every version. */
+    private static final java.util.Set<String> EXPLOSIVE = new java.util.HashSet<String>(
+            Arrays.asList("CREEPER", "PRIMED_TNT", "TNT", "MINECART_TNT", "TNT_MINECART",
+                    "FIREBALL", "SMALL_FIREBALL", "DRAGON_FIREBALL", "WITHER_SKULL",
+                    "ENDER_CRYSTAL", "END_CRYSTAL", "ENDER_DRAGON", "WITHER", "GHAST"));
+
+    /**
+     * One advancement per advancement the server declares, or one per achievement on
+     * versions old enough to have those instead.
+     */
+    private void fireAdvancements(CommandSender sender, Player player, String only)
+            throws Exception {
+        int fired = 0;
+        try {
+            final java.util.Iterator<?> it = (java.util.Iterator<?>)
+                    Bukkit.class.getMethod("advancementIterator").invoke(null);
+            while (it.hasNext()) {
+                final Object advancement = it.next();
+                final Object key = advancement.getClass().getMethod("getKey").invoke(advancement);
+                if (!only.isEmpty() && !String.valueOf(key).contains(only)) continue;
+                fire("org.bukkit.event.player.PlayerAdvancementDoneEvent",
+                        new Object[]{player, advancement});
+                fired++;
+                pause();
+            }
+        } catch (NoSuchMethodException tooOld) {
+            // Pre-1.12: achievements, a different event and a fixed enum.
+            final Class<?> achievement = Class.forName("org.bukkit.Achievement");
+            for (Object a : (Object[]) achievement.getMethod("values").invoke(null)) {
+                if (!only.isEmpty() && !String.valueOf(a).equalsIgnoreCase(only)) continue;
+                fire("org.bukkit.event.player.PlayerAchievementAwardedEvent",
+                        new Object[]{player, a});
+                fired++;
+                pause();
+            }
+        }
+        sender.sendMessage("DRIVER-COUNT advancement " + fired);
+    }
+
+    /**
+     * A breath between events.
+     *
+     * <p>A sweep fires well over a hundred in a row. Without this they queue faster than
+     * the plugin drains them and the run measures its own overflow handling rather than
+     * what each event produced.
+     */
+    private static void pause() {
+        try {
+            Thread.sleep(120);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
