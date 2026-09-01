@@ -58,7 +58,18 @@ public final class ServerCompat {
         if (supported.isEmpty()) return true;          // unknown -> do not suppress
         final String mine = serverVersion();
         if (mine == null || mine.isEmpty()) return true;
-        return supported.contains(mine);
+        if (supported.contains(mine)) return true;
+
+        // A listing may name the line rather than the patch -- Hangar advertises "1.20"
+        // for all of 1.20.x. Accepting the parent keeps this failing open, which is the
+        // contract: only a positive "your version is absent" may suppress a notice, and
+        // "the list names 1.20 and you are on 1.20.4" is not that.
+        int dot = mine.lastIndexOf('.');
+        while (dot > 0) {
+            if (supported.contains(mine.substring(0, dot))) return true;
+            dot = mine.lastIndexOf('.', dot - 1);
+        }
+        return false;
     }
 
     /**
@@ -185,15 +196,51 @@ public final class ServerCompat {
         }
     }
 
-    /** This server's Minecraft version, e.g. {@code "1.21.1"}. */
+    /**
+     * This server's Minecraft version, e.g. {@code "1.21.1"}, as a listing would name it.
+     *
+     * <p>Recent Paper builds report {@code "26.2.build.71-R0.1-SNAPSHOT"}. Cutting at
+     * the dash leaves {@code "26.2.build.71"}, which is not a Minecraft version and
+     * appears in no listing anywhere -- so the compatibility check could never match it
+     * and told every one of those servers that the newest release did not support them.
+     * That is the majority of a modern audience, silenced by a build number.
+     *
+     * <p>So the trailing segments are dropped as soon as one is not a number:
+     * {@code 26.2.build.71} becomes {@code 26.2}, while {@code 1.21.1} is already
+     * numeric throughout and survives intact.
+     */
     static String serverVersion() {
         try {
             final String raw = Bukkit.getBukkitVersion();   // "1.21.1-R0.1-SNAPSHOT"
             if (raw == null) return null;
             final int dash = raw.indexOf('-');
-            return (dash > 0 ? raw.substring(0, dash) : raw).trim().toLowerCase(Locale.ROOT);
+            final String cut = (dash > 0 ? raw.substring(0, dash) : raw)
+                    .trim().toLowerCase(Locale.ROOT);
+            return numericPrefix(cut);
         } catch (Throwable noServer) {
             return null;
         }
+    }
+
+    /** {@code "26.2.build.71"} -> {@code "26.2"}; {@code "1.21.1"} unchanged. */
+    static String numericPrefix(String version) {
+        if (version == null || version.isEmpty()) return version;
+        final StringBuilder kept = new StringBuilder();
+        for (String part : version.split("\\.")) {
+            if (!isAllDigits(part)) break;
+            if (kept.length() > 0) kept.append('.');
+            kept.append(part);
+        }
+        // Nothing numeric at all is not something to guess at; hand it back untouched
+        // and let the caller fail open on it.
+        return kept.length() == 0 ? version : kept.toString();
+    }
+
+    private static boolean isAllDigits(String s) {
+        if (s.isEmpty()) return false;
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) < '0' || s.charAt(i) > '9') return false;
+        }
+        return true;
     }
 }
