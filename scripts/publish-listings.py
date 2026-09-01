@@ -458,11 +458,23 @@ def publish_curseforge(
     changelog: str,
     dry: bool,
 ) -> None:
-    if dry:
+    if dry and not token:
         log(f"[dry-run] CurseForge would publish {version} to project {project_id}")
         return
 
+    # Resolved even on a dry run, when there is a token to resolve with. It is a read,
+    # so it writes nothing -- and it is the only part of this that can be checked
+    # before a release: it proves the token is accepted and shows how many of our
+    # versions CurseForge actually knows. A dry run that skipped it would report
+    # success without having spoken to CurseForge at all.
     ids = curseforge_version_ids(token, game_versions)
+
+    if dry:
+        log(f"[dry-run] CurseForge would publish {version} to project {project_id} "
+            f"for {len(ids)} version ids")
+        log("[dry-run]   the project id itself is only checked by a real upload; "
+            "CurseForge offers no way to read a project back")
+        return
     metadata = {
         "changelog": changelog,
         "changelogType": "markdown",
@@ -505,38 +517,53 @@ def check_auth() -> int:
     if not token:
         problems.append("MODRINTH_TOKEN is not set")
     else:
-        # VERSION_CREATE covers exactly one endpoint — the publish call — so the
-        # token cannot be verified without an additional read scope. Either of
-        # these will do, so whichever scope the PAT was granted, the check works:
-        #   /v3/analytics/downloads   "Read analytics"
-        #   /v2/user                  "Read user info"
-        # Only if BOTH are rejected is the token genuinely dead or unscoped.
+        # VERSION_CREATE covers exactly one endpoint -- the publish call, a POST -- so
+        # there is no request it can make that proves it works. Checking the token at
+        # all depends on it holding some read scope as well.
+        #
+        # /v3/analytics/downloads was that read, and it worked: this check passed on it
+        # weekly, last on 2026-08-24 with "token accepted (analytics scope)". Between
+        # then and 2026-08-31 Modrinth removed the route. It now answers 404 to
+        # everyone, authenticated or not, while the rest of v3 is healthy, and the
+        # public API reference documents no analytics endpoints at all.
+        #
+        # A 404 and a 401 mean different things here and are no longer treated alike.
+        # 404 is the route being gone, which says nothing about the token. 401 is the
+        # token being refused -- but a PAT that simply lacks that scope is refused
+        # identically to one that has been revoked, so it is not proof of a dead token
+        # either. Only a success proves anything, which is why neither failure is
+        # reported as one.
         probes = (
-            (
-                "analytics",
-                f"{MODRINTH_API_V3}/analytics/downloads?"
-                + urllib.parse.urlencode(
-                    {"project_ids": json.dumps([MODRINTH_PROJECT])}
-                ),
-            ),
-            ("user", f"{MODRINTH_API}/user"),
+            ("user info", f"{MODRINTH_API}/user"),
+            ("user info v3", f"{MODRINTH_API_V3}/user"),
         )
         errors: list[str] = []
+        verified = False
         for name, url in probes:
             try:
                 request(url, headers={"Authorization": token})
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"{name}: {exc}")
                 continue
-            log(f"Modrinth: token accepted ({name} scope)")
+            log(f"Modrinth: token accepted ({name})")
+            verified = True
             break
-        else:
-            problems.append(
-                "Modrinth token rejected on every probe. This means the token has "
-                "expired or been revoked, OR it holds neither the 'Read analytics' "
-                "nor the 'Read user info' scope — Modrinth answers both cases with a "
-                "bare 401. Publishing itself only needs 'Create versions'; one read "
-                "scope exists purely so the token can be checked without publishing. "
+
+        if not verified:
+            # A notice, not an error. Failing here every week for a token that is
+            # probably fine would train everyone to ignore this workflow, and its
+            # remaining value -- Hangar and CurseForge, both genuinely checkable -- goes
+            # with it. Saying "unverified" is honest; saying "rejected" is not.
+            log(
+                "::notice::Modrinth token could not be verified, which is not the same "
+                "as it being broken. A PAT holding only 'Create versions' publishes "
+                "perfectly well and still fails every probe, because no readable "
+                "endpoint is gated by that scope. 'Read analytics' used to give one; "
+                "Modrinth removed those routes in late August 2026. To make this "
+                "checkable again, tick 'Read user data' at "
+                "https://modrinth.com/settings/pats -- it grants nothing beyond reading "
+                "your own account. Until then a revoked Modrinth token will not be "
+                "noticed here, and will surface at the release that needs it. "
                 + " | ".join(errors)
             )
 
