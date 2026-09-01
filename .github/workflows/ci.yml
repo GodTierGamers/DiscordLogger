@@ -107,7 +107,7 @@ jobs:
     if: needs.changes.outputs.java == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Read the build JDK from pom.xml
         id: javaver
