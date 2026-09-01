@@ -15,8 +15,11 @@ import java.util.concurrent.TimeUnit;
 /** Shared plumbing for the per-category sweeps. */
 final class Sweeps {
 
-    /** Screenshots kept per version, sampled from whatever that version exercised. */
+    /** Passing embeds pictured per version, sampled at random from what it exercised. */
     private static final int SCREENSHOTS_PER_VERSION = 5;
+
+    /** A ceiling on pictures of failures, so one broken run cannot flood the store. */
+    private static final int MAX_PROBLEM_SCREENSHOTS = 40;
 
     private static final Random SAMPLE = new Random();
     private static int logHighWater = 0;
@@ -205,26 +208,50 @@ final class Sweeps {
     }
 
     /**
-     * Draws the version's screenshots, five at random from everything it exercised.
+     * Draws the version's screenshots: a sample of what passed, and all of what did not.
      *
-     * <p>Re-chosen from scratch each time rather than topped up. Four sweep classes
+     * <p>The two halves are chosen differently on purpose. A passing case is
+     * illustrative -- five at random show what the plugin looks like when it is working,
+     * and the sixth would say nothing the fifth did not. Anything that did not pass is
+     * evidence, and evidence is not something to sample: a picture of the embed that
+     * came out wrong is the fastest way to see what went wrong with it.
+     *
+     * <p>Re-chosen from scratch each time rather than topped up. Six sweep classes
      * report separately, and a budget spent first-come-first-served would hand all five
-     * to whichever ran first -- so every version would illustrate the same category and
-     * nothing else, which is not a sample of anything.
+     * passes to whichever ran first, so every version would illustrate one category and
+     * nothing else -- which is not a sample of anything. Drawing from the payloads on
+     * disk means the last class to report leaves a genuine spread across the whole run.
      *
-     * <p>Drawing from the payloads on disk means the last class to report leaves a
-     * genuine random five across the whole run, whatever order the classes ran in.
+     * <p>A result whose payload is null has no picture, and cannot have one: those are
+     * the cases where nothing arrived at all, and there is nothing to draw. The CSV row
+     * is the record for those.
      */
     private static void renderSample(Path dir) throws IOException {
         final Path store = dir.resolve("payloads");
         if (!Files.isDirectory(store)) return;
 
-        final List<Path> all = new ArrayList<>();
+        final List<Path> passed = new ArrayList<>();
+        final List<Path> notPassed = new ArrayList<>();
         try (var files = Files.list(store)) {
-            files.filter(p -> p.getFileName().toString().endsWith(".json")).forEach(all::add);
+            for (Path f : files.toList()) {
+                if (!f.getFileName().toString().endsWith(".json")) continue;
+                (verdictOf(f).equals(Verdict.PASS.name()) ? passed : notPassed).add(f);
+            }
         }
-        java.util.Collections.shuffle(all, SAMPLE);
-        final List<Path> chosen = all.subList(0, Math.min(SCREENSHOTS_PER_VERSION, all.size()));
+        java.util.Collections.shuffle(passed, SAMPLE);
+
+        final List<Path> chosen = new ArrayList<>(
+                passed.subList(0, Math.min(SCREENSHOTS_PER_VERSION, passed.size())));
+        // Worst case is every setting failing at once, which would put several hundred
+        // images into a branch that keeps them forever. A ceiling that high is never
+        // reached by a run worth looking at, and stops a broken run filling the store.
+        if (notPassed.size() > MAX_PROBLEM_SCREENSHOTS) {
+            System.out.printf("  %d results did not pass; drawing the first %d%n",
+                    notPassed.size(), MAX_PROBLEM_SCREENSHOTS);
+            chosen.addAll(notPassed.subList(0, MAX_PROBLEM_SCREENSHOTS));
+        } else {
+            chosen.addAll(notPassed);
+        }
 
         // Anything drawn for a previous selection is no longer part of the sample.
         try (var stale = Files.list(dir)) {
@@ -234,18 +261,27 @@ final class Sweeps {
         }
 
         for (Path payload : chosen) {
-            final String name = payload.getFileName().toString()
-                    .replace(".json", "");
-            final String key = name.contains("__") ? name.substring(0, name.indexOf("__")) : name;
-            final String verdict = name.contains("__")
-                    ? name.substring(name.indexOf("__") + 2) : "";
+            final String key = keyOf(payload);
+            final String verdict = verdictOf(payload);
             try {
                 EmbedImage.render(Files.readString(payload, StandardCharsets.UTF_8),
-                        dir.resolve("sample-" + key + ".png"),
+                        // The verdict is in the filename as well as the caption, so the
+                        // ones worth opening are obvious in a directory listing.
+                        dir.resolve("sample-" + verdict + "-" + key + ".png"),
                         key.replace('_', '.') + "   [" + version() + "]   " + verdict);
             } catch (Exception notRenderable) {
                 // A payload that will not draw is not a reason to fail a sweep.
             }
         }
+    }
+
+    private static String keyOf(Path payload) {
+        final String name = payload.getFileName().toString().replace(".json", "");
+        return name.contains("__") ? name.substring(0, name.indexOf("__")) : name;
+    }
+
+    private static String verdictOf(Path payload) {
+        final String name = payload.getFileName().toString().replace(".json", "");
+        return name.contains("__") ? name.substring(name.indexOf("__") + 2) : "";
     }
 }
