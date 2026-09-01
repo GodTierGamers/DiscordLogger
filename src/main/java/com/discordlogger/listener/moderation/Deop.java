@@ -2,6 +2,7 @@ package com.discordlogger.listener.moderation;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import com.discordlogger.util.Roster;
 import com.discordlogger.util.Strings;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -51,18 +52,20 @@ public final class Deop implements Listener {
         }
 
         final String targetName = parts.length > 1 ? parts[1] : "(unknown)";
-        final OfflinePlayer off = Bukkit.getOfflinePlayer(targetName);
-        final boolean wasOp = off.isOp();
+        // See Roster: read from the server's operator list by name, because an
+        // OfflinePlayer built before the command cannot answer this on older versions.
+        final boolean wasOp = Roster.isOp(targetName);
 
         // Verify success next tick (op -> not op)
         Bukkit.getScheduler().runTask(plugin, () -> {
-            if (wasOp && !off.isOp()) {
+            if (wasOp && !Roster.isOp(targetName)) {
                 final String moderatorName = (actorPlayer != null)
                         ? Names.display(actorPlayer, plugin)
                         : "CONSOLE";
 
                 String thumb = null;
-                UUID uuid = off.getUniqueId();
+                final OfflinePlayer off = Bukkit.getOfflinePlayer(targetName);
+                UUID uuid = off == null ? null : off.getUniqueId();
                 if (uuid != null) thumb = Log.playerAvatarUrl(uuid);
 
                 List<Log.Field> fields = new ArrayList<>();

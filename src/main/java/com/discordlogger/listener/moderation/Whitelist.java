@@ -2,6 +2,7 @@ package com.discordlogger.listener.moderation;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import com.discordlogger.util.Roster;
 import com.discordlogger.util.Strings;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -125,19 +126,21 @@ public final class Whitelist implements Listener {
     private void editWhitelist(Player actorPlayer, String targetName, boolean adding) {
         if (targetName == null || Strings.isBlank(targetName)) return;
 
-        final OfflinePlayer off = Bukkit.getOfflinePlayer(targetName);
-        final boolean was = off.isWhitelisted();
+        // See Roster: the whitelist is read by name for the same reason the operator
+        // list is. Adding a player who had never joined went unlogged before ~1.13.
+        final boolean was = Roster.isWhitelisted(targetName);
 
         // Verify success next tick
         Bukkit.getScheduler().runTask(plugin, () -> {
-            final boolean now = off.isWhitelisted();
+            final boolean now = Roster.isWhitelisted(targetName);
             if ((adding && !was && now) || (!adding && was && !now)) {
                 final String moderatorName = (actorPlayer != null)
                         ? Names.display(actorPlayer, plugin)
                         : "CONSOLE";
 
                 String thumb = null;
-                UUID uuid = off.getUniqueId();
+                final OfflinePlayer off = Bukkit.getOfflinePlayer(targetName);
+                UUID uuid = off == null ? null : off.getUniqueId();
                 if (uuid != null) thumb = Log.playerAvatarUrl(uuid);
 
                 final List<Log.Field> fields = new ArrayList<>();

@@ -2,6 +2,7 @@ package com.discordlogger.listener.moderation;
 
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import com.discordlogger.util.Roster;
 import com.discordlogger.util.Strings;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -51,18 +52,24 @@ public final class Op implements Listener {
         }
 
         final String targetName = parts.length > 1 ? parts[1] : "(unknown)";
-        final OfflinePlayer off = Bukkit.getOfflinePlayer(targetName);
-        final boolean wasOp = off.isOp();
+        // Asked of the server's operator list by name rather than through an
+        // OfflinePlayer: see Roster. Taking it from the profile meant opping anyone who
+        // had never joined went unlogged on every version before about 1.13.
+        final boolean wasOp = Roster.isOp(targetName);
 
         // Verify success next tick (not op -> op)
         Bukkit.getScheduler().runTask(plugin, () -> {
-            if (!wasOp && off.isOp()) {
+            if (!wasOp && Roster.isOp(targetName)) {
                 final String moderatorName = (actorPlayer != null)
                         ? Names.display(actorPlayer, plugin)
                         : "CONSOLE";
 
+                // Resolved here rather than before the command ran. By now the
+                // server has seen the name, so there is a real UUID to draw a head
+                // from instead of the empty profile it would have had a tick ago.
                 String thumb = null;
-                UUID uuid = off.getUniqueId();
+                final OfflinePlayer off = Bukkit.getOfflinePlayer(targetName);
+                UUID uuid = off == null ? null : off.getUniqueId();
                 if (uuid != null) thumb = Log.playerAvatarUrl(uuid);
 
                 List<Log.Field> fields = new ArrayList<>();
