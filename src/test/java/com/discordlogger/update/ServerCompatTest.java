@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Parsing and the fail-open contract, both testable without a server or a network. */
@@ -67,6 +68,22 @@ class ServerCompatTest {
         assertEquals(Set.of("1.20.6", "1.21", "1.21.1"), ServerCompat.parse(PAYLOAD, "2.3.1"));
         assertTrue(ServerCompat.parse(PAYLOAD, "2.3.1").contains("1.20.6"),
                 "must not return 2.3.0's list for 2.3.1");
+    }
+
+    @Test
+    @DisplayName("a Paper build number is not part of the Minecraft version")
+    void buildSuffixIsStripped() {
+        // The line a real server printed: "does not list support for Minecraft
+        // 26.2.build.71". That string is in no listing anywhere, so the check could
+        // never match it and silenced the update on every modern Paper server.
+        assertEquals("26.2", ServerCompat.numericPrefix("26.2.build.71"));
+        assertEquals("1.21.1", ServerCompat.numericPrefix("1.21.1"));
+        assertEquals("1.8", ServerCompat.numericPrefix("1.8"));
+        assertEquals("1.20.4", ServerCompat.numericPrefix("1.20.4-pre1".split("-")[0]));
+        // Nothing numeric to keep: handed back untouched so the caller fails open.
+        assertEquals("weird", ServerCompat.numericPrefix("weird"));
+        assertEquals("", ServerCompat.numericPrefix(""));
+        assertNull(ServerCompat.numericPrefix(null));
     }
 
     @Test
