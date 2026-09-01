@@ -1,0 +1,85 @@
+[SIZE=6][B]DiscordLogger[/B][/SIZE]
+
+Posts what happens on your server to a Discord channel, as clean embeds or plain text. One webhook URL, no bot to host, no OAuth, no dashboard.
+
+[B]Runs on CraftBukkit, Spigot, Paper and forks, from 1.8 through 26.2 — one JAR for all of them.[/B]
+
+[HR][/HR]
+
+[SIZE=5][B]What it logs[/B][/SIZE]
+
+[LIST]
+[*][B]Players[/B] — join, quit, chat, commands, deaths, advancements, teleports, gamemode changes
+[*][B]Server[/B] — console commands, start, stop, explosions
+[*][B]Moderation[/B] — bans, unbans, kicks, op, deop, whitelist changes
+[*][B]Anything else[/B] — build your own events from any command on the server. Essentials homes, LuckPerms rank changes, shop purchases: if a command triggers it, you can log it, with its own title, colour and webhook
+[/LIST]
+
+Every event is an independent toggle with its own colour, and can be routed to its own webhook — so moderation goes to a staff-only channel while chat goes to a public one.
+
+[HR][/HR]
+
+[SIZE=5][B]How it reads[/B][/SIZE]
+
+Rich embeds with per-event colours, player heads and a configurable author line — or plain Markdown text, if you would rather your channel stayed quiet.
+
+Events with detail get their own fields. A death carries the cause, built from server-side damage context so it reads the same for Java and Bedrock players, and optionally where it happened. A ban carries who issued it, why, and for how long.
+
+[HR][/HR]
+
+[SIZE=5][B]Why you might pick this one[/B][/SIZE]
+
+[B]It checks that things actually happened.[/B] A ban is logged after the ban list changes, not when someone types /ban. A command that failed, or was cancelled by another plugin, does not produce a message claiming it worked.
+
+[B]It knows what not to log.[/B] /login, /register and /msg are filtered by default, because logging them publishes passwords and private messages to your channel. Fifteen filters cover the rest: ignore players, worlds, commands, death causes, explosion sources, short chat, short teleports, and more.
+
+[B]Every string is yours.[/B] lang.yml holds every message the plugin sends. Reword it, translate it, or strip it back — including all thirty death causes.
+
+[B]It respects vanish.[/B] Staff hidden by EssentialsX, SuperVanish, PremiumVanish or CMI stay hidden. Moderation is deliberately exempt: hiding a ban because the person was vanished would gut the audit trail exactly when it matters.
+
+[B]Bedrock players are handled.[/B] Works with Geyser and Floodgate, and joins from Bedrock can be flagged as such.
+
+[HR][/HR]
+
+[SIZE=5][B]Setup[/B][/SIZE]
+
+[LIST=1]
+[*]Drop the JAR in [ICODE]plugins/[/ICODE] and start the server.
+[*]In Discord: [B]Channel Settings → Integrations → Webhooks → New Webhook[/B], then copy the URL.
+[*]Run [ICODE]/discordlogger webhook <url>[/ICODE] in the console, or paste it into [ICODE]config.yml[/ICODE].
+[/LIST]
+
+That is the whole setup. There is also a [URL=https://discordlogger.godtiergamers.xyz/generator/]config generator[/URL] that builds a complete config.yml in your browser if you would rather click than edit YAML.
+
+[B]Your webhook URL is a credential.[/B] Anyone holding it can post to that channel as your server. The plugin never echoes it back, redacts it from command logging, and keeps it out of tab-completion.
+
+[HR][/HR]
+
+[SIZE=5][B]Requirements[/B][/SIZE]
+
+[LIST]
+[*][B]Server:[/B] CraftBukkit, Spigot, Paper or a fork — 1.8 to 26.2
+[*][B]Java:[/B] 8 or newer
+[*][B]Discord:[/B] a webhook URL. No bot, no token, no hosting
+[/LIST]
+
+A few features need a version that has the underlying feature: advancements are logged as achievements before 1.12, and block explosions need 1.8.3. The plugin checks at startup and says which ones your server cannot provide, rather than failing quietly.
+
+[HR][/HR]
+
+[SIZE=5][B]Privacy[/B][/SIZE]
+
+Anonymous usage data is sent to [URL=https://bstats.org/plugin/bukkit/DiscordLogger/33026]bStats[/URL]: server software, versions, which events are enabled, and whether sends are succeeding. [B]Never[/B] webhook URLs, player names, UUIDs, IP addresses, message content, coordinates or world names. Counts are reported as ranges rather than exact numbers, so a chart cannot become a fingerprint. It can be switched off in [ICODE]plugins/bStats/config.yml[/ICODE].
+
+[HR][/HR]
+
+[SIZE=5][B]Links[/B][/SIZE]
+
+[LIST]
+[*][URL=https://discordlogger.godtiergamers.xyz/]Documentation[/URL] — setup, every config key, guides
+[*][URL=https://discordlogger.godtiergamers.xyz/generator/]Config generator[/URL] — build a config in your browser
+[*][URL=https://github.com/GodTierGamers/DiscordLogger]GitHub[/URL] — source, issues, releases
+[*][URL=https://github.com/GodTierGamers/DiscordLogger/issues/new/choose]Report a bug[/URL]
+[/LIST]
+
+Free and open source under the MIT licence.
