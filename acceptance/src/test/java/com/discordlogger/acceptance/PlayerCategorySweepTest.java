@@ -53,7 +53,11 @@ class PlayerCategorySweepTest {
             new Category("gamemode",    "gamemode",    "Gamemode"),
             new Category("teleport",    "teleport",    "Teleport"),
             new Category("death",       "death VOID",  "Death"),
-            new Category("advancement", "advancement adventure", "Advancement"));
+            // "Unlocked" rather than "Advancement": servers before 1.12 have no
+            // advancements, and the plugin correctly reports an achievement there under
+            // the same setting. Matching the newer word made 1.8.8 report the category
+            // as sending nothing when it had sent exactly what it should.
+            new Category("advancement", "advancement adventure", "Unlocked"));
 
     private static FakeDiscord discord;
     private static MinecraftServer server;
