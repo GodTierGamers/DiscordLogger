@@ -88,53 +88,88 @@ public final class ServerCompat {
     /**
      * Pulls one release's game versions out of the listing payload.
      *
-     * <p>Walks version_number and game_versions in document order and keeps the list
-     * that follows the matching number. Modrinth emits them per object in that order,
-     * so this needs no structural parsing — and if that ever stops being true the
-     * result is an empty set, which fails open like every other unknown.
+     * <p>Walks the payload once, tracking string and brace state, and hands back the
+     * {@code game_versions} of the object whose {@code version_number} matches. Both
+     * fields are read from the same object, so their order inside it does not matter.
+     *
+     * <h2>Why that last sentence is the whole fix</h2>
+     *
+     * <p>This used to arm on {@code version_number} and take the next
+     * {@code game_versions} that followed it, on the stated assumption that Modrinth
+     * emits them in that order. It does not: {@code game_versions} comes first. So the
+     * armed scan ran past the rest of the matching object and returned the list
+     * belonging to the <em>next</em> release in the document.
+     *
+     * <p>The effect was silent and one-directional. Releases list newest first, so
+     * 2.4.0 was reported as supporting whatever 2.3.1 supported -- 1.19 and up. Servers
+     * on 1.19+ saw a correct answer by coincidence; every server between 1.8 and 1.18
+     * was told the update could not run on it, which was exactly the audience 2.4.0
+     * added support for.
+     *
+     * <p>The tests did not catch it because the fixture was written with the fields in
+     * the order the parser expected rather than the order Modrinth sends. It proved the
+     * parser agreed with itself.
+     *
+     * <p>Still linear, and still no JSON library: the scan is one pass, and quoted
+     * text is skipped so a brace or bracket inside a changelog cannot move the
+     * boundaries.
      */
     static Set<String> parse(String json, String wantedVersion) {
         final Set<String> out = new LinkedHashSet<>();
-        if (json == null) return out;
+        if (json == null || wantedVersion == null) return out;
 
-        // Scanned with indexOf rather than matched with a regex.
-        //
-        // Both forms accept the same JSON, but a regex walked across a body this size
-        // costs more than linear: the engine retries at every position, and the body
-        // comes from a third party, so its size and shape are not this plugin's
-        // decision. Scanning forward from one marker to the next is linear no matter
-        // what arrives, and reads as what it is -- a walk through a document whose
-        // order is known.
-        final String NUMBER = "\"version_number\"";
-        final String VERSIONS = "\"game_versions\"";
+        boolean inString = false;
+        boolean escaped = false;
+        int depth = 0;
+        int objectStart = -1;
 
-        boolean armed = false;
-        int at = 0;
-        while (at < json.length()) {
-            final int number = json.indexOf(NUMBER, at);
-            final int versions = json.indexOf(VERSIONS, at);
-            if (number < 0 && versions < 0) return out;
+        for (int i = 0; i < json.length(); i++) {
+            final char c = json.charAt(i);
 
-            final boolean numberFirst = versions < 0 || (number >= 0 && number < versions);
-            if (numberFirst) {
-                final int open = json.indexOf('"', json.indexOf(':', number) + 1);
-                final int close = open < 0 ? -1 : json.indexOf('"', open + 1);
-                if (open < 0 || close < 0) return out;
-                armed = json.substring(open + 1, close).equals(wantedVersion);
-                at = close + 1;
-                continue;
+            if (escaped) { escaped = false; continue; }
+            if (inString && c == '\\') { escaped = true; continue; }
+            if (c == '"') { inString = !inString; continue; }
+            if (inString) continue;
+
+            if (c == '{') {
+                if (depth == 0) objectStart = i;
+                depth++;
+            } else if (c == '}') {
+                depth--;
+                if (depth == 0 && objectStart >= 0) {
+                    final String object = json.substring(objectStart, i + 1);
+                    if (wantedVersion.equals(stringField(object, "\"version_number\""))) {
+                        arrayField(object, "\"game_versions\"", out);
+                        return out;
+                    }
+                    objectStart = -1;
+                }
             }
-
-            final int open = json.indexOf('[', versions);
-            final int close = open < 0 ? -1 : json.indexOf(']', open);
-            if (open < 0 || close < 0) return out;
-            if (armed) {
-                addQuoted(json, open, close, out);
-                return out;
-            }
-            at = close + 1;
         }
         return out;
+    }
+
+    /** The string value of {@code key} in one object, or null. */
+    private static String stringField(String object, String key) {
+        final int at = object.indexOf(key);
+        if (at < 0) return null;
+        final int colon = object.indexOf(':', at + key.length());
+        if (colon < 0) return null;
+        final int open = object.indexOf('"', colon + 1);
+        if (open < 0) return null;
+        final int close = object.indexOf('"', open + 1);
+        if (close < 0) return null;
+        return object.substring(open + 1, close);
+    }
+
+    /** Every string in the array at {@code key}, added to {@code out}. */
+    private static void arrayField(String object, String key, Set<String> out) {
+        final int at = object.indexOf(key);
+        if (at < 0) return;
+        final int open = object.indexOf('[', at + key.length());
+        final int close = open < 0 ? -1 : object.indexOf(']', open);
+        if (open < 0 || close < 0) return;
+        addQuoted(object, open, close, out);
     }
 
     /** Every quoted string between two offsets, in order. */
