@@ -58,7 +58,11 @@ class PlainTextSweepTest {
             new Case("player teleport", "dldriver teleport",       "Player1",          true),
             new Case("player gamemode", "dldriver gamemode",       "Player1",          true),
             new Case("server command",  "say acceptance probe",    "acceptance probe", false),
-            new Case("explosion",       "dldriver explosion CREEPER", "Player1",       true),
+            // Not "Player1": an explosion embed names the source, the world and how many
+            // blocks went, and reports nearby players as "None" when there are none --
+            // which there never are here. Waiting for the player's name meant waiting
+            // for something the message does not contain.
+            new Case("explosion",       "dldriver explosion CREEPER", "Explosion",     true),
             new Case("moderation op",   "op Player1",              "Player1",          false));
 
     private static FakeDiscord discord;
@@ -127,10 +131,18 @@ class PlainTextSweepTest {
         final String captured = Sweeps.captureMatching(discord, c.expect(), 30);
 
         final String key = "plain-text." + c.what().replace(' ', '-');
+        // Read on every path, including the two that return early. Leaving them
+        // unread let one case's driver error surface as the next case's verdict, so a
+        // failure was reported twice and once against the wrong setting.
+        final List<String> errors = Sweeps.errorsSince(server);
+
         if (captured == null) {
             RESULTS.add(new Grader.Result(key, Verdict.WRONG,
-                    "nothing arrived with embeds off, though the same event posts with "
-                            + "them on" + Sweeps.serverContext(server), null));
+                    (errors.isEmpty()
+                            ? "nothing arrived with embeds off, though the same event "
+                                    + "posts with them on"
+                            : "the server logged an error: " + errors.get(0))
+                            + Sweeps.serverContext(server), null));
             return;
         }
         if (captured.contains("\"embeds\"")) {
@@ -143,7 +155,7 @@ class PlainTextSweepTest {
         // wrong in plain text for exactly the reasons it is wrong in an embed.
         RESULTS.add(Grader.grade(
                 new Grader.Expectation(key, true, null).requiring("content", c.expect()),
-                captured, Sweeps.errorsSince(server), Sweeps.serverContext(server)));
+                captured, errors, Sweeps.serverContext(server)));
     }
 
     @AfterAll

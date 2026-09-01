@@ -354,7 +354,18 @@ class ServerCategorySweepTest {
     private Attempt stageAndDrive(Category c, int seconds) throws Exception {
         if (!prime(c)) return new Attempt(false, null);
         server.command(c.drive());
-        return new Attempt(true, Sweeps.captureMatching(discord, c.marker(), seconds));
+        final String captured = Sweeps.captureMatching(discord, c.marker(), seconds);
+
+        // Asked after every moderation case, so a case that logged nothing carries the
+        // server's own view of the name with it: who it thinks is an operator, under
+        // which UUID, and what getOfflinePlayer answers. The state file says the action
+        // landed; this says whether the API the plugin reads agrees, and those two have
+        // already disagreed once on servers older than 1.13.
+        if (c.key().startsWith("log.moderation")) {
+            server.command("dldriver probe " + TARGET);
+            Thread.sleep(700);
+        }
+        return new Attempt(true, captured);
     }
 
     /** Records the case as unjudgeable because the setup command never took effect. */

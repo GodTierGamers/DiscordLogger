@@ -13,7 +13,7 @@
   ],
   "keys": {
     "config-version": {"pending": "a schema marker, not a message: it is never shown to anyone"},
-    "chat.prefix": {"case": "ChatLangSweepTest"},
+    "chat.prefix": {"pending": "nothing in the plugin calls Lang.prefixed, so this line is never used; the two messages that show a prefix have it written into their own value instead"},
     "chat.reload-ok": {"case": "ChatLangSweepTest"},
     "chat.reload-no-webhook": {"case": "ChatLangSweepTest"},
     "chat.reload-no-webhook-hint": {"case": "ChatLangSweepTest"},
@@ -22,7 +22,7 @@
     "chat.reload-config-upgraded": {"pending": "needs a config.yml from an older schema, mid-migration"},
     "chat.webhook-usage": {"case": "ChatLangSweepTest"},
     "chat.webhook-where": {"case": "ChatLangSweepTest"},
-    "chat.webhook-private": {"case": "ChatLangSweepTest"},
+    "chat.webhook-private": {"pending": "only sent when the sender is a Player, and the console never is"},
     "chat.webhook-invalid": {"case": "ChatLangSweepTest"},
     "chat.webhook-expected": {"case": "ChatLangSweepTest"},
     "chat.webhook-set": {"pending": "sets a live webhook; driven for behaviour by ServerBootTest instead"},

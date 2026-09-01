@@ -68,7 +68,11 @@ MODRINTH_PROJECT = "discordlogger"
 # a Paper fork the plugin fully supports and the docs name explicitly. Both tags
 # go on every version. Hangar has no equivalent: its platform list is
 # PAPER/WATERFALL/VELOCITY, and PAPER already covers the forks.
-MODRINTH_LOADERS = ["paper", "purpur"]
+# Bukkit and Spigot joined this list when the plugin stopped requiring Paper. Leaving
+# them out would have kept the listing invisible to exactly the servers the port was
+# for. Folia is deliberately absent: nothing here has been checked against region
+# threading, and claiming a platform is a promise rather than a hope.
+MODRINTH_LOADERS = ["bukkit", "spigot", "paper", "purpur"]
 
 HANGAR_API = "https://hangar.papermc.io/api/v1"
 HANGAR_SLUG = "DiscordLogger"
@@ -294,6 +298,47 @@ def publish_modrinth(
 
 
 # -------------------------------------------------------------------- hangar
+
+
+# Paper's oldest build. Hangar's PAPER platform means "runs on Paper", and Paper does
+# not exist below this -- so while the plugin genuinely supports 1.8.0, saying so on a
+# Paper listing would be a claim about builds nobody can download. Modrinth and
+# CurseForge take the full range, because their listings are not platform-scoped the
+# same way.
+#
+# A constant rather than a lookup: Hangar's only platform-versions endpoint is an admin
+# write endpoint, and there is no public read to ask.
+HANGAR_OLDEST = (1, 8, 8)
+
+
+def version_tuple(name: str) -> tuple[int, ...]:
+    """"1.21.11" -> (1, 21, 11), so versions sort by number rather than by string."""
+    parts = []
+    for piece in name.split("."):
+        try:
+            parts.append(int(piece))
+        except ValueError:
+            # A name that is not purely numeric sorts last, which keeps anything
+            # unexpected in the list rather than silently dropping it.
+            return (9999,)
+    return tuple(parts)
+
+
+def hangar_versions(wanted: list[str]) -> list[str]:
+    """The wanted versions that Paper actually has builds for."""
+    accepted = [v for v in wanted if version_tuple(v) >= HANGAR_OLDEST]
+    dropped = [v for v in wanted if version_tuple(v) < HANGAR_OLDEST]
+    if dropped:
+        log(
+            f"Hangar: dropping {len(dropped)} version(s) older than Paper's first build "
+            f"({'.'.join(str(n) for n in HANGAR_OLDEST)}): {', '.join(dropped)}"
+        )
+    if not accepted:
+        raise RuntimeError(
+            "no version in <dl.game.versions> is one Paper has ever built, so there is "
+            "nothing to publish to Hangar"
+        )
+    return accepted
 
 
 def publish_hangar(
@@ -605,7 +650,7 @@ def main() -> int:
                 hangar_key,
                 asset_url,
                 tag_version,
-                game_versions,
+                hangar_versions(game_versions),
                 changelog,
                 args.dry_run,
             )

@@ -143,6 +143,11 @@ public final class Fake {
                                                 owner, Boolean.TRUE))
                                 : Collections.emptyList();
                     case "isOnline":          return Boolean.TRUE;
+                    // PlayerCommandPreprocessEvent's constructor builds a recipient set
+                    // from player.getServer(), so a fake answering null there takes the
+                    // event down before it is ever fired -- which the sweep could only
+                    // see as "the plugin logged nothing".
+                    case "getServer":         return org.bukkit.Bukkit.getServer();
                     case "getGameMode":       return org.bukkit.GameMode.SURVIVAL;
                     case "getType":           return org.bukkit.entity.EntityType.PLAYER;
                     case "toString":          return "FakePlayer(" + who + ")";

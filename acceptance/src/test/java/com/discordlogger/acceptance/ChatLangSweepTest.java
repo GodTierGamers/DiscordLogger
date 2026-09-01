@@ -47,8 +47,6 @@ class ChatLangSweepTest {
     private static final String BAD_URL = "http://example.com/not-a-webhook";
 
     private static final List<Line> LINES = List.of(
-            // The prefix goes in front of the lines that use one, so any of them proves it.
-            new Line("chat.prefix", "discordlogger reload"),
             new Line("chat.reload-ok", "discordlogger reload"),
 
             new Line("chat.reload-no-webhook",
@@ -58,8 +56,6 @@ class ChatLangSweepTest {
 
             new Line("chat.webhook-usage", "discordlogger webhook"),
             new Line("chat.webhook-where", "discordlogger webhook"),
-            new Line("chat.webhook-private", "discordlogger webhook"),
-
             new Line("chat.webhook-invalid", "discordlogger webhook " + BAD_URL),
             new Line("chat.webhook-expected", "discordlogger webhook " + BAD_URL),
 

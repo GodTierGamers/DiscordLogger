@@ -44,6 +44,32 @@ public final class DriverPlugin extends JavaPlugin {
             return true;
         }
 
+        // Reports what the server thinks about a name, so a moderation case that logged
+        // nothing can say whether the plugin was wrong or the server never agreed the
+        // action happened. Without it the answer is guesswork across a 90 minute run.
+        if (args[0].equalsIgnoreCase("probe")) {
+            final String who = args.length > 1 ? args[1] : Fake.NAME;
+            final StringBuilder ops = new StringBuilder();
+            for (org.bukkit.OfflinePlayer o : Bukkit.getOperators()) {
+                ops.append('[').append(o.getName()).append('/')
+                   .append(o.getUniqueId()).append(']');
+            }
+            final StringBuilder white = new StringBuilder();
+            for (org.bukkit.OfflinePlayer o : Bukkit.getWhitelistedPlayers()) {
+                white.append('[').append(o.getName()).append(']');
+            }
+            @SuppressWarnings("deprecation")
+            final org.bukkit.OfflinePlayer direct = Bukkit.getOfflinePlayer(who);
+            final String line = "DRIVER-PROBE " + who
+                    + " operators=" + (ops.length() == 0 ? "none" : ops)
+                    + " whitelisted=" + (white.length() == 0 ? "none" : white)
+                    + " getOfflinePlayer.isOp=" + (direct != null && direct.isOp())
+                    + " getOfflinePlayer.uuid=" + (direct == null ? "?" : direct.getUniqueId());
+            sender.sendMessage(line);
+            getLogger().info(line);
+            return true;
+        }
+
         // Handled before anything else, because it changes what the fake player answers
         // and must work whether or not one can be built on this server.
         if (args[0].equalsIgnoreCase("fake")) {
@@ -129,8 +155,18 @@ public final class DriverPlugin extends JavaPlugin {
             sender.sendMessage("DRIVER-OK " + what);
             getLogger().info("DRIVER-OK " + what);
         } catch (Throwable t) {
-            sender.sendMessage("DRIVER-ERROR " + what + ": " + t);
-            getLogger().warning("DRIVER-ERROR " + what + ": " + t);
+            // Unwrapped, because a reflective call reports every failure as
+            // InvocationTargetException and that name says nothing about what actually
+            // went wrong. The sweep quotes this line verbatim in its verdict.
+            Throwable cause = t;
+            while (cause instanceof java.lang.reflect.InvocationTargetException
+                    && cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+            final String detail = (cause == t) ? String.valueOf(t)
+                    : t.getClass().getSimpleName() + " caused by " + cause;
+            sender.sendMessage("DRIVER-ERROR " + what + ": " + detail);
+            getLogger().warning("DRIVER-ERROR " + what + ": " + detail);
         }
         return true;
     }
