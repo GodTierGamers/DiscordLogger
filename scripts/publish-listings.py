@@ -502,8 +502,8 @@ def diagnose_curseforge(token: str, wanted: list[str]) -> None:
     log("Types matching the versions we ask for:")
     for tid, count in sorted(seen.items(), key=lambda kv: -kv[1]):
         log(f"  typeId {tid:>6}  {type_name.get(tid, '?'):<30} matches {count}")
-    log("First twelve names, in full:")
-    for name in wanted[:12]:
+    log("Every name, in full:")
+    for name in wanted:
         entries = by_name.get(name, [])
         rendered = ", ".join(f"id={i} type={t}" for i, t in entries) or "NOT LISTED"
         log(f"  {name:<9} {rendered}")
