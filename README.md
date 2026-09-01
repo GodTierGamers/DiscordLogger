@@ -107,8 +107,24 @@ genuinely connected client, and the Bedrock indicator needs Floodgate installed.
 
 ## `acceptance/screenshots/`
 
-Five embeds per version, drawn from the payloads that run actually produced and chosen
-at random, rendered as Discord shows them.
+Embeds rendered as Discord shows them, drawn from the payloads that run actually
+produced. Named `sample-<verdict>-<key>.png`, so the ones worth opening stand out in a
+listing.
+
+Two different rules, on purpose:
+
+| | How many |
+|---|---|
+| `PASS` | **five per version, at random** |
+| everything else | **all of them** (capped at 40, which a run worth reading never reaches) |
+
+A passing case is illustrative — five show what the plugin looks like when it works, and
+the sixth says nothing the fifth did not. Anything that did not pass is evidence, and
+evidence is not something to sample: the picture of the embed that came out wrong is the
+quickest way to see what is wrong with it.
+
+**A result with no picture had no payload.** Those are the cases where nothing arrived at
+all, so there is nothing to draw; the CSV row is the whole record.
 
 **Replaced every run, not accumulated.** The CSV is the history; these are the current
-sample, and keeping every run's would add twenty-five images a night forever.
+sample, and keeping every run's would add images a night forever.
