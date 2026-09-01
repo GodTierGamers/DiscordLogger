@@ -8,8 +8,9 @@ description: Download the latest DiscordLogger release for PaperMC, or opt in to
 
 Latest builds from **GitHub Releases**. Stable releases are also on
 [Modrinth](https://modrinth.com/plugin/discordlogger),
-[Hangar](https://hangar.papermc.io/LVCHLANN/DiscordLogger) and
-[CurseForge](https://www.curseforge.com/minecraft/bukkit-plugins/discordlogger) — use whichever your host
+[Hangar](https://hangar.papermc.io/LVCHLANN/DiscordLogger),
+[CurseForge](https://www.curseforge.com/minecraft/bukkit-plugins/discordlogger) and
+[SpigotMC](https://www.spigotmc.org/resources/discordlogger.138443/) — use whichever your host
 or plugin manager installs from. Nightly builds are only published here.
 
 <div class="dl-promo">
