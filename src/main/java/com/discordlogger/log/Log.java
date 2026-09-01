@@ -67,7 +67,11 @@ public final class Log {
         // screenshot is worth more than a gallery that ages slightly.
         try {
             String ver = plugin.getDescription().getVersion();
-            embedFooterText = (ver != null && !ver.isBlank())
+            // Strings.isBlank, not String.isBlank: this compiles to Java 8, which the
+            // Bukkit port set as the target so the plugin runs on 1.8-era servers, and
+            // String.isBlank arrived in Java 11. The two changes were written against
+            // different floors and only collided once both were on main.
+            embedFooterText = (ver != null && !Strings.isBlank(ver))
                     ? EMBED_FOOTER_BASE + " v" + ver
                     : EMBED_FOOTER_BASE;
         } catch (Exception ignored) {
