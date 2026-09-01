@@ -139,6 +139,18 @@ final class Sweeps {
      * that drifted should not report as a single verdict, because the interesting part is
      * which cause moved. The summary rolls them up for reading.
      */
+    /**
+     * The server's own last words, for a case that failed.
+     *
+     * <p>A sweep result saying "sent nothing" is useless on its own: it cannot
+     * distinguish a plugin that declined to log from a driver that never fired. That
+     * is exactly where 1.8.8 stalled -- fourteen cases reported nothing sent, and the
+     * CI log carried no server output to say why.
+     */
+    static String serverContext(MinecraftServer server) {
+        return "\n  --- last server output ---\n" + server.tail(25);
+    }
+
     static void report(String category, List<Grader.Result> results) throws Exception {
         if (results.isEmpty()) return;
         final Path dir = resultsDir();

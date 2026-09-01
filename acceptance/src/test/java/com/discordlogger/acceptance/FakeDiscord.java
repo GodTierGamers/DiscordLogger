@@ -164,9 +164,29 @@ public final class FakeDiscord implements AutoCloseable {
         return args;
     }
 
-    /** Waits for the next post, or fails the calling test if none arrives. */
+    /**
+     * Whether this is a message rather than the plugin checking its webhook still exists.
+     *
+     * <p>Log.validateWebhooksAsync probes every configured webhook with a bodyless GET at
+     * startup, and that is a real request to a real Discord URL, so the fake sees it.
+     * Counting it as a post is how ServerBootTest came to assert against an empty body
+     * and report that a stock install had posted nothing -- on some versions, depending
+     * on whether the probe or the server-start embed arrived first.
+     */
+    private static boolean isMessage(Recorded r) {
+        return "POST".equals(r.method) && r.body != null && !r.body.isEmpty();
+    }
+
+    /** Waits for the next posted message, ignoring webhook probes. */
     public Recorded awaitPost(long timeout, TimeUnit unit) throws InterruptedException {
-        final Recorded r = received.poll(timeout, unit);
+        final long deadline = System.nanoTime() + unit.toNanos(timeout);
+        Recorded r;
+        do {
+            r = received.poll(Math.max(1, (deadline - System.nanoTime()) / 1_000_000),
+                    TimeUnit.MILLISECONDS);
+            if (r != null && isMessage(r)) return r;
+        } while (System.nanoTime() < deadline);
+        r = null;
         if (r == null) {
             throw new AssertionError("no request reached the fake Discord within "
                     + timeout + " " + unit.name().toLowerCase(Locale.ROOT)
@@ -191,7 +211,7 @@ public final class FakeDiscord implements AutoCloseable {
         final List<Recorded> seen = new ArrayList<>();
         while (System.nanoTime() < deadline) {
             final Recorded r = received.poll(500, TimeUnit.MILLISECONDS);
-            if (r == null) continue;
+            if (r == null || !isMessage(r)) continue;
             seen.add(r);
             if (wanted.test(r)) return r;
         }
@@ -206,7 +226,8 @@ public final class FakeDiscord implements AutoCloseable {
 
     /** Asserts nothing arrives in the given window. Used for "this toggle is off". */
     public void assertSilent(long timeout, TimeUnit unit) throws InterruptedException {
-        final Recorded r = received.poll(timeout, unit);
+        Recorded r = received.poll(timeout, unit);
+        while (r != null && !isMessage(r)) r = received.poll(500, TimeUnit.MILLISECONDS);
         if (r != null) {
             throw new AssertionError("expected nothing to be sent, but got: " + r);
         }

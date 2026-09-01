@@ -77,6 +77,15 @@ class PlayerCategorySweepTest {
                 ServerJars.forVersion(mc, Sweeps.cache()), jar, driver,
                 Jdks.javaFor(mc), discord.jvmArgs());
         server.awaitStartup(4, TimeUnit.MINUTES);
+
+        // Without this the whole sweep reports "sent nothing" for every case, which
+        // reads as a plugin that logs nothing rather than a driver that never loaded.
+        // That is how 1.8.8 produced fourteen identical failures naming the wrong thing.
+        if (!server.awaitLine("Acceptance driver ready", 30, TimeUnit.SECONDS)) {
+            throw new IllegalStateException(
+                    "the acceptance driver did not load, so nothing can be fired on "
+                            + Sweeps.version() + Sweeps.serverContext(server));
+        }
         Sweeps.prepare(server, discord);
     }
 
@@ -102,7 +111,7 @@ class PlayerCategorySweepTest {
         final String captured = Sweeps.captureMatching(discord, c.marker(), 30);
         RESULTS.add(Grader.grade(
                 new Grader.Expectation(key, true, null).requiring("embeds"),
-                captured, Sweeps.errorsSince(server)));
+                captured, Sweeps.errorsSince(server), Sweeps.serverContext(server)));
     }
 
     @ParameterizedTest(name = "log.player.{0}.enabled = false posts nothing")
@@ -146,7 +155,7 @@ class PlayerCategorySweepTest {
                         // categories reported WRONG against a number that was never
                         // right. A test asserting a miscalculation is worse than none.
                         .requiring("\"color\":" + Integer.parseInt(hex, 16)),
-                captured, Sweeps.errorsSince(server)));
+                captured, Sweeps.errorsSince(server), Sweeps.serverContext(server)));
     }
 
     @ParameterizedTest(name = "log.player.{0}.webhook routes elsewhere")

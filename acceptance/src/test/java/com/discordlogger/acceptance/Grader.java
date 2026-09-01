@@ -65,6 +65,26 @@ final class Grader {
      * @param captured the payload the plugin sent, or null when it sent nothing
      */
     static Result grade(Expectation expected, String captured, List<String> serverErrors) {
+        return grade(expected, captured, serverErrors, "");
+    }
+
+    /**
+     * As above, with the server's own output attached to whatever it decides.
+     *
+     * <p>"Sent nothing" cannot distinguish a plugin that declined to log from a driver
+     * that never fired, so the verdict carries the server's last words with it.
+     */
+    static Result grade(Expectation expected, String captured, List<String> serverErrors,
+                        String serverContext) {
+        final Result r = gradeInternal(expected, captured, serverErrors);
+        if (r.verdict == Verdict.PASS || serverContext == null || serverContext.isEmpty()) {
+            return r;
+        }
+        return new Result(r.key, r.verdict, r.detail + serverContext, r.payload);
+    }
+
+    private static Result gradeInternal(Expectation expected, String captured,
+                                        List<String> serverErrors) {
         // Nothing needs judging about a stack trace.
         if (!serverErrors.isEmpty()) {
             return new Result(expected.key, Verdict.WRONG,
