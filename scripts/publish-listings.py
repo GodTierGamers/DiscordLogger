@@ -26,9 +26,10 @@ Everything it needs comes from pom.xml and the GitHub Release:
 
 Credentials come from the environment and are never logged:
 
-    MODRINTH_TOKEN   a Modrinth PAT with the "Create versions" scope, plus either
-                     "Read analytics" or "Read user info" so --check-auth can
-                     verify it without publishing anything
+    MODRINTH_TOKEN   a Modrinth PAT with the "Create versions" scope, plus
+                     "Read user data" so --check-auth can verify it without
+                     publishing anything. "Read analytics" used to serve that
+                     purpose; Modrinth withdrew those routes in August 2026.
     HANGAR_API_KEY   a Hangar API key with the create_version permission
 
 If a token is missing that platform is skipped with a notice rather than failing
