@@ -81,7 +81,7 @@ jobs:
           cache: maven
 
       - name: Cache server JARs
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/dl-acceptance
           # Keyed by version so a Spigot build compiled once is not recompiled nightly.
