@@ -170,8 +170,12 @@ class FilterAndFormatSweepTest {
     void ignoredAdvancements() throws Exception {
         // A trailing star matches a whole tab, and every key on every version starts
         // with this prefix -- including the synthesised ones on the achievement era.
+        //
+        // Driven against one tab rather than the whole tree: unfiltered, this fires
+        // every advancement the server declares, which is well over a hundred on a
+        // modern version and has to happen twice per case.
         filterSuppresses("filters.ignored_advancements", "[]", "[\"minecraft:*\"]",
-                "dldriver advancement", "Unlocked", true);
+                "dldriver advancement adventure", "Unlocked", true);
     }
 
     @Test @DisplayName("filters.log_recipe_advancements")
@@ -181,8 +185,13 @@ class FilterAndFormatSweepTest {
                         + "recipe unlocks to filter");
         // Inverted, like respect_vanish: recipes are excluded by default, so switching
         // the setting ON is the control and OFF is the suppression.
+        //
+        // Only recipe advancements are fired, and the marker is the ordinary
+        // advancement one. Matching on "recipes/" instead would never find anything:
+        // the embed carries the advancement's title, not its key, so the case would
+        // report the setting as broken on every version whatever it did.
         filterSuppresses("filters.log_recipe_advancements", "true", "false",
-                "dldriver advancement", "recipes/", true);
+                "dldriver advancement recipes/", "Unlocked", true);
     }
 
     @Test @DisplayName("filters.ignored_teleport_causes")
