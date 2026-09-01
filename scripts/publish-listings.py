@@ -313,19 +313,28 @@ def publish_modrinth(
 
 
 def hangar_versions(wanted: list[str]) -> list[str]:
-    """Everything, and let Hangar say what it will not take.
+    """One entry per minor line, because Hangar counts versions and Paper's list is short.
 
-    This used to filter to 1.8.8 and newer, on the reasoning that Hangar's PAPER
-    platform means "runs on Paper" and Paper has no older build. That dropped 1.8,
-    which Hangar does list -- its 1.8 line is 1.8 and 1.8.8 -- so the filter removed
-    a version that would have been accepted while leaving several that would not.
+    Two rejections taught this. Offering everything got "Too many versions selected
+    for platform Paper" -- Hangar caps how many a single upload may claim, and 74
+    patch versions is well past it. Filtering to 1.8.8-and-newer, the previous
+    attempt, got "Invalid version: 1.8.9", because Paper does not build every patch.
 
-    There is no public endpoint that lists what Hangar takes; its only
-    platform-versions route is an admin write. So the upload offers everything and
-    drops whatever comes back rejected, which converges on the real set without
-    anyone having to keep a copy of Paper's release history here.
+    Hangar groups its list by minor line -- 1.8 and 1.8.8 both sit under "1.8" -- so
+    the line itself is the compact, accurate thing to claim: sixteen entries covering
+    1.8 to 26.2 rather than seventy-four. Anything Hangar still will not take is
+    dropped by the retry in publish_hangar, so this does not have to be exactly right,
+    only small and close.
     """
-    return list(wanted)
+    lines: list[str] = []
+    for name in wanted:
+        parts = name.split(".")
+        line = ".".join(parts[:2]) if len(parts) >= 2 else name
+        if line not in lines:
+            lines.append(line)
+    log(f"Hangar: claiming {len(lines)} minor lines rather than {len(wanted)} "
+        f"patch versions: {', '.join(lines)}")
+    return lines
 
 
 def publish_hangar(
