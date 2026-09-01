@@ -138,5 +138,5 @@ before 2.4.0 did need Paper, for its chat API; this one does not.
 ## Links
 
 - **[GitHub](https://github.com/GodTierGamers/DiscordLogger)** — source, issues, releases
-- **[Modrinth](https://modrinth.com/plugin/discordlogger)** · **[Hangar](https://hangar.papermc.io/LVCHLANN/DiscordLogger)** · **[CurseForge](https://www.curseforge.com/minecraft/bukkit-plugins/discordlogger)**
+- **[Modrinth](https://modrinth.com/plugin/discordlogger)** · **[Hangar](https://hangar.papermc.io/LVCHLANN/DiscordLogger)** · **[CurseForge](https://www.curseforge.com/minecraft/bukkit-plugins/discordlogger)** · **[SpigotMC](https://www.spigotmc.org/resources/discordlogger.138443/)**
 - **[Report a bug](https://github.com/GodTierGamers/DiscordLogger/issues/new/choose)**
