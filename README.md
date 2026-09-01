@@ -93,7 +93,7 @@ Server start and stop.
 
 Every release includes a `.sha256` checksum for the JAR.
 
-Stable releases are also published to [Modrinth](https://modrinth.com/plugin/discordlogger) and [Hangar](https://hangar.papermc.io/LVCHLANN/DiscordLogger), which is where most server hosts and plugin managers will find it. Nightly builds are GitHub-only.
+Stable releases are also published to [Modrinth](https://modrinth.com/plugin/discordlogger), [Hangar](https://hangar.papermc.io/LVCHLANN/DiscordLogger) and [CurseForge](https://www.curseforge.com/minecraft/bukkit-plugins/discordlogger), which is where most server hosts and plugin managers will find it. Nightly builds are GitHub-only.
 
 ---
 
