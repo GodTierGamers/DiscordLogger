@@ -109,6 +109,19 @@ final class MinecraftServer implements AutoCloseable {
         cmd.add(java.toString());
         cmd.add("-Xmx1G");
         cmd.add("-Dcom.mojang.eula.agree=true");
+
+        // Servers of the 1.8 to 1.12 era drive their console through jline, which takes
+        // over stdin and, with no terminal attached, quietly stops delivering piped
+        // commands after the first few. On 1.8.8 that looked like the plugin logging
+        // nothing: the console accepted the webhook and one reload, then every later
+        // command vanished, so every case expecting output failed while every case
+        // expecting silence passed. A server that has stopped listening is
+        // indistinguishable from a plugin that has stopped sending.
+        //
+        // Harmless on newer servers, which do not use jline this way.
+        if (javaFeature <= 11) {
+            cmd.add("-Djline.terminal=jline.UnsupportedTerminal");
+        }
         cmd.addAll(extraJvmArgs);
         cmd.add("-jar");
         cmd.add(serverJar.toAbsolutePath().toString());

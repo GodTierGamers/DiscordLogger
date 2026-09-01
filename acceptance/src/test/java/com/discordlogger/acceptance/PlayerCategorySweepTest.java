@@ -87,6 +87,15 @@ class PlayerCategorySweepTest {
                             + Sweeps.version() + Sweeps.serverContext(server));
         }
         Sweeps.prepare(server, discord);
+
+        // One check that the console is usable before running twenty-eight cases
+        // through it. Without it, a console that stops listening is reported as
+        // twenty-eight plugin faults.
+        if (!Sweeps.stillResponding(server)) {
+            throw new IllegalStateException("the server stopped accepting console commands on "
+                    + Sweeps.version() + ", so nothing can be driven"
+                    + Sweeps.serverContext(server));
+        }
     }
 
     @AfterAll

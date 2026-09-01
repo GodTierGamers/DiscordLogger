@@ -96,6 +96,20 @@ final class Sweeps {
     }
 
     /** The next embed naming {@code marker}, or null when none arrives in time. */
+    /**
+     * Whether the server is still acknowledging console commands.
+     *
+     * <p>Checked because a server that has stopped listening produces exactly the same
+     * result as a plugin that has stopped sending, and the suite spent a run blaming
+     * the second for the first.
+     */
+    static boolean stillResponding(MinecraftServer server) throws Exception {
+        final int before = server.log().size();
+        server.command("discordlogger status");
+        for (int i = 0; i < 40 && server.log().size() == before; i++) Thread.sleep(250);
+        return server.log().size() > before;
+    }
+
     static String captureMatching(FakeDiscord discord, String marker, int seconds)
             throws InterruptedException {
         try {
