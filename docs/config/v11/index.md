@@ -1008,6 +1008,7 @@ filters:
 
   # Recipe unlocks and tab roots fire constantly and mean nothing to a reader, so
   # they are skipped. Set true only if you genuinely want them.
+  # Supports 1.12 or newer
   log_recipe_advancements: false
 
   # Teleport causes never logged. Teleports are the noisiest event on most servers.
@@ -1035,6 +1036,7 @@ filters:
   # Explosions from these sources are never logged. Use the entity name for mob and
   # TNT explosions (CREEPER, PRIMED_TNT, END_CRYSTAL, FIREBALL, WITHER_SKULL) or the
   # block name for block ones (BED, RESPAWN_ANCHOR).
+  # BED and RESPAWN_ANCHOR support 1.8.3 or newer (RESPAWN_ANCHOR 1.16)
   ignored_explosion_sources: []
 
   # Skip explosions that destroyed fewer than this many blocks. 0 disables it.
@@ -1120,6 +1122,7 @@ log:
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
 
     explosion: # Log when an explosion occurs
+      # Block explosions (beds, respawn anchors) support 1.8.3 or newer
       enabled: true
       color: "#E74C3C" # red
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above

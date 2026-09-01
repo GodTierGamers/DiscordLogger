@@ -1,17 +1,14 @@
 package com.discordlogger.update;
 
+import com.discordlogger.util.Http;
 import org.bukkit.Bukkit;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Whether a release can actually run on this server.
@@ -48,11 +45,6 @@ public final class ServerCompat {
     private static final Duration TIMEOUT = Duration.ofSeconds(8);
 
     /** {@code "version_number":"2.3.1"} … {@code "game_versions":["1.19", …]} */
-    private static final Pattern BLOCK_RE = Pattern.compile(
-            "\"game_versions\"\\s*:\\s*\\[(.*?)]|\"version_number\"\\s*:\\s*\"([^\"]+)\"",
-            Pattern.DOTALL);
-    private static final Pattern QUOTED = Pattern.compile("\"([^\"]+)\"");
-
     private ServerCompat() {}
 
     /**
@@ -83,14 +75,10 @@ public final class ServerCompat {
         final String wanted = releaseVersion.startsWith("v")
                 ? releaseVersion.substring(1) : releaseVersion;
         try {
-            final HttpClient client = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
-            final HttpRequest req = HttpRequest.newBuilder(URI.create(VERSIONS_API))
-                    .timeout(TIMEOUT)
-                    .header("User-Agent", "DiscordLogger")
-                    .GET().build();
-            final HttpResponse<String> resp =
-                    client.send(req, HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() != 200) return out;
+            final Map<String, String> headers = new LinkedHashMap<>();
+            headers.put("User-Agent", "DiscordLogger");
+            final Http.Result resp = Http.get(VERSIONS_API, headers, (int) TIMEOUT.toMillis());
+            if (resp.status() != 200) return out;
             return parse(resp.body(), wanted);
         } catch (Exception unreachable) {
             return out;
@@ -108,19 +96,58 @@ public final class ServerCompat {
     static Set<String> parse(String json, String wantedVersion) {
         final Set<String> out = new LinkedHashSet<>();
         if (json == null) return out;
-        final Matcher m = BLOCK_RE.matcher(json);
+
+        // Scanned with indexOf rather than matched with a regex.
+        //
+        // Both forms accept the same JSON, but a regex walked across a body this size
+        // costs more than linear: the engine retries at every position, and the body
+        // comes from a third party, so its size and shape are not this plugin's
+        // decision. Scanning forward from one marker to the next is linear no matter
+        // what arrives, and reads as what it is -- a walk through a document whose
+        // order is known.
+        final String NUMBER = "\"version_number\"";
+        final String VERSIONS = "\"game_versions\"";
+
         boolean armed = false;
-        while (m.find()) {
-            if (m.group(2) != null) {
-                armed = m.group(2).equals(wantedVersion);
+        int at = 0;
+        while (at < json.length()) {
+            final int number = json.indexOf(NUMBER, at);
+            final int versions = json.indexOf(VERSIONS, at);
+            if (number < 0 && versions < 0) return out;
+
+            final boolean numberFirst = versions < 0 || (number >= 0 && number < versions);
+            if (numberFirst) {
+                final int open = json.indexOf('"', json.indexOf(':', number) + 1);
+                final int close = open < 0 ? -1 : json.indexOf('"', open + 1);
+                if (open < 0 || close < 0) return out;
+                armed = json.substring(open + 1, close).equals(wantedVersion);
+                at = close + 1;
                 continue;
             }
-            if (!armed) continue;
-            final Matcher q = QUOTED.matcher(m.group(1));
-            while (q.find()) out.add(q.group(1));
-            return out;
+
+            final int open = json.indexOf('[', versions);
+            final int close = open < 0 ? -1 : json.indexOf(']', open);
+            if (open < 0 || close < 0) return out;
+            if (armed) {
+                addQuoted(json, open, close, out);
+                return out;
+            }
+            at = close + 1;
         }
         return out;
+    }
+
+    /** Every quoted string between two offsets, in order. */
+    private static void addQuoted(String json, int from, int to, Set<String> out) {
+        int at = from;
+        while (true) {
+            final int open = json.indexOf('"', at);
+            if (open < 0 || open >= to) return;
+            final int close = json.indexOf('"', open + 1);
+            if (close < 0 || close > to) return;
+            out.add(json.substring(open + 1, close));
+            at = close + 1;
+        }
     }
 
     /** This server's Minecraft version, e.g. {@code "1.21.1"}. */

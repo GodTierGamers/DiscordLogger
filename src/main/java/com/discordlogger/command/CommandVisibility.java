@@ -69,7 +69,8 @@ public final class CommandVisibility implements Listener {
                 : plugin.getDescription().getCommands().entrySet()) {
             out.add(e.getKey().toLowerCase(Locale.ROOT));
             final Object aliases = e.getValue().get("aliases");
-            if (aliases instanceof List<?> list) {
+            if (aliases instanceof List<?>) {
+                final List<?> list = (List<?>) aliases;
                 for (Object a : list) out.add(String.valueOf(a).toLowerCase(Locale.ROOT));
             } else if (aliases != null) {
                 out.add(String.valueOf(aliases).toLowerCase(Locale.ROOT));

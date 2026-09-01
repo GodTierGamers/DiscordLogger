@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Deliberately NOT a module of the plugin's pom, and it does not inherit from it.
+
+         Making the plugin an aggregator would change its packaging to "pom" and stop it
+         producing the shaded JAR, and release-please's extra-files, the shade config and
+         every CI job are all written against a single-artifact build. The acceptance
+         suite is worth a lot less than that machinery working, so it sits beside it
+         instead of restructuring it.
+
+         Nothing here ships. It has no compile dependency on the plugin either: the
+         plugin under test is a JAR file copied into a server's plugins directory, which
+         is exactly how a user installs it. Referencing its classes would test the source
+         tree rather than the artifact, which is the thing this exists to avoid. -->
+
+    <groupId>com.discordlogger</groupId>
+    <artifactId>discordlogger-acceptance</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <name>DiscordLogger Acceptance Tests</name>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Never published; this project exists only to be run. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.install.skip>true</maven.install.skip>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.11.3</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Verifying the config after every edit. A malformed edit does not announce
+             itself: the plugin fails to load the file, goes quiet, and the run fails
+             77 seconds later as "nothing was posted", pointing nowhere near the cause.
+             Parsing it immediately turns that into a failure at the line that broke it. -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.3</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Reading captured payloads back. The plugin builds its JSON by hand and
+             ships a shaded Gson for Adventure's sake; here it is only ever used to
+             parse what the plugin produced, so the two never meet. Regex was fine for
+             pulling two fields out of a build listing, and is the wrong tool for an
+             embed with a nested field array. -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+                <configuration>
+                    <!-- Booting real servers takes minutes, so nothing here is run by a
+                         normal build. CI's nightly job opts in with -DskipTests=false. -->
+                    <skipTests>${skipTests}</skipTests>
+                    <trimStackTrace>false</trimStackTrace>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>default-skip</id>
+            <activation><property><name>!skipTests</name></property></activation>
+            <properties><skipTests>true</skipTests></properties>
+        </profile>
+    </profiles>
+</project>

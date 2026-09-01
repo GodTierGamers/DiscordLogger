@@ -2,7 +2,7 @@ package com.discordlogger.webhook;
 
 import com.discordlogger.alert.OpAlert;
 import com.discordlogger.metrics.Counters;
-
+import com.discordlogger.util.Strings;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
@@ -99,7 +99,25 @@ public final class WebhookQueue {
     }
 
     /** One destination's live state, for {@code /discordlogger status}. */
-    public record Health(String id, int queued, int capacity, long waitMs) {}
+    /** One destination's live state, for {@code /discordlogger status}. */
+    public static final class Health {
+        private final String id;
+        private final int queued;
+        private final int capacity;
+        private final long waitMs;
+
+        public Health(String id, int queued, int capacity, long waitMs) {
+            this.id = id;
+            this.queued = queued;
+            this.capacity = capacity;
+            this.waitMs = waitMs;
+        }
+
+        public String id() { return id; }
+        public int queued() { return queued; }
+        public int capacity() { return capacity; }
+        public long waitMs() { return waitMs; }
+    }
 
     /**
      * A snapshot of every destination, for reporting only.
@@ -138,7 +156,7 @@ public final class WebhookQueue {
 
     /** Queue a payload. Never blocks the caller — the main thread must not wait on Discord. */
     public static void enqueue(String url, String json) {
-        if (url == null || url.isBlank() || json == null) return;
+        if (url == null || Strings.isBlank(url) || json == null) return;
 
         final Destination dest = DESTINATIONS.computeIfAbsent(url, Destination::new);
 

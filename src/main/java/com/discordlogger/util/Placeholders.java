@@ -78,7 +78,7 @@ public final class Placeholders {
         if (m == null) return text;
         try {
             final Object out = m.invoke(null, player, text);
-            return (out instanceof String s) ? s : text;
+            return (out instanceof String) ? (String) out : text;
         } catch (Throwable misbehavingExpansion) {
             return text;
         }

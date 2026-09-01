@@ -3,6 +3,8 @@ package com.discordlogger.listener.moderation;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,8 +36,8 @@ import java.util.List;
 public final class PunishmentPlugins {
 
     /** Plugins that store punishments outside Bukkit's ban list. */
-    private static final List<String> NAMES = List.of(
-            "LiteBans", "LibertyBans", "AdvancedBan", "BanManager", "CMI");
+    private static final List<String> NAMES = Collections.unmodifiableList(Arrays.asList(
+            "LiteBans", "LibertyBans", "AdvancedBan", "BanManager", "CMI"));
 
     private static volatile Boolean present;
 

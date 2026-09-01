@@ -4,6 +4,7 @@ import com.discordlogger.filter.Filters;
 import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
+import com.discordlogger.util.Strings;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -70,23 +71,27 @@ public final class PlayerDeath implements Listener {
         final Player killer = victim.getKiller();
         if (killer != null) {
             String kName = Names.display(killer, (JavaPlugin) plugin);
-            String weapon = weaponName(killer.getInventory().getItemInMainHand());
+            String weapon = weaponName(killer.getInventory().getItemInHand());
             return Lang.text("discord.death.slain-by-player",
                     "killer", kName,
                     "weapon", weapon.isEmpty() ? "" : " [" + weapon + "]");
         }
 
         EntityDamageEvent last = victim.getLastDamageCause();
-        if (last instanceof EntityDamageByEntityEvent byEntity) {
+        if (last instanceof EntityDamageByEntityEvent) {
+            final EntityDamageByEntityEvent byEntity = (EntityDamageByEntityEvent) last;
             Entity damager = byEntity.getDamager();
 
-            if (damager instanceof Projectile proj) {
+            if (damager instanceof Projectile) {
+                final Projectile proj = (Projectile) damager;
                 Object shooter = proj.getShooter();
-                if (shooter instanceof Player pShooter) {
+                if (shooter instanceof Player) {
+                    final Player pShooter = (Player) shooter;
                     return Lang.text("discord.death.shot-by",
                             "killer", Names.display(pShooter, (JavaPlugin) plugin));
                 }
-                if (shooter instanceof Entity eShooter) {
+                if (shooter instanceof Entity) {
+                    final Entity eShooter = (Entity) shooter;
                     return Lang.text("discord.death.shot-by", "killer", mobName(eShooter));
                 }
                 return Lang.text("discord.death.shot");
@@ -101,11 +106,11 @@ public final class PlayerDeath implements Listener {
                 && last.getCause() == EntityDamageEvent.DamageCause.VOID
                 && KillCommandTracker.wasKilledByCommand(victim)) {
             final String byCommand = Lang.text("discord.death.causes.kill");
-            if (byCommand != null && !byCommand.isBlank()) return byCommand;
+            if (byCommand != null && !Strings.isBlank(byCommand)) return byCommand;
         }
 
         final String text = last == null ? null : causeText(last.getCause());
-        // Only reached when there is no damage cause at all, or Paper has added one
+        // Only reached when there is no damage cause at all, or Minecraft has added one
         // we do not know yet. causeTextIsExhaustive() in the tests fails on the latter.
         return text == null ? Lang.text("discord.death.unknown") : text;
     }
@@ -139,7 +144,7 @@ public final class PlayerDeath implements Listener {
      *
      * <p>Returning null rather than a generic string is what makes the gap
      * detectable: a test walks every {@code DamageCause} the API declares and fails
-     * on any that returns null, so a cause added by a future Paper release is caught
+     * on any that returns null, so a cause added by a future Minecraft release is caught
      * in CI instead of surfacing as "Cause of Death: Died" on someone's server.
      */
     /**
@@ -149,7 +154,7 @@ public final class PlayerDeath implements Listener {
      * name lowercased with underscores as hyphens. Returning null rather than a
      * generic string is what keeps the gap detectable: a test walks every
      * {@code DamageCause} the API declares and fails on any without an entry, so a
-     * cause added by a future Paper release is caught in CI instead of surfacing as
+     * cause added by a future Minecraft release is caught in CI instead of surfacing as
      * "Cause of Death: Died" on someone's server.
      */
     static String causeText(EntityDamageEvent.DamageCause cause) {

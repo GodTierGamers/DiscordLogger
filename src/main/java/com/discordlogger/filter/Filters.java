@@ -1,14 +1,17 @@
 package com.discordlogger.filter;
 
+import com.discordlogger.util.Strings;
 import com.discordlogger.util.Vanish;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Decides what never reaches Discord, regardless of which events are enabled.
@@ -40,27 +43,94 @@ public final class Filters {
 
     private Filters() {}
 
-    private record Snapshot(
-            Set<String> ignoredNames,
-            Set<UUID> ignoredUuids,
-            Set<String> ignoredCommands,
-            Set<String> onlyCommands,
-            Set<String> ignoredWorlds,
-            List<String> chatPatterns,
-            int minChatLength,
-            List<String> ignoredAdvancements,
-            boolean logRecipeAdvancements,
-            Set<String> ignoredTeleportCauses,
-            double minTeleportDistance,
-            Set<String> ignoredDeathCauses,
-            Set<String> ignoredExplosionSources,
-            int minExplosionBlocks,
-            String exemptPermission,
-            boolean respectVanish
-    ) {
+    /**
+     * The filter configuration as of the last reload.
+     *
+     * <p><b>Every field is final and this class is never mutated.</b> That was free when
+     * this was a record and has to be maintained by hand now: {@code current} is swapped
+     * in one volatile write, and a reader that could observe a half-updated Snapshot
+     * would be able to filter against a mix of the old config and the new. Adding a
+     * non-final field here reintroduces exactly that, silently.
+     *
+     * <p>The collections are not defensively copied because every caller passes one it
+     * has just built and then discards. Reusing a caller's mutable collection after
+     * construction would defeat the immutability above just as effectively.
+     */
+    private static final class Snapshot {
+        private final Set<String> ignoredNames;
+        private final Set<UUID> ignoredUuids;
+        private final Set<String> ignoredCommands;
+        private final Set<String> onlyCommands;
+        private final Set<String> ignoredWorlds;
+        private final List<String> chatPatterns;
+        private final int minChatLength;
+        private final List<String> ignoredAdvancements;
+        private final boolean logRecipeAdvancements;
+        private final Set<String> ignoredTeleportCauses;
+        private final double minTeleportDistance;
+        private final Set<String> ignoredDeathCauses;
+        private final Set<String> ignoredExplosionSources;
+        private final int minExplosionBlocks;
+        private final String exemptPermission;
+        private final boolean respectVanish;
+
+        Snapshot(Set<String> ignoredNames,
+                 Set<UUID> ignoredUuids,
+                 Set<String> ignoredCommands,
+                 Set<String> onlyCommands,
+                 Set<String> ignoredWorlds,
+                 List<String> chatPatterns,
+                 int minChatLength,
+                 List<String> ignoredAdvancements,
+                 boolean logRecipeAdvancements,
+                 Set<String> ignoredTeleportCauses,
+                 double minTeleportDistance,
+                 Set<String> ignoredDeathCauses,
+                 Set<String> ignoredExplosionSources,
+                 int minExplosionBlocks,
+                 String exemptPermission,
+                 boolean respectVanish) {
+            this.ignoredNames = ignoredNames;
+            this.ignoredUuids = ignoredUuids;
+            this.ignoredCommands = ignoredCommands;
+            this.onlyCommands = onlyCommands;
+            this.ignoredWorlds = ignoredWorlds;
+            this.chatPatterns = chatPatterns;
+            this.minChatLength = minChatLength;
+            this.ignoredAdvancements = ignoredAdvancements;
+            this.logRecipeAdvancements = logRecipeAdvancements;
+            this.ignoredTeleportCauses = ignoredTeleportCauses;
+            this.minTeleportDistance = minTeleportDistance;
+            this.ignoredDeathCauses = ignoredDeathCauses;
+            this.ignoredExplosionSources = ignoredExplosionSources;
+            this.minExplosionBlocks = minExplosionBlocks;
+            this.exemptPermission = exemptPermission;
+            this.respectVanish = respectVanish;
+        }
+
+        Set<String> ignoredNames() { return ignoredNames; }
+        Set<UUID> ignoredUuids() { return ignoredUuids; }
+        Set<String> ignoredCommands() { return ignoredCommands; }
+        Set<String> onlyCommands() { return onlyCommands; }
+        Set<String> ignoredWorlds() { return ignoredWorlds; }
+        List<String> chatPatterns() { return chatPatterns; }
+        int minChatLength() { return minChatLength; }
+        List<String> ignoredAdvancements() { return ignoredAdvancements; }
+        boolean logRecipeAdvancements() { return logRecipeAdvancements; }
+        Set<String> ignoredTeleportCauses() { return ignoredTeleportCauses; }
+        double minTeleportDistance() { return minTeleportDistance; }
+        Set<String> ignoredDeathCauses() { return ignoredDeathCauses; }
+        Set<String> ignoredExplosionSources() { return ignoredExplosionSources; }
+        int minExplosionBlocks() { return minExplosionBlocks; }
+        String exemptPermission() { return exemptPermission; }
+        boolean respectVanish() { return respectVanish; }
+
         static Snapshot empty() {
-            return new Snapshot(Set.of(), Set.of(), Set.of(), Set.of(), Set.of(), List.of(), 0,
-                    List.of(), false, Set.of(), 0d, Set.of(), Set.of(), 0, "", true);
+            return new Snapshot(Collections.<String>emptySet(), Collections.<UUID>emptySet(),
+                    Collections.<String>emptySet(), Collections.<String>emptySet(),
+                    Collections.<String>emptySet(), Collections.<String>emptyList(), 0,
+                    Collections.<String>emptyList(), false, Collections.<String>emptySet(), 0d,
+                    Collections.<String>emptySet(), Collections.<String>emptySet(), 0, "", true);
         }
     }
 
@@ -68,7 +138,7 @@ public final class Filters {
     private static Set<String> constantSet(JavaPlugin plugin, String path) {
         final Set<String> out = new LinkedHashSet<>();
         for (String entry : plugin.getConfig().getStringList(path)) {
-            if (entry == null || entry.isBlank()) continue;
+            if (entry == null || Strings.isBlank(entry)) continue;
             out.add(entry.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_'));
         }
         return out;
@@ -82,7 +152,7 @@ public final class Filters {
         // One list accepts both names and UUIDs: asking an admin which one they have
         // is friction, and the two are trivially distinguishable.
         for (String entry : plugin.getConfig().getStringList("filters.ignored_players")) {
-            if (entry == null || entry.isBlank()) continue;
+            if (entry == null || Strings.isBlank(entry)) continue;
             final String trimmed = entry.trim();
             try {
                 uuids.add(UUID.fromString(trimmed));
@@ -93,33 +163,33 @@ public final class Filters {
 
         final Set<String> commands = new LinkedHashSet<>();
         for (String entry : plugin.getConfig().getStringList("filters.ignored_commands")) {
-            if (entry == null || entry.isBlank()) continue;
+            if (entry == null || Strings.isBlank(entry)) continue;
             commands.add(normaliseCommand(entry));
         }
 
         final Set<String> worlds = new LinkedHashSet<>();
         for (String entry : plugin.getConfig().getStringList("filters.ignored_worlds")) {
-            if (entry == null || entry.isBlank()) continue;
+            if (entry == null || Strings.isBlank(entry)) continue;
             worlds.add(entry.trim().toLowerCase(Locale.ROOT));
         }
 
         final List<String> patterns = plugin.getConfig()
                 .getStringList("filters.ignored_chat_containing").stream()
-                .filter(s -> s != null && !s.isBlank())
+                .filter(s -> s != null && !Strings.isBlank(s))
                 .map(s -> s.toLowerCase(Locale.ROOT))
-                .toList();
+                .collect(Collectors.toList());
 
         final Set<String> onlyCommands = new LinkedHashSet<>();
         for (String entry : plugin.getConfig().getStringList("filters.only_log_commands")) {
-            if (entry == null || entry.isBlank()) continue;
+            if (entry == null || Strings.isBlank(entry)) continue;
             onlyCommands.add(normaliseCommand(entry));
         }
 
         final List<String> advancements = plugin.getConfig()
                 .getStringList("filters.ignored_advancements").stream()
-                .filter(a -> a != null && !a.isBlank())
+                .filter(a -> a != null && !Strings.isBlank(a))
                 .map(a -> a.trim().toLowerCase(Locale.ROOT))
-                .toList();
+                .collect(Collectors.toList());
 
         final String perm = plugin.getConfig().getString("filters.exempt_permission", "").trim();
 
@@ -190,7 +260,7 @@ public final class Filters {
      * @param raw the command as typed, with or without a leading slash and arguments
      */
     public static boolean blocksCommand(String raw) {
-        if (raw == null || raw.isBlank()) return false;
+        if (raw == null || Strings.isBlank(raw)) return false;
         final Snapshot snap = current;
         final String word = normaliseCommand(raw);
 
@@ -269,7 +339,7 @@ public final class Filters {
         if (message == null || message.isEmpty()) return false;
         final Snapshot snap = current;
 
-        if (snap.minChatLength() > 0 && message.strip().length() < snap.minChatLength()) return true;
+        if (snap.minChatLength() > 0 && Strings.strip(message).length() < snap.minChatLength()) return true;
 
         final String haystack = message.toLowerCase(Locale.ROOT);
         for (String needle : snap.chatPatterns()) {

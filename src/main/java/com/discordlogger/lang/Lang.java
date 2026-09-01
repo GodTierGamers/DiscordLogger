@@ -5,6 +5,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import com.discordlogger.config.ConfigMigrator;
 import com.discordlogger.util.Placeholders;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -12,6 +13,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -155,9 +157,9 @@ public final class Lang {
 
     /** Every key under a section, for callers that enumerate (e.g. death causes). */
     public static Map<String, Object> section(String path) {
-        final var sec = lang.getConfigurationSection(path);
+        final ConfigurationSection sec = lang.getConfigurationSection(path);
         if (sec != null) return sec.getValues(false);
-        final var fallback = BUNDLED.getConfigurationSection(path);
-        return fallback != null ? fallback.getValues(false) : Map.of();
+        final ConfigurationSection fallback = BUNDLED.getConfigurationSection(path);
+        return fallback != null ? fallback.getValues(false) : Collections.<String, Object>emptyMap();
     }
 }

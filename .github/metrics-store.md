@@ -1,12 +1,13 @@
-# bStats history
+# DiscordLogger data store
 
-Written by [`poll-metrics.yml`](../../blob/main/.github/workflows/poll-metrics.yml).
+Written by [`poll-metrics.yml`](../../blob/main/.github/workflows/poll-metrics.yml)
+and [`acceptance.yml`](../../blob/main/.github/workflows/acceptance.yml).
 Nothing here is edited by hand, and nothing here is part of the plugin.
 
 **This branch is data, not code.** It shares no history with `main` — it was started
 as an orphan branch precisely so 48 commits a day never appear in the plugin's log.
 
-## One row per check: `data/bstats.csv`
+## `data/bstats.csv` — one row per check
 
 Every chart, every type, one running document. `polled_at` first, then one column per
 slice.
@@ -57,3 +58,73 @@ best-effort — observed firing minutes are spread across `:01`–`:59` with gap
 
 New slices add columns over time (a new country, a new Java version), so the file is
 rewritten each poll. At one row per poll that is thousands of rows a year.
+
+
+# `data/acceptance.csv` — what the plugin does on a real server
+
+Written by the `report` job in `acceptance.yml`, once per run. Where `bstats.csv`
+records what other people's servers are doing, this records what the shipped JAR did
+when the suite drove every setting in `config.yml`, and every line in `lang.yml`, on
+five Minecraft versions.
+
+One row per setting per version per run.
+
+| Column | Meaning |
+|---|---|
+| `run_at` | when that sweep ran, UTC, ISO-8601 |
+| `run_id` | the Actions run, so a row can be traced back to its logs |
+| `plugin_version` | the version of the JAR under test |
+| `mc_version` | the Minecraft version it ran against |
+| `category` | the group swept, e.g. `filters.*` |
+| `key` | the individual setting, e.g. `filters.respect_vanish` |
+| `verdict` | see below |
+| `detail` | why, flattened to one line and capped at 300 characters |
+
+## The four verdicts
+
+A binary pass/fail is the wrong shape for output made of sentences, so there are four.
+
+| Verdict | Meaning |
+|---|---|
+| `PASS` | did exactly what the setting says |
+| `PROBABLY_FINE` | differs only in whitespace or case, or in something that legitimately varies by version |
+| `POTENTIAL_ERROR` | needs a person: wording drifted, a stray tag or placeholder reached Discord, **or the harness could not set the scene** |
+| `WRONG` | contradicts the specification. Only this fails a run |
+
+## ⚠️ `POTENTIAL_ERROR` is not always the plugin's fault
+
+It is also what a case reports when it could not put the server in the state it needed
+— a ban that never landed, an event whose control did not post. That is deliberate.
+The alternative is a suite that reads "no message arrived" as a defect, which it did
+six times while being built, every time naming the plugin for something the harness
+had failed to do.
+
+**Read the `detail` before treating a `POTENTIAL_ERROR` as a bug.** It says which of
+the two happened.
+
+Two settings can never reach `PASS` here and say so in their detail: a kick needs a
+genuinely connected client, and the Bedrock indicator needs Floodgate installed.
+
+## `acceptance/screenshots/`
+
+Embeds rendered as Discord shows them, drawn from the payloads that run actually
+produced. Named `sample-<verdict>-<key>.png`, so the ones worth opening stand out in a
+listing.
+
+Two different rules, on purpose:
+
+| | How many |
+|---|---|
+| `PASS` | **five per version, at random** |
+| everything else | **all of them** (capped at 40, which a run worth reading never reaches) |
+
+A passing case is illustrative — five show what the plugin looks like when it works, and
+the sixth says nothing the fifth did not. Anything that did not pass is evidence, and
+evidence is not something to sample: the picture of the embed that came out wrong is the
+quickest way to see what is wrong with it.
+
+**A result with no picture had no payload.** Those are the cases where nothing arrived at
+all, so there is nothing to draw; the CSV row is the whole record.
+
+**Replaced every run, not accumulated.** The CSV is the history; these are the current
+sample, and keeping every run's would add images a night forever.

@@ -1,11 +1,9 @@
 package com.discordlogger.webhook;
 
+import com.discordlogger.util.Http;
+import com.discordlogger.util.Strings;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
@@ -24,7 +22,7 @@ public final class DiscordWebhook {
 
     /** Plain content message. */
     public static void sendAsync(JavaPlugin plugin, String url, String content) {
-        if (url == null || url.isBlank()) return;
+        if (url == null || Strings.isBlank(url)) return;
         dispatch(plugin, url, "{\"content\":\"" + escape(content) + "\"}");
     }
 
@@ -34,30 +32,30 @@ public final class DiscordWebhook {
             String title, String description, int color,
             String isoTimestampUtc, String authorName, String footerText, String thumbnailUrl
     ) {
-        if (url == null || url.isBlank()) return;
+        if (url == null || Strings.isBlank(url)) return;
 
         StringBuilder sb = new StringBuilder(1024);
         sb.append("{\"embeds\":[{");
 
-        if (title != null && !title.isBlank()) {
+        if (title != null && !Strings.isBlank(title)) {
             sb.append("\"title\":\"").append(escape(title)).append("\",");
         }
         sb.append("\"description\":\"").append(escape(description == null ? "" : description)).append("\",");
         sb.append("\"color\":").append(color).append(",");
 
-        if (authorName != null && !authorName.isBlank()) {
+        if (authorName != null && !Strings.isBlank(authorName)) {
             sb.append("\"author\":{\"name\":\"").append(escape(authorName)).append("\"},");
         }
-        if (footerText != null && !footerText.isBlank()) {
+        if (footerText != null && !Strings.isBlank(footerText)) {
             sb.append("\"footer\":{")
                     .append("\"text\":\"").append(escape(footerText)).append("\",")
                     .append("\"icon_url\":\"").append(escape(FOOTER_ICON_URL)).append("\"")
                     .append("},");
         }
-        if (thumbnailUrl != null && !thumbnailUrl.isBlank()) {
+        if (thumbnailUrl != null && !Strings.isBlank(thumbnailUrl)) {
             sb.append("\"thumbnail\":{\"url\":\"").append(escape(thumbnailUrl)).append("\"},");
         }
-        if (isoTimestampUtc != null && !isoTimestampUtc.isBlank()) {
+        if (isoTimestampUtc != null && !Strings.isBlank(isoTimestampUtc)) {
             sb.append("\"timestamp\":\"").append(escape(isoTimestampUtc)).append("\",");
         }
 
@@ -80,7 +78,7 @@ public final class DiscordWebhook {
             String thumbnailUrl,
             String[][] fields // each element: { name, value, inline("true"/"false") }
     ) {
-        if (url == null || url.isBlank()) return;
+        if (url == null || Strings.isBlank(url)) return;
         dispatch(plugin, url, buildEmbedJson(title, description, color, timestampIso,
                 author, footer, thumbnailUrl, fields));
     }
@@ -163,12 +161,24 @@ public final class DiscordWebhook {
     }
 
     /** Outcome of a single POST, with the rate-limit facts the queue needs to pace itself. */
-    public record Response(
-            int status,
-            Long remaining,      // X-RateLimit-Remaining, null if absent
-            Long resetAfterMs,   // X-RateLimit-Reset-After, null if absent
-            long retryAfterMs    // from Retry-After on a 429; 0 otherwise
-    ) {
+    public static final class Response {
+        private final int status;
+        private final Long remaining;      // X-RateLimit-Remaining, null if absent
+        private final Long resetAfterMs;   // X-RateLimit-Reset-After, null if absent
+        private final long retryAfterMs;   // from Retry-After on a 429; 0 otherwise
+
+        public Response(int status, Long remaining, Long resetAfterMs, long retryAfterMs) {
+            this.status = status;
+            this.remaining = remaining;
+            this.resetAfterMs = resetAfterMs;
+            this.retryAfterMs = retryAfterMs;
+        }
+
+        public int status()          { return status; }
+        public Long remaining()      { return remaining; }
+        public Long resetAfterMs()   { return resetAfterMs; }
+        public long retryAfterMs()   { return retryAfterMs; }
+
         public boolean success()      { return status == 200 || status == 204; }
         public boolean rateLimited()  { return status == 429; }
         /** Transient: worth retrying the same payload. Network failures use status 0. */
@@ -180,36 +190,26 @@ public final class DiscordWebhook {
      * the decision to retry, wait or give up, and only it knows the surrounding context.
      */
     static Response post(String url, String json) {
-        try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(TIMEOUT)
-                    .build();
-            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                    .timeout(TIMEOUT)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
-                    .build();
-            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
-
-            final int status = res.statusCode();
-            final Long remaining = headerAsLong(res, "x-ratelimit-remaining", 1.0);
-            final Long resetAfterMs = headerAsLong(res, "x-ratelimit-reset-after", 1000.0);
-
-            long retryAfterMs = 0L;
-            if (status == 429) {
-                // Retry-After is seconds (possibly fractional); reset-after is the same
-                // value under a different name. Fall back to a second if neither parses.
-                final Long fromRetryAfter = headerAsLong(res, "retry-after", 1000.0);
-                retryAfterMs = (fromRetryAfter != null) ? fromRetryAfter
-                        : (resetAfterMs != null ? resetAfterMs : 1000L);
-            }
-
-            return new Response(status, remaining, resetAfterMs, retryAfterMs);
-
-        } catch (Exception e) {
-            // Status 0 = never reached Discord (DNS, timeout, TLS). Retryable.
+        final Http.Result res = Http.postJson(url, json, (int) TIMEOUT.toMillis());
+        if (res.status() == 0) {
+            // Never reached Discord (DNS, timeout, TLS). Retryable.
             return new Response(0, null, null, 0L);
         }
+
+        final int status = res.status();
+        final Long remaining = headerAsLong(res, "x-ratelimit-remaining", 1.0);
+        final Long resetAfterMs = headerAsLong(res, "x-ratelimit-reset-after", 1000.0);
+
+        long retryAfterMs = 0L;
+        if (status == 429) {
+            // Retry-After is seconds (possibly fractional); reset-after is the same
+            // value under a different name. Fall back to a second if neither parses.
+            final Long fromRetryAfter = headerAsLong(res, "retry-after", 1000.0);
+            retryAfterMs = (fromRetryAfter != null) ? fromRetryAfter
+                    : (resetAfterMs != null ? resetAfterMs : 1000L);
+        }
+
+        return new Response(status, remaining, resetAfterMs, retryAfterMs);
     }
 
     /**
@@ -226,29 +226,18 @@ public final class DiscordWebhook {
      * the admin's problem.
      */
     public static int probe(String url) {
-        try {
-            HttpClient client = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
-            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                    .timeout(TIMEOUT)
-                    .GET()
-                    .build();
-            return client.send(req, HttpResponse.BodyHandlers.discarding()).statusCode();
-        } catch (Exception unreachable) {
-            return 0;
-        }
+        return Http.get(url, null, (int) TIMEOUT.toMillis()).status();
     }
 
     /** Reads a numeric header and scales it (headers are in seconds; we work in millis). */
-    private static Long headerAsLong(HttpResponse<String> res, String name, double scale) {
-        return res.headers().firstValue(name)
-                .map(v -> {
-                    try {
-                        return (long) Math.ceil(Double.parseDouble(v.trim()) * scale);
-                    } catch (NumberFormatException e) {
-                        return null;
-                    }
-                })
-                .orElse(null);
+    private static Long headerAsLong(Http.Result res, String name, double scale) {
+        final String v = res.header(name);
+        if (v == null) return null;
+        try {
+            return (long) Math.ceil(Double.parseDouble(v.trim()) * scale);
+        } catch (NumberFormatException notANumber) {
+            return null;
+        }
     }
 
     /** JSON string escaper. Handles all control characters correctly. */

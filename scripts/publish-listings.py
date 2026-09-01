@@ -26,9 +26,10 @@ Everything it needs comes from pom.xml and the GitHub Release:
 
 Credentials come from the environment and are never logged:
 
-    MODRINTH_TOKEN   a Modrinth PAT with the "Create versions" scope, plus either
-                     "Read analytics" or "Read user info" so --check-auth can
-                     verify it without publishing anything
+    MODRINTH_TOKEN   a Modrinth PAT with the "Create versions" scope, plus
+                     "Read user data" so --check-auth can verify it without
+                     publishing anything. "Read analytics" used to serve that
+                     purpose; Modrinth withdrew those routes in August 2026.
     HANGAR_API_KEY   a Hangar API key with the create_version permission
 
 If a token is missing that platform is skipped with a notice rather than failing
@@ -68,10 +69,30 @@ MODRINTH_PROJECT = "discordlogger"
 # a Paper fork the plugin fully supports and the docs name explicitly. Both tags
 # go on every version. Hangar has no equivalent: its platform list is
 # PAPER/WATERFALL/VELOCITY, and PAPER already covers the forks.
-MODRINTH_LOADERS = ["paper", "purpur"]
+# Bukkit and Spigot joined this list when the plugin stopped requiring Paper. Leaving
+# them out would have kept the listing invisible to exactly the servers the port was
+# for. Folia is deliberately absent: nothing here has been checked against region
+# threading, and claiming a platform is a promise rather than a hope.
+MODRINTH_LOADERS = ["bukkit", "spigot", "paper", "purpur"]
 
 HANGAR_API = "https://hangar.papermc.io/api/v1"
 HANGAR_SLUG = "DiscordLogger"
+
+# CurseForge's upload API still lives on the old per-game host. It is not the same
+# service as the public api.curseforge.com read API and does not share its keys: this
+# one takes a project-scoped token from the author's own account settings.
+CURSEFORGE_API = "https://minecraft.curseforge.com/api"
+
+# The numeric project id, from the project's own page. Read from the environment
+# rather than hardcoded, so the listing can be created and wired up without a code
+# change -- and so this stays inert until it exists.
+CURSEFORGE_PROJECT_ENV = "CURSEFORGE_PROJECT_ID"
+
+# CurseForge keeps server software in the same list as Minecraft versions, under a
+# different type. Included when the list offers them and skipped silently when it does
+# not, because which of these exist has changed over the years and a hard requirement
+# would break a release over a label.
+CURSEFORGE_LOADERS = ["Bukkit", "Spigot", "Paper"]
 
 
 # --------------------------------------------------------------------------- io
@@ -280,6 +301,47 @@ def publish_modrinth(
 # -------------------------------------------------------------------- hangar
 
 
+# Paper's oldest build. Hangar's PAPER platform means "runs on Paper", and Paper does
+# not exist below this -- so while the plugin genuinely supports 1.8.0, saying so on a
+# Paper listing would be a claim about builds nobody can download. Modrinth and
+# CurseForge take the full range, because their listings are not platform-scoped the
+# same way.
+#
+# A constant rather than a lookup: Hangar's only platform-versions endpoint is an admin
+# write endpoint, and there is no public read to ask.
+HANGAR_OLDEST = (1, 8, 8)
+
+
+def version_tuple(name: str) -> tuple[int, ...]:
+    """"1.21.11" -> (1, 21, 11), so versions sort by number rather than by string."""
+    parts = []
+    for piece in name.split("."):
+        try:
+            parts.append(int(piece))
+        except ValueError:
+            # A name that is not purely numeric sorts last, which keeps anything
+            # unexpected in the list rather than silently dropping it.
+            return (9999,)
+    return tuple(parts)
+
+
+def hangar_versions(wanted: list[str]) -> list[str]:
+    """The wanted versions that Paper actually has builds for."""
+    accepted = [v for v in wanted if version_tuple(v) >= HANGAR_OLDEST]
+    dropped = [v for v in wanted if version_tuple(v) < HANGAR_OLDEST]
+    if dropped:
+        log(
+            f"Hangar: dropping {len(dropped)} version(s) older than Paper's first build "
+            f"({'.'.join(str(n) for n in HANGAR_OLDEST)}): {', '.join(dropped)}"
+        )
+    if not accepted:
+        raise RuntimeError(
+            "no version in <dl.game.versions> is one Paper has ever built, so there is "
+            "nothing to publish to Hangar"
+        )
+    return accepted
+
+
 def publish_hangar(
     api_key: str,
     asset_url: str,
@@ -337,6 +399,105 @@ def publish_hangar(
 # --------------------------------------------------------------- download count
 
 
+# ------------------------------------------------------------------ curseforge
+
+
+def curseforge_version_ids(token: str, wanted: list[str]) -> list[int]:
+    """Turns version names into the numeric ids the upload call requires.
+
+    CurseForge will not take "1.21.4"; it wants the id that names it, and the ids are
+    not stable across games, so they have to be looked up every time.
+
+    Matching is by name rather than by version-type id. The type ids group Minecraft
+    releases, Java versions and server software separately, and their meanings have
+    moved; a name like "1.21.4" can only ever match a Minecraft version, so the lenient
+    match is also the safe one.
+    """
+    catalogue = request(
+        f"{CURSEFORGE_API}/game/versions", headers={"X-Api-Token": token}
+    )
+    by_name: dict[str, int] = {}
+    for entry in catalogue or []:
+        name = str(entry.get("name", "")).strip()
+        if name and name not in by_name:
+            by_name[name] = int(entry["id"])
+
+    ids: list[int] = []
+    missing: list[str] = []
+    for name in wanted:
+        if name in by_name:
+            ids.append(by_name[name])
+        else:
+            missing.append(name)
+
+    if missing:
+        # Not fatal on its own: CurseForge adds a Minecraft version to this list on
+        # its own schedule, and a release should not be blocked because the newest one
+        # is not there yet. It IS fatal if nothing matched at all.
+        log(f"::warning::CurseForge does not list these versions yet: {', '.join(missing)}")
+    if not ids:
+        raise RuntimeError(
+            "none of the versions in <dl.game.versions> exist in CurseForge's list, so "
+            "the upload would be rejected. Checked: " + ", ".join(wanted)
+        )
+
+    for loader in CURSEFORGE_LOADERS:
+        if loader in by_name:
+            ids.append(by_name[loader])
+        else:
+            log(f"CurseForge does not offer '{loader}' as a version; skipping it.")
+
+    return ids
+
+
+def publish_curseforge(
+    token: str,
+    project_id: str,
+    jar: Path,
+    version: str,
+    game_versions: list[str],
+    changelog: str,
+    dry: bool,
+) -> None:
+    if dry and not token:
+        log(f"[dry-run] CurseForge would publish {version} to project {project_id}")
+        return
+
+    # Resolved even on a dry run, when there is a token to resolve with. It is a read,
+    # so it writes nothing -- and it is the only part of this that can be checked
+    # before a release: it proves the token is accepted and shows how many of our
+    # versions CurseForge actually knows. A dry run that skipped it would report
+    # success without having spoken to CurseForge at all.
+    ids = curseforge_version_ids(token, game_versions)
+
+    if dry:
+        log(f"[dry-run] CurseForge would publish {version} to project {project_id} "
+            f"for {len(ids)} version ids")
+        log("[dry-run]   the project id itself is only checked by a real upload; "
+            "CurseForge offers no way to read a project back")
+        return
+    metadata = {
+        "changelog": changelog,
+        "changelogType": "markdown",
+        "displayName": f"DiscordLogger {version}",
+        "gameVersions": ids,
+        # Nightlies never reach this script -- main() refuses them -- so anything
+        # arriving here is a stable release.
+        "releaseType": "release",
+    }
+    body, content_type = multipart(
+        {"metadata": json.dumps(metadata)}, {"file": jar}
+    )
+    result = request(
+        f"{CURSEFORGE_API}/projects/{project_id}/upload-file",
+        method="POST",
+        headers={"X-Api-Token": token, "Content-Type": content_type},
+        data=body,
+    )
+    file_id = (result or {}).get("id") if isinstance(result, dict) else None
+    log(f"CurseForge: uploaded {jar.name} for {len(ids)} versions (file {file_id})")
+
+
 GITHUB_API = "https://api.github.com/repos/GodTierGamers/DiscordLogger"
 
 # ------------------------------------------------------------------ auth check
@@ -357,38 +518,53 @@ def check_auth() -> int:
     if not token:
         problems.append("MODRINTH_TOKEN is not set")
     else:
-        # VERSION_CREATE covers exactly one endpoint — the publish call — so the
-        # token cannot be verified without an additional read scope. Either of
-        # these will do, so whichever scope the PAT was granted, the check works:
-        #   /v3/analytics/downloads   "Read analytics"
-        #   /v2/user                  "Read user info"
-        # Only if BOTH are rejected is the token genuinely dead or unscoped.
+        # VERSION_CREATE covers exactly one endpoint -- the publish call, a POST -- so
+        # there is no request it can make that proves it works. Checking the token at
+        # all depends on it holding some read scope as well.
+        #
+        # /v3/analytics/downloads was that read, and it worked: this check passed on it
+        # weekly, last on 2026-08-24 with "token accepted (analytics scope)". Between
+        # then and 2026-08-31 Modrinth removed the route. It now answers 404 to
+        # everyone, authenticated or not, while the rest of v3 is healthy, and the
+        # public API reference documents no analytics endpoints at all.
+        #
+        # A 404 and a 401 mean different things here and are no longer treated alike.
+        # 404 is the route being gone, which says nothing about the token. 401 is the
+        # token being refused -- but a PAT that simply lacks that scope is refused
+        # identically to one that has been revoked, so it is not proof of a dead token
+        # either. Only a success proves anything, which is why neither failure is
+        # reported as one.
         probes = (
-            (
-                "analytics",
-                f"{MODRINTH_API_V3}/analytics/downloads?"
-                + urllib.parse.urlencode(
-                    {"project_ids": json.dumps([MODRINTH_PROJECT])}
-                ),
-            ),
-            ("user", f"{MODRINTH_API}/user"),
+            ("user info", f"{MODRINTH_API}/user"),
+            ("user info v3", f"{MODRINTH_API_V3}/user"),
         )
         errors: list[str] = []
+        verified = False
         for name, url in probes:
             try:
                 request(url, headers={"Authorization": token})
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"{name}: {exc}")
                 continue
-            log(f"Modrinth: token accepted ({name} scope)")
+            log(f"Modrinth: token accepted ({name})")
+            verified = True
             break
-        else:
-            problems.append(
-                "Modrinth token rejected on every probe. This means the token has "
-                "expired or been revoked, OR it holds neither the 'Read analytics' "
-                "nor the 'Read user info' scope — Modrinth answers both cases with a "
-                "bare 401. Publishing itself only needs 'Create versions'; one read "
-                "scope exists purely so the token can be checked without publishing. "
+
+        if not verified:
+            # A notice, not an error. Failing here every week for a token that is
+            # probably fine would train everyone to ignore this workflow, and its
+            # remaining value -- Hangar and CurseForge, both genuinely checkable -- goes
+            # with it. Saying "unverified" is honest; saying "rejected" is not.
+            log(
+                "::notice::Modrinth token could not be verified, which is not the same "
+                "as it being broken. A PAT holding only 'Create versions' publishes "
+                "perfectly well and still fails every probe, because no readable "
+                "endpoint is gated by that scope. 'Read analytics' used to give one; "
+                "Modrinth removed those routes in late August 2026. To make this "
+                "checkable again, tick 'Read user data' at "
+                "https://modrinth.com/settings/pats -- it grants nothing beyond reading "
+                "your own account. Until then a revoked Modrinth token will not be "
+                "noticed here, and will surface at the release that needs it. "
                 + " | ".join(errors)
             )
 
@@ -401,6 +577,25 @@ def check_auth() -> int:
             log("Hangar: API key accepted")
         except Exception as exc:  # noqa: BLE001
             problems.append(f"Hangar key rejected: {exc}")
+
+    cf_token = os.environ.get("CURSEFORGE_TOKEN", "").strip()
+    cf_project = os.environ.get(CURSEFORGE_PROJECT_ENV, "").strip()
+    if not cf_token and not cf_project:
+        # Not a problem: the listing may simply not exist yet. Said out loud so the
+        # weekly check does not read as "CurseForge is fine" when it is absent.
+        log("::notice::CurseForge is not configured — nothing to check.")
+    elif not cf_token:
+        problems.append("CURSEFORGE_TOKEN is not set, but a project id is")
+    elif not cf_project:
+        problems.append(f"{CURSEFORGE_PROJECT_ENV} is not set, but a token is")
+    else:
+        try:
+            request(
+                f"{CURSEFORGE_API}/game/versions", headers={"X-Api-Token": cf_token}
+            )
+            log("CurseForge: token accepted")
+        except Exception as exc:  # noqa: BLE001
+            problems.append(f"CurseForge token rejected: {exc}")
 
     for problem in problems:
         print(f"::error::{problem}", flush=True)
@@ -483,7 +678,7 @@ def main() -> int:
                 hangar_key,
                 asset_url,
                 tag_version,
-                game_versions,
+                hangar_versions(game_versions),
                 changelog,
                 args.dry_run,
             )
@@ -491,6 +686,30 @@ def main() -> int:
             failures.append(f"Hangar: {exc}")
     else:
         log("::notice::HANGAR_API_KEY is not set — skipping Hangar.")
+
+    cf_token = os.environ.get("CURSEFORGE_TOKEN", "").strip()
+    cf_project = os.environ.get(CURSEFORGE_PROJECT_ENV, "").strip()
+    if (cf_token and cf_project) or args.dry_run:
+        try:
+            publish_curseforge(
+                cf_token,
+                cf_project or "(unset)",
+                args.jar,
+                tag_version,
+                game_versions,
+                changelog,
+                args.dry_run,
+            )
+        except Exception as exc:  # noqa: BLE001 - reported, not swallowed
+            failures.append(f"CurseForge: {exc}")
+    else:
+        # Skipping is the correct outcome until the listing exists, and a release must
+        # not fail because it does not. Said out loud so it cannot be mistaken for a
+        # publish that happened.
+        log(
+            "::notice::CurseForge is not configured "
+            f"(needs CURSEFORGE_TOKEN and {CURSEFORGE_PROJECT_ENV}) — skipping it."
+        )
 
     for failure in failures:
         print(f"::error::{failure}", flush=True)

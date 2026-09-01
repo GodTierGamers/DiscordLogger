@@ -1,6 +1,8 @@
 package com.discordlogger.metrics;
 
 import com.discordlogger.update.BuildInfo;
+import com.discordlogger.util.Io;
+import com.discordlogger.util.Strings;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.AdvancedPie;
 import org.bstats.charts.DrilldownPie;
@@ -16,6 +18,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,11 +85,13 @@ public final class PluginMetrics {
      * chart measures how many installs silently get no moderation logging at all.
      */
     private static final List<String> PUNISHMENT_PLUGINS =
-            List.of("LiteBans", "LibertyBans", "AdvancedBan", "BanManager", "CMI");
+            Collections.unmodifiableList(Arrays.asList(
+                    "LiteBans", "LibertyBans", "AdvancedBan", "BanManager", "CMI"));
 
     /** Vanish implementations. A vanished admin joining is currently announced anyway. */
     private static final List<String> VANISH_PLUGINS =
-            List.of("PremiumVanish", "SuperVanish", "Essentials", "CMI");
+            Collections.unmodifiableList(Arrays.asList(
+                    "PremiumVanish", "SuperVanish", "Essentials", "CMI"));
 
     /**
      * Permission managers, in the order a server running two would want reported.
@@ -99,8 +105,9 @@ public final class PluginMetrics {
      * on every server, which is the outcome this chart exists to find early.
      */
     private static final List<String> PERMISSION_PLUGINS =
-            List.of("LuckPerms", "UltraPermissions", "PermissionsEx", "GroupManager",
-                    "zPermissions", "PowerRanks");
+            Collections.unmodifiableList(Arrays.asList(
+                    "LuckPerms", "UltraPermissions", "PermissionsEx", "GroupManager",
+                    "zPermissions", "PowerRanks"));
 
     private PluginMetrics() {}
 
@@ -218,7 +225,7 @@ public final class PluginMetrics {
         try {
             final String v = System.getProperty("java.version", "");
             final String major = v.startsWith("1.") ? v.substring(2, 3) : v.split("[.\\-+]")[0];
-            return major.isBlank() ? UNKNOWN : major;
+            return Strings.isBlank(major) ? UNKNOWN : major;
         } catch (Throwable t) {
             return UNKNOWN;
         }
@@ -257,11 +264,35 @@ public final class PluginMetrics {
                 velocity = YamlConfiguration.loadConfiguration(paperGlobal)
                         .getBoolean("proxies.velocity.enabled", false);
             }
-            return proxyModeOf(
-                    Bukkit.spigot().getConfig().getBoolean("settings.bungeecord", false),
-                    velocity);
+            return proxyModeOf(bungeeForwardingEnabled(), velocity);
         } catch (Throwable t) {
             return UNKNOWN;
+        }
+    }
+
+    /**
+     * {@code settings.bungeecord} from spigot.yml, or false where there is no spigot.yml.
+     *
+     * <p>Reached by name because {@code Bukkit.spigot()} is Spigot's own extension and
+     * does not exist on CraftBukkit. That single call was the only thing in the plugin
+     * that could not compile against bare Bukkit, and keeping it off the compiler's
+     * path is what lets CI prove the rest runs on all three platforms: Paper
+     * implements Spigot implements Bukkit, so what compiles against the smallest of
+     * them runs on every server that matters.
+     *
+     * <p>Only the {@code spigot()} hop is reflective. Its config is an ordinary Bukkit
+     * {@link ConfigurationSection}, so the value is read with normal type checking.
+     */
+    static boolean bungeeForwardingEnabled() {
+        try {
+            final Object spigot = Bukkit.class.getMethod("spigot").invoke(null);
+            final Object cfg = spigot.getClass().getMethod("getConfig").invoke(spigot);
+            return (cfg instanceof ConfigurationSection)
+                    && ((ConfigurationSection) cfg).getBoolean("settings.bungeecord", false);
+        } catch (Throwable notSpigot) {
+            // CraftBukkit, or a fork that dropped it. No spigot.yml means no legacy
+            // BungeeCord forwarding to report.
+            return false;
         }
     }
 
@@ -355,7 +386,7 @@ public final class PluginMetrics {
     private static String shippedSchema(JavaPlugin plugin) {
         try (InputStream in = plugin.getResource("config.yml")) {
             if (in == null) return null;
-            final Matcher m = SCHEMA_RE.matcher(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+            final Matcher m = SCHEMA_RE.matcher(Io.readString(in));
             return m.find() ? m.group(1).toUpperCase() : null;
         } catch (Exception e) {
             return null;
@@ -365,7 +396,7 @@ public final class PluginMetrics {
     private static String schemaIn(File file) {
         try {
             if (!file.isFile()) return null;
-            final Matcher m = SCHEMA_RE.matcher(Files.readString(file.toPath(), StandardCharsets.UTF_8));
+            final Matcher m = SCHEMA_RE.matcher(Io.readString(file.toPath()));
             return m.find() ? m.group(1).toUpperCase() : null;
         } catch (Exception e) {
             return null;
@@ -430,7 +461,7 @@ public final class PluginMetrics {
         final Map<String, Integer> counts = new HashMap<>();
         forEachEvent(plugin, (path, section) -> {
             final String hook = section == null ? null : section.getString("webhook", "");
-            if (hook != null && !hook.isBlank()) counts.put(path, 1);
+            if (hook != null && !Strings.isBlank(hook)) counts.put(path, 1);
         });
         return counts;
     }
@@ -536,13 +567,37 @@ public final class PluginMetrics {
             final YamlConfiguration theirs = bundledYaml(plugin, "lang.yml");
             if (theirs == null) return changed;
 
-            for (String key : theirs.getKeys(true)) {
-                if (theirs.isConfigurationSection(key)) continue;
-                if (key.equals("config-version")) continue;
-                if (!Objects.equals(mine.get(key), theirs.get(key))) changed.add(key);
-            }
+            changed.addAll(changedKeys(mine, theirs));
         } catch (Throwable ignored) {
             // A malformed lang.yml is the user's problem, not a reason to fail metrics.
+        }
+        return changed;
+    }
+
+    /**
+     * Keys the user has actually reworded, split out so it can be tested.
+     *
+     * <p><strong>A key the user's file does not contain is not a changed key.</strong>
+     * That distinction was missing and it inflated the number badly: comparing
+     * {@code mine.get(key)} to the bundled value returns null for an absent key, which
+     * is unequal to every string, so a lang.yml predating a release that added keys
+     * reported every one of them as reworded. A server that had changed a single
+     * message was reported in the "50 or more" bucket.
+     *
+     * <p>Absent is the case {@code Lang} exists to tolerate: it keeps the bundled file
+     * loaded as a fallback precisely so an older lang.yml still resolves every key. A
+     * file missing a key behaves identically to one carrying the default, so counting
+     * it as customised measures the plugin's own release history rather than anything
+     * the admin did.
+     */
+    static List<String> changedKeys(ConfigurationSection mine, ConfigurationSection theirs) {
+        final List<String> changed = new java.util.ArrayList<>();
+        if (mine == null || theirs == null) return changed;
+        for (String key : theirs.getKeys(true)) {
+            if (theirs.isConfigurationSection(key)) continue;
+            if (key.equals("config-version")) continue;
+            if (!mine.contains(key)) continue;
+            if (!Objects.equals(mine.get(key), theirs.get(key))) changed.add(key);
         }
         return changed;
     }

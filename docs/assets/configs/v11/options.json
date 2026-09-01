@@ -658,7 +658,7 @@
         "keys": [
           {
             "key": "chat.regen-warning",
-            "default": "<yellow>This replaces config.yml with the default from this build. Your current file is backed up, but your settings are NOT carried over.</yellow>",
+            "default": "<yellow>This replaces config.yml and lang.yml with the defaults from this build. Both are backed up, but your settings are NOT carried over.</yellow>",
             "note": "Shown when /discordlogger regen is run without \"confirm\"."
           },
           {
@@ -667,7 +667,7 @@
           },
           {
             "key": "chat.regen-done",
-            "default": "<green>config.yml rebuilt at schema {schema}.</green>",
+            "default": "<green>config.yml and lang.yml rebuilt at schema {schema}.</green>",
             "note": "Placeholders: {schema} -- the config schema that was written, e.g. \"v10\""
           },
           {
@@ -681,16 +681,16 @@
           },
           {
             "key": "chat.regen-no-bundled",
-            "default": "<red>This build has no bundled config.yml to restore from.</red>"
+            "default": "<red>This build has no bundled {file} to restore from.</red>"
           },
           {
             "key": "chat.regen-read-failed",
-            "default": "<red>Could not read the bundled config.yml: {error}</red>",
+            "default": "<red>Could not read the bundled {file}: {error}</red>",
             "note": "Placeholders: {error}"
           },
           {
             "key": "chat.regen-write-failed",
-            "default": "<red>Could not rewrite config.yml: {error}</red>"
+            "default": "<red>Could not rewrite {file}: {error}</red>"
           }
         ]
       },

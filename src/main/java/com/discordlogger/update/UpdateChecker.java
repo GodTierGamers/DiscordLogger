@@ -1,18 +1,18 @@
 package com.discordlogger.update;
 
 import com.discordlogger.log.Log;
+import com.discordlogger.util.Http;
+import com.discordlogger.util.Strings;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,26 +50,18 @@ public final class UpdateChecker {
         }
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            // Deliberately NOT try-with-resources. HttpClient only became
-            // AutoCloseable in Java 21, and this is compiled for 17 so the plugin
-            // loads on servers older than 1.20.5. Nothing leaks: one request is
-            // made and the client is unreachable immediately afterwards.
-            final HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(TIMEOUT)
-                    .build();
+            // Http closes and disconnects each connection itself, so there is nothing
+            // to manage here -- see the finally blocks in Http.get.
             try {
+                final Map<String, String> headers = new LinkedHashMap<>();
+                headers.put("Accept", "application/vnd.github+json");
+                headers.put("User-Agent", "DiscordLogger/" + current);
 
-                HttpRequest req = HttpRequest.newBuilder(URI.create(RELEASES_LIST_API_URL))
-                        .timeout(TIMEOUT)
-                        .header("Accept", "application/vnd.github+json")
-                        .header("User-Agent", "DiscordLogger/" + current)
-                        .GET()
-                        .build();
+                final Http.Result resp =
+                        Http.get(RELEASES_LIST_API_URL, headers, (int) TIMEOUT.toMillis());
 
-                HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
-
-                if (resp.statusCode() != 200) {
-                    plugin.getLogger().fine("Update check returned HTTP " + resp.statusCode());
+                if (resp.status() != 200) {
+                    plugin.getLogger().fine("Update check returned HTTP " + resp.status());
                     return;
                 }
 
@@ -186,7 +178,18 @@ public final class UpdateChecker {
     // string-scanning approach this class has always used)
     // -------------------------------------------------------------------------
 
-    private record ReleaseInfo(String tag, boolean prerelease) {}
+    private static final class ReleaseInfo {
+        private final String tag;
+        private final boolean prerelease;
+
+        ReleaseInfo(String tag, boolean prerelease) {
+            this.tag = tag;
+            this.prerelease = prerelease;
+        }
+
+        String tag() { return tag; }
+        boolean prerelease() { return prerelease; }
+    }
 
     /**
      * Pairs each "tag_name" with the "prerelease" flag that appears before the NEXT
@@ -224,7 +227,24 @@ public final class UpdateChecker {
     // of the same major.minor.patch; higher BETA numbers rank above lower ones)
     // -------------------------------------------------------------------------
 
-    private record SemVer(int major, int minor, int patch, Integer beta) implements Comparable<SemVer> {
+    private static final class SemVer implements Comparable<SemVer> {
+        private final int major;
+        private final int minor;
+        private final int patch;
+        private final Integer beta;
+
+        SemVer(int major, int minor, int patch, Integer beta) {
+            this.major = major;
+            this.minor = minor;
+            this.patch = patch;
+            this.beta = beta;
+        }
+
+        int major()     { return major; }
+        int minor()     { return minor; }
+        int patch()     { return patch; }
+        Integer beta()  { return beta; }
+
         static SemVer parse(String raw) {
             if (raw == null) return null;
             String v = raw.trim();
@@ -236,8 +256,17 @@ public final class UpdateChecker {
             int betaIdx = v.toUpperCase(Locale.ROOT).indexOf("-BETA.");
             if (betaIdx >= 0) {
                 String betaPart = v.substring(betaIdx + "-BETA.".length());
+                // Leading digits, taken directly. The regex this replaces was
+                // "\\D.*$", which backtracks on a long run of non-digits -- and the
+                // string comes from a release name on GitHub, so its shape is somebody
+                // else's decision. A character loop is linear and says what it means.
+                int digits = 0;
+                while (digits < betaPart.length()
+                        && Character.isDigit(betaPart.charAt(digits))) {
+                    digits++;
+                }
                 try {
-                    betaNum = Integer.parseInt(betaPart.replaceAll("\\D.*$", ""));
+                    betaNum = digits == 0 ? 0 : Integer.parseInt(betaPart.substring(0, digits));
                 } catch (NumberFormatException ignored) {
                     betaNum = 0;
                 }
@@ -245,7 +274,7 @@ public final class UpdateChecker {
             }
 
             String[] parts = v.split("\\.");
-            if (parts.length == 0 || parts[0].isBlank()) return null;
+            if (parts.length == 0 || Strings.isBlank(parts[0])) return null;
 
             return new SemVer(part(parts, 0), part(parts, 1), part(parts, 2), betaNum);
         }

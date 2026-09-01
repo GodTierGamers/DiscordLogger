@@ -1,5 +1,7 @@
 package com.discordlogger.metrics;
 
+import com.discordlogger.util.Strings;
+
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -51,7 +53,7 @@ public final class Counters {
 
     /** Record that a subcommand ran. The invoker is never recorded. */
     public static void commandUsed(String name) {
-        if (name != null && !name.isBlank()) COMMANDS_USED.add(name);
+        if (name != null && !Strings.isBlank(name)) COMMANDS_USED.add(name);
     }
 
     // bStats line charts take an Integer; these deltas cannot realistically

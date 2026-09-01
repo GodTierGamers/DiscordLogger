@@ -4,6 +4,7 @@ import com.discordlogger.DiscordLogger;
 import com.discordlogger.config.ConfigMigrator;
 import com.discordlogger.log.Log;
 import com.discordlogger.lang.Lang;
+import com.discordlogger.util.Chat;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -46,10 +47,10 @@ public final class Webhook implements Subcommand {
     @Override
     public boolean execute(CommandSender sender, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(Lang.chat("chat.webhook-usage"));
-            sender.sendMessage(Lang.chat("chat.webhook-where"));
+            Chat.send(sender, Lang.chat("chat.webhook-usage"));
+            Chat.send(sender, Lang.chat("chat.webhook-where"));
             if (sender instanceof Player) {
-                sender.sendMessage(Lang.chat("chat.webhook-private"));
+                Chat.send(sender, Lang.chat("chat.webhook-private"));
             }
             return true;
         }
@@ -57,14 +58,14 @@ public final class Webhook implements Subcommand {
         final String url = args[0].trim();
 
         if (!Log.isValidWebhookUrl(url)) {
-            sender.sendMessage(Lang.chat("chat.webhook-invalid"));
-            sender.sendMessage(Lang.chat("chat.webhook-expected"));
+            Chat.send(sender, Lang.chat("chat.webhook-invalid"));
+            Chat.send(sender, Lang.chat("chat.webhook-expected"));
             return true;
         }
 
         final File configFile = new File(plugin.getDataFolder(), "config.yml");
         if (!ConfigMigrator.setScalar(configFile, "webhook.url", url)) {
-            sender.sendMessage(Lang.chat("chat.webhook-write-failed"));
+            Chat.send(sender, Lang.chat("chat.webhook-write-failed"));
             return true;
         }
 
@@ -72,12 +73,12 @@ public final class Webhook implements Subcommand {
         final boolean ok = plugin.applyRuntimeConfig();
 
         if (ok) {
-            sender.sendMessage(Lang.chat("chat.webhook-set", "channel", channelId(url)));
+            Chat.send(sender, Lang.chat("chat.webhook-set", "channel", channelId(url)));
         } else {
             // setScalar succeeded and the URL passed the format check, so this means
             // the reload rejected it for some other reason -- worth saying plainly
             // rather than reporting success.
-            sender.sendMessage(Lang.chat("chat.webhook-rejected"));
+            Chat.send(sender, Lang.chat("chat.webhook-rejected"));
         }
 
         // Console record without the token, so the server log is safe to share.

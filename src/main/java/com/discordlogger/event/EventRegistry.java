@@ -1,5 +1,7 @@
 package com.discordlogger.event;
 
+import com.discordlogger.util.Compat;
+import org.bukkit.event.Listener;
 import com.discordlogger.listener.custom.CustomCommandLog;
 import com.discordlogger.listener.player.*;
 import com.discordlogger.listener.server.*;
@@ -24,7 +26,27 @@ public final class EventRegistry {
         pm.registerEvents(new PlayerChat(plugin), plugin);
         pm.registerEvents(new PlayerCommand(plugin), plugin);
         pm.registerEvents(new PlayerDeath(plugin), plugin);
-        pm.registerEvents(new PlayerAdvancement(plugin), plugin);
+        // PlayerAdvancementDoneEvent arrived in 1.12; before that advancements did not
+        // exist. Naming the class directly here would stop the plugin loading at all
+        // on an older server -- see util.Compat.
+        final Listener advancement = Compat.listenerIfPresent(
+                Compat.ADVANCEMENT_EVENT, Compat.ADVANCEMENT_LISTENER, plugin);
+        if (advancement != null) pm.registerEvents(advancement, plugin);
+
+        // The other half of the same feature: achievements existed from 1.8 and the API
+        // outlived them until 1.15. On 1.12 to 1.14 both are registered and only the
+        // advancement one fires, which costs nothing.
+        final Listener achievement = Compat.listenerIfPresent(
+                Compat.ACHIEVEMENT_EVENT, Compat.ACHIEVEMENT_LISTENER, plugin);
+        if (achievement != null) pm.registerEvents(achievement, plugin);
+
+        // Said once at startup rather than left to be discovered. A gate that quietly
+        // does not register is indistinguishable from a plugin that is broken, and the
+        // admin most likely to hit one is on an old server with no reason to suspect
+        // version gating. Silent on anything modern -- there is nothing to report.
+        for (String gap : Compat.unavailableFeatures(plugin)) {
+            plugin.getLogger().info(gap);
+        }
         pm.registerEvents(new PlayerTeleport(plugin), plugin);
         pm.registerEvents(new PlayerGamemode(plugin), plugin);
 
@@ -34,6 +56,12 @@ public final class EventRegistry {
         // Server events
         pm.registerEvents(new ServerCommand(plugin), plugin);
         pm.registerEvents(new Explosion(plugin), plugin);
+
+        // BlockExplodeEvent arrived in 1.8.3. Entity explosions above work on 1.8.0,
+        // which is why the two are separate classes rather than one.
+        final Listener blockExplosion = Compat.listenerIfPresent(
+                Compat.BLOCK_EXPLODE_EVENT, Compat.BLOCK_EXPLODE_LISTENER, plugin);
+        if (blockExplosion != null) pm.registerEvents(blockExplosion, plugin);
 
         // Moderation events
         pm.registerEvents(new Ban(plugin), plugin);
