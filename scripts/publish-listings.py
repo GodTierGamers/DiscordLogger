@@ -383,13 +383,35 @@ def publish_hangar(
         "files": [{"platforms": ["PAPER"], "externalUrl": asset_url}],
     }
 
-    body, ctype = multipart({"versionUpload": json.dumps(payload)}, {})
-    request(
-        f"{HANGAR_API}/projects/{HANGAR_SLUG}/upload",
-        method="POST",
-        headers={**headers, "Content-Type": ctype},
-        data=body,
-    )
+    # Hangar rejects the whole upload over a single version it does not have, and
+    # names it: {"message":"Invalid version: 1.8.9"}. Paper does not build every
+    # Minecraft patch -- its 1.8 line is 1.8.8 alone -- and there is no public
+    # endpoint that lists what it will accept, so the only way to learn is to ask.
+    #
+    # Each rejection names exactly one version, so dropping it and retrying converges
+    # on the set Hangar will take. Bounded, because a 400 for any other reason would
+    # otherwise loop forever.
+    accepted = list(game_versions)
+    for _ in range(len(game_versions) + 1):
+        payload["platformDependencies"] = {"PAPER": accepted}
+        body, ctype = multipart({"versionUpload": json.dumps(payload)}, {})
+        try:
+            request(
+                f"{HANGAR_API}/projects/{HANGAR_SLUG}/upload",
+                method="POST",
+                headers={**headers, "Content-Type": ctype},
+                data=body,
+            )
+            break
+        except RuntimeError as rejected:
+            bad = re.search(r"Invalid version: ([^\"\\\\]+)", str(rejected))
+            if not bad or bad.group(1) not in accepted:
+                raise
+            accepted.remove(bad.group(1))
+            log(f"Hangar rejected {bad.group(1)}; retrying without it "
+                f"({len(accepted)} left)")
+            if not accepted:
+                raise RuntimeError("Hangar rejected every version offered")
     log(
         "Published to Hangar: "
         f"https://hangar.papermc.io/LVCHLANN/{HANGAR_SLUG}/versions/{version}"
@@ -448,6 +470,43 @@ def curseforge_version_ids(token: str, wanted: list[str]) -> list[int]:
             log(f"CurseForge does not offer '{loader}' as a version; skipping it.")
 
     return ids
+
+
+def diagnose_curseforge(token: str, wanted: list[str]) -> None:
+    """Prints how our version names land in CurseForge's catalogue, grouped by type.
+
+    Written because a publish failed with "Invalid game version ID: 4465 belongs to
+    an invalid dependency", and there is no way to see the catalogue without the
+    token. CurseForge keeps Minecraft versions, Java versions and server software in
+    one list separated by gameVersionTypeID, and a Bukkit plugin may only reference
+    ids from some of those groups -- so matching purely on the name, as this did, can
+    pick a correctly-named id out of a group the project is not allowed to use.
+    """
+    types = request(f"{CURSEFORGE_API}/game/version-types",
+                    headers={"X-Api-Token": token}) or []
+    type_name = {int(t["id"]): str(t.get("name", "?")) for t in types if "id" in t}
+
+    catalogue = request(f"{CURSEFORGE_API}/game/versions",
+                        headers={"X-Api-Token": token}) or []
+    by_name: dict[str, list] = {}
+    for e in catalogue:
+        by_name.setdefault(str(e.get("name", "")).strip(), []).append(
+            (int(e["id"]), int(e.get("gameVersionTypeID", -1)))
+        )
+
+    log(f"CurseForge lists {len(types)} version types and {len(catalogue)} versions.")
+    seen = {}
+    for name in wanted:
+        for _id, tid in by_name.get(name, []):
+            seen[tid] = seen.get(tid, 0) + 1
+    log("Types matching the versions we ask for:")
+    for tid, count in sorted(seen.items(), key=lambda kv: -kv[1]):
+        log(f"  typeId {tid:>6}  {type_name.get(tid, '?'):<30} matches {count}")
+    log("First twelve names, in full:")
+    for name in wanted[:12]:
+        entries = by_name.get(name, [])
+        rendered = ", ".join(f"id={i} type={t}" for i, t in entries) or "NOT LISTED"
+        log(f"  {name:<9} {rendered}")
 
 
 def publish_curseforge(
@@ -619,10 +678,23 @@ def main() -> int:
         action="store_true",
         help="resolve and validate everything, but make no network writes",
     )
+    parser.add_argument(
+        "--diagnose",
+        action="store_true",
+        help="print how our versions map into CurseForge's catalogue, publish nothing",
+    )
     args = parser.parse_args()
 
     if args.check_auth:
         return check_auth()
+
+    if args.diagnose:
+        token = os.environ.get("CURSEFORGE_TOKEN", "").strip()
+        if not token:
+            fail("CURSEFORGE_TOKEN is not set")
+        versions = [v.strip() for v in pom_values()["game_versions"].split(",") if v.strip()]
+        diagnose_curseforge(token, versions)
+        return 0
 
     if not args.jar or not args.tag:
         fail("--jar and --tag are required")
