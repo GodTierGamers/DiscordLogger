@@ -20,7 +20,7 @@ Everything after that is automated: merged work appears in the next **nightly bu
 
 - **JDK <!-- dl:sync:build_jdk -->17<!-- /dl:sync -->** (Temurin recommended) and Maven. The plugin itself is compiled for Java <!-- dl:sync:java -->8<!-- /dl:sync -->, so it runs on servers that old — but building it needs the newer JDK, because the tests compile at 17.
 - `mvn -B -ntp clean package` must pass.
-- Test on a real **Paper <!-- dl:sync:paper_display -->1.8 – 26.2<!-- /dl:sync -->** server when your change touches runtime behavior — a clean compile is not a functional test.
+- Test on a real **Bukkit-compatible <!-- dl:sync:mc_display -->1.8 – 26.2<!-- /dl:sync -->** server when your change touches runtime behavior — a clean compile is not a functional test.
 - **Config changes travel in lockstep**: if you add or change a `log.*`, `embeds.*` or `filters.*` key — or any message in `lang.yml` — the same PR must update the code that reads it, the shipped file under `src/main/resources/`, and the website generator data (`docs/assets/configs/v*/options.json` plus the matching `config.template.yml` / `lang.template.yml`). Generating a config and changing nothing has to reproduce the shipped files byte for byte; that is checked, not assumed. Run it locally:
   ```bash
   python3 scripts/validate-config-generator.py

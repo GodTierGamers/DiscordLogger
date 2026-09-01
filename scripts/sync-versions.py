@@ -51,12 +51,12 @@ BLOCK = re.compile(
 BLOCK_TEMPLATES = {
     "badges": lambda v: (
         f"![Java](https://img.shields.io/badge/Java-{v['java']}%2B-orange)\n"
-        f"![Paper](https://img.shields.io/badge/Paper-{v['paper_badge']}-blue)\n"
+        f"![Minecraft](https://img.shields.io/badge/Minecraft-{v['mc_badge']}-blue)\n"
     ),
 }
 
 
-def paper_display(game_versions: str) -> str:
+def mc_display(game_versions: str) -> str:
     """The supported range as (prose, badge) — e.g. ("1.19.4 – 26.2", "1.19.4--26.2").
 
     Derived from <dl.game.versions> rather than hand-set, because the two would
@@ -99,7 +99,7 @@ def pom_values() -> dict[str, str]:
         if sm:
             schema = sm.group(1).upper()
 
-    display, badge = paper_display(prop("dl.game.versions"))
+    display, badge = mc_display(prop("dl.game.versions"))
 
     return {
         "plugin": vm.group(1).strip(),
@@ -110,10 +110,10 @@ def pom_values() -> dict[str, str]:
         # the target to 8; CONTRIBUTING then told people to install a JDK that cannot
         # build the project.
         "build_jdk": prop("dl.build.jdk"),
-        "paper_api": prop("spigot.api.version"),
-        "min_paper": prop("dl.api.version"),
-        "paper_display": display,
-        "paper_badge": badge,
+        "api_artifact": prop("spigot.api.version"),
+        "api_version": prop("dl.api.version"),
+        "mc_display": display,
+        "mc_badge": badge,
     }
 
 
@@ -133,9 +133,9 @@ def write_data_file(v: dict[str, str]) -> bool:
         f"plugin: \"{v['plugin']}\" # x-release-please-version\n"
         f"schema: \"{v['schema']}\"\n"
         f"java: \"{v['java']}\"\n"
-        f"min_paper: \"{v['min_paper']}\"\n"
-        f"paper_display: \"{v['paper_display']}\"\n"
-        f"paper_api: \"{v['paper_api']}\"\n"
+        f"api_version: \"{v['api_version']}\"\n"
+        f"mc_display: \"{v['mc_display']}\"\n"
+        f"api_artifact: \"{v['api_artifact']}\"\n"
     )
     DATA.parent.mkdir(parents=True, exist_ok=True)
     if DATA.exists() and DATA.read_text(encoding="utf-8") == content:

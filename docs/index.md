@@ -23,7 +23,7 @@ description: Post Minecraft server events to Discord — joins, chat, deaths and
   <p class="dl-hero__meta">
     <span>Latest: <strong>v<span data-dl-latest>…</span></strong></span>
     <span>Config schema {{ site.data.versions.schema }}</span>
-    <span>Paper {{ site.data.versions.paper_display }}</span>
+    <span>Minecraft {{ site.data.versions.mc_display }}</span>
     <span>Java {{ site.data.versions.java }}+</span>
   </p>
 </section>
@@ -126,8 +126,8 @@ builds both `config.yml` and `lang.yml` in your browser.
 
 | Requirement | Version |
 |---|---|
-| Server | **Paper, Spigot or a fork such as Purpur**, {{ site.data.versions.paper_display }} |
-| Compiled against | Bukkit API `{{ site.data.versions.min_paper }}` |
+| Server | **CraftBukkit, Spigot, Paper or a fork such as Purpur**, {{ site.data.versions.mc_display }} |
+| Compiled against | Bukkit API `{{ site.data.versions.api_version }}` |
 | Java | **{{ site.data.versions.java }}** or newer |
 | Discord | A webhook URL — no bot required |
 

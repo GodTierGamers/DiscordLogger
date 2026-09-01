@@ -30,7 +30,7 @@
       "applicationSubCategory": "Minecraft server plugin",
       "operatingSystem": "Any (Java {{ site.data.versions.java | default: '25' }}+)",
       "softwareVersion": {{ site.data.versions.plugin | default: '' | jsonify }},
-      "softwareRequirements": "PaperMC {{ site.data.versions.min_paper | default: '' }} or newer",
+      "softwareRequirements": "Bukkit, Spigot or Paper {{ site.data.versions.mc_display | default: '' }}",
       "description": {{ site.description | strip_newlines | strip | jsonify }},
       "image": {{ site.url | append: site.baseurl | append: site.social_image | jsonify }},
       "license": "https://github.com/GodTierGamers/DiscordLogger/blob/main/LICENSE",

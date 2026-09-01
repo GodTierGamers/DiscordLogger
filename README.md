@@ -9,12 +9,12 @@
 ![License](https://img.shields.io/github/license/GodTierGamers/DiscordLogger)
 <!-- dl:sync-block:badges -->
 ![Java](https://img.shields.io/badge/Java-8%2B-orange)
-![Paper](https://img.shields.io/badge/Paper-1.8--26.2-blue)
+![Minecraft](https://img.shields.io/badge/Minecraft-1.8--26.2-blue)
 <!-- /dl:sync-block -->
 ![Discord Webhooks](https://img.shields.io/badge/Discord-Webhooks-5865F2)
 
 A minimal, reliable Minecraft server **logging plugin** that posts clean messages to a **Discord webhook** — in Markdown **or rich embeds**.
-Built for **Paper, Spigot and forks like Purpur <!-- dl:sync:paper_display -->1.8 – 26.2<!-- /dl:sync -->** on **Java <!-- dl:sync:java -->8<!-- /dl:sync -->+**, tested with Geyser/Floodgate (Bedrock cross-play).
+Built for **CraftBukkit, Spigot, Paper and forks like Purpur <!-- dl:sync:mc_display -->1.8 – 26.2<!-- /dl:sync -->** on **Java <!-- dl:sync:java -->8<!-- /dl:sync -->+**, tested with Geyser/Floodgate (Bedrock cross-play).
 
 ---
 
@@ -114,7 +114,7 @@ Full instructions, including creating the webhook in Discord and checking that e
 
 ## 🔌 Compatibility
 
-- **Server:** Bukkit-compatible — CraftBukkit, Spigot, Paper, or a fork such as Purpur. Built and tested against **<!-- dl:sync:paper_display -->1.8 – 26.2<!-- /dl:sync -->**; the plugin itself compiles against the Bukkit API at `<!-- dl:sync:min_paper -->1.13<!-- /dl:sync -->`, so it uses no Paper-only API.
+- **Server:** Bukkit-compatible — CraftBukkit, Spigot, Paper, or a fork such as Purpur. Built and tested against **<!-- dl:sync:mc_display -->1.8 – 26.2<!-- /dl:sync -->**; the plugin itself compiles against the Bukkit API at `<!-- dl:sync:api_version -->1.13<!-- /dl:sync -->`, so it uses no Paper-only API.
 - **Java:** **<!-- dl:sync:java -->8<!-- /dl:sync -->+** — the plugin is compiled for Java <!-- dl:sync:java -->8<!-- /dl:sync -->, so it loads on that and anything newer. Your *Minecraft* version sets the real floor: 1.19.4 needs Java 17, 1.20.5 needs 21, and 26.x needs 25. Whatever your server already runs on is fine.
 - **Cross-play:** Compatible with **Geyser/Floodgate** — death messages are server-generated for consistency across Java/Bedrock names/locales, and joins from Bedrock can be flagged as such.
 - **Bukkit, Spigot, Paper and forks all run the same JAR.** The plugin compiles against the Bukkit API and calls nothing Paper-only, so there is no separate build and no platform to choose. Releases before 2.4.0 did need Paper, for its chat API; this one does not.
