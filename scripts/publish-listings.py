@@ -73,6 +73,22 @@ MODRINTH_LOADERS = ["paper", "purpur"]
 HANGAR_API = "https://hangar.papermc.io/api/v1"
 HANGAR_SLUG = "DiscordLogger"
 
+# CurseForge's upload API still lives on the old per-game host. It is not the same
+# service as the public api.curseforge.com read API and does not share its keys: this
+# one takes a project-scoped token from the author's own account settings.
+CURSEFORGE_API = "https://minecraft.curseforge.com/api"
+
+# The numeric project id, from the project's own page. Read from the environment
+# rather than hardcoded, so the listing can be created and wired up without a code
+# change -- and so this stays inert until it exists.
+CURSEFORGE_PROJECT_ENV = "CURSEFORGE_PROJECT_ID"
+
+# CurseForge keeps server software in the same list as Minecraft versions, under a
+# different type. Included when the list offers them and skipped silently when it does
+# not, because which of these exist has changed over the years and a hard requirement
+# would break a release over a label.
+CURSEFORGE_LOADERS = ["Bukkit", "Spigot", "Paper"]
+
 
 # --------------------------------------------------------------------------- io
 
@@ -337,6 +353,93 @@ def publish_hangar(
 # --------------------------------------------------------------- download count
 
 
+# ------------------------------------------------------------------ curseforge
+
+
+def curseforge_version_ids(token: str, wanted: list[str]) -> list[int]:
+    """Turns version names into the numeric ids the upload call requires.
+
+    CurseForge will not take "1.21.4"; it wants the id that names it, and the ids are
+    not stable across games, so they have to be looked up every time.
+
+    Matching is by name rather than by version-type id. The type ids group Minecraft
+    releases, Java versions and server software separately, and their meanings have
+    moved; a name like "1.21.4" can only ever match a Minecraft version, so the lenient
+    match is also the safe one.
+    """
+    catalogue = request(
+        f"{CURSEFORGE_API}/game/versions", headers={"X-Api-Token": token}
+    )
+    by_name: dict[str, int] = {}
+    for entry in catalogue or []:
+        name = str(entry.get("name", "")).strip()
+        if name and name not in by_name:
+            by_name[name] = int(entry["id"])
+
+    ids: list[int] = []
+    missing: list[str] = []
+    for name in wanted:
+        if name in by_name:
+            ids.append(by_name[name])
+        else:
+            missing.append(name)
+
+    if missing:
+        # Not fatal on its own: CurseForge adds a Minecraft version to this list on
+        # its own schedule, and a release should not be blocked because the newest one
+        # is not there yet. It IS fatal if nothing matched at all.
+        log(f"::warning::CurseForge does not list these versions yet: {', '.join(missing)}")
+    if not ids:
+        raise RuntimeError(
+            "none of the versions in <dl.game.versions> exist in CurseForge's list, so "
+            "the upload would be rejected. Checked: " + ", ".join(wanted)
+        )
+
+    for loader in CURSEFORGE_LOADERS:
+        if loader in by_name:
+            ids.append(by_name[loader])
+        else:
+            log(f"CurseForge does not offer '{loader}' as a version; skipping it.")
+
+    return ids
+
+
+def publish_curseforge(
+    token: str,
+    project_id: str,
+    jar: Path,
+    version: str,
+    game_versions: list[str],
+    changelog: str,
+    dry: bool,
+) -> None:
+    if dry:
+        log(f"[dry-run] CurseForge would publish {version} to project {project_id}")
+        return
+
+    ids = curseforge_version_ids(token, game_versions)
+    metadata = {
+        "changelog": changelog,
+        "changelogType": "markdown",
+        "displayName": f"DiscordLogger {version}",
+        "gameVersions": ids,
+        # Nightlies never reach this script -- main() refuses them -- so anything
+        # arriving here is a stable release.
+        "releaseType": "release",
+    }
+    body, content_type = multipart(
+        {"metadata": json.dumps(metadata)}, {"file": jar}
+    )
+    result = request(
+        f"{CURSEFORGE_API}/projects/{project_id}/upload-file",
+        method="POST",
+        headers={"X-Api-Token": token, "Content-Type": content_type},
+        data=body,
+    )
+    file_id = (result or {}).get("id") if isinstance(result, dict) else None
+    log(f"CurseForge: uploaded {jar.name} for {len(ids)} versions (file {file_id})")
+
+
 GITHUB_API = "https://api.github.com/repos/GodTierGamers/DiscordLogger"
 
 # ------------------------------------------------------------------ auth check
@@ -401,6 +504,25 @@ def check_auth() -> int:
             log("Hangar: API key accepted")
         except Exception as exc:  # noqa: BLE001
             problems.append(f"Hangar key rejected: {exc}")
+
+    cf_token = os.environ.get("CURSEFORGE_TOKEN", "").strip()
+    cf_project = os.environ.get(CURSEFORGE_PROJECT_ENV, "").strip()
+    if not cf_token and not cf_project:
+        # Not a problem: the listing may simply not exist yet. Said out loud so the
+        # weekly check does not read as "CurseForge is fine" when it is absent.
+        log("::notice::CurseForge is not configured — nothing to check.")
+    elif not cf_token:
+        problems.append("CURSEFORGE_TOKEN is not set, but a project id is")
+    elif not cf_project:
+        problems.append(f"{CURSEFORGE_PROJECT_ENV} is not set, but a token is")
+    else:
+        try:
+            request(
+                f"{CURSEFORGE_API}/game/versions", headers={"X-Api-Token": cf_token}
+            )
+            log("CurseForge: token accepted")
+        except Exception as exc:  # noqa: BLE001
+            problems.append(f"CurseForge token rejected: {exc}")
 
     for problem in problems:
         print(f"::error::{problem}", flush=True)
@@ -491,6 +613,30 @@ def main() -> int:
             failures.append(f"Hangar: {exc}")
     else:
         log("::notice::HANGAR_API_KEY is not set — skipping Hangar.")
+
+    cf_token = os.environ.get("CURSEFORGE_TOKEN", "").strip()
+    cf_project = os.environ.get(CURSEFORGE_PROJECT_ENV, "").strip()
+    if (cf_token and cf_project) or args.dry_run:
+        try:
+            publish_curseforge(
+                cf_token,
+                cf_project or "(unset)",
+                args.jar,
+                tag_version,
+                game_versions,
+                changelog,
+                args.dry_run,
+            )
+        except Exception as exc:  # noqa: BLE001 - reported, not swallowed
+            failures.append(f"CurseForge: {exc}")
+    else:
+        # Skipping is the correct outcome until the listing exists, and a release must
+        # not fail because it does not. Said out loud so it cannot be mistaken for a
+        # publish that happened.
+        log(
+            "::notice::CurseForge is not configured "
+            f"(needs CURSEFORGE_TOKEN and {CURSEFORGE_PROJECT_ENV}) — skipping it."
+        )
 
     for failure in failures:
         print(f"::error::{failure}", flush=True)

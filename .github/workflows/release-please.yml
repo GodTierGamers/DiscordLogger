@@ -185,11 +185,17 @@ jobs:
           gh release download "$TAG" --pattern '*.jar' --dir target
           ls -l target
 
-      - name: Publish to Modrinth and Hangar
+      - name: Publish to the listings
         env:
           GH_TOKEN: ${{ github.token }}
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
           HANGAR_API_KEY: ${{ secrets.HANGAR_API_KEY }}
+          # The project id is not a secret -- it is on the public project page -- so it
+          # is a repository variable. Both are read at publish time and CurseForge is
+          # skipped, loudly, until they exist; a release must not fail over a listing
+          # that has not been created yet.
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
           TAG: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
         run: |
           set -euo pipefail
