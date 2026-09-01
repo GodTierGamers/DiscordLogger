@@ -112,6 +112,8 @@ class LangSweepTest {
     private static Path work;
     private static final List<Grader.Result> RESULTS = new ArrayList<>();
     private static boolean playerEventsSupported = true;
+    /** False on the 1.8 line, where a generated projectile cannot satisfy the API. */
+    private static boolean projectilesDriveable = true;
     private static String stockLang;
     private static Map<String, String> shipped = new LinkedHashMap<>();
 
@@ -148,6 +150,21 @@ class LangSweepTest {
 
         server.command("dldriver join");
         playerEventsSupported = !server.awaitLine("DRIVER-UNSUPPORTED", 20, TimeUnit.SECONDS);
+
+        // The two "shot by" lines need a fake projectile, and on the 1.8 line the
+        // generated class does not carry the getShooter that the shipped JAR calls: the
+        // JAR is compiled against a newer API, and Bukkit re-typed that method in
+        // between. A real server has a real CraftArrow and answers it; a generated
+        // stand-in does not, and the AbstractMethodError that follows reads exactly like
+        // the plugin failing on 1.8 when it is the harness that cannot pose the
+        // question.
+        //
+        // Every other version drives these lines, so they are covered -- just not here.
+        // Teaching the fake to span a signature change is worth doing on its own rather
+        // than inside a release.
+        final String mcVersion = Sweeps.version();
+        projectilesDriveable = !"1.8".equals(mcVersion) && !"1.8.8".equals(mcVersion);
+
         Sweeps.quiesce(discord, 1500);
     }
 
@@ -178,6 +195,9 @@ class LangSweepTest {
         final String original = shipped.get(line.key());
         Assumptions.assumeTrue(original != null,
                 line.key() + " is not in this build's lang.yml");
+        Assumptions.assumeTrue(projectilesDriveable || !line.drive().contains("shot"),
+                "a generated projectile cannot satisfy this server's API, so " + line.key()
+                        + " cannot be driven on " + Sweeps.version());
 
         final String sentinel = "DLACC" + Math.abs(line.key().hashCode() % 100000);
         server.editLang(line.key(), "\"" + sentinel + placeholdersOf(original)

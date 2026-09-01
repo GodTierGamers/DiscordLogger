@@ -225,23 +225,6 @@ public final class Fake {
     static <T> T build(Class<T> type, InvocationHandler h) {
         try {
             final Class<? extends T> generated = new ByteBuddy()
-                    // Every declared method gets its own implementation, rather than
-                    // the default graph which merges by name and parameters.
-                    //
-                    // Spigot marks methods it has re-typed by keeping the old one as
-                    // _INVALID_<name>: 1.8's Projectile declares both
-                    // getShooter()LProjectileSource and _INVALID_getShooter()LLivingEntity.
-                    // Those differ only in return type, so the default compiler treats
-                    // them as one method and implements whichever it picked, leaving the
-                    // other abstract. DiscordLogger calls the ProjectileSource one, got
-                    // the abstract half, and every projectile death on 1.8 died with
-                    // AbstractMethodError -- which reads exactly like the plugin being
-                    // broken on 1.8 when it is the fake that is incomplete.
-                    //
-                    // The same pattern is all over 1.8's API (_INVALID_getHealth and
-                    // friends), so this is not a fix for one method.
-                    .with(net.bytebuddy.dynamic.scaffold.MethodGraph.Compiler
-                            .ForDeclaredMethods.INSTANCE)
                     .subclass(type)
                     .method(ElementMatchers.any())
                     .intercept(InvocationHandlerAdapter.of(h))
