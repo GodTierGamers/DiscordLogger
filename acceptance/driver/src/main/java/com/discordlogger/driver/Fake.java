@@ -3,11 +3,14 @@ package com.discordlogger.driver;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.implementation.InvocationHandlerAdapter;
+import net.bytebuddy.matcher.ElementMatchers;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -68,20 +71,44 @@ public final class Fake {
                 }
             }
         };
+        return build(Player.class, handler);
+    }
+
+    /**
+     * A class implementing {@code type}, with every method driven through {@code h}.
+     *
+     * <h2>Why not java.lang.reflect.Proxy</h2>
+     *
+     * <p>Proxy cannot implement {@link Player} on any 1.8 build. That era's Bukkit
+     * declares {@code getHealth()} twice with different return types, and Proxy rejects
+     * the interface outright: "methods with same signature but incompatible return
+     * types". No handler code changes that, because the restriction is inside Proxy.
+     *
+     * <p>It is a restriction of the Java language rather than the JVM. Two methods
+     * differing only in return type are illegal in source and perfectly legal in
+     * bytecode, which is why a generated class can do what Proxy will not. The same
+     * path is used on every version, so nothing here is special-cased for 1.8 and the
+     * generator is exercised everywhere rather than only where it is essential.
+     *
+     * <p>Loaded through WRAPPER, which defines the class in a child of the plugin's own
+     * loader. INJECTION would define it into that loader directly and needs reflective
+     * access newer JVMs refuse; this has to work from Java 8 through 25.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> T build(Class<T> type, InvocationHandler h) {
         try {
-            return (Player) Proxy.newProxyInstance(
-                    Fake.class.getClassLoader(), new Class<?>[]{Player.class}, handler);
-        } catch (IllegalArgumentException cannotProxy) {
-            // Some 1.8 server builds carry a Bukkit from the era when health moved from
-            // int to double, and declare getHealth() twice with different return types.
-            // java.lang.reflect.Proxy refuses to generate a class for that, and no
-            // amount of handler code changes it -- the restriction is in Proxy itself,
-            // and only bytecode generation could get past it.
-            //
-            // The published 1.8 API this compiles against has one getHealth(), so this
-            // is invisible until it runs on such a server. Reported plainly rather than
-            // thrown, so a version that cannot host a fake player says so instead of
-            // failing as an unhandled command.
+            final Class<? extends T> generated = new ByteBuddy()
+                    .subclass(type)
+                    .method(ElementMatchers.any())
+                    .intercept(InvocationHandlerAdapter.of(h))
+                    .make()
+                    .load(Fake.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
+                    .getLoaded();
+            return (T) generated.getDeclaredConstructor().newInstance();
+        } catch (Throwable cannotGenerate) {
+            // Reported rather than thrown. A server this cannot build a fake for is a
+            // limit of the harness, and the suite skips those cases with the reason
+            // instead of recording settings as broken.
             return null;
         }
     }
