@@ -31,15 +31,26 @@ public final class DriverPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        // Needed to build the metadata a vanish plugin attaches, which is the only way
+        // to exercise filters.respect_vanish without installing a real vanish plugin.
+        Fake.owner = this;
         getLogger().info("Acceptance driver ready.");
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("usage: /dldriver <join|quit|chat|teleport|gamemode> [args]");
+            sender.sendMessage("usage: /dldriver <join|quit|chat|teleport|gamemode|fake> [args]");
             return true;
         }
+
+        // Handled before anything else, because it changes what the fake player answers
+        // and must work whether or not one can be built on this server.
+        if (args[0].equalsIgnoreCase("fake")) {
+            configureFake(sender, Arrays.copyOfRange(args, 1, args.length));
+            return true;
+        }
+
         final World world = Fake.world();
         if (world == null) {
             sender.sendMessage("DRIVER-ERROR no world loaded");
@@ -116,6 +127,42 @@ public final class DriverPlugin extends JavaPlugin {
             getLogger().warning("DRIVER-ERROR " + what + ": " + t);
         }
         return true;
+    }
+
+    /**
+     * Changes what the fake player answers, for the filters that ask it something.
+     *
+     * <p>{@code fake nickname Nick}, {@code fake permission some.node},
+     * {@code fake vanished true}, {@code fake reset}. Kept here rather than in the
+     * suite because the fake lives inside the server, and a setting that only the
+     * server can see has to be set from the server.
+     */
+    private void configureFake(CommandSender sender, String[] args) {
+        if (args.length == 0 || args[0].equalsIgnoreCase("reset")) {
+            Fake.reset();
+            sender.sendMessage("DRIVER-OK fake reset");
+            getLogger().info("DRIVER-OK fake reset");
+            return;
+        }
+        final String what = args[0].toLowerCase(Locale.ROOT);
+        final String value = args.length > 1
+                ? String.join(" ", Arrays.copyOfRange(args, 1, args.length)) : "";
+        switch (what) {
+            case "nickname":
+                Fake.nickname = value.isEmpty() ? null : value;
+                break;
+            case "permission":
+                Fake.permission = value.isEmpty() ? null : value;
+                break;
+            case "vanished":
+                Fake.vanished = Boolean.parseBoolean(value);
+                break;
+            default:
+                sender.sendMessage("DRIVER-ERROR unknown fake setting " + what);
+                return;
+        }
+        sender.sendMessage("DRIVER-OK fake " + what + " " + value);
+        getLogger().info("DRIVER-OK fake " + what + " " + value);
     }
 
     /**

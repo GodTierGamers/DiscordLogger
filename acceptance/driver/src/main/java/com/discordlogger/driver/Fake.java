@@ -36,6 +36,34 @@ public final class Fake {
     public static final UUID UUID_ = UUID.fromString("00000000-0000-0000-0000-000000000001");
     public static final String NAME = "Player1";
 
+    /**
+     * Answers the fake gives that a test needs to change.
+     *
+     * <p>Three settings cannot be reached with a player who always answers the same
+     * way. filters.exempt_permission needs a player who holds a permission,
+     * filters.respect_vanish needs one a vanish plugin is hiding, and format.nicknames
+     * needs a display name that differs from the real one. A fixed fake answers no,
+     * no and "same as the name", which makes all three look like they are working when
+     * nothing has been tested.
+     *
+     * <p>Volatile because the console thread sets them and the server thread reads
+     * them, and the handler reads them per call rather than capturing them, so a change
+     * applies to the fake that already exists.
+     */
+    public static volatile String nickname = null;
+    public static volatile String permission = null;
+    public static volatile boolean vanished = false;
+
+    /** Set once by the driver, for building the metadata a vanish plugin would attach. */
+    public static volatile org.bukkit.plugin.Plugin owner = null;
+
+    /** Puts every answer back to a plain, unremarkable player. */
+    public static void reset() {
+        nickname = null;
+        permission = null;
+        vanished = false;
+    }
+
     private Fake() {}
 
     /** A Player that answers what DiscordLogger asks, and null to everything else. */
@@ -50,16 +78,23 @@ public final class Fake {
                     case "getCustomName":
                         return NAME;
                     case "getDisplayName":
-                        return NAME;
+                        return nickname != null ? nickname : NAME;
                     case "getUniqueId":       return UUID_;
                     case "getWorld":          return world;
                     case "getLocation":       return where;
                     case "getKiller":         return null;
                     case "isOp":              return Boolean.FALSE;
-                    case "hasPermission":     return Boolean.FALSE;
-                    case "isPermissionSet":   return Boolean.FALSE;
-                    case "hasMetadata":       return Boolean.FALSE;
-                    case "getMetadata":       return Collections.emptyList();
+                    case "hasPermission":
+                    case "isPermissionSet":
+                        return Boolean.valueOf(holds(args));
+                    case "hasMetadata":
+                        return Boolean.valueOf(vanished && isVanishKey(args));
+                    case "getMetadata":
+                        return (vanished && isVanishKey(args) && owner != null)
+                                ? Collections.singletonList(
+                                        new org.bukkit.metadata.FixedMetadataValue(
+                                                owner, Boolean.TRUE))
+                                : Collections.emptyList();
                     case "isOnline":          return Boolean.TRUE;
                     case "getGameMode":       return org.bukkit.GameMode.SURVIVAL;
                     case "getType":           return org.bukkit.entity.EntityType.PLAYER;
@@ -72,6 +107,22 @@ public final class Fake {
             }
         };
         return build(Player.class, handler);
+    }
+
+    /** Whether the node being asked about is the one this fake was told to hold. */
+    private static boolean holds(Object[] args) {
+        if (permission == null || args == null || args.length == 0 || args[0] == null) {
+            return false;
+        }
+        // Bukkit asks by String on some paths and by Permission on others.
+        final String asked = (args[0] instanceof org.bukkit.permissions.Permission)
+                ? ((org.bukkit.permissions.Permission) args[0]).getName()
+                : args[0].toString();
+        return permission.equalsIgnoreCase(asked);
+    }
+
+    private static boolean isVanishKey(Object[] args) {
+        return args != null && args.length > 0 && "vanished".equals(args[0]);
     }
 
     /**

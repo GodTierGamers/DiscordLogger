@@ -239,6 +239,15 @@ final class MinecraftServer implements AutoCloseable {
 
     List<String> log() { return Collections.unmodifiableList(new ArrayList<>(log)); }
 
+    /**
+     * The server's own directory, for reading the files it keeps its state in.
+     *
+     * <p>Used to ask the server whether a moderation command actually did anything.
+     * Parsing that out of console output means matching wording that changed several
+     * times between 1.8 and today; banned-players.json has looked the same throughout.
+     */
+    Path dir() { return dir; }
+
     String tail(int lines) {
         final List<String> all = new ArrayList<>(log);
         final List<String> last = all.subList(Math.max(0, all.size() - lines), all.size());
