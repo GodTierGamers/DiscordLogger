@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "How to Set Up Minecraft Discord Logging"
-description: Step-by-step guide to installing DiscordLogger on a Paper server, creating a Discord webhook, and checking that events are reaching your channel.
+description: Step-by-step guide to installing DiscordLogger on a Bukkit, Spigot or Paper server, creating a Discord webhook, and checking that events are reaching your channel.
 ---
 
 # Setup
@@ -22,8 +22,9 @@ Discord channel you can create a webhook in.
 | Discord | A channel where you have **Manage Webhooks** |
 | Minecraft | Operator, or console access |
 
-Spigot and CraftBukkit will not work. The plugin uses Paper's chat API, and on a
-server without it you get a plain explanation on startup rather than a stack trace.
+Bukkit, Spigot, Paper and forks all work, from the same JAR — there is no
+platform to pick. Releases before 2.4.0 needed Paper for its chat API; this one
+does not.
 
 ---
 
