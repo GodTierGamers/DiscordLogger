@@ -492,3 +492,141 @@ run_at,run_id,plugin_version,mc_version,category,key,verdict,detail
 2026-09-01T06:35:43.693859508Z,33477071838,2.3.1,26.2,log.player.*,log.player.teleport.webhook,PASS,routed to its own webhook
 2026-09-01T06:35:43.693872721Z,33477071838,2.3.1,26.2,log.player.*,log.player.death.webhook,PASS,routed to its own webhook
 2026-09-01T06:35:43.693886097Z,33477071838,2.3.1,26.2,log.player.*,log.player.advancement.webhook,PASS,routed to its own webhook
+2026-09-01T06:48:50.676072511Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,log.custom,PASS,no wording to compare
+2026-09-01T06:48:50.676267044Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,no wording to compare
+2026-09-01T06:48:50.676288654Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,left the location out when switched off
+2026-09-01T06:48:50.676335762Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,embeds.author,PASS,no wording to compare
+2026-09-01T06:48:50.676357493Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,embeds.enabled,PASS,no wording to compare
+2026-09-01T06:48:50.676396095Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,embeds.enabled,PASS,switched to plain text
+2026-09-01T06:48:50.676411373Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.exempt_permission,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676425790Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,format.name,PASS,no wording to compare
+2026-09-01T06:48:50.676439415Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,format.nicknames,PASS,no wording to compare
+2026-09-01T06:48:50.676452600Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,format.nicknames,PASS,used the real name when switched off
+2026-09-01T06:48:50.676466827Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,format.placeholders,POTENTIAL_ERROR,a placeholder typed in chat did not survive as written; expansion of player-supplied text would be a leak
+2026-09-01T06:48:50.676480813Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,format.time,PASS,no wording to compare
+2026-09-01T06:48:50.676494629Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.ignored_advancements,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676515297Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.ignored_chat_containing,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676528963Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.ignored_commands,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676542227Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.ignored_death_causes,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676555422Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.ignored_explosion_sources,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676568817Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.ignored_players,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676594164Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.ignored_teleport_causes,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676619241Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.ignored_worlds,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676632827Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,logged a Java join cleanly; the Bedrock flag itself needs Floodgate and is not driveable here
+2026-09-01T06:48:50.676646732Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.log_recipe_advancements,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676659686Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.minimum_chat_length,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676672621Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.minimum_explosion_blocks,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676685344Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.minimum_teleport_distance,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676698359Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.only_log_commands,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676710612Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,filters.respect_vanish,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:50.676722604Z,33478738254,2.3.1,1.12.2,filters.* + format.* + embeds.*,webhook.url,PASS,every event followed the main webhook when it changed
+2026-09-01T06:48:56.206548193Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,log.custom,PASS,no wording to compare
+2026-09-01T06:48:56.206752106Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,no wording to compare
+2026-09-01T06:48:56.206772606Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,left the location out when switched off
+2026-09-01T06:48:56.206788600Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,embeds.author,PASS,no wording to compare
+2026-09-01T06:48:56.206803041Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,embeds.enabled,PASS,no wording to compare
+2026-09-01T06:48:56.206836711Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,embeds.enabled,PASS,switched to plain text
+2026-09-01T06:48:56.206853656Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.exempt_permission,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.206869460Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,format.name,PASS,no wording to compare
+2026-09-01T06:48:56.206886014Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,format.nicknames,PASS,no wording to compare
+2026-09-01T06:48:56.206902549Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,format.nicknames,PASS,used the real name when switched off
+2026-09-01T06:48:56.206919534Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,format.placeholders,POTENTIAL_ERROR,a placeholder typed in chat did not survive as written; expansion of player-supplied text would be a leak
+2026-09-01T06:48:56.206935768Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,format.time,PASS,no wording to compare
+2026-09-01T06:48:56.206952222Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.ignored_advancements,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.206978732Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.ignored_chat_containing,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.206995567Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.ignored_commands,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207011610Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.ignored_death_causes,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207028345Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.ignored_explosion_sources,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207064739Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.ignored_players,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207080603Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.ignored_teleport_causes,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207126150Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.ignored_worlds,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207142394Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,logged a Java join cleanly; the Bedrock flag itself needs Floodgate and is not driveable here
+2026-09-01T06:48:56.207159289Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.log_recipe_advancements,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207174762Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.minimum_chat_length,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207190576Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.minimum_explosion_blocks,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207205888Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.minimum_teleport_distance,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207220099Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.only_log_commands,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207238437Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,filters.respect_vanish,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:56.207253138Z,33478738254,2.3.1,1.16.5,filters.* + format.* + embeds.*,webhook.url,PASS,every event followed the main webhook when it changed
+2026-09-01T06:48:29.820769710Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,log.custom,PASS,no wording to compare
+2026-09-01T06:48:29.820959915Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,no wording to compare
+2026-09-01T06:48:29.820974824Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,left the location out when switched off
+2026-09-01T06:48:29.821001017Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,embeds.author,PASS,no wording to compare
+2026-09-01T06:48:29.821011603Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,embeds.enabled,PASS,no wording to compare
+2026-09-01T06:48:29.821020501Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,embeds.enabled,PASS,switched to plain text
+2026-09-01T06:48:29.821028786Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.exempt_permission,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821036577Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,format.name,PASS,no wording to compare
+2026-09-01T06:48:29.821044205Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,format.nicknames,PASS,no wording to compare
+2026-09-01T06:48:29.821051591Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,format.nicknames,PASS,used the real name when switched off
+2026-09-01T06:48:29.821059289Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,format.placeholders,POTENTIAL_ERROR,a placeholder typed in chat did not survive as written; expansion of player-supplied text would be a leak
+2026-09-01T06:48:29.821067434Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,format.time,PASS,no wording to compare
+2026-09-01T06:48:29.821074997Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.ignored_advancements,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821082392Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.ignored_chat_containing,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821089780Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.ignored_commands,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821097488Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.ignored_death_causes,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821112411Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.ignored_explosion_sources,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821120336Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.ignored_players,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821127907Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.ignored_teleport_causes,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821135208Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.ignored_worlds,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821142662Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,logged a Java join cleanly; the Bedrock flag itself needs Floodgate and is not driveable here
+2026-09-01T06:48:29.821151013Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.minimum_chat_length,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821164313Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.minimum_explosion_blocks,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821171954Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.minimum_teleport_distance,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821179398Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.only_log_commands,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821186785Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,filters.respect_vanish,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:29.821193937Z,33478738254,2.3.1,1.8,filters.* + format.* + embeds.*,webhook.url,PASS,every event followed the main webhook when it changed
+2026-09-01T06:48:32.223073694Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,log.custom,PASS,no wording to compare
+2026-09-01T06:48:32.223349269Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,no wording to compare
+2026-09-01T06:48:32.223377673Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,left the location out when switched off
+2026-09-01T06:48:32.223419511Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,embeds.author,PASS,no wording to compare
+2026-09-01T06:48:32.223440029Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,embeds.enabled,PASS,no wording to compare
+2026-09-01T06:48:32.223459586Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,embeds.enabled,PASS,switched to plain text
+2026-09-01T06:48:32.223479212Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.exempt_permission,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223497777Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,format.name,PASS,no wording to compare
+2026-09-01T06:48:32.223516692Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,format.nicknames,PASS,no wording to compare
+2026-09-01T06:48:32.223535968Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,format.nicknames,PASS,used the real name when switched off
+2026-09-01T06:48:32.223561846Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,format.placeholders,POTENTIAL_ERROR,a placeholder typed in chat did not survive as written; expansion of player-supplied text would be a leak
+2026-09-01T06:48:32.223584248Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,format.time,PASS,no wording to compare
+2026-09-01T06:48:32.223624313Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.ignored_advancements,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223655922Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.ignored_chat_containing,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223676110Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.ignored_commands,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223695086Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.ignored_death_causes,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223713750Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.ignored_explosion_sources,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223733527Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.ignored_players,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223752122Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.ignored_teleport_causes,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223780726Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.ignored_worlds,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223799881Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,logged a Java join cleanly; the Bedrock flag itself needs Floodgate and is not driveable here
+2026-09-01T06:48:32.223819408Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.minimum_chat_length,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223842541Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.minimum_explosion_blocks,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223860705Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.minimum_teleport_distance,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223879771Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.only_log_commands,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223898495Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,filters.respect_vanish,PASS,suppressed the event it was set to suppress
+2026-09-01T06:48:32.223917100Z,33478738254,2.3.1,1.8.8,filters.* + format.* + embeds.*,webhook.url,PASS,every event followed the main webhook when it changed
+2026-09-01T06:49:00.045369693Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,log.custom,PASS,no wording to compare
+2026-09-01T06:49:00.045529604Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,no wording to compare
+2026-09-01T06:49:00.045543723Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,left the location out when switched off
+2026-09-01T06:49:00.045554294Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,embeds.author,PASS,no wording to compare
+2026-09-01T06:49:00.045563345Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,embeds.enabled,PASS,no wording to compare
+2026-09-01T06:49:00.045590018Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,embeds.enabled,PASS,switched to plain text
+2026-09-01T06:49:00.045612008Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.exempt_permission,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045619691Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,format.name,PASS,no wording to compare
+2026-09-01T06:49:00.045627523Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,format.nicknames,PASS,no wording to compare
+2026-09-01T06:49:00.045634870Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,format.nicknames,PASS,used the real name when switched off
+2026-09-01T06:49:00.045642923Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,format.placeholders,POTENTIAL_ERROR,a placeholder typed in chat did not survive as written; expansion of player-supplied text would be a leak
+2026-09-01T06:49:00.045651164Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,format.time,PASS,no wording to compare
+2026-09-01T06:49:00.045658663Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.ignored_advancements,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045675686Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.ignored_chat_containing,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045693594Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.ignored_commands,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045701123Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.ignored_death_causes,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045708365Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.ignored_explosion_sources,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045728504Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.ignored_players,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045736951Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.ignored_teleport_causes,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045768309Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.ignored_worlds,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045776487Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,logged a Java join cleanly; the Bedrock flag itself needs Floodgate and is not driveable here
+2026-09-01T06:49:00.045787942Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.log_recipe_advancements,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045795597Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.minimum_chat_length,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045801960Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.minimum_explosion_blocks,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045808161Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.minimum_teleport_distance,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045814408Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.only_log_commands,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045820234Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,filters.respect_vanish,PASS,suppressed the event it was set to suppress
+2026-09-01T06:49:00.045826037Z,33478738254,2.3.1,26.2,filters.* + format.* + embeds.*,webhook.url,PASS,every event followed the main webhook when it changed
