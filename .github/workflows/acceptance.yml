@@ -147,3 +147,115 @@ jobs:
           echo "::group::surefire reports"
           find acceptance/target/surefire-reports -name "*.txt" -exec tail -60 {} + || true
           echo "::endgroup::"
+
+  # ----------------------------------------------------------------------------------
+  # One place to read what the whole sweep found, and a history of what it used to find
+  # ----------------------------------------------------------------------------------
+  report:
+    name: report
+    needs: sweep
+    # Runs even when a version went red. A run where the 1.8 floor broke is exactly
+    # the run worth recording; skipping the report on failure would keep the history
+    # clean by throwing away every interesting entry in it.
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out the scripts
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
+      - name: Collect every version's results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: acceptance-*
+          path: artifacts
+
+      - name: Read the plugin version
+        id: ver
+        run: |
+          echo "value=$(grep -m1 -oE '<version>[^<]+' pom.xml | head -1 | sed 's/<version>//')" >> "$GITHUB_OUTPUT"
+
+      # Same store, same reasoning as poll-metrics.yml: branch protection rejects a
+      # direct push to main, so a workflow that wrote there would fail every run.
+      - name: Fetch the store, or start it
+        run: |
+          set -euo pipefail
+          REMOTE="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$REMOTE" "$BRANCH" >/dev/null 2>&1; then
+            git clone --quiet --depth 1 --branch "$BRANCH" "$REMOTE" store
+          else
+            echo "No $BRANCH yet — starting one."
+            mkdir store
+            git -C store init --quiet
+            git -C store checkout --quiet -b "$BRANCH"
+            git -C store remote add origin "$REMOTE"
+            cp .github/metrics-store.md store/README.md
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: metrics-data
+
+      - name: Append this run
+        run: |
+          python3 scripts/collect-acceptance.py \
+            --artifacts artifacts \
+            --store store \
+            --run-id "${{ github.run_id }}" \
+            --plugin-version "${{ steps.ver.outputs.value }}"
+
+      - name: Refresh the store's README
+        run: cp .github/metrics-store.md store/README.md
+
+      - name: Commit the results
+        run: |
+          set -euo pipefail
+          cd store
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git commit --quiet -m "chore(acceptance): results for run ${{ github.run_id }}"
+          git push --quiet origin metrics-data
+          echo "Pushed to metrics-data."
+        env:
+          BRANCH: metrics-data
+
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import csv, pathlib, collections
+          rows = []
+          for f in sorted(pathlib.Path("artifacts").rglob("results.csv")):
+              with f.open(newline="", encoding="utf-8") as fh:
+                  rows += [r for r in csv.DictReader(fh) if r.get("key")]
+          if not rows:
+              print("No results were produced.")
+              raise SystemExit
+          versions = sorted({r["version"] for r in rows})
+          order = ["PASS", "PROBABLY_FINE", "POTENTIAL_ERROR", "WRONG"]
+          print("## Acceptance\n")
+          print("| Version | " + " | ".join(order) + " | total |")
+          print("|---|" + "---|" * (len(order) + 1))
+          for v in versions:
+              mine = [r for r in rows if r["version"] == v]
+              tally = collections.Counter(r["verdict"] for r in mine)
+              print(f"| {v} | " + " | ".join(str(tally.get(o, 0)) for o in order)
+                    + f" | {len(mine)} |")
+          bad = [r for r in rows if r["verdict"] in ("WRONG", "POTENTIAL_ERROR")]
+          if bad:
+              print("\n### Needing a look\n")
+              for r in sorted(bad, key=lambda r: (r["verdict"], r["key"]))[:60]:
+                  detail = " ".join(r["detail"].split())[:160]
+                  print(f"- `{r['version']}` **{r['verdict']}** `{r['key']}` — {detail}")
+          EOF

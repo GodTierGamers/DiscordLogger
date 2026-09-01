@@ -181,7 +181,21 @@ final class MinecraftServer implements AutoCloseable {
      * @param path  dotted key, e.g. {@code log.player.chat.enabled}
      */
     void editConfig(String path, String value) throws IOException {
-        final Path file = pluginDir().resolve("config.yml");
+        edit(pluginDir().resolve("config.yml"), path, value);
+    }
+
+    /**
+     * Changes one line in the plugin's own lang.yml, as an admin translating it.
+     *
+     * <p>Same edit as config.yml and deliberately so: lang.yml is a file admins are
+     * expected to rewrite, and the only honest way to know every line still reaches
+     * Discord is to rewrite each one and look.
+     */
+    void editLang(String path, String value) throws IOException {
+        edit(pluginDir().resolve("lang.yml"), path, value);
+    }
+
+    private void edit(Path file, String path, String value) throws IOException {
         final List<String> lines = new ArrayList<>(Files.readAllLines(file));
         final String[] parts = path.split("\\.");
         int depth = 0;
@@ -218,7 +232,8 @@ final class MinecraftServer implements AutoCloseable {
             }
             depth++;
         }
-        throw new IOException("no key '" + path + "' in the shipped config.yml");
+        throw new IOException("no key '" + path + "' in the shipped "
+                + file.getFileName());
     }
 
     /** Fails at the edit rather than letting a broken config surface as silence. */
@@ -226,8 +241,9 @@ final class MinecraftServer implements AutoCloseable {
         try (java.io.InputStream in = Files.newInputStream(file)) {
             new org.yaml.snakeyaml.Yaml().load(in);
         } catch (Exception malformed) {
-            throw new IOException("editing '" + justChanged + "' left config.yml unparseable: "
-                    + malformed.getMessage(), malformed);
+            throw new IOException("editing '" + justChanged + "' left "
+                    + file.getFileName() + " unparseable: " + malformed.getMessage(),
+                    malformed);
         }
     }
 

@@ -287,10 +287,16 @@ class FilterAndFormatSweepTest {
         requireFake();
         // Only read for plain text, which the comment above the key says outright.
         // Testing it with embeds on would assert nothing and pass forever.
-        apply("embeds.enabled", "false", "format.time", "\"[yyyy]\"");
+        //
+        // The pattern carries a quoted literal rather than brackets. The value is fed
+        // to DateTimeFormatter.ofPattern, where [ and ] delimit an optional section and
+        // are not printed -- so "[yyyy]" formats as "2026", and asserting on "[2026]"
+        // failed against a setting that was working. Worth knowing beyond this test:
+        // the brackets in the shipped default never reach Discord either.
+        apply("embeds.enabled", "false", "format.time", "\"'DLTIME'yyyy\"");
         final String captured = fireAndCapture("dldriver join", JOINED, 30);
         RESULTS.add(Grader.grade(new Grader.Expectation("format.time", true, null)
-                .requiring("[" + Year.now().getValue() + "]"),
+                .requiring("DLTIME" + Year.now().getValue()),
                 captured, Sweeps.errorsSince(server), Sweeps.serverContext(server)));
         apply("format.time", "\"[HH:mm:ss, dd:MM:yyyy]\"", "embeds.enabled", "true");
     }

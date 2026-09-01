@@ -32,8 +32,18 @@ import java.util.UUID;
  */
 public final class Fake {
 
-    /** Deliberately not a real account. mc-heads answers unknown ids with Steve. */
-    public static final UUID UUID_ = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    /**
+     * Deliberately not a real account. mc-heads answers unknown ids with Steve.
+     *
+     * <p>Not all zeros, which the obvious choice would be. Floodgate issues Bedrock
+     * players UUIDs whose most significant bits are zero, and DiscordLogger reads that
+     * shape as Bedrock when Floodgate is absent -- correctly, since it is Floodgate's
+     * own format. A fake numbered 0000...0001 therefore arrived at Discord labelled
+     * "Platform: Bedrock" on every single join, which is right for that UUID and wrong
+     * for what the fake is meant to represent. The suite would have gone on asserting
+     * that a Java player is not mislabelled while driving it with a Bedrock id.
+     */
+    public static final UUID UUID_ = UUID.fromString("00acce55-0000-4000-8000-000000000001");
     public static final String NAME = "Player1";
 
     /**
@@ -62,13 +72,38 @@ public final class Fake {
         nickname = null;
         permission = null;
         vanished = false;
+        killer = null;
     }
 
     private Fake() {}
 
+    /** The player named as the killer, when a case wants a death with one. */
+    public static volatile String killer = null;
+
     /** A Player that answers what DiscordLogger asks, and null to everything else. */
     public static Player player(final World world) {
+        return player(world, NAME, UUID_);
+    }
+
+    /**
+     * A Player that answers what DiscordLogger asks, and null to everything else.
+     *
+     * <p>Takes a name so a second one can be built to act as a killer, which the
+     * slain-by-player wording needs and no single fake can provide for itself.
+     */
+    public static Player player(final World world, final String who, final UUID id) {
         final Location where = new Location(world, -252, 66, 252);
+
+        // The victim's own damage, remembered.
+        //
+        // A real death carries its cause on the victim, and DiscordLogger reads it back
+        // off them -- getLastDamageCause is the whole of how it tells a fall from a
+        // drowning. A fake that accepted the setter and dropped the value answered null
+        // to every read, so every one of the thirty causes came out as the "Died"
+        // fallback and the thirty lang lines under discord.death.causes were never once
+        // exercised. The suite fired all thirty and tested one.
+        final Object[] lastDamage = new Object[1];
+        final Object inventory = inventory();
 
         final InvocationHandler handler = new InvocationHandler() {
             @Override public Object invoke(Object proxy, Method m, Object[] args) {
@@ -76,13 +111,25 @@ public final class Fake {
                 switch (name) {
                     case "getName":
                     case "getCustomName":
-                        return NAME;
+                        return who;
                     case "getDisplayName":
-                        return nickname != null ? nickname : NAME;
-                    case "getUniqueId":       return UUID_;
+                        return (nickname != null && who.equals(NAME)) ? nickname : who;
+                    case "getUniqueId":       return id;
                     case "getWorld":          return world;
                     case "getLocation":       return where;
-                    case "getKiller":         return null;
+                    case "setLastDamageCause":
+                        lastDamage[0] = (args == null || args.length == 0) ? null : args[0];
+                        return null;
+                    case "getLastDamageCause":
+                        return lastDamage[0];
+                    case "getInventory":      return inventory;
+                    case "getKiller":
+                        // Only the victim has a killer; the killer does not have one of
+                        // their own, which would recurse forever.
+                        return (killer != null && who.equals(NAME))
+                                ? player(world, killer,
+                                        UUID.nameUUIDFromBytes(("k-" + killer).getBytes()))
+                                : null;
                     case "isOp":              return Boolean.FALSE;
                     case "hasPermission":
                     case "isPermissionSet":
@@ -98,8 +145,8 @@ public final class Fake {
                     case "isOnline":          return Boolean.TRUE;
                     case "getGameMode":       return org.bukkit.GameMode.SURVIVAL;
                     case "getType":           return org.bukkit.entity.EntityType.PLAYER;
-                    case "toString":          return "FakePlayer(" + NAME + ")";
-                    case "hashCode":          return UUID_.hashCode();
+                    case "toString":          return "FakePlayer(" + who + ")";
+                    case "hashCode":          return id.hashCode();
                     case "equals":            return proxy == (args == null ? null : args[0]);
                     default:
                         return defaultFor(m.getReturnType());
@@ -107,6 +154,30 @@ public final class Fake {
             }
         };
         return build(Player.class, handler);
+    }
+
+    /**
+     * An inventory holding a weapon, because the killer's is read without a null check.
+     *
+     * <p>DiscordLogger names the weapon a killer was holding, reaching it through
+     * getInventory().getItemInHand(). A fake answering null to getInventory takes the
+     * plugin down with a NullPointerException before it can write the message, which
+     * would look exactly like a bug in the plugin.
+     */
+    private static Object inventory() {
+        final org.bukkit.inventory.ItemStack weapon =
+                new org.bukkit.inventory.ItemStack(org.bukkit.Material.DIAMOND_SWORD);
+        return build(org.bukkit.inventory.PlayerInventory.class, new InvocationHandler() {
+            @Override public Object invoke(Object proxy, Method m, Object[] args) {
+                switch (m.getName()) {
+                    case "getItemInHand":
+                    case "getItemInMainHand":
+                        return weapon;
+                    case "toString": return "FakeInventory";
+                    default:         return defaultFor(m.getReturnType());
+                }
+            }
+        });
     }
 
     /** Whether the node being asked about is the one this fake was told to hold. */
@@ -146,7 +217,7 @@ public final class Fake {
      * access newer JVMs refuse; this has to work from Java 8 through 25.
      */
     @SuppressWarnings("unchecked")
-    private static <T> T build(Class<T> type, InvocationHandler h) {
+    static <T> T build(Class<T> type, InvocationHandler h) {
         try {
             final Class<? extends T> generated = new ByteBuddy()
                     .subclass(type)

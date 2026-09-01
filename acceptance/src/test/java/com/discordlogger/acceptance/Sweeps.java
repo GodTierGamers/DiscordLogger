@@ -187,26 +187,65 @@ final class Sweeps {
         Files.writeString(dir.resolve("results.csv"), csv.toString(), StandardCharsets.UTF_8,
                 java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
 
-        // Pictures of a handful, chosen at random so successive runs show different ones
-        // rather than the same five forever.
-        final List<Grader.Result> withPayload = new ArrayList<>();
-        for (Grader.Result r : results) if (r.payload != null) withPayload.add(r);
-        java.util.Collections.shuffle(withPayload, SAMPLE);
-        int taken = 0;
-        for (Grader.Result r : withPayload) {
-            if (taken >= SCREENSHOTS_PER_VERSION) break;
-            final Path png = dir.resolve("sample-" + r.key.replace('.', '_') + ".png");
-            if (Files.exists(png)) continue;
+        for (Grader.Result r : results) {
+            if (r.payload != null) keepPayload(dir, r);
+        }
+        renderSample(dir);
+
+        System.out.printf("%n  %s on %s: %s%n", category, version(), tally);
+        System.out.printf("  results -> %s%n", dir.resolve("results.csv"));
+    }
+
+    /** Every payload this version produced, kept so the sample can be drawn from all of it. */
+    private static void keepPayload(Path dir, Grader.Result r) throws IOException {
+        final Path store = dir.resolve("payloads");
+        Files.createDirectories(store);
+        Files.writeString(store.resolve(r.key.replace('.', '_') + "__" + r.verdict + ".json"),
+                r.payload, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Draws the version's screenshots, five at random from everything it exercised.
+     *
+     * <p>Re-chosen from scratch each time rather than topped up. Four sweep classes
+     * report separately, and a budget spent first-come-first-served would hand all five
+     * to whichever ran first -- so every version would illustrate the same category and
+     * nothing else, which is not a sample of anything.
+     *
+     * <p>Drawing from the payloads on disk means the last class to report leaves a
+     * genuine random five across the whole run, whatever order the classes ran in.
+     */
+    private static void renderSample(Path dir) throws IOException {
+        final Path store = dir.resolve("payloads");
+        if (!Files.isDirectory(store)) return;
+
+        final List<Path> all = new ArrayList<>();
+        try (var files = Files.list(store)) {
+            files.filter(p -> p.getFileName().toString().endsWith(".json")).forEach(all::add);
+        }
+        java.util.Collections.shuffle(all, SAMPLE);
+        final List<Path> chosen = all.subList(0, Math.min(SCREENSHOTS_PER_VERSION, all.size()));
+
+        // Anything drawn for a previous selection is no longer part of the sample.
+        try (var stale = Files.list(dir)) {
+            for (Path p : stale.toList()) {
+                if (p.getFileName().toString().startsWith("sample-")) Files.deleteIfExists(p);
+            }
+        }
+
+        for (Path payload : chosen) {
+            final String name = payload.getFileName().toString()
+                    .replace(".json", "");
+            final String key = name.contains("__") ? name.substring(0, name.indexOf("__")) : name;
+            final String verdict = name.contains("__")
+                    ? name.substring(name.indexOf("__") + 2) : "";
             try {
-                EmbedImage.render(r.payload, png,
-                        r.key + " = as shipped   [" + version() + "]   " + r.verdict);
-                taken++;
+                EmbedImage.render(Files.readString(payload, StandardCharsets.UTF_8),
+                        dir.resolve("sample-" + key + ".png"),
+                        key.replace('_', '.') + "   [" + version() + "]   " + verdict);
             } catch (Exception notRenderable) {
                 // A payload that will not draw is not a reason to fail a sweep.
             }
         }
-
-        System.out.printf("%n  %s on %s: %s%n", category, version(), tally);
-        System.out.printf("  results -> %s%n", dir.resolve("results.csv"));
     }
 }

@@ -40,7 +40,7 @@ public final class DriverPlugin extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("usage: /dldriver <join|quit|chat|teleport|gamemode|fake> [args]");
+            sender.sendMessage("usage: /dldriver <join|quit|chat|command|teleport|gamemode|death|explosion|advancement|fake> [args]");
             return true;
         }
 
@@ -101,13 +101,19 @@ public final class DriverPlugin extends JavaPlugin {
                 case "death":
                     // Every cause the server actually has, so the sweep covers what this
                     // version can produce rather than what a newer one could.
-                    fireDeaths(sender, player, rest);
+                    fireDeaths(sender, player, world, rest);
                     break;
                 case "explosion":
                     fireExplosions(sender, player, world, rest);
                     break;
                 case "advancement":
                     fireAdvancements(sender, player, rest);
+                    break;
+                case "command":
+                    // A command run by a player, which is a different event and a
+                    // different lang line from one run on the console.
+                    fire("org.bukkit.event.player.PlayerCommandPreprocessEvent",
+                            new Object[]{player, rest.isEmpty() ? "/acceptance" : rest});
                     break;
                 case "teleport":
                     fire("org.bukkit.event.player.PlayerTeleportEvent",
@@ -157,6 +163,9 @@ public final class DriverPlugin extends JavaPlugin {
             case "vanished":
                 Fake.vanished = Boolean.parseBoolean(value);
                 break;
+            case "killer":
+                Fake.killer = value.isEmpty() ? null : value;
+                break;
             default:
                 sender.sendMessage("DRIVER-ERROR unknown fake setting " + what);
                 return;
@@ -173,22 +182,66 @@ public final class DriverPlugin extends JavaPlugin {
      * without editing this. Naming them here would make the driver a second place to
      * keep in step with Minecraft.
      */
-    private void fireDeaths(CommandSender sender, Player player, String only) throws Exception {
+    private void fireDeaths(CommandSender sender, Player player, World world, String args)
+            throws Exception {
+        // "death VOID" is a cause; "death ENTITY_ATTACK by-mob" adds who did it.
+        final String[] parts = args.trim().isEmpty() ? new String[0] : args.trim().split("\\s+");
+        final String only = parts.length > 0 ? parts[0] : "";
+        final String by = parts.length > 1 ? parts[1].toLowerCase(Locale.ROOT) : "";
+
         int fired = 0;
         for (org.bukkit.event.entity.EntityDamageEvent.DamageCause cause
                 : org.bukkit.event.entity.EntityDamageEvent.DamageCause.values()) {
             if (!only.isEmpty() && !only.equalsIgnoreCase(cause.name())) continue;
             // The listener reads the cause off the victim's last damage, which is how a
             // real death carries it, so it is set the same way here.
-            final org.bukkit.event.entity.EntityDamageEvent damage =
-                    new org.bukkit.event.entity.EntityDamageEvent(player, cause, 100.0);
-            player.setLastDamageCause(damage);
+            player.setLastDamageCause(damageFor(player, world, cause, by));
             fireBestEffort("org.bukkit.event.entity.PlayerDeathEvent",
                     player, Fake.NAME + " died");
             fired++;
             pause();
         }
         sender.sendMessage("DRIVER-COUNT death " + fired);
+        getLogger().info("DRIVER-COUNT death " + fired);
+    }
+
+    /**
+     * The damage a death carries, in whichever of its shapes the case asked for.
+     *
+     * <p>DiscordLogger describes a death from what damaged the player, and the four
+     * wordings it can choose between are reached through four different damage events
+     * rather than four different causes. A plain EntityDamageEvent can only ever
+     * produce the cause text.
+     *
+     * <p>"none" leaves the victim with no damage at all, which is the only way to reach
+     * the "Died" fallback deliberately rather than by accident.
+     */
+    private org.bukkit.event.entity.EntityDamageEvent damageFor(
+            Player player, World world,
+            org.bukkit.event.entity.EntityDamageEvent.DamageCause cause, String by) {
+        switch (by) {
+            case "none":
+                return null;
+            case "by-mob":
+                return new org.bukkit.event.entity.EntityDamageByEntityEvent(
+                        FakeEntity.of(org.bukkit.entity.EntityType.valueOf("ZOMBIE"), world),
+                        player, cause, 100.0);
+            case "shot-by-player":
+                return new org.bukkit.event.entity.EntityDamageByEntityEvent(
+                        FakeEntity.projectile(world, Fake.player(world, "Archer",
+                                java.util.UUID.nameUUIDFromBytes("archer".getBytes()))),
+                        player, cause, 100.0);
+            case "shot-by-mob":
+                return new org.bukkit.event.entity.EntityDamageByEntityEvent(
+                        FakeEntity.projectile(world, FakeEntity.of(
+                                org.bukkit.entity.EntityType.valueOf("SKELETON"), world)),
+                        player, cause, 100.0);
+            case "shot":
+                return new org.bukkit.event.entity.EntityDamageByEntityEvent(
+                        FakeEntity.projectile(world, null), player, cause, 100.0);
+            default:
+                return new org.bukkit.event.entity.EntityDamageEvent(player, cause, 100.0);
+        }
     }
 
     /**
@@ -205,9 +258,9 @@ public final class DriverPlugin extends JavaPlugin {
             if (!only.isEmpty() && !only.equalsIgnoreCase(type.name())) continue;
             final org.bukkit.entity.Entity source = FakeEntity.of(type, world);
             if (source == null) continue;
-            fire("org.bukkit.event.entity.EntityExplodeEvent",
-                    new Object[]{source, player.getLocation(),
-                            new java.util.ArrayList<org.bukkit.block.Block>(), 0.0f});
+            fireAdapting("org.bukkit.event.entity.EntityExplodeEvent",
+                    source, player.getLocation(),
+                    new java.util.ArrayList<org.bukkit.block.Block>(), 0.0f);
             fired++;
             pause();
         }
@@ -224,6 +277,16 @@ public final class DriverPlugin extends JavaPlugin {
      * One advancement per advancement the server declares, or one per achievement on
      * versions old enough to have those instead.
      */
+    /**
+     * At most this many per command, whatever the filter matches.
+     *
+     * <p>"recipes/" matches roughly a thousand advancements on a modern server. Firing
+     * them all took the server past its heap and killed it mid-sweep, which surfaced as
+     * seven unrelated cases failing with a closed stream -- the console had gone, so
+     * everything after it looked like the plugin had stopped responding.
+     */
+    private static final int MAX_ADVANCEMENTS = 12;
+
     private void fireAdvancements(CommandSender sender, Player player, String only)
             throws Exception {
         int fired = 0;
@@ -234,6 +297,7 @@ public final class DriverPlugin extends JavaPlugin {
                 final Object advancement = it.next();
                 final Object key = advancement.getClass().getMethod("getKey").invoke(advancement);
                 if (!only.isEmpty() && !String.valueOf(key).contains(only)) continue;
+                if (fired >= MAX_ADVANCEMENTS) break;
                 fire("org.bukkit.event.player.PlayerAdvancementDoneEvent",
                         new Object[]{player, advancement});
                 fired++;
@@ -266,6 +330,7 @@ public final class DriverPlugin extends JavaPlugin {
             }
         }
         sender.sendMessage("DRIVER-COUNT advancement " + fired);
+        getLogger().info("DRIVER-COUNT advancement " + fired);
     }
 
     /**
@@ -307,6 +372,74 @@ public final class DriverPlugin extends JavaPlugin {
      * the drops or the damage source. If a version ever needs one of those, it fails
      * naming the constructor it tried rather than silently sending a wrong event.
      */
+    /**
+     * Fires an event by matching what is offered to whatever constructor this version has.
+     *
+     * <p>Bukkit's event constructors change. EntityExplodeEvent gained an
+     * ExplosionResult in a recent version, so the four-argument call that worked
+     * everywhere else failed on 26.2 with "no constructor matching" -- and the sweep
+     * reported three explosion settings as broken when the plugin had never been asked
+     * anything.
+     *
+     * <p>Arguments are matched by type rather than by position, so a parameter added in
+     * the middle of a signature does not shift everything after it. A parameter nothing
+     * offered gets a harmless default; for an enum that is its first constant rather
+     * than null, because these constructors reject null far more often than they reject
+     * an unexpected value.
+     */
+    private void fireAdapting(String eventClass, Object... offered) throws Exception {
+        final Class<?> type = Class.forName(eventClass);
+        Constructor<?> best = null;
+        final List<String> tried = new ArrayList<>();
+        for (Constructor<?> c : type.getConstructors()) {
+            tried.add(Arrays.toString(c.getParameterTypes()));
+            if (best == null || c.getParameterCount() < best.getParameterCount()) best = c;
+        }
+        if (best == null) {
+            throw new NoSuchMethodException(eventClass + " has no public constructor");
+        }
+
+        final Class<?>[] params = best.getParameterTypes();
+        final Object[] args = new Object[params.length];
+        final boolean[] used = new boolean[offered.length];
+        for (int i = 0; i < params.length; i++) {
+            args[i] = pick(params[i], offered, used);
+        }
+        try {
+            Bukkit.getPluginManager().callEvent((Event) best.newInstance(args));
+        } catch (Throwable t) {
+            throw new IllegalStateException(eventClass + " would not construct with "
+                    + Arrays.toString(params) + "; this version offers " + tried, t);
+        }
+    }
+
+    /** The first unused argument this parameter will accept, or a harmless default. */
+    private static Object pick(Class<?> want, Object[] offered, boolean[] used) {
+        for (int i = 0; i < offered.length; i++) {
+            if (used[i] || offered[i] == null) continue;
+            final Class<?> have = offered[i].getClass();
+            if (want.isAssignableFrom(have)
+                    || (want == float.class  && offered[i] instanceof Float)
+                    || (want == double.class && offered[i] instanceof Double)
+                    || (want == int.class    && offered[i] instanceof Integer)
+                    || (want == boolean.class && offered[i] instanceof Boolean)) {
+                used[i] = true;
+                return offered[i];
+            }
+        }
+        if (want.isEnum()) {
+            final Object[] constants = want.getEnumConstants();
+            return (constants != null && constants.length > 0) ? constants[0] : null;
+        }
+        if (java.util.List.class.isAssignableFrom(want)) return new ArrayList<Object>();
+        if (!want.isPrimitive())     return null;
+        if (want == boolean.class)   return Boolean.FALSE;
+        if (want == float.class)     return 0.0f;
+        if (want == double.class)    return 0.0d;
+        if (want == long.class)      return 0L;
+        return 0;
+    }
+
     private void fireBestEffort(String eventClass, Player player, String message)
             throws Exception {
         final Class<?> type = Class.forName(eventClass);
