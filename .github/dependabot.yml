@@ -8,9 +8,9 @@ updates:
       prefix: "chore"
     open-pull-requests-limit: 10
     ignore:
-      # paper-api is NOT a dependency to keep current -- it is the oldest server
+      # spigot-api is NOT a dependency to keep current -- it is the oldest server
       # the plugin promises to run on, and it is pinned low on purpose. The plugin
-      # compiles against the FLOOR so the compiler refuses anything a 1.19 server
+      # compiles against the FLOOR so the compiler refuses anything a 1.8 server
       # would not have; bumping it to the newest build would let newer APIs link
       # silently and then NoSuchMethodError on the versions the listings advertise.
       #
@@ -18,7 +18,35 @@ updates:
       # 26.2.build.111 -- correct for a normal dependency, wrong for this one.
       # Raising the floor is a deliberate decision that also moves api-version and
       # dl.game.versions, so it belongs in a human PR, not an automated bump.
-      - dependency-name: "io.papermc.paper:paper-api"
+      #
+      # This named io.papermc.paper:paper-api until the Bukkit port swapped the
+      # dependency to org.spigotmc:spigot-api, at which point the ignore quietly
+      # stopped matching anything.
+      - dependency-name: "org.spigotmc:spigot-api"
+
+      # snakeyaml is the same shape of pin, and eight security alerts were opened
+      # against it before anyone looked at the scope.
+      #
+      # It is scope=provided and is NOT in the shipped JAR -- zero entries. The
+      # copy that runs is whichever one the server bundles for its own
+      # YamlConfiguration, and on a current build that is a patched 2.x. Bumping
+      # the number here changes what the compiler allows and nothing a user ever
+      # receives.
+      #
+      # 1.23 is chosen so the compiler refuses anything newer: the only API used
+      # is `new Yaml().load(String)`, which exists from 1.23 through 2.x, and
+      # compiling against 2.x would let a 2.x-only call link silently and then
+      # fail on the 1.8 servers the listings advertise. Shading a newer copy was
+      # tried and broke Bukkit outright -- 2.x removed `new Representer()`, which
+      # Bukkit's own YamlConfiguration calls.
+      #
+      # The alerts themselves (CVE-2022-1471 and friends) were dismissed as
+      # tolerable risk: every Yaml.load() here reads a bundled resource or the
+      # admin's own config.yml/lang.yml from disk, never anything from the
+      # network, so reaching them needs write access to the server directory.
+      # Hardening these calls with SafeConstructor is worth doing on its own --
+      # it needs reflection, because 2.x dropped the no-arg constructor 1.x has.
+      - dependency-name: "org.yaml:snakeyaml"
 
   - package-ecosystem: "github-actions"
     directory: "/"
