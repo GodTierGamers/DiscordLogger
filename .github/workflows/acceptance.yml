@@ -68,13 +68,13 @@ jobs:
       # The server's JDK first, then the build's, so JAVA_HOME ends up on the build one
       # while JAVA_HOME_<n>_X64 is exported for both. Jdks.javaBinary reads the latter.
       - name: Install the JDK this Minecraft version needs
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: ${{ matrix.server_java }}
 
       - name: Install the build JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: ${{ steps.javaver.outputs.version }}

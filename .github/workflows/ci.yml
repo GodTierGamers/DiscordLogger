@@ -47,7 +47,7 @@ jobs:
         run: echo "version=$(grep -oE '<dl.build.jdk>[0-9]+' pom.xml | grep -oE '[0-9]+')" >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: ${{ steps.javaver.outputs.version }}
@@ -88,7 +88,7 @@ jobs:
         run: echo "version=$(grep -oE '<dl.build.jdk>[0-9]+' pom.xml | grep -oE '[0-9]+')" >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: ${{ steps.javaver.outputs.version }}
@@ -113,7 +113,7 @@ jobs:
         id: javaver
         run: echo "version=$(grep -oE '<dl.build.jdk>[0-9]+' pom.xml | grep -oE '[0-9]+')" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: ${{ steps.javaver.outputs.version }}
