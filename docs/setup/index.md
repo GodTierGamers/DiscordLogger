@@ -17,7 +17,7 @@ Discord channel you can create a webhook in.
 
 | Requirement | Version |
 |---|---|
-| Server | **Paper, Spigot or a fork such as Purpur**, {{ site.data.versions.paper_display }} |
+| Server | **CraftBukkit, Spigot, Paper or a fork such as Purpur**, {{ site.data.versions.mc_display }} |
 | Java | **{{ site.data.versions.java }}** or newer |
 | Discord | A channel where you have **Manage Webhooks** |
 | Minecraft | Operator, or console access |
