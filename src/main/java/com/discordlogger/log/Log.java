@@ -31,7 +31,7 @@ public final class Log {
     private static volatile boolean embedsEnabledFlag;
     private static volatile String embedAuthorName;
 
-    // Footer text. Deliberately just the plugin name -- see Log.init.
+    // Footer text (dynamic: "DiscordLogger v<version>") -- built in Log.init.
     private static final String EMBED_FOOTER_BASE = "DiscordLogger";
     private static volatile String embedFooterText = EMBED_FOOTER_BASE;
 
@@ -60,11 +60,20 @@ public final class Log {
         ready = isValidWebhookUrl(url);
         webhookUrl = ready ? url : null;
 
-        // The footer names the plugin, not the build. A version in every embed dates
-        // the screenshots in both listings the moment a release ships, and tells the
-        // reader nothing they can act on -- anyone who needs it has /discordlogger
-        // status, which reports the channel too.
-        embedFooterText = EMBED_FOOTER_BASE;
+        // Footer carries the running version, read from plugin.yml via
+        // ${project.version}. It was briefly dropped so the listing screenshots would
+        // not carry a version that dates them on the next release; the screenshots are
+        // taken, so it is back. A support thread that opens with the version in the
+        // screenshot is worth more than a gallery that ages slightly.
+        try {
+            String ver = plugin.getDescription().getVersion();
+            embedFooterText = (ver != null && !ver.isBlank())
+                    ? EMBED_FOOTER_BASE + " v" + ver
+                    : EMBED_FOOTER_BASE;
+        } catch (Exception ignored) {
+            // A descriptor that cannot be read is not worth failing a send over.
+            embedFooterText = EMBED_FOOTER_BASE;
+        }
 
         // plain-text prefix (proxy/server name)
         plainServerName = plugin.getConfig().getString("format.name", "");
