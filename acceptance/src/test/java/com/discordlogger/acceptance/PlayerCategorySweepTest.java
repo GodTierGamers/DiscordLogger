@@ -59,6 +59,8 @@ class PlayerCategorySweepTest {
     private static MinecraftServer server;
     private static Path work;
     private static final List<Grader.Result> RESULTS = new ArrayList<>();
+    /** False where this server build cannot host a fake player at all. */
+    private static boolean playerEventsSupported = true;
 
     @BeforeAll
     void bootOnce() throws Exception {
@@ -96,6 +98,15 @@ class PlayerCategorySweepTest {
                     + Sweeps.version() + ", so nothing can be driven"
                     + Sweeps.serverContext(server));
         }
+
+        // Asked once, up front. Every 1.8.x build carries a Bukkit declaring getHealth()
+        // twice with different return types, which java.lang.reflect.Proxy refuses to
+        // implement, so no fake player can exist there. Without this the sweep runs all
+        // twenty-eight cases against a driver that cannot fire and reports fourteen
+        // settings as broken, naming the plugin for a limitation of the harness.
+        server.command("dldriver join");
+        playerEventsSupported = !server.awaitLine("DRIVER-UNSUPPORTED", 20, TimeUnit.SECONDS);
+        Sweeps.quiesce(discord, 1500);
     }
 
     @AfterAll
@@ -111,6 +122,9 @@ class PlayerCategorySweepTest {
     @MethodSource("categories")
     @DisplayName("enabled")
     void enabledPosts(Category c) throws Exception {
+        org.junit.jupiter.api.Assumptions.assumeTrue(playerEventsSupported,
+                "this server build cannot host a fake player, so player events cannot be "
+                        + "driven on " + Sweeps.version());
         final String key = "log.player." + c.name() + ".enabled";
         server.editConfig(key, "true");
         Sweeps.reload(server);
@@ -127,6 +141,9 @@ class PlayerCategorySweepTest {
     @MethodSource("categories")
     @DisplayName("disabled")
     void disabledIsSilent(Category c) throws Exception {
+        org.junit.jupiter.api.Assumptions.assumeTrue(playerEventsSupported,
+                "this server build cannot host a fake player, so player events cannot be "
+                        + "driven on " + Sweeps.version());
         final String key = "log.player." + c.name() + ".enabled";
         server.editConfig(key, "false");
         Sweeps.reload(server);
@@ -146,6 +163,9 @@ class PlayerCategorySweepTest {
     @MethodSource("categories")
     @DisplayName("colour")
     void colourIsApplied(Category c) throws Exception {
+        org.junit.jupiter.api.Assumptions.assumeTrue(playerEventsSupported,
+                "this server build cannot host a fake player, so player events cannot be "
+                        + "driven on " + Sweeps.version());
         // A colour no shipped default uses, so seeing it proves the key was read rather
         // than coinciding with what the plugin would have sent anyway.
         final String key = "log.player." + c.name() + ".color";
@@ -171,6 +191,9 @@ class PlayerCategorySweepTest {
     @MethodSource("categories")
     @DisplayName("routing")
     void webhookRoutes(Category c) throws Exception {
+        org.junit.jupiter.api.Assumptions.assumeTrue(playerEventsSupported,
+                "this server build cannot host a fake player, so player events cannot be "
+                        + "driven on " + Sweeps.version());
         final String key = "log.player." + c.name() + ".webhook";
         server.editConfig("log.player." + c.name() + ".enabled", "true");
         server.editConfig(key, "\"" + discord.alternateWebhookUrl() + "\"");
