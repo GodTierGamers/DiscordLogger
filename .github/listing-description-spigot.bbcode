@@ -4,8 +4,6 @@ Posts what happens on your server to a Discord channel, as clean embeds or plain
 
 [B]Runs on CraftBukkit, Spigot, Paper and forks, from 1.8 through 26.2 — one JAR for all of them.[/B]
 
-[HR][/HR]
-
 [SIZE=5][B]What it logs[/B][/SIZE]
 
 [LIST]
@@ -17,15 +15,11 @@ Posts what happens on your server to a Discord channel, as clean embeds or plain
 
 Every event is an independent toggle with its own colour, and can be routed to its own webhook — so moderation goes to a staff-only channel while chat goes to a public one.
 
-[HR][/HR]
-
 [SIZE=5][B]How it reads[/B][/SIZE]
 
 Rich embeds with per-event colours, player heads and a configurable author line — or plain Markdown text, if you would rather your channel stayed quiet.
 
 Events with detail get their own fields. A death carries the cause, built from server-side damage context so it reads the same for Java and Bedrock players, and optionally where it happened. A ban carries who issued it, why, and for how long.
-
-[HR][/HR]
 
 [SIZE=5][B]Why you might pick this one[/B][/SIZE]
 
@@ -39,8 +33,6 @@ Events with detail get their own fields. A death carries the cause, built from s
 
 [B]Bedrock players are handled.[/B] Works with Geyser and Floodgate, and joins from Bedrock can be flagged as such.
 
-[HR][/HR]
-
 [SIZE=5][B]Setup[/B][/SIZE]
 
 [LIST=1]
@@ -53,8 +45,6 @@ That is the whole setup. There is also a [URL=https://discordlogger.godtiergamer
 
 [B]Your webhook URL is a credential.[/B] Anyone holding it can post to that channel as your server. The plugin never echoes it back, redacts it from command logging, and keeps it out of tab-completion.
 
-[HR][/HR]
-
 [SIZE=5][B]Requirements[/B][/SIZE]
 
 [LIST]
@@ -65,13 +55,9 @@ That is the whole setup. There is also a [URL=https://discordlogger.godtiergamer
 
 A few features need a version that has the underlying feature: advancements are logged as achievements before 1.12, and block explosions need 1.8.3. The plugin checks at startup and says which ones your server cannot provide, rather than failing quietly.
 
-[HR][/HR]
-
 [SIZE=5][B]Privacy[/B][/SIZE]
 
 Anonymous usage data is sent to [URL=https://bstats.org/plugin/bukkit/DiscordLogger/33026]bStats[/URL]: server software, versions, which events are enabled, and whether sends are succeeding. [B]Never[/B] webhook URLs, player names, UUIDs, IP addresses, message content, coordinates or world names. Counts are reported as ranges rather than exact numbers, so a chart cannot become a fingerprint. It can be switched off in [ICODE]plugins/bStats/config.yml[/ICODE].
-
-[HR][/HR]
 
 [SIZE=5][B]Links[/B][/SIZE]
 
