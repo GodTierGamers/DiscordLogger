@@ -94,6 +94,17 @@ CURSEFORGE_PROJECT_ENV = "CURSEFORGE_PROJECT_ID"
 # would break a release over a label.
 CURSEFORGE_LOADERS = ["Bukkit", "Spigot", "Paper"]
 
+# CurseForge keeps 7,400 versions across 30 type groups, and most of them a
+# bukkit-plugins project may not reference: uploading id 4465 (1.8.2, under type 4
+# "Minecraft 1.8") was refused with "belongs to an invalid dependency". Only type 1,
+# the unnamed universal list, is accepted -- and it carries an entry for every
+# version from 1.8 to 26.2, so nothing is lost by restricting to it.
+#
+# Matching on the name alone is what went wrong: several types carry an entry called
+# "1.8", and the first one found is not necessarily the usable one. Discovered with
+# --diagnose rather than inferred.
+CURSEFORGE_VERSION_TYPE = 1
+
 
 # --------------------------------------------------------------------------- io
 
@@ -301,45 +312,20 @@ def publish_modrinth(
 # -------------------------------------------------------------------- hangar
 
 
-# Paper's oldest build. Hangar's PAPER platform means "runs on Paper", and Paper does
-# not exist below this -- so while the plugin genuinely supports 1.8.0, saying so on a
-# Paper listing would be a claim about builds nobody can download. Modrinth and
-# CurseForge take the full range, because their listings are not platform-scoped the
-# same way.
-#
-# A constant rather than a lookup: Hangar's only platform-versions endpoint is an admin
-# write endpoint, and there is no public read to ask.
-HANGAR_OLDEST = (1, 8, 8)
-
-
-def version_tuple(name: str) -> tuple[int, ...]:
-    """"1.21.11" -> (1, 21, 11), so versions sort by number rather than by string."""
-    parts = []
-    for piece in name.split("."):
-        try:
-            parts.append(int(piece))
-        except ValueError:
-            # A name that is not purely numeric sorts last, which keeps anything
-            # unexpected in the list rather than silently dropping it.
-            return (9999,)
-    return tuple(parts)
-
-
 def hangar_versions(wanted: list[str]) -> list[str]:
-    """The wanted versions that Paper actually has builds for."""
-    accepted = [v for v in wanted if version_tuple(v) >= HANGAR_OLDEST]
-    dropped = [v for v in wanted if version_tuple(v) < HANGAR_OLDEST]
-    if dropped:
-        log(
-            f"Hangar: dropping {len(dropped)} version(s) older than Paper's first build "
-            f"({'.'.join(str(n) for n in HANGAR_OLDEST)}): {', '.join(dropped)}"
-        )
-    if not accepted:
-        raise RuntimeError(
-            "no version in <dl.game.versions> is one Paper has ever built, so there is "
-            "nothing to publish to Hangar"
-        )
-    return accepted
+    """Everything, and let Hangar say what it will not take.
+
+    This used to filter to 1.8.8 and newer, on the reasoning that Hangar's PAPER
+    platform means "runs on Paper" and Paper has no older build. That dropped 1.8,
+    which Hangar does list -- its 1.8 line is 1.8 and 1.8.8 -- so the filter removed
+    a version that would have been accepted while leaving several that would not.
+
+    There is no public endpoint that lists what Hangar takes; its only
+    platform-versions route is an admin write. So the upload offers everything and
+    drops whatever comes back rejected, which converges on the real set without
+    anyone having to keep a copy of Paper's release history here.
+    """
+    return list(wanted)
 
 
 def publish_hangar(
@@ -441,6 +427,8 @@ def curseforge_version_ids(token: str, wanted: list[str]) -> list[int]:
     by_name: dict[str, int] = {}
     for entry in catalogue or []:
         name = str(entry.get("name", "")).strip()
+        if int(entry.get("gameVersionTypeID", -1)) != CURSEFORGE_VERSION_TYPE:
+            continue
         if name and name not in by_name:
             by_name[name] = int(entry["id"])
 
