@@ -44,6 +44,18 @@ class FilterAndFormatSweepTest {
     private static final String HEX = "AB12CD";
     private static final String PROBE_COMMAND = "say acceptance probe";
 
+    /**
+     * How a join is recognised, in both of the shapes the plugin can send.
+     *
+     * <p>Not "Join": that word is in the embed's title and nowhere else, so it
+     * disappears the moment embeds.enabled is switched off -- which three of the cases
+     * below do deliberately. Matching on it would have reported plain text as nothing
+     * sent at all, and graded embeds.enabled=false as a fault for doing exactly what it
+     * was asked. The message line is in the embed's description and is the whole of the
+     * plain-text form, so it identifies a join either way.
+     */
+    private static final String JOINED = "joined the server";
+
     /** ignored_commands with only the harness's own commands in it: the neutral state. */
     private static final String NEUTRAL_COMMANDS = "[\"dldriver\", \"discordlogger\"]";
 
@@ -117,13 +129,13 @@ class FilterAndFormatSweepTest {
     @Test @DisplayName("filters.ignored_players")
     void ignoredPlayers() throws Exception {
         filterSuppresses("filters.ignored_players", "[]", "[\"Player1\"]",
-                "dldriver join", "Join", true);
+                "dldriver join", JOINED, true);
     }
 
     @Test @DisplayName("filters.ignored_worlds")
     void ignoredWorlds() throws Exception {
         filterSuppresses("filters.ignored_worlds", "[]", "[\"world\"]",
-                "dldriver join", "Join", true);
+                "dldriver join", JOINED, true);
     }
 
     @Test @DisplayName("filters.exempt_permission")
@@ -132,7 +144,7 @@ class FilterAndFormatSweepTest {
         Thread.sleep(800);
         try {
             filterSuppresses("filters.exempt_permission", "\"\"", "\"dl.acceptance.exempt\"",
-                    "dldriver join", "Join", true);
+                    "dldriver join", JOINED, true);
         } finally {
             server.command("dldriver fake reset");
             Thread.sleep(800);
@@ -147,7 +159,7 @@ class FilterAndFormatSweepTest {
             // Inverted against the others: the filter is on by default, so the control
             // is the one that switches it off.
             filterSuppresses("filters.respect_vanish", "false", "true",
-                    "dldriver join", "Join", true);
+                    "dldriver join", JOINED, true);
         } finally {
             server.command("dldriver fake reset");
             Thread.sleep(800);
@@ -238,13 +250,13 @@ class FilterAndFormatSweepTest {
     void embedsEnabled() throws Exception {
         requireFake();
         apply("embeds.enabled", "true");
-        String captured = fireAndCapture("dldriver join", "Join", 30);
+        String captured = fireAndCapture("dldriver join", JOINED, 30);
         RESULTS.add(Grader.grade(new Grader.Expectation("embeds.enabled", true, null)
                 .requiring("embeds"), captured, Sweeps.errorsSince(server),
                 Sweeps.serverContext(server)));
 
         apply("embeds.enabled", "false");
-        captured = fireAndCapture("dldriver join", "Join", 30);
+        captured = fireAndCapture("dldriver join", JOINED, 30);
         if (captured == null) {
             RESULTS.add(new Grader.Result("embeds.enabled", Verdict.WRONG,
                     "sent nothing with embeds off, when plain text was expected"
@@ -263,7 +275,7 @@ class FilterAndFormatSweepTest {
     void embedsAuthor() throws Exception {
         requireFake();
         apply("embeds.enabled", "true", "embeds.author", "\"Acceptance Author\"");
-        final String captured = fireAndCapture("dldriver join", "Join", 30);
+        final String captured = fireAndCapture("dldriver join", JOINED, 30);
         RESULTS.add(Grader.grade(new Grader.Expectation("embeds.author", true, null)
                 .requiring("Acceptance Author"), captured, Sweeps.errorsSince(server),
                 Sweeps.serverContext(server)));
@@ -276,7 +288,7 @@ class FilterAndFormatSweepTest {
         // Only read for plain text, which the comment above the key says outright.
         // Testing it with embeds on would assert nothing and pass forever.
         apply("embeds.enabled", "false", "format.time", "\"[yyyy]\"");
-        final String captured = fireAndCapture("dldriver join", "Join", 30);
+        final String captured = fireAndCapture("dldriver join", JOINED, 30);
         RESULTS.add(Grader.grade(new Grader.Expectation("format.time", true, null)
                 .requiring("[" + Year.now().getValue() + "]"),
                 captured, Sweeps.errorsSince(server), Sweeps.serverContext(server)));
@@ -287,7 +299,7 @@ class FilterAndFormatSweepTest {
     void formatName() throws Exception {
         requireFake();
         apply("embeds.enabled", "false", "format.name", "\"ACCEPTANCE\"");
-        final String captured = fireAndCapture("dldriver join", "Join", 30);
+        final String captured = fireAndCapture("dldriver join", JOINED, 30);
         RESULTS.add(Grader.grade(new Grader.Expectation("format.name", true, null)
                 .requiring("ACCEPTANCE"), captured, Sweeps.errorsSince(server),
                 Sweeps.serverContext(server)));
@@ -301,13 +313,13 @@ class FilterAndFormatSweepTest {
         Thread.sleep(800);
         try {
             apply("format.nicknames", "true");
-            String captured = fireAndCapture("dldriver join", "Join", 30);
+            String captured = fireAndCapture("dldriver join", JOINED, 30);
             RESULTS.add(Grader.grade(new Grader.Expectation("format.nicknames", true, null)
                     .requiring("Nickname (Player1)"), captured, Sweeps.errorsSince(server),
                     Sweeps.serverContext(server)));
 
             apply("format.nicknames", "false");
-            captured = fireAndCapture("dldriver join", "Join", 30);
+            captured = fireAndCapture("dldriver join", JOINED, 30);
             if (captured == null) {
                 RESULTS.add(new Grader.Result("format.nicknames", Verdict.WRONG,
                         "sent nothing" + Sweeps.serverContext(server), null));
@@ -368,7 +380,7 @@ class FilterAndFormatSweepTest {
         server.command("dldriver join");
         try {
             final FakeDiscord.Recorded post = discord.awaitPostMatching(
-                    r -> r.bodyContains("Join"), 30, TimeUnit.SECONDS);
+                    r -> r.bodyContains(JOINED), 30, TimeUnit.SECONDS);
             final boolean routed = post.path.contains(FakeDiscord.ALTERNATE_ID);
             RESULTS.add(new Grader.Result("webhook.url",
                     routed ? Verdict.PASS : Verdict.WRONG,
@@ -441,7 +453,7 @@ class FilterAndFormatSweepTest {
     void joinShowsPlatform() throws Exception {
         requireFake();
         apply("log.player.join.enabled", "true", "log.player.join.show_platform", "true");
-        final String captured = fireAndCapture("dldriver join", "Join", 30);
+        final String captured = fireAndCapture("dldriver join", JOINED, 30);
         if (captured == null) {
             RESULTS.add(new Grader.Result("log.player.join.show_platform", Verdict.WRONG,
                     "a join went unlogged with show_platform on"
