@@ -8,10 +8,10 @@ a version range the plugin stopped supporting two releases ago.
 NOT for SpigotMC. That listing is BBCode in a rich-text editor and needs its own
 copy — and Spigot has no upload API, so it is a manual update either way.
 
-Images are absolute URLs on purpose. None of these platforms serve relative paths.
+No inline images: each platform has its own gallery, and uploading there beats
+hotlinking this repo's assets into three descriptions that then depend on one domain
+staying up.
 -->
-
-![DiscordLogger](https://discordlogger.godtiergamers.xyz/assets/DiscordLogger-Banner.webp)
 
 # DiscordLogger
 
@@ -22,20 +22,14 @@ or plain text. One webhook URL, no bot to host, no OAuth, no dashboard.
 
 ---
 
-## What it looks like
+## How it reads
 
-Rich embeds with per-event colours, player heads and a configurable author line.
+Rich embeds with per-event colours, player heads and a configurable author line — or
+plain Markdown text, if you would rather your channel stayed quiet.
 
-![Join, chat, advancement and quit events in a Discord channel](https://discordlogger.godtiergamers.xyz/assets/screenshots/overview.webp)
-
-Events with detail get their own fields. The cause of death is built from
-server-side damage context, so it reads the same for Java and Bedrock players.
-
-![A death embed showing cause of death and coordinates](https://discordlogger.godtiergamers.xyz/assets/screenshots/death.webp)
-
-Moderation actions are logged as a record of staff action, with who did it.
-
-![Ban, kick and op events in a Discord channel](https://discordlogger.godtiergamers.xyz/assets/screenshots/moderation.webp)
+Events with detail get their own fields. A death carries the cause, built from
+server-side damage context so it reads the same for Java and Bedrock players, and
+optionally where it happened. A ban carries who issued it, why, and for how long.
 
 ---
 
