@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.4.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.3.1...v2.4.0) (2026-09-01)
+
+
+### ✨ Features
+
+* drop the Paper requirement, supporting Bukkit 1.8.0 and up ([#211](https://github.com/GodTierGamers/DiscordLogger/issues/211)) ([0f384a2](https://github.com/GodTierGamers/DiscordLogger/commit/0f384a2a7f6c843d8d4a6e12996254cf1edd652a))
+* **metrics:** track downloads per source alongside the bStats data ([#209](https://github.com/GodTierGamers/DiscordLogger/issues/209)) ([9ba5d9a](https://github.com/GodTierGamers/DiscordLogger/commit/9ba5d9a95f061f3a355c9db6af61d9a484368b7f))
+
+
+### 🐛 Fixes
+
+* **embeds:** put the version back in the footer ([#210](https://github.com/GodTierGamers/DiscordLogger/issues/210)) ([c2942e9](https://github.com/GodTierGamers/DiscordLogger/commit/c2942e955b845f4f85b909d56aa9e82d7887e348))
+* **embeds:** use Strings.isBlank so the footer version compiles to Java 8 ([#213](https://github.com/GodTierGamers/DiscordLogger/issues/213)) ([a21dabf](https://github.com/GodTierGamers/DiscordLogger/commit/a21dabf2f0828fcd0ddf54902fa0e0eb80eae728))
+
+
+### 📝 Docs
+
+* **agents:** correct the working agreement after the Bukkit port ([#219](https://github.com/GodTierGamers/DiscordLogger/issues/219)) ([3e44268](https://github.com/GodTierGamers/DiscordLogger/commit/3e442684492808b88885e4f1973a39178836b0c3))
+* correct the platform claims after the Bukkit port ([#216](https://github.com/GodTierGamers/DiscordLogger/issues/216)) ([c152497](https://github.com/GodTierGamers/DiscordLogger/commit/c15249780241a153ecff7e3b92e4ff4d08fd01b9))
+* link CurseForge, and clear the shipped items from TODO ([#218](https://github.com/GodTierGamers/DiscordLogger/issues/218)) ([5162265](https://github.com/GodTierGamers/DiscordLogger/commit/5162265ec4c34afa333e8c86713f07e0e88d6f34))
+* **listing:** drop the inline images ([#217](https://github.com/GodTierGamers/DiscordLogger/issues/217)) ([3ebaf17](https://github.com/GodTierGamers/DiscordLogger/commit/3ebaf1707988d42131b66f4343a166abbd73ba56))
+
+
+### 🧰 Maintenance
+
+* **acceptance:** drop the temporary push trigger ([#214](https://github.com/GodTierGamers/DiscordLogger/issues/214)) ([3733284](https://github.com/GodTierGamers/DiscordLogger/commit/3733284643e0b8a762d9eed3615979eacd7e4e42))
+* **deps:** fix the stale paper-api ignore, and pin snakeyaml deliberately ([#221](https://github.com/GodTierGamers/DiscordLogger/issues/221)) ([4965c56](https://github.com/GodTierGamers/DiscordLogger/commit/4965c568927675f9d6f4ef7d2f2f91e7a6437fcf))
+* name the version keys for Minecraft, not Paper ([#220](https://github.com/GodTierGamers/DiscordLogger/issues/220)) ([be51d83](https://github.com/GodTierGamers/DiscordLogger/commit/be51d8315843e6d08d6ea2e38575d80e16da1de5))
+* **release:** let a feature bump the minor version ([#215](https://github.com/GodTierGamers/DiscordLogger/issues/215)) ([4c3e93d](https://github.com/GodTierGamers/DiscordLogger/commit/4c3e93d4207b1c35849563f238edd29a19d9fa7f))
+
 ## [2.3.1](https://github.com/GodTierGamers/DiscordLogger/compare/v2.3.0...v2.3.1) (2026-08-28)
 
 
