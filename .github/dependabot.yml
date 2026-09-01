@@ -48,6 +48,19 @@ updates:
       # it needs reflection, because 2.x dropped the no-arg constructor 1.x has.
       - dependency-name: "org.yaml:snakeyaml"
 
+      # Adventure 5.x is compiled for Java 21 -- adventure-api 5.2.0 carries class
+      # file version 65.0, and the build says so outright: "class file has wrong
+      # version 65.0". The plugin targets Java 8 so it runs on 1.8-era servers, so
+      # the 5.x line is unusable until that floor moves, which is the opposite of
+      # the direction this project has just taken.
+      #
+      # Only the major is ignored. 4.x updates still arrive, and they matter: the
+      # platform artifact is built against a specific adventure-api and pinning the
+      # BOM behind it forces those transitives down to versions it was never
+      # compiled against.
+      - dependency-name: "net.kyori:adventure-bom"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
