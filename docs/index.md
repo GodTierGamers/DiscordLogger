@@ -127,12 +127,13 @@ builds both `config.yml` and `lang.yml` in your browser.
 | Requirement | Version |
 |---|---|
 | Server | **Paper, Spigot or a fork such as Purpur**, {{ site.data.versions.paper_display }} |
-| Minimum API | `{{ site.data.versions.min_paper }}` |
+| Compiled against | Bukkit API `{{ site.data.versions.min_paper }}` |
 | Java | **{{ site.data.versions.java }}** or newer |
 | Discord | A webhook URL — no bot required |
 
-Spigot and CraftBukkit are not supported: the plugin uses Paper's chat API, and
-says so clearly on startup rather than failing with a stack trace.
+Bukkit, Spigot, Paper and forks all run the same JAR — the plugin calls nothing
+Paper-only, so there is no separate build and no platform to choose. Releases
+before 2.4.0 did need Paper, for its chat API; this one does not.
 
 ## Links
 
