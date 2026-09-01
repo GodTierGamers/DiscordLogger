@@ -195,12 +195,27 @@ public final class DriverPlugin extends JavaPlugin {
         } catch (NoSuchMethodException tooOld) {
             // Pre-1.12: achievements, a different event and a fixed enum.
             final Class<?> achievement = Class.forName("org.bukkit.Achievement");
-            for (Object a : (Object[]) achievement.getMethod("values").invoke(null)) {
-                if (!only.isEmpty() && !String.valueOf(a).equalsIgnoreCase(only)) continue;
+            final Object[] all = (Object[]) achievement.getMethod("values").invoke(null);
+            for (Object a : all) {
+                if (!only.isEmpty()
+                        && !String.valueOf(a).toLowerCase(Locale.ROOT)
+                                .contains(only.toLowerCase(Locale.ROOT))) {
+                    continue;
+                }
                 fire("org.bukkit.event.player.PlayerAchievementAwardedEvent",
                         new Object[]{player, a});
                 fired++;
                 pause();
+            }
+            // A filter naming an advancement tab means nothing to an achievement enum,
+            // so a caller asking for "adventure" would get silence on these versions --
+            // which reads as the category being broken rather than named differently.
+            // One is fired regardless, so the caller always sees the behaviour it asked
+            // about even when its filter belongs to a newer Minecraft.
+            if (fired == 0 && all.length > 0) {
+                fire("org.bukkit.event.player.PlayerAchievementAwardedEvent",
+                        new Object[]{player, all[0]});
+                fired++;
             }
         }
         sender.sendMessage("DRIVER-COUNT advancement " + fired);
