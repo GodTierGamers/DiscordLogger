@@ -5,6 +5,10 @@
 
 ### 🐛 Fixes
 
+**If your server stopped offering updates, this is the release that fixes it.** The update checker built its Minecraft version from `Bukkit.getBukkitVersion()` and cut at the first dash, which on a recent Paper build leaves `26.2.build.71` — not a Minecraft version, and matching nothing in any listing. Affected servers were told the newest release did not support them and went quiet. Two separate faults are fixed here:
+
+* **update:** offer updates again on servers whose version carries a build number ([#239](https://github.com/GodTierGamers/DiscordLogger/pull/239))
+
 * **listing:** drop [HR][/HR] from the Spigot description ([#235](https://github.com/GodTierGamers/DiscordLogger/issues/235)) ([fe40053](https://github.com/GodTierGamers/DiscordLogger/commit/fe4005314e779da0b8a8eb0c3941e0bf737d9a94))
 * **release:** claim minor lines on Hangar, not every patch version ([#234](https://github.com/GodTierGamers/DiscordLogger/issues/234)) ([ede62a4](https://github.com/GodTierGamers/DiscordLogger/commit/ede62a4364b95e2e5f9533a1bc5a898fdad0f145))
 * **release:** send Hangar and CurseForge version ids they will accept ([#232](https://github.com/GodTierGamers/DiscordLogger/issues/232)) ([d62375b](https://github.com/GodTierGamers/DiscordLogger/commit/d62375be039e150cdb3b500ebe538d3f8cf309b5))
