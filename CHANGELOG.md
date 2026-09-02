@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.4.1](https://github.com/GodTierGamers/DiscordLogger/compare/v2.4.0...v2.4.1) (2026-09-02)
+
+
+### 🐛 Fixes
+
+* **listing:** drop [HR][/HR] from the Spigot description ([#235](https://github.com/GodTierGamers/DiscordLogger/issues/235)) ([fe40053](https://github.com/GodTierGamers/DiscordLogger/commit/fe4005314e779da0b8a8eb0c3941e0bf737d9a94))
+* **release:** claim minor lines on Hangar, not every patch version ([#234](https://github.com/GodTierGamers/DiscordLogger/issues/234)) ([ede62a4](https://github.com/GodTierGamers/DiscordLogger/commit/ede62a4364b95e2e5f9533a1bc5a898fdad0f145))
+* **release:** send Hangar and CurseForge version ids they will accept ([#232](https://github.com/GodTierGamers/DiscordLogger/issues/232)) ([d62375b](https://github.com/GodTierGamers/DiscordLogger/commit/d62375be039e150cdb3b500ebe538d3f8cf309b5))
+* **release:** survive Hangar rejecting a version, and see CurseForge's catalogue ([#230](https://github.com/GodTierGamers/DiscordLogger/issues/230)) ([21ba09d](https://github.com/GodTierGamers/DiscordLogger/commit/21ba09d33b6a5c480cd61711fb99b48c4f4fbfd6))
+* **update:** read the release's own game versions, not the next release's ([#239](https://github.com/GodTierGamers/DiscordLogger/issues/239)) ([bb53c65](https://github.com/GodTierGamers/DiscordLogger/commit/bb53c6586dfbf436d3bd6b26cd709e6ba123ea17))
+
+
+### 📝 Docs
+
+* link the SpigotMC listing ([#236](https://github.com/GodTierGamers/DiscordLogger/issues/236)) ([25aa791](https://github.com/GodTierGamers/DiscordLogger/commit/25aa7914535d7875971e266c48a2084a50d8cbc4))
+* **listing:** add the SpigotMC description ([#233](https://github.com/GodTierGamers/DiscordLogger/issues/233)) ([e6b15f0](https://github.com/GodTierGamers/DiscordLogger/commit/e6b15f0e5d6afe226767d399147fb5b6e2d94311))
+
+
+### 🧰 Maintenance
+
+* bump actions/cache from 4 to 6 ([#229](https://github.com/GodTierGamers/DiscordLogger/issues/229)) ([676ef18](https://github.com/GodTierGamers/DiscordLogger/commit/676ef18977075065cef1989dc3dc0636598e110d))
+* bump actions/checkout from 4 to 7 ([#224](https://github.com/GodTierGamers/DiscordLogger/issues/224)) ([bc32528](https://github.com/GodTierGamers/DiscordLogger/commit/bc32528f1fb31b7a64e871977fb85bfdcfee9ec3))
+* bump actions/download-artifact from 4 to 8 ([#222](https://github.com/GodTierGamers/DiscordLogger/issues/222)) ([70a1650](https://github.com/GodTierGamers/DiscordLogger/commit/70a16503d3140317ae16e759aa85df8c16357801))
+* bump actions/setup-java from 4 to 6 ([#228](https://github.com/GodTierGamers/DiscordLogger/issues/228)) ([ba5a2d6](https://github.com/GodTierGamers/DiscordLogger/commit/ba5a2d6e4563f395bb63487757f15542df29f992))
+* bump actions/upload-artifact from 4 to 7 ([#226](https://github.com/GodTierGamers/DiscordLogger/issues/226)) ([5981513](https://github.com/GodTierGamers/DiscordLogger/commit/5981513a60b35ea5d90c70130953ae5e44217b89))
+* bump com.google.code.gson:gson from 2.10.1 to 2.14.0 ([#227](https://github.com/GodTierGamers/DiscordLogger/issues/227)) ([7e9e551](https://github.com/GodTierGamers/DiscordLogger/commit/7e9e551f1f7d54ac1ad6c5c67d39ae50b2bdce6f))
+* bump net.kyori:adventure-bom from 4.21.0 to 4.26.1 ([#238](https://github.com/GodTierGamers/DiscordLogger/issues/238)) ([87b7e0c](https://github.com/GodTierGamers/DiscordLogger/commit/87b7e0c9045b9691187de05f83412a5d2c36cb7f))
+* **deps:** move the whole Adventure line to 4.21, and refuse 5.x ([#237](https://github.com/GodTierGamers/DiscordLogger/issues/237)) ([4202c88](https://github.com/GodTierGamers/DiscordLogger/commit/4202c886ff61d407485f0b1efcd79a5e87b28fb6))
+* **release:** print the whole CurseForge mapping, not the first twelve ([058d40b](https://github.com/GodTierGamers/DiscordLogger/commit/058d40b91794a092101428912ffcabe6237ec4ea))
+
 ## [2.4.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.3.1...v2.4.0) (2026-09-01)
 
 
