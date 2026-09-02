@@ -41,7 +41,11 @@ public final class PlayerAdvancement implements Listener {
         List<Log.Field> fields = new ArrayList<>();
         fields.add(new Log.Field("Player:", playerName));
         fields.add(new Log.Field("Advancement:", pretty));
-        fields.add(new Log.Field("Key:", ns + ":" + path, true));
+        fields.add(// Full width: the key is the longest value in the embed
+                // ("minecraft:recipes/building_blocks/waxed_cut_copper_stairs...")
+                // and it was the only inline field, so it wrapped inside a third
+                // of the row.
+                new Log.Field("Key:", ns + ":" + path));
 
         // Category key -> "player_advancement" (colour: log.player.advancement.color)
         Log.eventFieldsWithThumb(
