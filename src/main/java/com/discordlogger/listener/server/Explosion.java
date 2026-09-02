@@ -82,8 +82,11 @@ public final class Explosion implements Listener {
         final String yield  = fmtYield(e.getYield());
 
         List<Log.Field> fields = new ArrayList<>();
-        fields.add(new Log.Field("Source:", source));
-        fields.add(new Log.Field("World:", world, true));
+        fields.add(// Source and World pair up on one row. World used to be the only inline
+                // field between two full-width ones, so Discord gave it a row to itself
+                // at a third of the width -- a narrow column holding one short word.
+                new Log.Field("Source:", source, true));
+        fields.add(new Log.Field("World:", world));
         fields.add(new Log.Field("Location:", fmtLoc(loc)));
         fields.add(new Log.Field("Blocks Affected:", String.valueOf(affected), true));
         fields.add(new Log.Field("Yield:", yield, true));

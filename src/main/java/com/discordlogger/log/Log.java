@@ -84,7 +84,7 @@ public final class Log {
 
         // timestamp format
         try {
-            timeFmt = DateTimeFormatter.ofPattern(timePattern);
+            timeFmt = DateTimeFormatter.ofPattern(literalBrackets(timePattern));
         } catch (IllegalArgumentException ex) {
             plugin.getLogger().warning("Invalid time format in config: " + timePattern + " — using [HH:mm:ss dd:MM:yyyy]");
             timeFmt = DateTimeFormatter.ofPattern("[HH:mm:ss dd:MM:yyyy]");
@@ -321,6 +321,31 @@ public final class Log {
 
     private static String ts() { return LocalDateTime.now().format(timeFmt); }
 
+    /**
+     * Makes {@code [} and {@code ]} in a time pattern mean themselves.
+     *
+     * <p>{@code format.time} ships as {@code "[HH:mm:ss, dd:MM:yyyy]"} and the brackets
+     * never reached Discord. DateTimeFormatter reads them as an optional section, not as
+     * text, so it printed the time and dropped them -- for every plain-text message the
+     * plugin has ever sent. The console looked right only because it wraps the timestamp
+     * in brackets of its own.
+     *
+     * <p>Nobody writes an optional section into a clock format, so quoting them is what
+     * the setting has always claimed to do, and it fixes every config already written
+     * without a migration.
+     */
+    private static String literalBrackets(String pattern) {
+        if (pattern == null) return null;
+        return pattern.replace("[", "'['").replace("]", "']'");
+    }
+
+    /** A field name ending in a colon, whether or not the caller wrote one. */
+    private static String labelled(String name) {
+        if (name == null || Strings.isBlank(name)) return "";
+        final String trimmed = name.trim();
+        return trimmed.endsWith(":") ? trimmed : trimmed + ":";
+    }
+
     /** Server name segment for plain-text messages. */
     private static String nameSegment() {
         if (plainServerName == null || Strings.isBlank(plainServerName)) return "";
@@ -500,16 +525,28 @@ public final class Log {
                     /*fields*/       toFieldsArray(fields)
             );
         } else {
+            // The title, not the category -- the same string the embed puts in its
+            // heading. Callers pass both: a machine key for colour and routing
+            // ("player_teleport") and a human title ("Player Teleport"). Plain text used
+            // the key, so a reader saw "**player_teleport**: Player Teleport" -- the
+            // config key leaked into the channel, and the title was printed twice.
+            final String heading = (title == null || Strings.isBlank(title))
+                    ? category : title;
             StringBuilder sb = new StringBuilder();
             sb.append("`").append(now).append("`").append(nameSegment())
-                    .append(" - **").append(category).append("**: ")
-                    .append(title == null || Strings.isBlank(title) ? "" : title + "\n");
+                    .append(" - **").append(heading).append("**");
+            sb.append(description != null && !Strings.isBlank(description) ? ": " : "\n");
             if (description != null && !Strings.isBlank(description)) {
                 sb.append(description).append("\n");
             }
             if (fields != null) {
                 for (Field f : fields) {
-                    sb.append("- ").append(f.name).append(" ")
+                    // A separator the caller may or may not have written. Field names
+                    // are inconsistent by history -- Ban writes "Player Name:" with the
+                    // colon, lang.yml's cause-field is "Cause of Death" without one --
+                    // and an embed hides that, because the name is its own bold line.
+                    // Plain text runs them together: "Cause of Death Fell into the void".
+                    sb.append("- ").append(labelled(f.name)).append(" ")
                             .append(f.value == null || Strings.isBlank(f.value) ? "N/A" : mdEscape(f.value))
                             .append("\n");
                 }

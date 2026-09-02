@@ -72,7 +72,10 @@ public final class Unban implements Listener {
                 if (targetUuid != null) thumb = Log.playerAvatarUrl(targetUuid);
 
                 List<Log.Field> fields = new ArrayList<>();
-                fields.add(new Log.Field("Player Unbanned", targetName));
+                // "Player Name:", like Ban, Op and Deop. This said "Player Unbanned",
+                // which is the embed's own title -- so the field repeated the heading
+                // and never said what the value underneath it actually was.
+                fields.add(new Log.Field("Player Name:", targetName));
                 fields.add(new Log.Field("Unbanned by:", moderatorName));
 
                 Log.eventFieldsWithThumb(
