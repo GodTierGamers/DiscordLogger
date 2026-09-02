@@ -73,6 +73,33 @@ MODRINTH_PROJECT = "discordlogger"
 # them out would have kept the listing invisible to exactly the servers the port was
 # for. Folia is deliberately absent: nothing here has been checked against region
 # threading, and claiming a platform is a promise rather than a hope.
+# Releases whose Modrinth version_number deliberately differs from the Git tag.
+#
+# 2.4.1 only, and it is a rescue rather than a convention. The update checker shipped
+# in 2.4.0 and earlier builds its server version from Bukkit.getBukkitVersion() and
+# cuts at the first dash, which on a recent Paper build leaves "26.2.build.71" -- not a
+# Minecraft version, present in no listing, and therefore matching nothing. Those
+# installs were told the newest release did not support them and stopped offering
+# updates entirely. They cannot be patched from here; their code is already on disk.
+#
+# What that code does do is fail open when it cannot find the release it is asking
+# about in the Modrinth listing. Publishing 2.4.1 under a version_number that does not
+# match the tag puts every one of those installs down that branch, and they show the
+# update again.
+#
+# It is safe precisely for this release: the compatibility check exists to avoid
+# recommending a build a server cannot load, and 2.4.1 supports 1.8 through 26.2 --
+# there is no server in that range to protect. "+bukkit" is semver build metadata, so
+# Modrinth still sorts and displays the version normally.
+#
+# DO NOT extend this to later releases, and do not "tidy" the entry away: removing it
+# retroactively changes nothing, but adding 2.4.2 here would disable a check that is
+# meant to work. It expires on its own -- anyone who takes 2.4.1 is running a fixed
+# reader.
+MODRINTH_VERSION_NUMBER_OVERRIDES = {
+    "2.4.1": "2.4.1+bukkit",
+}
+
 MODRINTH_LOADERS = ["bukkit", "spigot", "paper", "purpur"]
 
 HANGAR_API = "https://hangar.papermc.io/api/v1"
@@ -272,15 +299,21 @@ def publish_modrinth(
     token: str, jar: Path, version: str, game_versions: list[str], changelog: str, dry: bool
 ) -> None:
     existing = request(
-        f"{MODRINTH_API}/project/{MODRINTH_PROJECT}/version/{version}", allow_404=True
+        f"{MODRINTH_API}/project/{MODRINTH_PROJECT}/version/"
+        f"{MODRINTH_VERSION_NUMBER_OVERRIDES.get(version, version)}", allow_404=True
     )
     if existing:
         log(f"Modrinth already has {version} — nothing to do.")
         return
 
+    published_as = MODRINTH_VERSION_NUMBER_OVERRIDES.get(version, version)
+    if published_as != version:
+        log(f"Modrinth: publishing {version} as {published_as} "
+            f"— see MODRINTH_VERSION_NUMBER_OVERRIDES for why")
+
     payload = {
         "name": f"v{version}",
-        "version_number": version,
+        "version_number": published_as,
         "changelog": changelog,
         "dependencies": [],
         "game_versions": game_versions,
