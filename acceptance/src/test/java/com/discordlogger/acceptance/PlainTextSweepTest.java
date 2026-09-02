@@ -151,11 +151,57 @@ class PlainTextSweepTest {
             return;
         }
 
+        // Two faults the grader cannot see, both of which shipped and both of which this
+        // class passed on for a whole release.
+        //
+        // The heading being the plugin's own config key rather than a title: readers saw
+        // "**player_teleport**: Player Teleport", so the key leaked into the channel and
+        // the title was printed twice. A lowercase_snake_case heading is never something
+        // a person wrote.
+        final String heading = boldHeading(captured);
+        if (heading != null && CONFIG_KEY.matcher(heading).matches()) {
+            RESULTS.add(new Grader.Result(key, Verdict.WRONG,
+                    "the heading is a config key, not a title: '" + heading + "'", captured));
+            return;
+        }
+
+        // A field run together with its value: "Cause of Death Fell into the void". Field
+        // names carry a colon only where whoever wrote the call site remembered one, and
+        // an embed hides that because the name is its own bold line.
+        final String unseparated = fieldWithoutSeparator(captured);
+        if (unseparated != null) {
+            RESULTS.add(new Grader.Result(key, Verdict.WRONG,
+                    "a field runs into its value with no separator: '" + unseparated + "'",
+                    captured));
+            return;
+        }
+
         // The grader's own rules from here: an unresolved placeholder or a stray tag is
         // wrong in plain text for exactly the reasons it is wrong in an embed.
         RESULTS.add(Grader.grade(
                 new Grader.Expectation(key, true, null).requiring("content", c.expect()),
                 captured, errors, Sweeps.serverContext(server)));
+    }
+
+    /** Something like {@code player_teleport}: only a config key looks like this. */
+    private static final java.util.regex.Pattern CONFIG_KEY =
+            java.util.regex.Pattern.compile("[a-z][a-z0-9]*(_[a-z0-9]+)+");
+
+    /** The text of the first bold run, which is the message's heading. */
+    private static String boldHeading(String payload) {
+        final java.util.regex.Matcher m =
+                java.util.regex.Pattern.compile("\\*\\*([^*]+)\\*\\*").matcher(payload);
+        return m.find() ? m.group(1) : null;
+    }
+
+    /** The first field line whose name runs straight into its value, or null. */
+    private static String fieldWithoutSeparator(String payload) {
+        for (String line : payload.split("\\\\n")) {
+            final String t = line.trim();
+            if (!t.startsWith("- ")) continue;
+            if (t.indexOf(':') < 0) return t;
+        }
+        return null;
     }
 
     @AfterAll
