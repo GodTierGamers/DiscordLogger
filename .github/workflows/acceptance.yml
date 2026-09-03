@@ -72,6 +72,15 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.server_java }}
+          # setup-java v6 turns signature verification on by default, and Temurin
+          # publishes no signature for 16.0.2+7 -- the JDK 1.16.5 needs. The step fails
+          # outright, so the 1.16.5 sweep never started and reported nothing at all.
+          #
+          # Only this step is exempted. The build JDK below keeps verification on,
+          # because that is the JDK the shipped JAR is compiled with; these are old
+          # runtimes fetched to host a test server, and a missing signature on an
+          # end-of-life Temurin is not something this project can fix by waiting.
+          verify-signature: false
 
       - name: Install the build JDK
         uses: actions/setup-java@v6
