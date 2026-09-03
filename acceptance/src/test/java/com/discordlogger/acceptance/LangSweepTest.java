@@ -66,6 +66,16 @@ class LangSweepTest {
         LINES.add(new Line("discord.player-command", "dldriver command /acceptance"));
         LINES.add(new Line("discord.server-command", "say acceptance probe"));
 
+        // The Bedrock indicator. Floodgate gives Bedrock players UUIDs whose most
+        // significant bits are zero and the plugin falls back to that shape when
+        // Floodgate is absent, so the fake can wear one and exercise the real path
+        // without Floodgate on the test server. Until this existed the two lines were
+        // undriven, and it turned out nothing read them at all.
+        LINES.add(new Line("discord.platform-field",
+                List.of("dldriver fake bedrock true"), "dldriver join"));
+        LINES.add(new Line("discord.platform-bedrock",
+                List.of("dldriver fake bedrock true"), "dldriver join"));
+
         // The embed's own parts. Any death produces the description and the cause
         // field; the coordinate pair needs the setting that adds them.
         LINES.add(new Line("discord.death.description", "dldriver death VOID"));
