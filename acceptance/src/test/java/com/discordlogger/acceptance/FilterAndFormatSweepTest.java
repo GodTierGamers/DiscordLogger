@@ -454,33 +454,62 @@ class FilterAndFormatSweepTest {
     }
 
     /**
-     * What this setting can be held to without Floodgate installed.
+     * Both directions of the Bedrock indicator, without Floodgate installed.
      *
-     * <p>The flag it adds needs Geyser and Floodgate to tell a Bedrock player from a
-     * Java one, and neither is here. What is testable is the other half, and the half
-     * that would actually hurt: with the setting on and no Floodgate, an ordinary Java
-     * player must be logged normally and must not be labelled as anything.
+     * <p>Floodgate issues Bedrock players UUIDs whose most significant bits are zero,
+     * and the plugin falls back to that shape when Floodgate is absent -- so a fake
+     * wearing one exercises the real detection. This used to assert only that a Java
+     * player is not mislabelled, because the Bedrock half looked untestable. bStats says
+     * the indicator is on for every reporting server and 40% of them run Floodgate,
+     * which made it the largest thing in the plugin that nothing here could see.
      */
     @Test @DisplayName("log.player.join.show_platform")
     void joinShowsPlatform() throws Exception {
         requireFake();
         apply("log.player.join.enabled", "true", "log.player.join.show_platform", "true");
-        final String captured = fireAndCapture("dldriver join", JOINED, 30);
+
+        // A Bedrock-shaped player must be flagged.
+        server.command("dldriver fake bedrock true");
+        Thread.sleep(800);
+        Sweeps.quiesce(discord, 2000);
+        String captured = fireAndCapture("dldriver join", JOINED, 30);
+        RESULTS.add(Grader.grade(
+                new Grader.Expectation("log.player.join.show_platform", true, null)
+                        .requiring("Bedrock"),
+                captured, Sweeps.errorsSince(server), Sweeps.serverContext(server)));
+
+        // The same player, with the setting off, must not be.
+        apply("log.player.join.show_platform", "false");
+        captured = fireAndCapture("dldriver join", JOINED, 30);
         if (captured == null) {
             RESULTS.add(new Grader.Result("log.player.join.show_platform", Verdict.WRONG,
-                    "a join went unlogged with show_platform on"
+                    "a join went unlogged with show_platform off"
                             + Sweeps.serverContext(server), null));
+        } else {
+            final boolean quiet = !captured.contains("Bedrock");
+            RESULTS.add(new Grader.Result("log.player.join.show_platform",
+                    quiet ? Verdict.PASS : Verdict.WRONG,
+                    quiet ? "left the platform out when switched off"
+                          : "still flagged the platform when switched off", captured));
+        }
+
+        // And a Java player is never labelled, whatever the setting says.
+        server.command("dldriver fake reset");
+        Thread.sleep(800);
+        apply("log.player.join.show_platform", "true");
+        captured = fireAndCapture("dldriver join", JOINED, 30);
+        if (captured == null) {
+            RESULTS.add(new Grader.Result("log.player.join.show_platform", Verdict.WRONG,
+                    "a Java join went unlogged" + Sweeps.serverContext(server), null));
         } else {
             final boolean mislabelled = captured.contains("Bedrock");
             RESULTS.add(new Grader.Result("log.player.join.show_platform",
                     mislabelled ? Verdict.WRONG : Verdict.PASS,
-                    mislabelled
-                            ? "labelled a Java player as Bedrock with no Floodgate installed"
-                            : "logged a Java join cleanly; the Bedrock flag itself needs "
-                                    + "Floodgate and is not driveable here",
+                    mislabelled ? "labelled a Java player as Bedrock"
+                                : "left a Java player unlabelled, which is all that can be "
+                                        + "known -- nothing proves a player IS Java",
                     captured));
         }
-        apply("log.player.join.show_platform", "true");
     }
 
     // =============================================================================

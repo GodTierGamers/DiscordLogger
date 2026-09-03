@@ -73,9 +73,23 @@ public final class Fake {
         permission = null;
         vanished = false;
         killer = null;
+        bedrock = false;
     }
 
     private Fake() {}
+
+    /**
+     * Whether the fake should look like a Bedrock player to DiscordLogger.
+     *
+     * <p>Floodgate issues Bedrock players UUIDs whose most significant bits are zero,
+     * and the plugin falls back to that shape when Floodgate is not installed. So a
+     * UUID of that shape exercises the real detection without needing Floodgate on the
+     * test server -- which is why the Bedrock path had no coverage at all until now.
+     */
+    public static volatile boolean bedrock = false;
+
+    /** Floodgate's shape: all of the most significant bits zero. */
+    private static final UUID BEDROCK_UUID = new UUID(0L, 0x9A1D0000_0000_0001L);
 
     /** The player named as the killer, when a case wants a death with one. */
     public static volatile String killer = null;
@@ -114,7 +128,8 @@ public final class Fake {
                         return who;
                     case "getDisplayName":
                         return (nickname != null && who.equals(NAME)) ? nickname : who;
-                    case "getUniqueId":       return id;
+                    case "getUniqueId":
+                        return (bedrock && who.equals(NAME)) ? BEDROCK_UUID : id;
                     case "getWorld":          return world;
                     case "getLocation":       return where;
                     case "setLastDamageCause":

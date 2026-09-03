@@ -40,7 +40,14 @@ public final class PlayerJoin implements Listener {
                         "Player Join",
                         msg,
                         null,
-                        java.util.Collections.singletonList(new Log.Field("Platform", "Bedrock")),
+                        // From lang.yml, not hardcoded. discord.platform-field and
+                        // discord.platform-bedrock have existed since this feature
+                        // shipped and were read by nothing -- a translator could change
+                        // both and see no difference, because the strings came from
+                        // here instead.
+                        java.util.Collections.singletonList(new Log.Field(
+                                Lang.text("discord.platform-field"),
+                                Lang.text("discord.platform-bedrock"))),
                         thumb
                 );
             } else {
