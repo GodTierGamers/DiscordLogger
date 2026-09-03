@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.5.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.4.1...v2.5.0) (2026-09-03)
+
+
+### ✨ Features
+
+* **bedrock:** read the platform strings from lang, and cover the path ([#244](https://github.com/GodTierGamers/DiscordLogger/issues/244)) ([5f8314c](https://github.com/GodTierGamers/DiscordLogger/commit/5f8314c7820bfda6beeb8cbf124c41ffbfe37e45))
+
+
+### 🐛 Fixes
+
+* **ci:** let the server JDK install without a signature ([#242](https://github.com/GodTierGamers/DiscordLogger/issues/242)) ([46e08f1](https://github.com/GodTierGamers/DiscordLogger/commit/46e08f1bb739fdd47f8256c630ecd0239d1f652c))
+* **plain-text:** stop printing config keys, doubled titles and unseparated fields ([#240](https://github.com/GodTierGamers/DiscordLogger/issues/240)) ([18b1218](https://github.com/GodTierGamers/DiscordLogger/commit/18b1218e5e47b9f53b3dbd4de630b7bf214a96f7))
+
 ## [2.4.1](https://github.com/GodTierGamers/DiscordLogger/compare/v2.4.0...v2.4.1) (2026-09-02)
 
 
