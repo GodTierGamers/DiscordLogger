@@ -202,6 +202,9 @@ public final class DriverPlugin extends JavaPlugin {
             case "killer":
                 Fake.killer = value.isEmpty() ? null : value;
                 break;
+            case "bedrock":
+                Fake.bedrock = Boolean.parseBoolean(value);
+                break;
             default:
                 sender.sendMessage("DRIVER-ERROR unknown fake setting " + what);
                 return;
