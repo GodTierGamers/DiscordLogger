@@ -363,7 +363,13 @@ class FilterAndFormatSweepTest {
             RESULTS.add(new Grader.Result("format.placeholders", Verdict.WRONG,
                     "sent nothing" + Sweeps.serverContext(server), null));
         } else {
-            final boolean literal = captured.contains("%player_name%");
+            // Compared with Markdown escapes removed. The plugin sends
+            // "%player\\_name%": mdEscape backslashes the underscore so a player cannot
+            // inject italics through chat, and Discord renders it back as
+            // "%player_name%". Checking the raw payload reported that as a possible
+            // leak on every version for two releases -- the plugin was doing exactly
+            // what it promises, and the test could not see it.
+            final boolean literal = unescapeMarkdown(captured).contains("%player_name%");
             RESULTS.add(new Grader.Result("format.placeholders",
                     literal ? Verdict.PASS : Verdict.POTENTIAL_ERROR,
                     literal ? "a placeholder typed in chat was logged as typed, not expanded"
@@ -478,6 +484,11 @@ class FilterAndFormatSweepTest {
     }
 
     // =============================================================================
+
+    /** Drops the backslashes mdEscape adds, so a comparison sees what Discord shows. */
+    private static String unescapeMarkdown(String payload) {
+        return payload == null ? null : payload.replaceAll("\\\\([_*~`>|\\[\\]()])", "$1");
+    }
 
     private void requireFake() {
         Assumptions.assumeTrue(playerEventsSupported,
