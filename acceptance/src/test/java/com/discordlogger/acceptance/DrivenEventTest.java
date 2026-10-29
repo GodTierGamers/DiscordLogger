@@ -44,7 +44,7 @@ class DrivenEventTest {
         assumeTrue(driver != null,
                 "driver not built -- run mvn -f acceptance/driver/pom.xml package");
 
-        final String mc = System.getProperty("dl.acceptance.version", "26.2");
+        final String mc = System.getProperty("dl.acceptance.version", "26.3");
         final int java = Jdks.javaFor(mc);
         assumeTrue(Jdks.javaBinary(java) != null, "no JDK " + java + " for " + mc);
 

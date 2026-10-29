@@ -18,7 +18,7 @@ staying up.
 Posts what happens on your Minecraft server to a Discord channel, as clean embeds
 or plain text. One webhook URL, no bot to host, no OAuth, no dashboard.
 
-**Runs on CraftBukkit, Spigot, Paper and forks, from Minecraft 1.8 through 26.2 — one JAR for all of them.**
+**Runs on CraftBukkit, Spigot, Paper and forks, from Minecraft 1.8 through 26.3 — one JAR for all of them.**
 
 ---
 
@@ -94,7 +94,7 @@ keeps it out of tab-completion.
 
 | | |
 |---|---|
-| **Server** | CraftBukkit, Spigot, Paper or a fork — **1.8 to 26.2** |
+| **Server** | CraftBukkit, Spigot, Paper or a fork — **1.8 to 26.3** |
 | **Java** | 8 or newer |
 | **Discord** | A webhook URL. No bot, no token, no hosting |
 
