@@ -101,7 +101,7 @@
         <dl.build.date>unknown</dl.build.date>
 
         <junit.version>6.1.3</junit.version>
-        <surefire.version>3.5.6</surefire.version>
+        <surefire.version>3.6.0</surefire.version>
     </properties>
 
     <repositories>
@@ -146,6 +146,20 @@
             <artifactId>${dl.api.artifactId}</artifactId>
             <version>${spigot.api.version}</version>
             <scope>provided</scope>
+            <!-- json-simple 1.1.1, which the server API pulls in, declares
+                 junit 4.10 as a compile dependency instead of a test one, so
+                 JUnit 4.10 lands on this project's classpath without anything
+                 here asking for it. Surefire 3.6.0 refuses to start when it finds
+                 JUnit 4.11 or older, so the build failed before a single test ran
+                 ("Surefire is not compatible with JUnit 4.11 or older"). The suite
+                 is Jupiter and nothing uses JUnit 4, so the dependency is pure
+                 packaging noise, and excluding it changes only what Surefire sees. -->
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Adventure, shaded.
