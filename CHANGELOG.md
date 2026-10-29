@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.5.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.4.1...v2.5.0) (2026-10-29)
+
+
+### ✨ Features
+
+* **bedrock:** read the platform strings from lang, and cover the path ([#244](https://github.com/GodTierGamers/DiscordLogger/issues/244)) ([5f8314c](https://github.com/GodTierGamers/DiscordLogger/commit/5f8314c7820bfda6beeb8cbf124c41ffbfe37e45))
+
+
+### 🐛 Fixes
+
+* **ci:** let the server JDK install without a signature ([#242](https://github.com/GodTierGamers/DiscordLogger/issues/242)) ([46e08f1](https://github.com/GodTierGamers/DiscordLogger/commit/46e08f1bb739fdd47f8256c630ecd0239d1f652c))
+* **plain-text:** stop printing config keys, doubled titles and unseparated fields ([#240](https://github.com/GodTierGamers/DiscordLogger/issues/240)) ([18b1218](https://github.com/GodTierGamers/DiscordLogger/commit/18b1218e5e47b9f53b3dbd4de630b7bf214a96f7))
+
+
+### 🧰 Maintenance
+
+* advertise Minecraft 26.3 ([#249](https://github.com/GodTierGamers/DiscordLogger/issues/249)) ([37c2569](https://github.com/GodTierGamers/DiscordLogger/commit/37c25696488bdade85a34cc1d8888b26b30a799a))
+* bump com.google.code.gson:gson from 2.14.0 to 2.15.0 ([#247](https://github.com/GodTierGamers/DiscordLogger/issues/247)) ([594ed5c](https://github.com/GodTierGamers/DiscordLogger/commit/594ed5cb5c634fc51d9130af7e8e241945f1961b))
+* bump org.apache.maven.plugins:maven-compiler-plugin from 3.15.0 to 3.16.0 ([#245](https://github.com/GodTierGamers/DiscordLogger/issues/245)) ([049f962](https://github.com/GodTierGamers/DiscordLogger/commit/049f962086fec80ea77b46144da05d8de9f1ddab))
+* **deps:** bump surefire to 3.6.0 and exclude json-simple's JUnit 4.10 ([#248](https://github.com/GodTierGamers/DiscordLogger/issues/248)) ([64c82b8](https://github.com/GodTierGamers/DiscordLogger/commit/64c82b80f75641690ab6fffbbd946518beb25eba))
+
 ## [2.4.1](https://github.com/GodTierGamers/DiscordLogger/compare/v2.4.0...v2.4.1) (2026-09-02)
 
 
