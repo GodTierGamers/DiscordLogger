@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -113,6 +114,47 @@ class ServerCompatTest {
         assertTrue(ServerCompat.parse(PAYLOAD, "9.9.9").isEmpty());
         assertTrue(ServerCompat.parse("not json at all", "2.3.1").isEmpty());
         assertTrue(ServerCompat.parse(null, "2.3.1").isEmpty());
+    }
+
+    @Test
+    @DisplayName("a 26.3 server is offered a release only once that release lists 26.3")
+    void twentySixThreeIsDecidedByTheList() {
+        final Set<String> withIt = Set.of("1.21.11", "26.1", "26.1.2", "26.2", "26.3");
+        final Set<String> withoutIt = Set.of("1.21.11", "26.1", "26.1.2", "26.2");
+
+        assertTrue(ServerCompat.listed(withIt, "26.3"));
+        assertFalse(ServerCompat.listed(withoutIt, "26.3"),
+                "a release whose list stops at 26.2 must not be offered to a 26.3 server");
+
+        // The whole path a real server takes: Bukkit.getBukkitVersion() hands back
+        // "26.3.build.230-R0.1-SNAPSHOT", the dash is cut, then the build segments go.
+        assertTrue(ServerCompat.listed(withIt, ServerCompat.numericPrefix("26.3.build.230")));
+        assertFalse(ServerCompat.listed(withoutIt, ServerCompat.numericPrefix("26.3.build.230")));
+    }
+
+    @Test
+    @DisplayName("a listing naming the minor line covers its patches, but 26 is not a line")
+    void parentLineIsAcceptedOnlyWhereItExists() {
+        assertTrue(ServerCompat.listed(Set.of("1.20"), "1.20.4"));
+        assertTrue(ServerCompat.listed(Set.of("26.1"), "26.1.2"));
+        // 26.x numbers the year, so the parent of "26.3" is the bare "26" -- which is
+        // no Minecraft version and appears in no listing. A 26.3 server therefore gets
+        // no free pass from a release that stops at 26.2, unlike a 1.20.4 server
+        // reading a list that names 1.20.
+        assertFalse(ServerCompat.listed(Set.of("26.2"), "26.3"));
+    }
+
+    @Test
+    @DisplayName("a version_number carrying build metadata is not matched by the bare tag")
+    void buildMetadataInTheListingFailsOpen() {
+        // 2.4.1 is published to Modrinth as "2.4.1+bukkit" on purpose, to put the
+        // installs with the broken reader down the fail-open branch. That rescue works
+        // only because the lookup is an exact match, so pin it: if this ever starts
+        // matching loosely, those installs go quiet again.
+        final String listing =
+                "[{\"game_versions\":[\"26.2\"],\"version_number\":\"2.4.1+bukkit\"}]";
+        assertTrue(ServerCompat.parse(listing, "2.4.1").isEmpty());
+        assertEquals(Set.of("26.2"), ServerCompat.parse(listing, "2.4.1+bukkit"));
     }
 
     @Test

@@ -56,7 +56,21 @@ public final class ServerCompat {
     public static boolean canRun(String releaseVersion) {
         final Set<String> supported = supportedBy(releaseVersion);
         if (supported.isEmpty()) return true;          // unknown -> do not suppress
-        final String mine = serverVersion();
+        return listed(supported, serverVersion());
+    }
+
+    /**
+     * Whether a release's version list covers this server's version.
+     *
+     * <p>Separate from {@link #canRun(String)} so the decision can be tested at all.
+     * {@link #serverVersion()} reads {@link Bukkit} statically and returns null without
+     * a running server, so every test of {@code canRun} could only ever reach the
+     * fail-open return -- which is how both faults this class exists for stayed green
+     * while the live check was wrong. The comparison is the part that decides whether a
+     * server is told about a release, so it is the part that needs pinning.
+     */
+    static boolean listed(Set<String> supported, String mine) {
+        if (supported.isEmpty()) return true;
         if (mine == null || mine.isEmpty()) return true;
         if (supported.contains(mine)) return true;
 
