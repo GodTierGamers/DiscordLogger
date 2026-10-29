@@ -40,7 +40,7 @@ class ServerBootTest {
         final Path jar = shippedJar();
         assumeTrue(jar != null, "no built plugin JAR in ../target -- run mvn package first");
 
-        final String mc = System.getProperty("dl.acceptance.version", "26.2");
+        final String mc = System.getProperty("dl.acceptance.version", "26.3");
         final int javaFeature = Jdks.javaFor(mc);
         assumeTrue(Jdks.javaBinary(javaFeature) != null,
                 "no JDK " + javaFeature + " here, which " + mc + " requires");

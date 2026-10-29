@@ -27,7 +27,7 @@ final class Sweeps {
     private Sweeps() {}
 
     static String version() {
-        return System.getProperty("dl.acceptance.version", "26.2");
+        return System.getProperty("dl.acceptance.version", "26.3");
     }
 
     static Path cache() {

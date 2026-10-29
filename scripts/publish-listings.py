@@ -349,13 +349,13 @@ def hangar_versions(wanted: list[str]) -> list[str]:
     """One entry per minor line, because Hangar counts versions and Paper's list is short.
 
     Two rejections taught this. Offering everything got "Too many versions selected
-    for platform Paper" -- Hangar caps how many a single upload may claim, and 74
+    for platform Paper" -- Hangar caps how many a single upload may claim, and 75
     patch versions is well past it. Filtering to 1.8.8-and-newer, the previous
     attempt, got "Invalid version: 1.8.9", because Paper does not build every patch.
 
     Hangar groups its list by minor line -- 1.8 and 1.8.8 both sit under "1.8" -- so
-    the line itself is the compact, accurate thing to claim: sixteen entries covering
-    1.8 to 26.2 rather than seventy-four. Anything Hangar still will not take is
+    the line itself is the compact, accurate thing to claim: seventeen entries covering
+    1.8 to 26.3 rather than seventy-five. Anything Hangar still will not take is
     dropped by the retry in publish_hangar, so this does not have to be exactly right,
     only small and close.
     """

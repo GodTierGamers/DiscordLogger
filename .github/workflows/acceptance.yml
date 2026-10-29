@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       versions:
-        description: "Which versions to run (all, or one of 1.8 / 1.12.2 / 1.16.5 / 26.2)"
+        description: "Which versions to run (all, or one of 1.8 / 1.12.2 / 1.16.5 / 26.3)"
         required: false
         default: all
   schedule:
@@ -54,7 +54,7 @@ jobs:
           - mc: "1.16.5"
             server_java: "16"
             source: paper
-          - mc: "26.2"
+          - mc: "26.3"
             server_java: "25"
             source: paper
 
