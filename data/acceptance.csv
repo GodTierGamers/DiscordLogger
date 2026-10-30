@@ -54624,3 +54624,857 @@ run_at,run_id,plugin_version,mc_version,category,key,verdict,detail
 2026-10-29T23:25:42.513142517Z,40970107918,2.4.1,26.3,filters.* + format.* + embeds.*,filters.only_log_commands,PASS,suppressed the event it was set to suppress
 2026-10-29T23:25:42.513151609Z,40970107918,2.4.1,26.3,filters.* + format.* + embeds.*,filters.respect_vanish,PASS,suppressed the event it was set to suppress
 2026-10-29T23:25:42.513160470Z,40970107918,2.4.1,26.3,filters.* + format.* + embeds.*,webhook.url,PASS,every event followed the main webhook when it changed
+2026-10-30T10:09:09.707582745Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.server.command.color,PASS,no wording to compare
+2026-10-30T10:09:09.708346490Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.server.explosion.color,PASS,no wording to compare
+2026-10-30T10:09:09.708359540Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.ban.color,PASS,no wording to compare
+2026-10-30T10:09:09.708368864Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.unban.color,PASS,no wording to compare
+2026-10-30T10:09:09.708376625Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.op.color,PASS,no wording to compare
+2026-10-30T10:09:09.708384106Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.deop.color,PASS,no wording to compare
+2026-10-30T10:09:09.708391738Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.color,PASS,no wording to compare
+2026-10-30T10:09:09.708398838Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.whitelist_edit.color,PASS,no wording to compare
+2026-10-30T10:09:09.708406089Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.server.command.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:09.708413250Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.server.explosion.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:09.708430686Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.ban.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:09.708437826Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.unban.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:09.708444646Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.op.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:09.708451467Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.deop.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:09.708461962Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:09.708470485Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.whitelist_edit.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:09.708480590Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.server.command.enabled,PASS,no wording to compare
+2026-10-30T10:09:09.708487680Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.server.explosion.enabled,PASS,no wording to compare
+2026-10-30T10:09:09.708494460Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.ban.enabled,PASS,no wording to compare
+2026-10-30T10:09:09.708501160Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.unban.enabled,PASS,no wording to compare
+2026-10-30T10:09:09.708508511Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.op.enabled,PASS,no wording to compare
+2026-10-30T10:09:09.708515482Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.deop.enabled,PASS,no wording to compare
+2026-10-30T10:09:09.708521911Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.enabled,PASS,no wording to compare
+2026-10-30T10:09:09.708529352Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.whitelist_edit.enabled,PASS,no wording to compare
+2026-10-30T10:09:09.708537334Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.kick.enabled,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:09.708544695Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.kick.color,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:09.708551736Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.kick.webhook,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:09.708558275Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.server.command.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:09.708564985Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.server.explosion.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:09.708572096Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.ban.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:09.708578355Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.unban.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:09.708584344Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.op.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:09.708590383Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.deop.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:09.708596302Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:09.708602691Z,41038007071,2.5.0,1.12.2,log.server.* + log.moderation.*,log.moderation.whitelist_edit.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:04.323239349Z,41038007071,2.5.0,1.12.2,log.server.start/stop,log.server.stop.enabled,PASS,no wording to compare
+2026-10-30T10:10:04.323285618Z,41038007071,2.5.0,1.12.2,log.server.start/stop,log.server.stop.color,PASS,no wording to compare
+2026-10-30T10:10:04.323295082Z,41038007071,2.5.0,1.12.2,log.server.start/stop,log.server.start.enabled,PASS,no wording to compare
+2026-10-30T10:10:04.323302643Z,41038007071,2.5.0,1.12.2,log.server.start/stop,log.server.start.color,PASS,no wording to compare
+2026-10-30T10:10:04.323309604Z,41038007071,2.5.0,1.12.2,log.server.start/stop,log.server.stop.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:04.323316294Z,41038007071,2.5.0,1.12.2,log.server.start/stop,log.server.start.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:04.323323915Z,41038007071,2.5.0,1.12.2,log.server.start/stop,log.server.stop.enabled,PASS,correctly sent nothing
+2026-10-30T10:10:04.323329804Z,41038007071,2.5.0,1.12.2,log.server.start/stop,log.server.start.enabled,PASS,correctly sent nothing
+2026-10-30T10:11:15.636320112Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.reload-ok,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:11:15.636369466Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.reload-no-webhook,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:11:15.636380041Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.reload-no-webhook-hint,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:11:15.636408924Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.webhook-usage,PASS,the rewritten line came back from 'discordlogger webhook'
+2026-10-30T10:11:15.636419971Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.webhook-where,PASS,the rewritten line came back from 'discordlogger webhook'
+2026-10-30T10:11:15.636429705Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.webhook-invalid,PASS,the rewritten line came back from 'discordlogger webhook http://example.com/not-a-webhook'
+2026-10-30T10:11:15.636438558Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.webhook-expected,PASS,the rewritten line came back from 'discordlogger webhook http://example.com/not-a-webhook'
+2026-10-30T10:11:15.636447341Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.regen-warning,PASS,the rewritten line came back from 'discordlogger regen'
+2026-10-30T10:11:15.636456215Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.regen-confirm,PASS,the rewritten line came back from 'discordlogger regen'
+2026-10-30T10:11:15.636464507Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.help-header,PASS,the rewritten line came back from 'discordlogger'
+2026-10-30T10:11:15.636472689Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.help-entry,PASS,the rewritten line came back from 'discordlogger'
+2026-10-30T10:11:15.636480611Z,41038007071,2.5.0,1.12.2,lang.yml chat.*,chat.unknown-subcommand,PASS,the rewritten line came back from 'discordlogger definitelynotasubcommand'
+2026-10-30T10:14:23.137082461Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.join.color,PASS,no wording to compare
+2026-10-30T10:14:23.137142760Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.quit.color,PASS,no wording to compare
+2026-10-30T10:14:23.137155379Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.chat.color,PASS,no wording to compare
+2026-10-30T10:14:23.137166626Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.gamemode.color,PASS,no wording to compare
+2026-10-30T10:14:23.137176300Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.teleport.color,PASS,no wording to compare
+2026-10-30T10:14:23.137185544Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.death.color,PASS,no wording to compare
+2026-10-30T10:14:23.137194387Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.advancement.color,PASS,no wording to compare
+2026-10-30T10:14:23.137202509Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.join.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:23.137210681Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.quit.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:23.137227927Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.chat.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:23.137236640Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.gamemode.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:23.137245233Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.teleport.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:23.137253375Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.death.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:23.137261226Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.advancement.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:23.137268948Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.join.enabled,PASS,no wording to compare
+2026-10-30T10:14:23.137276429Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.quit.enabled,PASS,no wording to compare
+2026-10-30T10:14:23.137283650Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.chat.enabled,PASS,no wording to compare
+2026-10-30T10:14:23.137291101Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.gamemode.enabled,PASS,no wording to compare
+2026-10-30T10:14:23.137298732Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.teleport.enabled,PASS,no wording to compare
+2026-10-30T10:14:23.137306444Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.death.enabled,PASS,no wording to compare
+2026-10-30T10:14:23.137313885Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.advancement.enabled,PASS,no wording to compare
+2026-10-30T10:14:23.137321496Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.join.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:23.137331511Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.quit.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:23.137339573Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.chat.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:23.137347585Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.gamemode.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:23.137355657Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.teleport.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:23.137363278Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.death.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:23.137371420Z,41038007071,2.5.0,1.12.2,log.player.*,log.player.advancement.webhook,PASS,routed to its own webhook
+2026-10-30T10:20:21.816354661Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.player-join,PASS,no wording to compare
+2026-10-30T10:20:21.816428510Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.player-quit,PASS,no wording to compare
+2026-10-30T10:20:21.816441259Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.player-chat,PASS,no wording to compare
+2026-10-30T10:20:21.816451294Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.player-command,PASS,no wording to compare
+2026-10-30T10:20:21.816460578Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.server-command,PASS,no wording to compare
+2026-10-30T10:20:21.816469131Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.platform-field,PASS,no wording to compare
+2026-10-30T10:20:21.816477503Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.platform-bedrock,PASS,no wording to compare
+2026-10-30T10:20:21.816485425Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.description,PASS,no wording to compare
+2026-10-30T10:20:21.816493046Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.cause-field,PASS,no wording to compare
+2026-10-30T10:20:21.816501429Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.coords-field,PASS,no wording to compare
+2026-10-30T10:20:21.816509741Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.coords-value,PASS,no wording to compare
+2026-10-30T10:20:21.816518264Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.slain-by-player,PASS,no wording to compare
+2026-10-30T10:20:21.816526436Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.slain-by-mob,PASS,no wording to compare
+2026-10-30T10:20:21.816533967Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.shot-by,PASS,no wording to compare
+2026-10-30T10:20:21.816541368Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.shot,PASS,no wording to compare
+2026-10-30T10:20:21.816548599Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.unknown,PASS,no wording to compare
+2026-10-30T10:20:21.816556110Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.fall,PASS,no wording to compare
+2026-10-30T10:20:21.816563270Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.lava,PASS,no wording to compare
+2026-10-30T10:20:21.816571102Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.fire,PASS,no wording to compare
+2026-10-30T10:20:21.816579885Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.fire-tick,PASS,no wording to compare
+2026-10-30T10:20:21.816589009Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.drowning,PASS,no wording to compare
+2026-10-30T10:20:21.816598573Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.suffocation,PASS,no wording to compare
+2026-10-30T10:20:21.816607106Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.void,PASS,no wording to compare
+2026-10-30T10:20:21.816615768Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.contact,PASS,no wording to compare
+2026-10-30T10:20:21.816623921Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.block-explosion,PASS,no wording to compare
+2026-10-30T10:20:21.816631652Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.entity-explosion,PASS,no wording to compare
+2026-10-30T10:20:21.816639854Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.magic,PASS,no wording to compare
+2026-10-30T10:20:21.816647465Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.poison,PASS,no wording to compare
+2026-10-30T10:20:21.816654967Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.wither,PASS,no wording to compare
+2026-10-30T10:20:21.816662458Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.starvation,PASS,no wording to compare
+2026-10-30T10:20:21.816668767Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.freeze,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:20:21.816675567Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.lightning,PASS,no wording to compare
+2026-10-30T10:20:21.816680815Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.hot-floor,PASS,no wording to compare
+2026-10-30T10:20:21.816685542Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.cramming,PASS,no wording to compare
+2026-10-30T10:20:21.816690750Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.dragon-breath,PASS,no wording to compare
+2026-10-30T10:20:21.816696318Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.thorns,PASS,no wording to compare
+2026-10-30T10:20:21.816712071Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.kill,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:20:21.816719352Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.suicide,PASS,no wording to compare
+2026-10-30T10:20:21.816727484Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.world-border,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:20:21.816735466Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.sonic-boom,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:20:21.816744470Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.campfire,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:20:21.816758030Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.falling-block,PASS,no wording to compare
+2026-10-30T10:20:21.816766753Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.fly-into-wall,PASS,no wording to compare
+2026-10-30T10:20:21.816775205Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.dryout,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:20:21.816837087Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.melting,PASS,no wording to compare
+2026-10-30T10:20:21.816894683Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.entity-attack,PASS,no wording to compare
+2026-10-30T10:20:21.816904237Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.entity-sweep-attack,PASS,no wording to compare
+2026-10-30T10:20:21.816912439Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.projectile,PASS,no wording to compare
+2026-10-30T10:20:21.816920190Z,41038007071,2.5.0,1.12.2,lang.yml discord.*,discord.death.causes.custom,PASS,no wording to compare
+2026-10-30T10:21:19.819520445Z,41038007071,2.5.0,1.12.2,plain text (embeds off),plain-text.player-join,PASS,no wording to compare
+2026-10-30T10:21:19.819566053Z,41038007071,2.5.0,1.12.2,plain text (embeds off),plain-text.player-quit,PASS,no wording to compare
+2026-10-30T10:21:19.819575257Z,41038007071,2.5.0,1.12.2,plain text (embeds off),plain-text.player-chat,PASS,no wording to compare
+2026-10-30T10:21:19.819583469Z,41038007071,2.5.0,1.12.2,plain text (embeds off),plain-text.player-command,PASS,no wording to compare
+2026-10-30T10:21:19.819589948Z,41038007071,2.5.0,1.12.2,plain text (embeds off),plain-text.player-death,PASS,no wording to compare
+2026-10-30T10:21:19.819595947Z,41038007071,2.5.0,1.12.2,plain text (embeds off),plain-text.player-teleport,PASS,no wording to compare
+2026-10-30T10:21:19.819601816Z,41038007071,2.5.0,1.12.2,plain text (embeds off),plain-text.player-gamemode,PASS,no wording to compare
+2026-10-30T10:21:19.819607214Z,41038007071,2.5.0,1.12.2,plain text (embeds off),plain-text.server-command,PASS,no wording to compare
+2026-10-30T10:21:19.819612232Z,41038007071,2.5.0,1.12.2,plain text (embeds off),plain-text.explosion,PASS,no wording to compare
+2026-10-30T10:21:19.819616788Z,41038007071,2.5.0,1.12.2,plain text (embeds off),plain-text.moderation-op,PASS,no wording to compare
+2026-10-30T10:27:38.014865138Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,log.custom,PASS,no wording to compare
+2026-10-30T10:27:38.014911186Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,no wording to compare
+2026-10-30T10:27:38.014919018Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,left the location out when switched off
+2026-10-30T10:27:38.014924946Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,embeds.author,PASS,no wording to compare
+2026-10-30T10:27:38.014929964Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,embeds.enabled,PASS,no wording to compare
+2026-10-30T10:27:38.014934751Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,embeds.enabled,PASS,switched to plain text
+2026-10-30T10:27:38.014938977Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.exempt_permission,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.014943234Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,format.name,PASS,no wording to compare
+2026-10-30T10:27:38.014947340Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,format.nicknames,PASS,no wording to compare
+2026-10-30T10:27:38.014951526Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,format.nicknames,PASS,used the real name when switched off
+2026-10-30T10:27:38.014955672Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,format.placeholders,POTENTIAL_ERROR,a placeholder typed in chat did not survive as written; expansion of player-supplied text would be a leak
+2026-10-30T10:27:38.014960019Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,format.time,PASS,no wording to compare
+2026-10-30T10:27:38.014964095Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.ignored_advancements,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.014968131Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.ignored_chat_containing,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.014971916Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.ignored_commands,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.014976223Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.ignored_death_causes,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.014980659Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.ignored_explosion_sources,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.014993538Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.ignored_players,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.014997825Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.ignored_teleport_causes,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.015001931Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.ignored_worlds,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.015006077Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,no wording to compare
+2026-10-30T10:27:38.015010343Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,left the platform out when switched off
+2026-10-30T10:27:38.015014419Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,"left a Java player unlabelled, which is all that can be known -- nothing proves a player IS Java"
+2026-10-30T10:27:38.015018385Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.log_recipe_advancements,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.015022582Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.minimum_chat_length,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.015026618Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.minimum_explosion_blocks,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.015030744Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.minimum_teleport_distance,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.015034980Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.only_log_commands,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.015039186Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,filters.respect_vanish,PASS,suppressed the event it was set to suppress
+2026-10-30T10:27:38.015043292Z,41038007071,2.5.0,1.12.2,filters.* + format.* + embeds.*,webhook.url,PASS,every event followed the main webhook when it changed
+2026-10-30T10:09:32.781348922Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.server.command.color,PASS,no wording to compare
+2026-10-30T10:09:32.782579101Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.server.explosion.color,PASS,no wording to compare
+2026-10-30T10:09:32.782597408Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.ban.color,PASS,no wording to compare
+2026-10-30T10:09:32.782610581Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.unban.color,PASS,no wording to compare
+2026-10-30T10:09:32.782621911Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.op.color,PASS,no wording to compare
+2026-10-30T10:09:32.782631995Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.deop.color,PASS,no wording to compare
+2026-10-30T10:09:32.782641540Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.color,PASS,no wording to compare
+2026-10-30T10:09:32.782650509Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.whitelist_edit.color,PASS,no wording to compare
+2026-10-30T10:09:32.782659157Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.server.command.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:32.782667524Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.server.explosion.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:32.782675612Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.ban.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:32.782684058Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.unban.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:32.782692392Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.op.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:32.782700272Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.deop.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:32.782708210Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:32.782737410Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.whitelist_edit.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:32.782749856Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.server.command.enabled,PASS,no wording to compare
+2026-10-30T10:09:32.782760561Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.server.explosion.enabled,PASS,no wording to compare
+2026-10-30T10:09:32.782782112Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.ban.enabled,PASS,no wording to compare
+2026-10-30T10:09:32.782794690Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.unban.enabled,PASS,no wording to compare
+2026-10-30T10:09:32.782812800Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.op.enabled,PASS,no wording to compare
+2026-10-30T10:09:32.782825228Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.deop.enabled,PASS,no wording to compare
+2026-10-30T10:09:32.782836727Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.enabled,PASS,no wording to compare
+2026-10-30T10:09:32.782849166Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.whitelist_edit.enabled,PASS,no wording to compare
+2026-10-30T10:09:32.782861252Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.kick.enabled,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:32.782874132Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.kick.color,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:32.782887186Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.kick.webhook,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:32.782898854Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.server.command.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:32.782909654Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.server.explosion.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:32.782920743Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.ban.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:32.782931886Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.unban.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:32.782943243Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.op.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:32.782966808Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.deop.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:32.782982521Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:32.782994935Z,41038007071,2.5.0,1.16.5,log.server.* + log.moderation.*,log.moderation.whitelist_edit.webhook,PASS,routed to its own webhook
+2026-10-30T10:11:00.874449181Z,41038007071,2.5.0,1.16.5,log.server.start/stop,log.server.stop.enabled,PASS,no wording to compare
+2026-10-30T10:11:00.874519475Z,41038007071,2.5.0,1.16.5,log.server.start/stop,log.server.stop.color,PASS,no wording to compare
+2026-10-30T10:11:00.874566590Z,41038007071,2.5.0,1.16.5,log.server.start/stop,log.server.start.enabled,PASS,no wording to compare
+2026-10-30T10:11:00.874586572Z,41038007071,2.5.0,1.16.5,log.server.start/stop,log.server.start.color,PASS,no wording to compare
+2026-10-30T10:11:00.874595647Z,41038007071,2.5.0,1.16.5,log.server.start/stop,log.server.stop.webhook,PASS,routed to its own webhook
+2026-10-30T10:11:00.874604126Z,41038007071,2.5.0,1.16.5,log.server.start/stop,log.server.start.webhook,PASS,routed to its own webhook
+2026-10-30T10:11:00.874614676Z,41038007071,2.5.0,1.16.5,log.server.start/stop,log.server.stop.enabled,PASS,correctly sent nothing
+2026-10-30T10:11:00.874621937Z,41038007071,2.5.0,1.16.5,log.server.start/stop,log.server.start.enabled,PASS,correctly sent nothing
+2026-10-30T10:12:33.043389866Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.reload-ok,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:12:33.043438669Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.reload-no-webhook,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:12:33.043451777Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.reload-no-webhook-hint,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:12:33.043484593Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.webhook-usage,PASS,the rewritten line came back from 'discordlogger webhook'
+2026-10-30T10:12:33.043500351Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.webhook-where,PASS,the rewritten line came back from 'discordlogger webhook'
+2026-10-30T10:12:33.043511989Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.webhook-invalid,PASS,the rewritten line came back from 'discordlogger webhook http://example.com/not-a-webhook'
+2026-10-30T10:12:33.043544279Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.webhook-expected,PASS,the rewritten line came back from 'discordlogger webhook http://example.com/not-a-webhook'
+2026-10-30T10:12:33.043568687Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.regen-warning,PASS,the rewritten line came back from 'discordlogger regen'
+2026-10-30T10:12:33.043577907Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.regen-confirm,PASS,the rewritten line came back from 'discordlogger regen'
+2026-10-30T10:12:33.043586111Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.help-header,PASS,the rewritten line came back from 'discordlogger'
+2026-10-30T10:12:33.043593561Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.help-entry,PASS,the rewritten line came back from 'discordlogger'
+2026-10-30T10:12:33.043600779Z,41038007071,2.5.0,1.16.5,lang.yml chat.*,chat.unknown-subcommand,PASS,the rewritten line came back from 'discordlogger definitelynotasubcommand'
+2026-10-30T10:15:54.384911821Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.join.color,PASS,no wording to compare
+2026-10-30T10:15:54.384967192Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.quit.color,PASS,no wording to compare
+2026-10-30T10:15:54.384983270Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.chat.color,PASS,no wording to compare
+2026-10-30T10:15:54.384996277Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.gamemode.color,PASS,no wording to compare
+2026-10-30T10:15:54.385007325Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.teleport.color,PASS,no wording to compare
+2026-10-30T10:15:54.385018021Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.death.color,PASS,no wording to compare
+2026-10-30T10:15:54.385028469Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.advancement.color,PASS,no wording to compare
+2026-10-30T10:15:54.385038030Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.join.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:54.385047987Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.quit.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:54.385065525Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.chat.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:54.385075811Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.gamemode.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:54.385085441Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.teleport.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:54.385095151Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.death.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:54.385104219Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.advancement.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:54.385112943Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.join.enabled,PASS,no wording to compare
+2026-10-30T10:15:54.385121824Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.quit.enabled,PASS,no wording to compare
+2026-10-30T10:15:54.385130478Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.chat.enabled,PASS,no wording to compare
+2026-10-30T10:15:54.385138795Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.gamemode.enabled,PASS,no wording to compare
+2026-10-30T10:15:54.385147257Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.teleport.enabled,PASS,no wording to compare
+2026-10-30T10:15:54.385156438Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.death.enabled,PASS,no wording to compare
+2026-10-30T10:15:54.385165445Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.advancement.enabled,PASS,no wording to compare
+2026-10-30T10:15:54.385173950Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.join.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:54.385187238Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.quit.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:54.385197526Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.chat.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:54.385207078Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.gamemode.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:54.385215910Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.teleport.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:54.385224911Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.death.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:54.385233816Z,41038007071,2.5.0,1.16.5,log.player.*,log.player.advancement.webhook,PASS,routed to its own webhook
+2026-10-30T10:21:54.525218048Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.player-join,PASS,no wording to compare
+2026-10-30T10:21:54.525279017Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.player-quit,PASS,no wording to compare
+2026-10-30T10:21:54.525292074Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.player-chat,PASS,no wording to compare
+2026-10-30T10:21:54.525301767Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.player-command,PASS,no wording to compare
+2026-10-30T10:21:54.525310064Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.server-command,PASS,no wording to compare
+2026-10-30T10:21:54.525317231Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.platform-field,PASS,no wording to compare
+2026-10-30T10:21:54.525323753Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.platform-bedrock,PASS,no wording to compare
+2026-10-30T10:21:54.525329909Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.description,PASS,no wording to compare
+2026-10-30T10:21:54.525336116Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.cause-field,PASS,no wording to compare
+2026-10-30T10:21:54.525342230Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.coords-field,PASS,no wording to compare
+2026-10-30T10:21:54.525348551Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.coords-value,PASS,no wording to compare
+2026-10-30T10:21:54.525354739Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.slain-by-player,PASS,no wording to compare
+2026-10-30T10:21:54.525360616Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.slain-by-mob,PASS,no wording to compare
+2026-10-30T10:21:54.525366501Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.shot-by,PASS,no wording to compare
+2026-10-30T10:21:54.525372240Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.shot,PASS,no wording to compare
+2026-10-30T10:21:54.525378193Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.unknown,PASS,no wording to compare
+2026-10-30T10:21:54.525383679Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.fall,PASS,no wording to compare
+2026-10-30T10:21:54.525389455Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.lava,PASS,no wording to compare
+2026-10-30T10:21:54.525395610Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.fire,PASS,no wording to compare
+2026-10-30T10:21:54.525401381Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.fire-tick,PASS,no wording to compare
+2026-10-30T10:21:54.525408151Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.drowning,PASS,no wording to compare
+2026-10-30T10:21:54.525414597Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.suffocation,PASS,no wording to compare
+2026-10-30T10:21:54.525420542Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.void,PASS,no wording to compare
+2026-10-30T10:21:54.525427220Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.contact,PASS,no wording to compare
+2026-10-30T10:21:54.525433204Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.block-explosion,PASS,no wording to compare
+2026-10-30T10:21:54.525438993Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.entity-explosion,PASS,no wording to compare
+2026-10-30T10:21:54.525445337Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.magic,PASS,no wording to compare
+2026-10-30T10:21:54.525450971Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.poison,PASS,no wording to compare
+2026-10-30T10:21:54.525456664Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.wither,PASS,no wording to compare
+2026-10-30T10:21:54.525462200Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.starvation,PASS,no wording to compare
+2026-10-30T10:21:54.525468706Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.freeze,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:21:54.525476908Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.lightning,PASS,no wording to compare
+2026-10-30T10:21:54.525482756Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.hot-floor,PASS,no wording to compare
+2026-10-30T10:21:54.525488191Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.cramming,PASS,no wording to compare
+2026-10-30T10:21:54.525493792Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.dragon-breath,PASS,no wording to compare
+2026-10-30T10:21:54.525499844Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.thorns,PASS,no wording to compare
+2026-10-30T10:21:54.525516529Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.kill,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:21:54.525523050Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.suicide,PASS,no wording to compare
+2026-10-30T10:21:54.525546450Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.world-border,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:21:54.525557498Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.sonic-boom,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:21:54.525567800Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.campfire,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:21:54.525585609Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.falling-block,PASS,no wording to compare
+2026-10-30T10:21:54.525592896Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.fly-into-wall,PASS,no wording to compare
+2026-10-30T10:21:54.525599491Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.dryout,PASS,no wording to compare
+2026-10-30T10:21:54.525637611Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.melting,PASS,no wording to compare
+2026-10-30T10:21:54.525703510Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.entity-attack,PASS,no wording to compare
+2026-10-30T10:21:54.525713027Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.entity-sweep-attack,PASS,no wording to compare
+2026-10-30T10:21:54.525720066Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.projectile,PASS,no wording to compare
+2026-10-30T10:21:54.525725983Z,41038007071,2.5.0,1.16.5,lang.yml discord.*,discord.death.causes.custom,PASS,no wording to compare
+2026-10-30T10:23:02.911645132Z,41038007071,2.5.0,1.16.5,plain text (embeds off),plain-text.player-join,PASS,no wording to compare
+2026-10-30T10:23:02.911695302Z,41038007071,2.5.0,1.16.5,plain text (embeds off),plain-text.player-quit,PASS,no wording to compare
+2026-10-30T10:23:02.911706643Z,41038007071,2.5.0,1.16.5,plain text (embeds off),plain-text.player-chat,PASS,no wording to compare
+2026-10-30T10:23:02.911718335Z,41038007071,2.5.0,1.16.5,plain text (embeds off),plain-text.player-command,PASS,no wording to compare
+2026-10-30T10:23:02.911727698Z,41038007071,2.5.0,1.16.5,plain text (embeds off),plain-text.player-death,PASS,no wording to compare
+2026-10-30T10:23:02.911738044Z,41038007071,2.5.0,1.16.5,plain text (embeds off),plain-text.player-teleport,PASS,no wording to compare
+2026-10-30T10:23:02.911759296Z,41038007071,2.5.0,1.16.5,plain text (embeds off),plain-text.player-gamemode,PASS,no wording to compare
+2026-10-30T10:23:02.911765608Z,41038007071,2.5.0,1.16.5,plain text (embeds off),plain-text.server-command,PASS,no wording to compare
+2026-10-30T10:23:02.911770666Z,41038007071,2.5.0,1.16.5,plain text (embeds off),plain-text.explosion,PASS,no wording to compare
+2026-10-30T10:23:02.911775760Z,41038007071,2.5.0,1.16.5,plain text (embeds off),plain-text.moderation-op,PASS,no wording to compare
+2026-10-30T10:29:31.740924853Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,log.custom,PASS,no wording to compare
+2026-10-30T10:29:31.740978540Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,no wording to compare
+2026-10-30T10:29:31.740994306Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,left the location out when switched off
+2026-10-30T10:29:31.741006942Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,embeds.author,PASS,no wording to compare
+2026-10-30T10:29:31.741017625Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,embeds.enabled,PASS,no wording to compare
+2026-10-30T10:29:31.741027703Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,embeds.enabled,PASS,switched to plain text
+2026-10-30T10:29:31.741036033Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.exempt_permission,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741043650Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,format.name,PASS,no wording to compare
+2026-10-30T10:29:31.741050698Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,format.nicknames,PASS,no wording to compare
+2026-10-30T10:29:31.741056691Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,format.nicknames,PASS,used the real name when switched off
+2026-10-30T10:29:31.741063856Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,format.placeholders,POTENTIAL_ERROR,a placeholder typed in chat did not survive as written; expansion of player-supplied text would be a leak
+2026-10-30T10:29:31.741080679Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,format.time,PASS,no wording to compare
+2026-10-30T10:29:31.741089888Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.ignored_advancements,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741096680Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.ignored_chat_containing,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741102990Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.ignored_commands,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741109690Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.ignored_death_causes,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741116275Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.ignored_explosion_sources,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741124086Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.ignored_players,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741130993Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.ignored_teleport_causes,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741137648Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.ignored_worlds,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741145085Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,no wording to compare
+2026-10-30T10:29:31.741152497Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,left the platform out when switched off
+2026-10-30T10:29:31.741159337Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,"left a Java player unlabelled, which is all that can be known -- nothing proves a player IS Java"
+2026-10-30T10:29:31.741166427Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.log_recipe_advancements,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741173230Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.minimum_chat_length,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741179724Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.minimum_explosion_blocks,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741186170Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.minimum_teleport_distance,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741192855Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.only_log_commands,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741201254Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,filters.respect_vanish,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:31.741208396Z,41038007071,2.5.0,1.16.5,filters.* + format.* + embeds.*,webhook.url,PASS,every event followed the main webhook when it changed
+2026-10-30T10:09:19.656917870Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.server.command.color,PASS,no wording to compare
+2026-10-30T10:09:19.658054970Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.server.explosion.color,PASS,no wording to compare
+2026-10-30T10:09:19.658075479Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.ban.color,PASS,no wording to compare
+2026-10-30T10:09:19.658091779Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.unban.color,PASS,no wording to compare
+2026-10-30T10:09:19.658106807Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.op.color,PASS,no wording to compare
+2026-10-30T10:09:19.658120743Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.deop.color,PASS,no wording to compare
+2026-10-30T10:09:19.658136042Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.color,PASS,no wording to compare
+2026-10-30T10:09:19.658150929Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.whitelist_edit.color,PASS,no wording to compare
+2026-10-30T10:09:19.658164926Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.server.command.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:19.658179272Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.server.explosion.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:19.658193308Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.ban.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:19.658213165Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.unban.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:19.658280257Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.op.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:19.658297950Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.deop.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:19.658312408Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:19.658326844Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.whitelist_edit.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:19.658353254Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.server.command.enabled,PASS,no wording to compare
+2026-10-30T10:09:19.658367671Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.server.explosion.enabled,PASS,no wording to compare
+2026-10-30T10:09:19.658380925Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.ban.enabled,PASS,no wording to compare
+2026-10-30T10:09:19.658394721Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.unban.enabled,PASS,no wording to compare
+2026-10-30T10:09:19.658410070Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.op.enabled,PASS,no wording to compare
+2026-10-30T10:09:19.658424236Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.deop.enabled,PASS,no wording to compare
+2026-10-30T10:09:19.658437471Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.enabled,PASS,no wording to compare
+2026-10-30T10:09:19.658458249Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.whitelist_edit.enabled,PASS,no wording to compare
+2026-10-30T10:09:19.658472566Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.kick.enabled,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:19.658486202Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.kick.color,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:19.658499056Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.kick.webhook,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:19.658514054Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.server.command.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:19.658527228Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.server.explosion.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:19.658539842Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.ban.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:19.658552666Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.unban.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:19.658565580Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.op.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:19.658578754Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.deop.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:19.658591077Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:19.658604041Z,41038007071,2.5.0,1.8,log.server.* + log.moderation.*,log.moderation.whitelist_edit.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:22.955877755Z,41038007071,2.5.0,1.8,log.server.start/stop,log.server.stop.enabled,PASS,no wording to compare
+2026-10-30T10:10:22.955922478Z,41038007071,2.5.0,1.8,log.server.start/stop,log.server.stop.color,PASS,no wording to compare
+2026-10-30T10:10:22.955938117Z,41038007071,2.5.0,1.8,log.server.start/stop,log.server.start.enabled,PASS,no wording to compare
+2026-10-30T10:10:22.955951722Z,41038007071,2.5.0,1.8,log.server.start/stop,log.server.start.color,PASS,no wording to compare
+2026-10-30T10:10:22.955964536Z,41038007071,2.5.0,1.8,log.server.start/stop,log.server.stop.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:22.955976799Z,41038007071,2.5.0,1.8,log.server.start/stop,log.server.start.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:22.955990345Z,41038007071,2.5.0,1.8,log.server.start/stop,log.server.stop.enabled,PASS,correctly sent nothing
+2026-10-30T10:10:22.956003238Z,41038007071,2.5.0,1.8,log.server.start/stop,log.server.start.enabled,PASS,correctly sent nothing
+2026-10-30T10:11:38.959387610Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.reload-ok,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:11:38.959437714Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.reload-no-webhook,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:11:38.959457601Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.reload-no-webhook-hint,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:11:38.959487767Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.webhook-usage,PASS,the rewritten line came back from 'discordlogger webhook'
+2026-10-30T10:11:38.959503967Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.webhook-where,PASS,the rewritten line came back from 'discordlogger webhook'
+2026-10-30T10:11:38.959517603Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.webhook-invalid,PASS,the rewritten line came back from 'discordlogger webhook http://example.com/not-a-webhook'
+2026-10-30T10:11:38.959531809Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.webhook-expected,PASS,the rewritten line came back from 'discordlogger webhook http://example.com/not-a-webhook'
+2026-10-30T10:11:38.959544804Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.regen-warning,PASS,the rewritten line came back from 'discordlogger regen'
+2026-10-30T10:11:38.959560142Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.regen-confirm,PASS,the rewritten line came back from 'discordlogger regen'
+2026-10-30T10:11:38.959573197Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.help-header,PASS,the rewritten line came back from 'discordlogger'
+2026-10-30T10:11:38.959585199Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.help-entry,PASS,the rewritten line came back from 'discordlogger'
+2026-10-30T10:11:38.959599014Z,41038007071,2.5.0,1.8,lang.yml chat.*,chat.unknown-subcommand,PASS,the rewritten line came back from 'discordlogger definitelynotasubcommand'
+2026-10-30T10:14:52.137845322Z,41038007071,2.5.0,1.8,log.player.*,log.player.join.color,PASS,no wording to compare
+2026-10-30T10:14:52.137897710Z,41038007071,2.5.0,1.8,log.player.*,log.player.quit.color,PASS,no wording to compare
+2026-10-30T10:14:52.137918779Z,41038007071,2.5.0,1.8,log.player.*,log.player.chat.color,PASS,no wording to compare
+2026-10-30T10:14:52.137936723Z,41038007071,2.5.0,1.8,log.player.*,log.player.gamemode.color,PASS,no wording to compare
+2026-10-30T10:14:52.137954486Z,41038007071,2.5.0,1.8,log.player.*,log.player.teleport.color,PASS,no wording to compare
+2026-10-30T10:14:52.137971788Z,41038007071,2.5.0,1.8,log.player.*,log.player.death.color,PASS,no wording to compare
+2026-10-30T10:14:52.137988199Z,41038007071,2.5.0,1.8,log.player.*,log.player.advancement.color,PASS,no wording to compare
+2026-10-30T10:14:52.138004920Z,41038007071,2.5.0,1.8,log.player.*,log.player.join.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:52.138568581Z,41038007071,2.5.0,1.8,log.player.*,log.player.quit.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:52.138614637Z,41038007071,2.5.0,1.8,log.player.*,log.player.chat.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:52.138633833Z,41038007071,2.5.0,1.8,log.player.*,log.player.gamemode.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:52.138649653Z,41038007071,2.5.0,1.8,log.player.*,log.player.teleport.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:52.138666404Z,41038007071,2.5.0,1.8,log.player.*,log.player.death.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:52.138682163Z,41038007071,2.5.0,1.8,log.player.*,log.player.advancement.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:52.138698724Z,41038007071,2.5.0,1.8,log.player.*,log.player.join.enabled,PASS,no wording to compare
+2026-10-30T10:14:52.138714043Z,41038007071,2.5.0,1.8,log.player.*,log.player.quit.enabled,PASS,no wording to compare
+2026-10-30T10:14:52.138730283Z,41038007071,2.5.0,1.8,log.player.*,log.player.chat.enabled,PASS,no wording to compare
+2026-10-30T10:14:52.138745812Z,41038007071,2.5.0,1.8,log.player.*,log.player.gamemode.enabled,PASS,no wording to compare
+2026-10-30T10:14:52.138761331Z,41038007071,2.5.0,1.8,log.player.*,log.player.teleport.enabled,PASS,no wording to compare
+2026-10-30T10:14:52.138777832Z,41038007071,2.5.0,1.8,log.player.*,log.player.death.enabled,PASS,no wording to compare
+2026-10-30T10:14:52.138794653Z,41038007071,2.5.0,1.8,log.player.*,log.player.advancement.enabled,PASS,no wording to compare
+2026-10-30T10:14:52.138811675Z,41038007071,2.5.0,1.8,log.player.*,log.player.join.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:52.138833686Z,41038007071,2.5.0,1.8,log.player.*,log.player.quit.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:52.138860235Z,41038007071,2.5.0,1.8,log.player.*,log.player.chat.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:52.138877017Z,41038007071,2.5.0,1.8,log.player.*,log.player.gamemode.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:52.138893147Z,41038007071,2.5.0,1.8,log.player.*,log.player.teleport.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:52.138909066Z,41038007071,2.5.0,1.8,log.player.*,log.player.death.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:52.138925417Z,41038007071,2.5.0,1.8,log.player.*,log.player.advancement.webhook,PASS,routed to its own webhook
+2026-10-30T10:22:57.639006064Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.player-join,PASS,no wording to compare
+2026-10-30T10:22:57.639069272Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.player-quit,PASS,no wording to compare
+2026-10-30T10:22:57.639085192Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.player-chat,PASS,no wording to compare
+2026-10-30T10:22:57.639098366Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.player-command,PASS,no wording to compare
+2026-10-30T10:22:57.639111020Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.server-command,PASS,no wording to compare
+2026-10-30T10:22:57.639123343Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.platform-field,PASS,no wording to compare
+2026-10-30T10:22:57.639136778Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.platform-bedrock,PASS,no wording to compare
+2026-10-30T10:22:57.639148771Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.description,PASS,no wording to compare
+2026-10-30T10:22:57.639161224Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.cause-field,PASS,no wording to compare
+2026-10-30T10:22:57.639173156Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.coords-field,PASS,no wording to compare
+2026-10-30T10:22:57.639186110Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.coords-value,PASS,no wording to compare
+2026-10-30T10:22:57.639198393Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.slain-by-player,PASS,no wording to compare
+2026-10-30T10:22:57.639210656Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.slain-by-mob,PASS,no wording to compare
+2026-10-30T10:22:57.639222277Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.unknown,PASS,no wording to compare
+2026-10-30T10:22:57.639266069Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.fall,PASS,no wording to compare
+2026-10-30T10:22:57.639278763Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.lava,PASS,no wording to compare
+2026-10-30T10:22:57.639290094Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.fire,PASS,no wording to compare
+2026-10-30T10:22:57.639301545Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.fire-tick,PASS,no wording to compare
+2026-10-30T10:22:57.639312887Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.drowning,PASS,no wording to compare
+2026-10-30T10:22:57.639324198Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.suffocation,PASS,no wording to compare
+2026-10-30T10:22:57.639337022Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.void,PASS,no wording to compare
+2026-10-30T10:22:57.639349114Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.contact,PASS,no wording to compare
+2026-10-30T10:22:57.639361678Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.block-explosion,PASS,no wording to compare
+2026-10-30T10:22:57.639373279Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.entity-explosion,PASS,no wording to compare
+2026-10-30T10:22:57.639384681Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.magic,PASS,no wording to compare
+2026-10-30T10:22:57.639396082Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.poison,PASS,no wording to compare
+2026-10-30T10:22:57.639407734Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.wither,PASS,no wording to compare
+2026-10-30T10:22:57.639419345Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.starvation,PASS,no wording to compare
+2026-10-30T10:22:57.639431809Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.freeze,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:57.639443961Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.lightning,PASS,no wording to compare
+2026-10-30T10:22:57.639455593Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.hot-floor,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:57.639468798Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.cramming,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:57.639481231Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.dragon-breath,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:57.639492392Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.thorns,PASS,no wording to compare
+2026-10-30T10:22:57.639503643Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.kill,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:57.639515435Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.suicide,PASS,no wording to compare
+2026-10-30T10:22:57.639526716Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.world-border,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:57.639537676Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.sonic-boom,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:57.639550069Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.campfire,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:57.639561461Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.falling-block,PASS,no wording to compare
+2026-10-30T10:22:57.639572962Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.fly-into-wall,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:57.639594693Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.dryout,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:57.639606495Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.melting,PASS,no wording to compare
+2026-10-30T10:22:57.639623346Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.entity-attack,PASS,no wording to compare
+2026-10-30T10:22:57.639663Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.entity-sweep-attack,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:57.639727010Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.projectile,PASS,no wording to compare
+2026-10-30T10:22:57.639742468Z,41038007071,2.5.0,1.8,lang.yml discord.*,discord.death.causes.custom,PASS,no wording to compare
+2026-10-30T10:23:56.081564662Z,41038007071,2.5.0,1.8,plain text (embeds off),plain-text.player-join,PASS,no wording to compare
+2026-10-30T10:23:56.081611169Z,41038007071,2.5.0,1.8,plain text (embeds off),plain-text.player-quit,PASS,no wording to compare
+2026-10-30T10:23:56.081625586Z,41038007071,2.5.0,1.8,plain text (embeds off),plain-text.player-chat,PASS,no wording to compare
+2026-10-30T10:23:56.081638189Z,41038007071,2.5.0,1.8,plain text (embeds off),plain-text.player-command,PASS,no wording to compare
+2026-10-30T10:23:56.081650142Z,41038007071,2.5.0,1.8,plain text (embeds off),plain-text.player-death,PASS,no wording to compare
+2026-10-30T10:23:56.081664078Z,41038007071,2.5.0,1.8,plain text (embeds off),plain-text.player-teleport,PASS,no wording to compare
+2026-10-30T10:23:56.081677613Z,41038007071,2.5.0,1.8,plain text (embeds off),plain-text.player-gamemode,PASS,no wording to compare
+2026-10-30T10:23:56.081690146Z,41038007071,2.5.0,1.8,plain text (embeds off),plain-text.server-command,PASS,no wording to compare
+2026-10-30T10:23:56.081702019Z,41038007071,2.5.0,1.8,plain text (embeds off),plain-text.explosion,PASS,no wording to compare
+2026-10-30T10:23:56.081713821Z,41038007071,2.5.0,1.8,plain text (embeds off),plain-text.moderation-op,PASS,no wording to compare
+2026-10-30T10:29:57.869890285Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,log.custom,PASS,no wording to compare
+2026-10-30T10:29:57.869936321Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,no wording to compare
+2026-10-30T10:29:57.869952752Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,left the location out when switched off
+2026-10-30T10:29:57.869966718Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,embeds.author,PASS,no wording to compare
+2026-10-30T10:29:57.869978640Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,embeds.enabled,PASS,no wording to compare
+2026-10-30T10:29:57.869992856Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,embeds.enabled,PASS,switched to plain text
+2026-10-30T10:29:57.870005931Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.exempt_permission,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870018274Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,format.name,PASS,no wording to compare
+2026-10-30T10:29:57.870030657Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,format.nicknames,PASS,no wording to compare
+2026-10-30T10:29:57.870041888Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,format.nicknames,PASS,used the real name when switched off
+2026-10-30T10:29:57.870053710Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,format.placeholders,POTENTIAL_ERROR,a placeholder typed in chat did not survive as written; expansion of player-supplied text would be a leak
+2026-10-30T10:29:57.870065452Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,format.time,PASS,no wording to compare
+2026-10-30T10:29:57.870077284Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.ignored_advancements,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870088705Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.ignored_chat_containing,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870099776Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.ignored_commands,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870111207Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.ignored_death_causes,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870122037Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.ignored_explosion_sources,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870133218Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.ignored_players,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870144880Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.ignored_teleport_causes,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870155690Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.ignored_worlds,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870166480Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,no wording to compare
+2026-10-30T10:29:57.870177491Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,left the platform out when switched off
+2026-10-30T10:29:57.870188321Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,"left a Java player unlabelled, which is all that can be known -- nothing proves a player IS Java"
+2026-10-30T10:29:57.870199141Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.minimum_chat_length,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870210032Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.minimum_explosion_blocks,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870221253Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.minimum_teleport_distance,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870277017Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.only_log_commands,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870289039Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,filters.respect_vanish,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:57.870299699Z,41038007071,2.5.0,1.8,filters.* + format.* + embeds.*,webhook.url,PASS,every event followed the main webhook when it changed
+2026-10-30T10:09:08.390472793Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.server.command.color,PASS,no wording to compare
+2026-10-30T10:09:08.391286220Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.server.explosion.color,PASS,no wording to compare
+2026-10-30T10:09:08.391299880Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.ban.color,PASS,no wording to compare
+2026-10-30T10:09:08.391309755Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.unban.color,PASS,no wording to compare
+2026-10-30T10:09:08.391318418Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.op.color,PASS,no wording to compare
+2026-10-30T10:09:08.391326461Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.deop.color,PASS,no wording to compare
+2026-10-30T10:09:08.391334242Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.color,PASS,no wording to compare
+2026-10-30T10:09:08.391342104Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.whitelist_edit.color,PASS,no wording to compare
+2026-10-30T10:09:08.391349485Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.server.command.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:08.391356716Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.server.explosion.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:08.391363587Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.ban.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:08.391370507Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.unban.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:08.391377518Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.op.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:08.391386070Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.deop.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:08.391393181Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:08.391415505Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.whitelist_edit.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:08.391425089Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.server.command.enabled,PASS,no wording to compare
+2026-10-30T10:09:08.391434273Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.server.explosion.enabled,PASS,no wording to compare
+2026-10-30T10:09:08.391441274Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.ban.enabled,PASS,no wording to compare
+2026-10-30T10:09:08.391447914Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.unban.enabled,PASS,no wording to compare
+2026-10-30T10:09:08.391460783Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.op.enabled,PASS,no wording to compare
+2026-10-30T10:09:08.391475886Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.deop.enabled,PASS,no wording to compare
+2026-10-30T10:09:08.391485180Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.enabled,PASS,no wording to compare
+2026-10-30T10:09:08.391492150Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.whitelist_edit.enabled,PASS,no wording to compare
+2026-10-30T10:09:08.391499041Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.kick.enabled,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:08.391505170Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.kick.color,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:08.391517529Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.kick.webhook,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:08.391525721Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.server.command.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:08.391540704Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.server.explosion.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:08.391549026Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.ban.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:08.391557519Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.unban.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:08.391565751Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.op.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:08.391573964Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.deop.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:08.391581886Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:08.391591170Z,41038007071,2.5.0,1.8.8,log.server.* + log.moderation.*,log.moderation.whitelist_edit.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:02.324692199Z,41038007071,2.5.0,1.8.8,log.server.start/stop,log.server.stop.enabled,PASS,no wording to compare
+2026-10-30T10:10:02.324741313Z,41038007071,2.5.0,1.8.8,log.server.start/stop,log.server.stop.color,PASS,no wording to compare
+2026-10-30T10:10:02.324751518Z,41038007071,2.5.0,1.8.8,log.server.start/stop,log.server.start.enabled,PASS,no wording to compare
+2026-10-30T10:10:02.324758950Z,41038007071,2.5.0,1.8.8,log.server.start/stop,log.server.start.color,PASS,no wording to compare
+2026-10-30T10:10:02.324767743Z,41038007071,2.5.0,1.8.8,log.server.start/stop,log.server.stop.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:02.324774583Z,41038007071,2.5.0,1.8.8,log.server.start/stop,log.server.start.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:02.324782455Z,41038007071,2.5.0,1.8.8,log.server.start/stop,log.server.stop.enabled,PASS,correctly sent nothing
+2026-10-30T10:10:02.324789015Z,41038007071,2.5.0,1.8.8,log.server.start/stop,log.server.start.enabled,PASS,correctly sent nothing
+2026-10-30T10:11:12.869338687Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.reload-ok,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:11:12.869386650Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.reload-no-webhook,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:11:12.869397446Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.reload-no-webhook-hint,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:11:12.869422414Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.webhook-usage,PASS,the rewritten line came back from 'discordlogger webhook'
+2026-10-30T10:11:12.869432088Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.webhook-where,PASS,the rewritten line came back from 'discordlogger webhook'
+2026-10-30T10:11:12.869441262Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.webhook-invalid,PASS,the rewritten line came back from 'discordlogger webhook http://example.com/not-a-webhook'
+2026-10-30T10:11:12.869449705Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.webhook-expected,PASS,the rewritten line came back from 'discordlogger webhook http://example.com/not-a-webhook'
+2026-10-30T10:11:12.869458408Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.regen-warning,PASS,the rewritten line came back from 'discordlogger regen'
+2026-10-30T10:11:12.869467001Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.regen-confirm,PASS,the rewritten line came back from 'discordlogger regen'
+2026-10-30T10:11:12.869474983Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.help-header,PASS,the rewritten line came back from 'discordlogger'
+2026-10-30T10:11:12.869483596Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.help-entry,PASS,the rewritten line came back from 'discordlogger'
+2026-10-30T10:11:12.869491618Z,41038007071,2.5.0,1.8.8,lang.yml chat.*,chat.unknown-subcommand,PASS,the rewritten line came back from 'discordlogger definitelynotasubcommand'
+2026-10-30T10:14:19.828890785Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.join.color,PASS,no wording to compare
+2026-10-30T10:14:19.828951517Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.quit.color,PASS,no wording to compare
+2026-10-30T10:14:19.828961683Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.chat.color,PASS,no wording to compare
+2026-10-30T10:14:19.828970246Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.gamemode.color,PASS,no wording to compare
+2026-10-30T10:14:19.828977326Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.teleport.color,PASS,no wording to compare
+2026-10-30T10:14:19.828984207Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.death.color,PASS,no wording to compare
+2026-10-30T10:14:19.828990727Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.advancement.color,PASS,no wording to compare
+2026-10-30T10:14:19.828997377Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.join.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:19.829003646Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.quit.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:19.829016626Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.chat.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:19.829022545Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.gamemode.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:19.829028544Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.teleport.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:19.829034733Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.death.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:19.829040772Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.advancement.enabled,PASS,correctly sent nothing
+2026-10-30T10:14:19.829046451Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.join.enabled,PASS,no wording to compare
+2026-10-30T10:14:19.829052190Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.quit.enabled,PASS,no wording to compare
+2026-10-30T10:14:19.829064849Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.chat.enabled,PASS,no wording to compare
+2026-10-30T10:14:19.829071018Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.gamemode.enabled,PASS,no wording to compare
+2026-10-30T10:14:19.829077037Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.teleport.enabled,PASS,no wording to compare
+2026-10-30T10:14:19.829082485Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.death.enabled,PASS,no wording to compare
+2026-10-30T10:14:19.829088174Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.advancement.enabled,PASS,no wording to compare
+2026-10-30T10:14:19.829093712Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.join.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:19.829101184Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.quit.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:19.829106972Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.chat.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:19.829112841Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.gamemode.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:19.829118540Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.teleport.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:19.829124269Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.death.webhook,PASS,routed to its own webhook
+2026-10-30T10:14:19.829129677Z,41038007071,2.5.0,1.8.8,log.player.*,log.player.advancement.webhook,PASS,routed to its own webhook
+2026-10-30T10:22:14.871682816Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.player-join,PASS,no wording to compare
+2026-10-30T10:22:14.871734134Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.player-quit,PASS,no wording to compare
+2026-10-30T10:22:14.871744309Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.player-chat,PASS,no wording to compare
+2026-10-30T10:22:14.871751690Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.player-command,PASS,no wording to compare
+2026-10-30T10:22:14.871758401Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.server-command,PASS,no wording to compare
+2026-10-30T10:22:14.871764640Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.platform-field,PASS,no wording to compare
+2026-10-30T10:22:14.871770569Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.platform-bedrock,PASS,no wording to compare
+2026-10-30T10:22:14.871776478Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.description,PASS,no wording to compare
+2026-10-30T10:22:14.871781906Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.cause-field,PASS,no wording to compare
+2026-10-30T10:22:14.871787504Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.coords-field,PASS,no wording to compare
+2026-10-30T10:22:14.871792492Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.coords-value,PASS,no wording to compare
+2026-10-30T10:22:14.871797810Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.slain-by-player,PASS,no wording to compare
+2026-10-30T10:22:14.871803228Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.slain-by-mob,PASS,no wording to compare
+2026-10-30T10:22:14.871808686Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.unknown,PASS,no wording to compare
+2026-10-30T10:22:14.871813794Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.fall,PASS,no wording to compare
+2026-10-30T10:22:14.871819032Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.lava,PASS,no wording to compare
+2026-10-30T10:22:14.871824270Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.fire,PASS,no wording to compare
+2026-10-30T10:22:14.871829448Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.fire-tick,PASS,no wording to compare
+2026-10-30T10:22:14.871834265Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.drowning,PASS,no wording to compare
+2026-10-30T10:22:14.871839082Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.suffocation,PASS,no wording to compare
+2026-10-30T10:22:14.871844420Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.void,PASS,no wording to compare
+2026-10-30T10:22:14.871849588Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.contact,PASS,no wording to compare
+2026-10-30T10:22:14.871854876Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.block-explosion,PASS,no wording to compare
+2026-10-30T10:22:14.871869789Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.entity-explosion,PASS,no wording to compare
+2026-10-30T10:22:14.871877180Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.magic,PASS,no wording to compare
+2026-10-30T10:22:14.871883680Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.poison,PASS,no wording to compare
+2026-10-30T10:22:14.871890069Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.wither,PASS,no wording to compare
+2026-10-30T10:22:14.871896669Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.starvation,PASS,no wording to compare
+2026-10-30T10:22:14.871917701Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.freeze,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:14.871924671Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.lightning,PASS,no wording to compare
+2026-10-30T10:22:14.871929719Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.hot-floor,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:14.871935808Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.cramming,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:14.871940575Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.dragon-breath,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:14.871945363Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.thorns,PASS,no wording to compare
+2026-10-30T10:22:14.871949749Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.kill,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:14.871954817Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.suicide,PASS,no wording to compare
+2026-10-30T10:22:14.871965072Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.world-border,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:14.871969709Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.sonic-boom,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:14.871975228Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.campfire,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:14.871979905Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.falling-block,PASS,no wording to compare
+2026-10-30T10:22:14.871985193Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.fly-into-wall,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:14.871993575Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.dryout,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:14.871998303Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.melting,PASS,no wording to compare
+2026-10-30T10:22:14.872003641Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.entity-attack,PASS,no wording to compare
+2026-10-30T10:22:14.872033576Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.entity-sweep-attack,PROBABLY_FINE,"this server has no such damage cause, so the line cannot be reached here"
+2026-10-30T10:22:14.872071924Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.projectile,PASS,no wording to compare
+2026-10-30T10:22:14.872078073Z,41038007071,2.5.0,1.8.8,lang.yml discord.*,discord.death.causes.custom,PASS,no wording to compare
+2026-10-30T10:23:11.704674852Z,41038007071,2.5.0,1.8.8,plain text (embeds off),plain-text.player-join,PASS,no wording to compare
+2026-10-30T10:23:11.704725709Z,41038007071,2.5.0,1.8.8,plain text (embeds off),plain-text.player-quit,PASS,no wording to compare
+2026-10-30T10:23:11.704738137Z,41038007071,2.5.0,1.8.8,plain text (embeds off),plain-text.player-chat,PASS,no wording to compare
+2026-10-30T10:23:11.704748653Z,41038007071,2.5.0,1.8.8,plain text (embeds off),plain-text.player-command,PASS,no wording to compare
+2026-10-30T10:23:11.704758037Z,41038007071,2.5.0,1.8.8,plain text (embeds off),plain-text.player-death,PASS,no wording to compare
+2026-10-30T10:23:11.704768934Z,41038007071,2.5.0,1.8.8,plain text (embeds off),plain-text.player-teleport,PASS,no wording to compare
+2026-10-30T10:23:11.704777377Z,41038007071,2.5.0,1.8.8,plain text (embeds off),plain-text.player-gamemode,PASS,no wording to compare
+2026-10-30T10:23:11.704785819Z,41038007071,2.5.0,1.8.8,plain text (embeds off),plain-text.server-command,PASS,no wording to compare
+2026-10-30T10:23:11.704793220Z,41038007071,2.5.0,1.8.8,plain text (embeds off),plain-text.explosion,PASS,no wording to compare
+2026-10-30T10:23:11.704800732Z,41038007071,2.5.0,1.8.8,plain text (embeds off),plain-text.moderation-op,PASS,no wording to compare
+2026-10-30T10:29:11.570810111Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,log.custom,PASS,no wording to compare
+2026-10-30T10:29:11.570862610Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,no wording to compare
+2026-10-30T10:29:11.570874918Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,left the location out when switched off
+2026-10-30T10:29:11.570884172Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,embeds.author,PASS,no wording to compare
+2026-10-30T10:29:11.570892445Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,embeds.enabled,PASS,no wording to compare
+2026-10-30T10:29:11.570919075Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,embeds.enabled,PASS,switched to plain text
+2026-10-30T10:29:11.570926406Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.exempt_permission,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.570933927Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,format.name,PASS,no wording to compare
+2026-10-30T10:29:11.570940658Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,format.nicknames,PASS,no wording to compare
+2026-10-30T10:29:11.570947358Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,format.nicknames,PASS,used the real name when switched off
+2026-10-30T10:29:11.570954458Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,format.placeholders,POTENTIAL_ERROR,a placeholder typed in chat did not survive as written; expansion of player-supplied text would be a leak
+2026-10-30T10:29:11.570962Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,format.time,PASS,no wording to compare
+2026-10-30T10:29:11.570968820Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.ignored_advancements,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.570975680Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.ignored_chat_containing,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.570982370Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.ignored_commands,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.570988640Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.ignored_death_causes,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.570995340Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.ignored_explosion_sources,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.571002010Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.ignored_players,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.571009441Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.ignored_teleport_causes,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.571016602Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.ignored_worlds,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.571023553Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,no wording to compare
+2026-10-30T10:29:11.571029992Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,left the platform out when switched off
+2026-10-30T10:29:11.571036091Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,"left a Java player unlabelled, which is all that can be known -- nothing proves a player IS Java"
+2026-10-30T10:29:11.571042611Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.minimum_chat_length,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.571049301Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.minimum_explosion_blocks,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.571056082Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.minimum_teleport_distance,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.571062692Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.only_log_commands,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.571069472Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,filters.respect_vanish,PASS,suppressed the event it was set to suppress
+2026-10-30T10:29:11.571076252Z,41038007071,2.5.0,1.8.8,filters.* + format.* + embeds.*,webhook.url,PASS,every event followed the main webhook when it changed
+2026-10-30T10:09:20.192184344Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.server.command.color,PASS,no wording to compare
+2026-10-30T10:09:20.193059500Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.server.explosion.color,PASS,no wording to compare
+2026-10-30T10:09:20.193072630Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.ban.color,PASS,no wording to compare
+2026-10-30T10:09:20.193082164Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.unban.color,PASS,no wording to compare
+2026-10-30T10:09:20.193090577Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.op.color,PASS,no wording to compare
+2026-10-30T10:09:20.193098278Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.deop.color,PASS,no wording to compare
+2026-10-30T10:09:20.193105859Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.color,PASS,no wording to compare
+2026-10-30T10:09:20.193113331Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.whitelist_edit.color,PASS,no wording to compare
+2026-10-30T10:09:20.193121032Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.server.command.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:20.193128133Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.server.explosion.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:20.193134983Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.ban.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:20.193142014Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.unban.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:20.193149004Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.op.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:20.193155875Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.deop.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:20.193162515Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:20.193183877Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.whitelist_edit.enabled,PASS,correctly sent nothing
+2026-10-30T10:09:20.193194653Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.server.command.enabled,PASS,no wording to compare
+2026-10-30T10:09:20.193205249Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.server.explosion.enabled,PASS,no wording to compare
+2026-10-30T10:09:20.193213511Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.ban.enabled,PASS,no wording to compare
+2026-10-30T10:09:20.193220482Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.unban.enabled,PASS,no wording to compare
+2026-10-30T10:09:20.193237207Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.op.enabled,PASS,no wording to compare
+2026-10-30T10:09:20.193248063Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.deop.enabled,PASS,no wording to compare
+2026-10-30T10:09:20.193256836Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.enabled,PASS,no wording to compare
+2026-10-30T10:09:20.193264448Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.whitelist_edit.enabled,PASS,no wording to compare
+2026-10-30T10:09:20.193272230Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.kick.enabled,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:20.193279440Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.kick.color,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:20.193286711Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.kick.webhook,POTENTIAL_ERROR,"a real kick needs a connected client, which this harness cannot provide; both halves of the listener ran without faulting"
+2026-10-30T10:09:20.193293502Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.server.command.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:20.193300402Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.server.explosion.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:20.193307753Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.ban.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:20.193314714Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.unban.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:20.193321624Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.op.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:20.193328735Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.deop.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:20.193335485Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.whitelist_toggle.webhook,PASS,routed to its own webhook
+2026-10-30T10:09:20.193342736Z,41038007071,2.5.0,26.3,log.server.* + log.moderation.*,log.moderation.whitelist_edit.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:51.293954767Z,41038007071,2.5.0,26.3,log.server.start/stop,log.server.stop.enabled,PASS,no wording to compare
+2026-10-30T10:10:51.294007837Z,41038007071,2.5.0,26.3,log.server.start/stop,log.server.stop.color,PASS,no wording to compare
+2026-10-30T10:10:51.294020717Z,41038007071,2.5.0,26.3,log.server.start/stop,log.server.start.enabled,PASS,no wording to compare
+2026-10-30T10:10:51.294031453Z,41038007071,2.5.0,26.3,log.server.start/stop,log.server.start.color,PASS,no wording to compare
+2026-10-30T10:10:51.294041237Z,41038007071,2.5.0,26.3,log.server.start/stop,log.server.stop.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:51.294048228Z,41038007071,2.5.0,26.3,log.server.start/stop,log.server.start.webhook,PASS,routed to its own webhook
+2026-10-30T10:10:51.294057011Z,41038007071,2.5.0,26.3,log.server.start/stop,log.server.stop.enabled,PASS,correctly sent nothing
+2026-10-30T10:10:51.294064122Z,41038007071,2.5.0,26.3,log.server.start/stop,log.server.start.enabled,PASS,correctly sent nothing
+2026-10-30T10:12:21.333416259Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.reload-ok,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:12:21.333480125Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.reload-no-webhook,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:12:21.333492634Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.reload-no-webhook-hint,PASS,the rewritten line came back from 'discordlogger reload'
+2026-10-30T10:12:21.333519454Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.webhook-usage,PASS,the rewritten line came back from 'discordlogger webhook'
+2026-10-30T10:12:21.333528568Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.webhook-where,PASS,the rewritten line came back from 'discordlogger webhook'
+2026-10-30T10:12:21.333537211Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.webhook-invalid,PASS,the rewritten line came back from 'discordlogger webhook http://example.com/not-a-webhook'
+2026-10-30T10:12:21.333545343Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.webhook-expected,PASS,the rewritten line came back from 'discordlogger webhook http://example.com/not-a-webhook'
+2026-10-30T10:12:21.333553025Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.regen-warning,PASS,the rewritten line came back from 'discordlogger regen'
+2026-10-30T10:12:21.333561187Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.regen-confirm,PASS,the rewritten line came back from 'discordlogger regen'
+2026-10-30T10:12:21.333568698Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.help-header,PASS,the rewritten line came back from 'discordlogger'
+2026-10-30T10:12:21.333575889Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.help-entry,PASS,the rewritten line came back from 'discordlogger'
+2026-10-30T10:12:21.333583140Z,41038007071,2.5.0,26.3,lang.yml chat.*,chat.unknown-subcommand,PASS,the rewritten line came back from 'discordlogger definitelynotasubcommand'
+2026-10-30T10:15:38.325009775Z,41038007071,2.5.0,26.3,log.player.*,log.player.join.color,PASS,no wording to compare
+2026-10-30T10:15:38.325058438Z,41038007071,2.5.0,26.3,log.player.*,log.player.quit.color,PASS,no wording to compare
+2026-10-30T10:15:38.325068063Z,41038007071,2.5.0,26.3,log.player.*,log.player.chat.color,PASS,no wording to compare
+2026-10-30T10:15:38.325075714Z,41038007071,2.5.0,26.3,log.player.*,log.player.gamemode.color,PASS,no wording to compare
+2026-10-30T10:15:38.325082384Z,41038007071,2.5.0,26.3,log.player.*,log.player.teleport.color,PASS,no wording to compare
+2026-10-30T10:15:38.325088373Z,41038007071,2.5.0,26.3,log.player.*,log.player.death.color,PASS,no wording to compare
+2026-10-30T10:15:38.325094142Z,41038007071,2.5.0,26.3,log.player.*,log.player.advancement.color,PASS,no wording to compare
+2026-10-30T10:15:38.325099630Z,41038007071,2.5.0,26.3,log.player.*,log.player.join.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:38.325105379Z,41038007071,2.5.0,26.3,log.player.*,log.player.quit.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:38.325122525Z,41038007071,2.5.0,26.3,log.player.*,log.player.chat.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:38.325130236Z,41038007071,2.5.0,26.3,log.player.*,log.player.gamemode.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:38.325137558Z,41038007071,2.5.0,26.3,log.player.*,log.player.teleport.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:38.325145099Z,41038007071,2.5.0,26.3,log.player.*,log.player.death.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:38.325152170Z,41038007071,2.5.0,26.3,log.player.*,log.player.advancement.enabled,PASS,correctly sent nothing
+2026-10-30T10:15:38.325159821Z,41038007071,2.5.0,26.3,log.player.*,log.player.join.enabled,PASS,no wording to compare
+2026-10-30T10:15:38.325167373Z,41038007071,2.5.0,26.3,log.player.*,log.player.quit.enabled,PASS,no wording to compare
+2026-10-30T10:15:38.325175224Z,41038007071,2.5.0,26.3,log.player.*,log.player.chat.enabled,PASS,no wording to compare
+2026-10-30T10:15:38.325182976Z,41038007071,2.5.0,26.3,log.player.*,log.player.gamemode.enabled,PASS,no wording to compare
+2026-10-30T10:15:38.325189155Z,41038007071,2.5.0,26.3,log.player.*,log.player.teleport.enabled,PASS,no wording to compare
+2026-10-30T10:15:38.325194504Z,41038007071,2.5.0,26.3,log.player.*,log.player.death.enabled,PASS,no wording to compare
+2026-10-30T10:15:38.325199421Z,41038007071,2.5.0,26.3,log.player.*,log.player.advancement.enabled,PASS,no wording to compare
+2026-10-30T10:15:38.325204569Z,41038007071,2.5.0,26.3,log.player.*,log.player.join.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:38.326703563Z,41038007071,2.5.0,26.3,log.player.*,log.player.quit.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:38.326726607Z,41038007071,2.5.0,26.3,log.player.*,log.player.chat.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:38.326738255Z,41038007071,2.5.0,26.3,log.player.*,log.player.gamemode.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:38.326747739Z,41038007071,2.5.0,26.3,log.player.*,log.player.teleport.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:38.326756162Z,41038007071,2.5.0,26.3,log.player.*,log.player.death.webhook,PASS,routed to its own webhook
+2026-10-30T10:15:38.326764495Z,41038007071,2.5.0,26.3,log.player.*,log.player.advancement.webhook,PASS,routed to its own webhook
+2026-10-30T10:19:25.354214124Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.player-join,PASS,no wording to compare
+2026-10-30T10:19:25.354278380Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.player-quit,PASS,no wording to compare
+2026-10-30T10:19:25.354290568Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.player-chat,PASS,no wording to compare
+2026-10-30T10:19:25.354300263Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.player-command,PASS,no wording to compare
+2026-10-30T10:19:25.354308906Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.server-command,PASS,no wording to compare
+2026-10-30T10:19:25.354317459Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.platform-field,PASS,no wording to compare
+2026-10-30T10:19:25.354325992Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.platform-bedrock,PASS,no wording to compare
+2026-10-30T10:19:25.354334124Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.description,PASS,no wording to compare
+2026-10-30T10:19:25.354342276Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.cause-field,PASS,no wording to compare
+2026-10-30T10:19:25.354350669Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.coords-field,PASS,no wording to compare
+2026-10-30T10:19:25.354358400Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.coords-value,PASS,no wording to compare
+2026-10-30T10:19:25.354366332Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.slain-by-player,PASS,no wording to compare
+2026-10-30T10:19:25.354373754Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.slain-by-mob,PASS,no wording to compare
+2026-10-30T10:19:25.354380694Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.shot-by,PASS,no wording to compare
+2026-10-30T10:19:25.354387454Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.shot,PASS,no wording to compare
+2026-10-30T10:19:25.354394465Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.unknown,PASS,no wording to compare
+2026-10-30T10:19:25.354401365Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.fall,PASS,no wording to compare
+2026-10-30T10:19:25.354408245Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.lava,PASS,no wording to compare
+2026-10-30T10:19:25.354414625Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.fire,PASS,no wording to compare
+2026-10-30T10:19:25.354420784Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.fire-tick,PASS,no wording to compare
+2026-10-30T10:19:25.354428676Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.drowning,PASS,no wording to compare
+2026-10-30T10:19:25.354435817Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.suffocation,PASS,no wording to compare
+2026-10-30T10:19:25.354442657Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.void,PASS,no wording to compare
+2026-10-30T10:19:25.354448806Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.contact,PASS,no wording to compare
+2026-10-30T10:19:25.354455036Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.block-explosion,PASS,no wording to compare
+2026-10-30T10:19:25.354461606Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.entity-explosion,PASS,no wording to compare
+2026-10-30T10:19:25.354485161Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.magic,PASS,no wording to compare
+2026-10-30T10:19:25.354491961Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.poison,PASS,no wording to compare
+2026-10-30T10:19:25.354498551Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.wither,PASS,no wording to compare
+2026-10-30T10:19:25.354504841Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.starvation,PASS,no wording to compare
+2026-10-30T10:19:25.354511230Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.freeze,PASS,no wording to compare
+2026-10-30T10:19:25.354519252Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.lightning,PASS,no wording to compare
+2026-10-30T10:19:25.354525882Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.hot-floor,PASS,no wording to compare
+2026-10-30T10:19:25.354532282Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.cramming,PASS,no wording to compare
+2026-10-30T10:19:25.354538962Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.dragon-breath,PASS,no wording to compare
+2026-10-30T10:19:25.354546183Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.thorns,PASS,no wording to compare
+2026-10-30T10:19:25.354552733Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.kill,PASS,no wording to compare
+2026-10-30T10:19:25.354558892Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.suicide,PASS,no wording to compare
+2026-10-30T10:19:25.354565592Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.world-border,PASS,no wording to compare
+2026-10-30T10:19:25.354572252Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.sonic-boom,PASS,no wording to compare
+2026-10-30T10:19:25.354579192Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.campfire,PASS,no wording to compare
+2026-10-30T10:19:25.354592132Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.falling-block,PASS,no wording to compare
+2026-10-30T10:19:25.354599683Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.fly-into-wall,PASS,no wording to compare
+2026-10-30T10:19:25.354607295Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.dryout,PASS,no wording to compare
+2026-10-30T10:19:25.354642367Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.melting,PASS,no wording to compare
+2026-10-30T10:19:25.354663449Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.entity-attack,PASS,no wording to compare
+2026-10-30T10:19:25.354670970Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.entity-sweep-attack,PASS,no wording to compare
+2026-10-30T10:19:25.354677881Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.projectile,PASS,no wording to compare
+2026-10-30T10:19:25.354684410Z,41038007071,2.5.0,26.3,lang.yml discord.*,discord.death.causes.custom,PASS,no wording to compare
+2026-10-30T10:20:30.503275585Z,41038007071,2.5.0,26.3,plain text (embeds off),plain-text.player-join,PASS,no wording to compare
+2026-10-30T10:20:30.503328074Z,41038007071,2.5.0,26.3,plain text (embeds off),plain-text.player-quit,PASS,no wording to compare
+2026-10-30T10:20:30.503341905Z,41038007071,2.5.0,26.3,plain text (embeds off),plain-text.player-chat,PASS,no wording to compare
+2026-10-30T10:20:30.503352320Z,41038007071,2.5.0,26.3,plain text (embeds off),plain-text.player-command,PASS,no wording to compare
+2026-10-30T10:20:30.503361554Z,41038007071,2.5.0,26.3,plain text (embeds off),plain-text.player-death,PASS,no wording to compare
+2026-10-30T10:20:30.503369917Z,41038007071,2.5.0,26.3,plain text (embeds off),plain-text.player-teleport,PASS,no wording to compare
+2026-10-30T10:20:30.503378069Z,41038007071,2.5.0,26.3,plain text (embeds off),plain-text.player-gamemode,PASS,no wording to compare
+2026-10-30T10:20:30.503385390Z,41038007071,2.5.0,26.3,plain text (embeds off),plain-text.server-command,PASS,no wording to compare
+2026-10-30T10:20:30.503392971Z,41038007071,2.5.0,26.3,plain text (embeds off),plain-text.explosion,PASS,no wording to compare
+2026-10-30T10:20:30.503400142Z,41038007071,2.5.0,26.3,plain text (embeds off),plain-text.moderation-op,PASS,no wording to compare
+2026-10-30T10:26:56.156970676Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,log.custom,PASS,no wording to compare
+2026-10-30T10:26:56.157017747Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,no wording to compare
+2026-10-30T10:26:56.157026080Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,log.player.death.show_coords,PASS,left the location out when switched off
+2026-10-30T10:26:56.157031958Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,embeds.author,PASS,no wording to compare
+2026-10-30T10:26:56.157037076Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,embeds.enabled,PASS,no wording to compare
+2026-10-30T10:26:56.157041663Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,embeds.enabled,PASS,switched to plain text
+2026-10-30T10:26:56.157046030Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.exempt_permission,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157050236Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,format.name,PASS,no wording to compare
+2026-10-30T10:26:56.157054592Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,format.nicknames,PASS,no wording to compare
+2026-10-30T10:26:56.157058488Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,format.nicknames,PASS,used the real name when switched off
+2026-10-30T10:26:56.157063105Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,format.placeholders,POTENTIAL_ERROR,a placeholder typed in chat did not survive as written; expansion of player-supplied text would be a leak
+2026-10-30T10:26:56.157067412Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,format.time,PASS,no wording to compare
+2026-10-30T10:26:56.157071177Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.ignored_advancements,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157075484Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.ignored_chat_containing,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157079810Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.ignored_commands,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157084427Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.ignored_death_causes,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157088664Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.ignored_explosion_sources,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157092870Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.ignored_players,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157097307Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.ignored_teleport_causes,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157101072Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.ignored_worlds,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157105179Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,no wording to compare
+2026-10-30T10:26:56.157109235Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,left the platform out when switched off
+2026-10-30T10:26:56.157113130Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,log.player.join.show_platform,PASS,"left a Java player unlabelled, which is all that can be known -- nothing proves a player IS Java"
+2026-10-30T10:26:56.157117407Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.log_recipe_advancements,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157121653Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.minimum_chat_length,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157125830Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.minimum_explosion_blocks,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157130136Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.minimum_teleport_distance,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157134443Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.only_log_commands,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157138739Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,filters.respect_vanish,PASS,suppressed the event it was set to suppress
+2026-10-30T10:26:56.157142945Z,41038007071,2.5.0,26.3,filters.* + format.* + embeds.*,webhook.url,PASS,every event followed the main webhook when it changed
