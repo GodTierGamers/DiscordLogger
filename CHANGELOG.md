@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.1](https://github.com/GodTierGamers/DiscordLogger/compare/v2.5.0...v2.5.1) (2026-10-30)
+
+
+### 📝 Docs
+
+* **agents:** correct the distribution table and the versioning strategy ([#251](https://github.com/GodTierGamers/DiscordLogger/issues/251)) ([593eef5](https://github.com/GodTierGamers/DiscordLogger/commit/593eef536eeea1b5ae9ce21699567387c2cf2401))
+
 ## [2.5.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.4.1...v2.5.0) (2026-10-29)
 
 
