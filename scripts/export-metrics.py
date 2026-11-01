@@ -47,7 +47,7 @@ import re
 import sys
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -278,6 +278,32 @@ def download_counts() -> dict:
     return out
 
 
+# How long the running documents keep a row. The branch's git history keeps every
+# version of these files, so a pruned row is still readable with
+# `git show <sha>:data/<file>.csv` -- what this bounds is the working copy, which is
+# the thing anyone actually opens, parses or downloads.
+RETENTION_DAYS = 30
+
+
+def within_retention(rows: list, column: str) -> list:
+    """The rows stamped within RETENTION_DAYS, by the date in ``column``.
+
+    Compared as date strings rather than parsed. The two stores stamp UTC
+    differently -- ``2026-11-01T20:50:47+00:00`` here against
+    ``2026-11-01T10:55:35.717518237Z`` in acceptance.csv -- and nine fractional
+    digits are more than ``datetime.fromisoformat`` will take. The first ten
+    characters are ``YYYY-MM-DD`` in both, and whole days are the right granularity
+    for a policy measured in days.
+
+    **A row whose stamp is too short to hold a date is kept.** Dropping what cannot
+    be read would delete exactly the rows a writer bug produced, which are the ones
+    worth still having.
+    """
+    cutoff = (datetime.now(timezone.utc).date() - timedelta(days=RETENTION_DAYS)).isoformat()
+    return [r for r in rows
+            if len(str(r.get(column, ""))) < 10 or str(r.get(column))[:10] >= cutoff]
+
+
 def append_snapshot(meta: dict, plugin_id: int, out_dir: str) -> int:
     """Append one poll as a single row, every chart across the columns.
 
@@ -335,9 +361,18 @@ def append_snapshot(meta: dict, plugin_id: int, out_dir: str) -> int:
         print(f"{stamp}: nothing returned", file=sys.stderr)
         return 1
 
-    rows, cols = read_store(target)
+    rows, _ = read_store(target)
+    before = len(rows)
+    rows = within_retention(rows, "polled_at")
     rows.append(row)
-    cols = sorted(set(cols) | {c for c in row if c != "polled_at"})
+    # Recomputed from the surviving rows rather than carried forward: a slice that
+    # only ever appeared in a pruned row -- a country that reported once in August --
+    # would otherwise keep an all-empty column alive forever, and the width grows on
+    # its own as new countries and Java versions turn up.
+    cols = sorted({c for r in rows for c in r if c != "polled_at"})
+    if before > len(rows) - 1:
+        print(f"dropped {before - (len(rows) - 1)} poll(s) older than "
+              f"{RETENTION_DAYS} days", file=sys.stderr)
 
     with target.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
