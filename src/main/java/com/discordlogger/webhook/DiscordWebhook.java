@@ -23,7 +23,9 @@ public final class DiscordWebhook {
     /** Plain content message. */
     public static void sendAsync(JavaPlugin plugin, String url, String content) {
         if (url == null || Strings.isBlank(url)) return;
-        dispatch(plugin, url, "{\"content\":\"" + escape(content) + "\"}");
+        // The escaped text, not a finished payload: the queue joins consecutive lines
+        // into one message, and it can only do that while they are still lines.
+        WebhookQueue.enqueueContent(url, escape(content));
     }
 
     /** Single-embed message (no fields). */
@@ -35,7 +37,7 @@ public final class DiscordWebhook {
         if (url == null || Strings.isBlank(url)) return;
 
         StringBuilder sb = new StringBuilder(1024);
-        sb.append("{\"embeds\":[{");
+        sb.append("{");
 
         if (title != null && !Strings.isBlank(title)) {
             sb.append("\"title\":\"").append(escape(title)).append("\",");
@@ -60,9 +62,9 @@ public final class DiscordWebhook {
         }
 
         trimComma(sb);
-        sb.append("}]}");
+        sb.append("}");
 
-        dispatch(plugin, url, sb.toString());
+        WebhookQueue.enqueueEmbed(url, sb.toString());
     }
 
     /** Embed with structured fields. */
@@ -79,14 +81,17 @@ public final class DiscordWebhook {
             String[][] fields // each element: { name, value, inline("true"/"false") }
     ) {
         if (url == null || Strings.isBlank(url)) return;
-        dispatch(plugin, url, buildEmbedJson(title, description, color, timestampIso,
-                author, footer, thumbnailUrl, fields));
+        WebhookQueue.enqueueEmbed(url, buildEmbedObject(title, description, color,
+                timestampIso, author, footer, thumbnailUrl, fields));
     }
 
     /**
-     * Builds the embed payload. Split from the send so the exact JSON that reaches
-     * Discord can be asserted in a test — it is the user-visible output format, and
-     * a silent change to it is not something a compiler catches.
+     * Builds the whole payload for one embed, as it looked before batching existed.
+     *
+     * <p>Kept because it is what the payload tests assert against: the envelope is the
+     * user-visible output format and a silent change to it is not something a compiler
+     * catches. The queue does not call this — it holds embed objects and writes the
+     * envelope once per message, however many embeds that message carries.
      */
     static String buildEmbedJson(
             String title,
@@ -98,8 +103,32 @@ public final class DiscordWebhook {
             String thumbnailUrl,
             String[][] fields
     ) {
+        return "{\"content\":null,\"embeds\":["
+                + buildEmbedObject(title, description, color, timestampIso,
+                                   author, footer, thumbnailUrl, fields)
+                + "],\"attachments\":[]}";
+    }
+
+    /**
+     * One embed, with no envelope around it — what the queue stores and merges.
+     *
+     * <p>Split out so that merging never means taking a finished payload apart. A
+     * description may legitimately contain {@code ]} or {@code }}, so finding the end
+     * of an embed in rendered JSON is parsing, and parsing it by hand is how a world
+     * called {@code a]b} would break every send.
+     */
+    static String buildEmbedObject(
+            String title,
+            String description,
+            int color,
+            String timestampIso,
+            String author,
+            String footer,
+            String thumbnailUrl,
+            String[][] fields
+    ) {
         StringBuilder sb = new StringBuilder(512);
-        sb.append("{\"content\":null,\"embeds\":[{");
+        sb.append("{");
 
         if (title != null)       sb.append("\"title\":\"").append(escape(title)).append("\",");
         if (description != null) sb.append("\"description\":\"").append(escape(description)).append("\",");
@@ -143,22 +172,13 @@ public final class DiscordWebhook {
         }
 
         trimComma(sb);
-        sb.append("}],\"attachments\":[]}");
+        sb.append("}");
         return sb.toString();
     }
 
     // -------------------------------------------------------------------------
     // Shared internals
     // -------------------------------------------------------------------------
-
-    /**
-     * Hands the payload to {@link WebhookQueue}, which serialises sends, paces them
-     * against Discord's rate limits and retries transient failures. Returns
-     * immediately — callers may be on the main thread and must never wait on HTTP.
-     */
-    private static void dispatch(JavaPlugin plugin, String url, String json) {
-        WebhookQueue.enqueue(url, json);
-    }
 
     /** Outcome of a single POST, with the rate-limit facts the queue needs to pace itself. */
     public static final class Response {
