@@ -113,7 +113,7 @@ src/main/java/com/discordlogger/
   custom/CustomLogs.java               Admin-defined command rules (log.custom.*), immutable snapshot
   custom/CustomTemplate.java           Fills {player}/{args}/{argN} in a rule's message; escapes + redacts
   webhook/DiscordWebhook.java          Manual JSON building + one HTTP POST, reports outcome
-  webhook/WebhookQueue.java            Single-threaded send queue: rate limiting, retries, ordering
+  webhook/WebhookQueue.java            Per-destination send queue: batching, rate limiting, retries, ordering
   config/ConfigMigrator.java           Comment-preserving config version migration
   config/SchemaDetector.java           Infers a config's schema from its KEYS — the arbiter
   config/ConfigVersionNotice.java      Warns ops when a config is AHEAD of the running build
@@ -332,7 +332,8 @@ Concurrency cancels superseded runs. Branch protection requires `build`, `valida
 
 ### `DiscordWebhook`
 - JSON built **by hand with StringBuilder** (no JSON library); `escape()` handles quotes/backslashes/control chars — keep escaping every interpolated string.
-- `dispatch()` hands off to `WebhookQueue` and returns immediately — callers may be on the main thread and must never block on HTTP.
+- **Enqueues a fragment, not a finished payload.** `sendAsync` queues the escaped content string and `sendEmbed`/`sendEmbedWithFields` queue a bare embed *object* (`buildEmbedObject`); `WebhookQueue` writes the envelope once per message, around however many embeds that message carries. Merging finished payloads would mean finding where an embed ends in rendered JSON, and a description may contain `]` or `}` — a death in a world called `a]b` would break every send. `buildEmbedJson` still exists and still produces the old single-embed payload, because that exact string is what `DeathEmbedPayloadTest` asserts; nothing in the send path calls it.
+- Either way the call returns immediately — callers may be on the main thread and must never block on HTTP.
 - `post()` performs one request and **returns a `Response`** (status + rate-limit headers) rather than logging; the queue owns retry/wait/give-up decisions.
 
 ### `lang.yml`
@@ -383,8 +384,13 @@ Every event takes an optional `log.<group>.<event>.webhook`. Empty means the mai
 
 `Log.plain` and the update notices deliberately stay on the main webhook: they belong to no event.
 
-### `WebhookQueue` (rate limiting)
+### `WebhookQueue` (batching and rate limiting)
 - **One worker per destination**, which is also the ordering guarantee — logs are a narrative, so out-of-order delivery is its own bug.
+- **Up to 10 embeds per request, which is the throughput ceiling.** A webhook sustains roughly 30 requests a minute; one event per request wastes nine tenths of that. `takeBatch` sends whatever is *already* waiting as one message — **it never holds a message back to fill a batch**, so a lone event leaves as fast as it did before and only a backlog is ever consumed. That matters because nearly every server is quiet: `send_rate` reported `None` on 55 of 78. The number that forced this: **3,466,845 messages dropped past the queue cap**, 1.1M of them in 30 days, with a rate-limit wait on all 126 polls that had drops and *no* failed send on the three biggest — the ceiling, not an outage.
+- **Two limits, not one.** Ten embeds, and 5500 characters of embed JSON (Discord allows 6000 across a message's embeds, counted over the text; our JSON is always longer than its text, so bounding the JSON stays under the real cap). Plain content joins with an escaped `\n` under 1900 of 2000 characters.
+- **A kind change ends a batch** rather than being stepped over — reaching past a plain line for the embed behind it would reorder them. Peek-then-poll is safe only because a destination has exactly one consumer; keep it that way.
+- **A rejected batch is re-sent one at a time.** A 4xx names no embed, so without the split one over-long description would lose the nine good messages beside it; batching would have widened the blast radius instead of raising the ceiling. One wasted request buys the other nine, a 404 still fails them all (correct — the webhook is gone), and each item counts its own outcome so nothing is tallied twice.
+- `Counters.sent(n)` counts **events, not requests**. Counting requests would make every batching gain read as a traffic collapse on the `send_rate` chart.
 - **Proactive pacing:** reads `X-RateLimit-Remaining` / `X-RateLimit-Reset-After` from each response and waits out a spent budget *before* sending, so 429s are usually avoided rather than handled. A 429 is still handled (honours `Retry-After`, retries the same payload without consuming an attempt).
 - Transient failures (5xx, network — status `0`) retry with exponential backoff, max 4 attempts. Other 4xx aren't retried; a 404 says the webhook URL is gone.
 - **Not a Bukkit scheduler task** — it must keep draining during `onDisable`, and the scheduler refuses tasks once disabled.

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.BlockingQueue;
@@ -40,12 +41,66 @@ import java.util.concurrent.TimeUnit;
  *       scheduler tasks are refused once the plugin is disabled.</li>
  *   <li><b>Bounded queue.</b> If Discord is unreachable, an unbounded queue
  *       would grow until the server dies. Beyond the cap we drop and say so.</li>
+ *   <li><b>Batched sends.</b> A webhook sustains roughly 30 requests a minute, and
+ *       Discord accepts ten embeds in one request — so a request carrying one event
+ *       wastes nine tenths of the budget. The worker sends whatever is <i>already</i>
+ *       waiting as a single message, which is what turns that cap into ~300 events a
+ *       minute. bStats recorded 3.47 million messages dropped past the queue cap, every
+ *       one of those polls alongside a rate-limit wait and most with no failed send at
+ *       all: the ceiling, not an outage.</li>
  * </ul>
  */
 public final class WebhookQueue {
 
     /** Enough to absorb a long burst; small enough that a dead webhook can't exhaust memory. */
     private static final int CAPACITY = 1000;
+
+    /** Discord's limit on embeds in one message. */
+    static final int MAX_EMBEDS_PER_MESSAGE = 10;
+
+    /**
+     * Ceiling on the combined embed JSON in one message.
+     *
+     * <p>Discord allows 6000 characters across a message's embeds, counted over the
+     * text they carry. Our JSON is always longer than that text -- keys, braces and
+     * escapes -- so bounding the JSON keeps the real figure under the real limit
+     * without having to measure the same thing twice.
+     */
+    static final int MAX_EMBED_JSON_PER_MESSAGE = 5500;
+
+    /**
+     * Ceiling on joined plain-text content. Discord's limit is 2000 characters, and a
+     * stored body is already escaped, so it is never shorter than what shows.
+     */
+    static final int MAX_CONTENT_PER_MESSAGE = 1900;
+
+    /**
+     * One queued event, and how it may be combined with its neighbours.
+     *
+     * <p>The queue holds these rather than finished payloads because merging finished
+     * payloads would mean taking JSON apart to get the embed back out -- and a
+     * description is free to contain {@code ]} or {@code }}, so that parsing is
+     * exactly the kind that works until someone dies in a world called {@code a]b}.
+     * Building the envelope at send time instead means nothing is ever unparsed.
+     */
+    static final class Payload {
+
+        /** EMBED and CONTENT merge with their own kind. RAW is sent exactly as given. */
+        enum Kind { EMBED, CONTENT, RAW }
+
+        final Kind kind;
+
+        /**
+         * An embed object for {@code EMBED}, an escaped content string for
+         * {@code CONTENT}, a complete payload for {@code RAW}.
+         */
+        final String body;
+
+        Payload(Kind kind, String body) {
+            this.kind = kind;
+            this.body = body;
+        }
+    }
 
     /** Attempts for transient server-side failures (5xx, network) before giving up on a message. */
     private static final int MAX_ATTEMPTS = 4;
@@ -70,7 +125,7 @@ public final class WebhookQueue {
 
     private static final class Destination {
         final String url;
-        final BlockingQueue<String> queue = new ArrayBlockingQueue<>(CAPACITY);
+        final BlockingQueue<Payload> queue = new ArrayBlockingQueue<>(CAPACITY);
         final Thread worker;
 
         /** Epoch millis before which the next request to THIS webhook must not be sent. */
@@ -154,13 +209,33 @@ public final class WebhookQueue {
         running = true;
     }
 
-    /** Queue a payload. Never blocks the caller — the main thread must not wait on Discord. */
+    /**
+     * Queue a complete payload, to be sent on its own.
+     *
+     * <p>Never blocks the caller — the main thread must not wait on Discord. Prefer
+     * {@link #enqueueEmbed} or {@link #enqueueContent}, which can share a request with
+     * their neighbours; this is the escape hatch for anything that cannot.
+     */
     public static void enqueue(String url, String json) {
-        if (url == null || Strings.isBlank(url) || json == null) return;
+        offer(url, new Payload(Payload.Kind.RAW, json));
+    }
+
+    /** Queue one embed object, which may travel with up to nine others. */
+    public static void enqueueEmbed(String url, String embedJson) {
+        offer(url, new Payload(Payload.Kind.EMBED, embedJson));
+    }
+
+    /** Queue one already-escaped content line, which may travel with others. */
+    public static void enqueueContent(String url, String escapedContent) {
+        offer(url, new Payload(Payload.Kind.CONTENT, escapedContent));
+    }
+
+    private static void offer(String url, Payload payload) {
+        if (url == null || Strings.isBlank(url) || payload.body == null) return;
 
         final Destination dest = DESTINATIONS.computeIfAbsent(url, Destination::new);
 
-        if (!dest.queue.offer(json)) {
+        if (!dest.queue.offer(payload)) {
             Counters.dropped();
             if (!dest.warnedFull) {
                 dest.warnedFull = true;
@@ -215,16 +290,16 @@ public final class WebhookQueue {
 
     private static void runLoop(Destination dest) {
         while (true) {
-            final String json;
+            final Payload first;
             try {
                 if (running) {
                     // Poll rather than take() so a stopped queue can notice and exit.
-                    json = dest.queue.poll(250, TimeUnit.MILLISECONDS);
-                    if (json == null) continue;
+                    first = dest.queue.poll(250, TimeUnit.MILLISECONDS);
+                    if (first == null) continue;
                 } else {
                     // Draining: leave as soon as the backlog is clear.
-                    json = dest.queue.poll();
-                    if (json == null) return;
+                    first = dest.queue.poll();
+                    if (first == null) return;
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -232,7 +307,7 @@ public final class WebhookQueue {
             }
 
             try {
-                deliver(dest, json);
+                deliver(dest, takeBatch(first, dest.queue));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
@@ -243,8 +318,75 @@ public final class WebhookQueue {
         }
     }
 
-    /** Send one message, retrying transient failures and honouring rate limits. */
-    private static void deliver(Destination dest, String json) throws InterruptedException {
+    /**
+     * {@code first}, plus however many of its kind are <em>already</em> waiting.
+     *
+     * <p><b>Nothing is ever held back to fill a batch.</b> A lone event leaves at once,
+     * exactly as before; batching only ever consumes a backlog that already exists. A
+     * delay window would trade the latency of every quiet server — which is nearly all
+     * of them — for a ceiling only the busiest few are hitting.
+     *
+     * <p>Peek-then-poll is safe because a destination has exactly one worker, so
+     * nothing else can take the head between the two calls.
+     */
+    static List<Payload> takeBatch(Payload first, Queue<Payload> waiting) {
+        final List<Payload> batch = new ArrayList<>();
+        batch.add(first);
+        if (first.kind == Payload.Kind.RAW) return batch;
+
+        final boolean embeds = first.kind == Payload.Kind.EMBED;
+        final int limit = embeds ? MAX_EMBEDS_PER_MESSAGE : Integer.MAX_VALUE;
+        final int roomFor = embeds ? MAX_EMBED_JSON_PER_MESSAGE : MAX_CONTENT_PER_MESSAGE;
+        int size = first.body.length();
+
+        while (batch.size() < limit) {
+            final Payload next = waiting.peek();
+            // A different kind ends the batch rather than being skipped: stepping over
+            // it to find a matching one behind it would deliver them out of order, and
+            // ordering is the whole reason there is one worker per destination.
+            if (next == null || next.kind != first.kind) break;
+            // "+ 1" is the separator this will cost: a comma, or a newline escape.
+            if (size + next.body.length() + 1 > roomFor) break;
+            size += next.body.length() + 1;
+            batch.add(waiting.poll());
+        }
+        return batch;
+    }
+
+    /**
+     * The message a batch becomes.
+     *
+     * <p>A single embed produces the same envelope as a batch of ten, so there is one
+     * output shape rather than a special case that only the quiet path exercises.
+     */
+    static String envelope(List<Payload> batch) {
+        final Payload first = batch.get(0);
+        if (first.kind == Payload.Kind.RAW) return first.body;
+
+        final StringBuilder sb = new StringBuilder(256 * batch.size());
+        if (first.kind == Payload.Kind.EMBED) {
+            sb.append("{\"content\":null,\"embeds\":[");
+            for (int i = 0; i < batch.size(); i++) {
+                if (i > 0) sb.append(',');
+                sb.append(batch.get(i).body);
+            }
+            sb.append("],\"attachments\":[]}");
+        } else {
+            // The bodies are already escaped, so the separator is the two characters
+            // that mean a newline inside a JSON string, not an actual newline.
+            sb.append("{\"content\":\"");
+            for (int i = 0; i < batch.size(); i++) {
+                if (i > 0) sb.append("\\n");
+                sb.append(batch.get(i).body);
+            }
+            sb.append("\"}");
+        }
+        return sb.toString();
+    }
+
+    /** Send one batch, retrying transient failures and honouring rate limits. */
+    private static void deliver(Destination dest, List<Payload> batch) throws InterruptedException {
+        final String json = envelope(batch);
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             waitUntilAllowed(dest);
 
@@ -256,7 +398,8 @@ public final class WebhookQueue {
                 // without consuming an attempt, since nothing was wrong with it.
                 final long waitMs = clampWait(res.retryAfterMs());
                 log().warning("[DiscordWebhook] Rate limited by Discord on webhook ..."
-                        + shortId(dest.url) + " — retrying in " + waitMs + "ms ("
+                        + shortId(dest.url) + " — retrying " + batch.size()
+                        + " message(s) in " + waitMs + "ms ("
                         + dest.queue.size() + " queued for it).");
                 sleep(waitMs);
                 attempt--;
@@ -264,7 +407,9 @@ public final class WebhookQueue {
             }
 
             if (res.success()) {
-                Counters.sent();
+                // Per event, not per request: send_rate answers "how busy is this
+                // server", and a batch of ten is ten logged events.
+                Counters.sent(batch.size());
                 applyRateLimitHints(dest, res);
                 return;
             }
@@ -275,14 +420,31 @@ public final class WebhookQueue {
                     sleep(backoff);
                     continue;
                 }
-                Counters.failed();
-                log().warning("[DiscordWebhook] Giving up on a message after " + MAX_ATTEMPTS
+                for (int i = 0; i < batch.size(); i++) Counters.failed();
+                log().warning("[DiscordWebhook] Giving up on " + batch.size()
+                        + " message(s) after " + MAX_ATTEMPTS
                         + " attempts (last status " + res.status() + ").");
                 return;
             }
 
             // 4xx that isn't 429: bad/deleted webhook, malformed payload — retrying
-            // can't help, so say something actionable and move on.
+            // can't help. But a rejection of a batch says nothing about which embed
+            // Discord objected to, and sending them again one at a time costs one
+            // wasted request to keep the other nine: without this, batching would
+            // widen the blast radius of one over-long description from one lost
+            // message to ten. A 404 fails them all again, which is correct — the
+            // webhook is gone — and each counts its own outcome, so nothing is
+            // tallied twice.
+            if (batch.size() > 1) {
+                log().warning("[DiscordWebhook] Discord rejected a batch of " + batch.size()
+                        + " with HTTP " + res.status() + " — resending them individually to"
+                        + " find the one it objected to.");
+                for (Payload one : batch) {
+                    deliver(dest, java.util.Collections.singletonList(one));
+                }
+                return;
+            }
+
             Counters.failed();
             if (res.status() == 404) {
                 Counters.notFound();

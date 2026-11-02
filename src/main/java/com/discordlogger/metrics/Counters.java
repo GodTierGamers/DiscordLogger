@@ -46,6 +46,16 @@ public final class Counters {
     private Counters() {}
 
     public static void sent()        { SENT.incrementAndGet(); }
+
+    /**
+     * Record {@code n} messages sent in one request.
+     *
+     * <p>The queue sends up to ten embeds per request, and {@code send_rate} answers
+     * "how busy is this server" — so it counts the events, not the requests it took
+     * to deliver them. Counting requests would have made every batching improvement
+     * look like a drop in traffic.
+     */
+    public static void sent(int n)   { if (n > 0) SENT.addAndGet(n); }
     public static void failed()      { FAILED.incrementAndGet(); }
     public static void dropped()     { DROPPED.incrementAndGet(); }
     public static void rateLimited() { RATE_LIMITED.incrementAndGet(); }
