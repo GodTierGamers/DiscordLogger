@@ -163,7 +163,7 @@ docs/                                  Jekyll website (GitHub Pages, deploys fro
   nightly.yml                          Cron + manual nightly beta builds from main
   sync-versions.yml                    Runs sync-versions.py on any push to main touching pom.xml
   check-listing-credentials.yml        Weekly --check-auth so a dead Modrinth PAT fails a cron, not a release
-  poll-metrics.yml                     Twice-hourly bStats pie snapshots -> the metrics-data branch
+  poll-metrics.yml                     bStats pie snapshots (:15/:45, best-effort) -> metrics-data
 .github/dependabot.yml                 Weekly maven/github-actions/bundler dependency PRs (paper-api ignored)
 ```
 
@@ -234,6 +234,10 @@ python3 scripts/export-metrics.py --check-charts
 It diffs the ids in `PluginMetrics.java` against bStats' own chart list and exits non-zero on any that would be discarded. **Not in CI on purpose** — it needs the network, and it would fail for the entirely normal window between a chart landing in Java and someone creating it on the site.
 
 **bStats keeps line-chart history but not pie history.** `?maxElements=100000` on a line chart returns samples going back years; a pie endpoint answers only "what is true right now" and the previous answer is gone. `poll-metrics.yml` therefore polls twice an hour onto the orphan **`metrics-data`** branch, appending to a single `data/bstats.csv` as **one row per poll, one column per slice** — so charting adoption is selecting a column against `polled_at`, with no pivot first. Line charts hold their latest value under the bare chart id, since bStats keeps their full history anyway.
+
+**Both stores on that branch keep the last 30 days, and nothing else.** `RETENTION_DAYS = 30` in `scripts/export-metrics.py` (`data/bstats.csv`, by `polled_at`) and `scripts/collect-acceptance.py` (`data/acceptance.csv`, by `run_at`); each writer already rewrites its whole file, so the prune rides the same commit as the append. **It is safe because the branch's git history is the archive** — `git show <sha>:data/bstats.csv` still returns any poll that ever wrote — so the window bounds the file people open and parse, not the record. Without it `acceptance.csv` had reached 8.3 MB and 57,000 rows and was growing ~900 rows a night with no ceiling, with every run rewriting all of it. bstats.csv also recomputes its column list from the surviving rows, since a slice that appeared once (one country, one Java version) would otherwise keep an all-empty column alive forever. Stamps are compared as `YYYY-MM-DD` strings rather than parsed, because the two files stamp UTC differently and one carries nanoseconds; a row too short to hold a date is kept, since dropping what cannot be read would delete exactly the rows a writer bug produced.
+
+**The schedule is not the cadence.** The cron asks for `:15,:45` — 48 polls a day — and GitHub delivers roughly nine, at irregular intervals: 668 runs in the 78 days to 2026-11-01, of which the last hundred failed once. Nothing is wrong and nothing needs fixing; the poll time is written onto every row precisely so analysis reads it rather than counting rows. Don't write "twice an hour" into anything that implies a row count.
 
 **Every chart carries a `<chart>.#servers` column**, the number of servers reporting *that chart* at that poll. It is the only honest denominator: only four charts (`config_schema`, `enabled_events`, `output_mode`, `release_channel`) shipped in 2.2.0 and are reported by every server — the other 27 arrived in 2.3.0 and are reported only by servers running it, so dividing them by the total server count understates them by however many have not upgraded.
 
