@@ -5,7 +5,11 @@ and [`acceptance.yml`](../../blob/main/.github/workflows/acceptance.yml).
 Nothing here is edited by hand, and nothing here is part of the plugin.
 
 **This branch is data, not code.** It shares no history with `main` — it was started
-as an orphan branch precisely so 48 commits a day never appear in the plugin's log.
+as an orphan branch precisely so the data commits (roughly nine a day from the poll,
+plus one per acceptance run) never appear in the plugin's log.
+
+**Both CSVs keep 30 days.** See *Retention* at the end: the files are a window, and
+this branch's git history is the archive.
 
 ## `data/bstats.csv` — one row per check
 
@@ -141,3 +145,34 @@ all, so there is nothing to draw; the CSV row is the whole record.
 
 **Replaced every run, not accumulated.** The CSV is the history; these are the current
 sample, and keeping every run's would add images a night forever.
+
+# Retention — both CSVs hold the last 30 days
+
+`RETENTION_DAYS = 30` in `scripts/export-metrics.py` and
+`scripts/collect-acceptance.py`. Each writer already rewrites its whole file, so the
+prune costs nothing extra and happens on the same commit as the append. Rows are
+compared on the first ten characters of their stamp, so the cut lands on a whole day.
+
+**Nothing is actually lost, and that is what makes 30 days safe.** Every version of
+both files is still in this branch's history:
+
+```bash
+git log --oneline -- data/bstats.csv          # every poll that ever wrote
+git show <sha>:data/acceptance.csv            # the file as it stood then
+```
+
+The window bounds the thing people interact with — the file they open, parse or
+download — rather than the record. `acceptance.csv` was 8.3 MB and 57,000 rows across
+70 runs before this existed, growing about 900 rows a day with no ceiling, and every
+run rewrote all of it.
+
+**Why 30 days is the right window for these two specifically.** The pie snapshots are
+the only copy of what bStats discards, but the question they answer — what are servers
+running now, and what changed this month — is answered by recent rows; anything older
+is a historical question, which is a `git show` away. For the sweep, a two-month-old
+`PASS` on a setting that has passed every night since says nothing, while a regression
+shows up in the next run.
+
+`acceptance/screenshots/` needs no retention: it is replaced each run rather than
+appended, so it holds one sample set (six images per Minecraft version) and not five
+new pictures a night forever.
