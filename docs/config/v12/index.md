@@ -613,8 +613,7 @@ else is for when that is not what you want.
 
 | Column | Example | Notes |
 |---|---|---|
-| `at` | `1762128000000` | Epoch milliseconds. Everything that reads the file reads this. |
-| `at_readable` | `2026-11-03T14:32:06+11:00` | The same instant for a person. ISO-8601, **not** `format.time` — that setting is yours to change, and a file whose format changes halfway down cannot be parsed. Nothing reads this column back. |
+| `at` | `1762128000000` | Epoch milliseconds. `/discordlogger lookup` prints it in your `format.time`, so the file itself stays machine-shaped. |
 | `world`, `x`, `y`, `z` | `world`, `128`, `71`, `-344` | Where it went off. |
 | `radius` | `8` | How far it actually reached, measured from the blocks it destroyed. |
 | `source` | `Primed Tnt` | What exploded. |
@@ -629,10 +628,22 @@ else is for when that is not what you want.
 > shows its first eight characters rather than vanishing, because dropping it would read
 > as "nobody was there".
 
-Results are **nearest first**, and one that actually reached the spot you asked about is
-marked `(reached here)` in red — the rest are context, in gold or yellow by distance.
-Each line carries the source, the coordinates, the time in your `format.time` and how
-long ago that was, with the blocks destroyed and who was nearby underneath.
+Results are **nearest first**, and colour carries the meaning so a list of eight can be
+skimmed rather than read:
+
+| Colour | Means |
+|---|---|
+| **Red** source, **reached here** | the blast actually reached the spot you asked about |
+| **Gold** source | within twice its reach — close enough to be related |
+| **White** source | nearby context |
+| **Aqua** | distance and coordinates |
+| **Yellow** | how long ago |
+| **Green** | who was nearby |
+| **Gold** | blocks destroyed |
+| Dark grey | separators and the exact timestamp |
+
+Each result is two lines: the headline answers *what, how far, how long ago*, and the
+line under it carries the coordinates, the size, who was there and the exact time.
 
 > **Why the search is 50 blocks when a TNT blast reaches eight.** The edge of a crater is
 > not inside the explosion that made it. Searching only the blast itself would mean

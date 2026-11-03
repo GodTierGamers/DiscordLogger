@@ -1,9 +1,5 @@
 package com.discordlogger.explosion;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 /**
@@ -22,31 +18,7 @@ import java.util.Locale;
 public final class ExplosionRecord {
 
     /** CSV header, also the field order. Written once when the file is created. */
-    static final String HEADER = "at,at_readable,world,x,y,z,radius,source,blocks,yield,nearby";
-
-    /**
-     * The second column: the same instant a person can read.
-     *
-     * <p>{@code at} stays first and stays epoch millis, because every hot path reads it
-     * — the prune takes the text before the first comma and parses one {@code long},
-     * and the lookup's window check does the same per row. A readable column beside it
-     * costs about twenty bytes and makes the file worth opening.
-     *
-     * <p><b>Deliberately not {@code format.time}.</b> That setting is the admin's to
-     * change, and a file whose own format changes halfway down is a file nothing can
-     * parse — including the prune. ISO-8601 with an offset is fixed, sorts correctly and
-     * says which timezone it meant.
-     *
-     * <p>Nothing ever reads this column back. It is written for people, so a hand-edit
-     * to it cannot break a lookup.
-     */
-    private static final DateTimeFormatter READABLE = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-
-    static String readable(long epochMillis) {
-        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault())
-                .withNano(0)
-                .format(READABLE);
-    }
+    static final String HEADER = "at,world,x,y,z,radius,source,blocks,yield,nearby";
 
     private final long at;
     private final String world;
@@ -126,7 +98,6 @@ public final class ExplosionRecord {
     public String toCsv() {
         final StringBuilder sb = new StringBuilder(96);
         sb.append(at).append(',')
-          .append(readable(at)).append(',')
           .append(escape(world)).append(',')
           .append(x).append(',').append(y).append(',').append(z).append(',')
           .append(radius).append(',')
@@ -150,21 +121,22 @@ public final class ExplosionRecord {
         if (trimmed.isEmpty() || trimmed.startsWith("at,")) return null;
 
         final String[] f = split(trimmed);
-        if (f.length < 11) return null;
+        if (f.length < 10) return null;
         try {
-            // f[1] is the readable stamp and is skipped on purpose: it is derived from
-            // f[0], so trusting it would mean two sources of truth for one fact.
+            // Epoch millis only. A second, human-readable stamp was tried and dropped:
+            // the lookup prints the time in format.time anyway, so the column was two
+            // sources of truth for one fact and twenty bytes a row for nobody.
             return new ExplosionRecord(
                     Long.parseLong(f[0].trim()),
-                    f[2],
+                    f[1],
+                    Integer.parseInt(f[2].trim()),
                     Integer.parseInt(f[3].trim()),
                     Integer.parseInt(f[4].trim()),
                     Integer.parseInt(f[5].trim()),
-                    Integer.parseInt(f[6].trim()),
-                    f[7],
-                    Integer.parseInt(f[8].trim()),
-                    Float.parseFloat(f[9].trim()),
-                    f[10]);
+                    f[6],
+                    Integer.parseInt(f[7].trim()),
+                    Float.parseFloat(f[8].trim()),
+                    f[9]);
         } catch (NumberFormatException notARow) {
             return null;
         }

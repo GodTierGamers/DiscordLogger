@@ -22,6 +22,7 @@ class ExplosionRecordTest {
         final ExplosionRecord before = sample("Steve (4.2m)");
         final ExplosionRecord after = ExplosionRecord.fromCsv(before.toCsv());
 
+        assertEquals(10, ExplosionRecord.split(before.toCsv()).length, "column count is the format");
         assertEquals(before.at(), after.at());
         assertEquals("world", after.world());
         assertEquals(128, after.x());
@@ -66,28 +67,6 @@ class ExplosionRecordTest {
         assertNull(ExplosionRecord.fromCsv("not,a,row"));
         assertNull(ExplosionRecord.fromCsv("later,world,1,2,3,4,Creeper,5,6,x"));
         assertNull(ExplosionRecord.fromCsv("1,world,1,2,3,4,Creeper,5"), "too few columns");
-    }
-
-    @Test
-    @DisplayName("the readable column is written for people and never read back")
-    void readableColumnIsDerived() {
-        final ExplosionRecord r = sample("");
-        final String[] cols = ExplosionRecord.split(r.toCsv());
-
-        assertEquals(11, cols.length);
-        assertEquals(String.valueOf(r.at()), cols[0]);
-        assertEquals(ExplosionRecord.readable(r.at()), cols[1]);
-        // ISO-8601 with an offset: fixed, sortable, and explicit about its timezone --
-        // unlike format.time, which the admin can change under the file.
-        assertTrue(cols[1].matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}([+-]\\d{2}:\\d{2}|Z)"),
-                cols[1]);
-
-        // Nothing reads it, so a hand-edit to it cannot break a lookup.
-        final String vandalised = r.toCsv().replace(cols[1], "last tuesday");
-        final ExplosionRecord back = ExplosionRecord.fromCsv(vandalised);
-        assertEquals(r.at(), back.at());
-        assertEquals(r.x(), back.x());
-        assertEquals("Primed Tnt", back.source());
     }
 
     @Test

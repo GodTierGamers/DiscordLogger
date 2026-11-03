@@ -202,13 +202,22 @@ public final class Lookup implements Subcommand {
 
     // --------------------------------------------------------------- reporting
 
+    /**
+     * Colour carries meaning here, consistently, so a list of eight can be skimmed.
+     *
+     * <p>Aqua is distance, yellow is time, green is people, gold is size, red is "this
+     * one reached you". Separators and the exact timestamp are dark grey so they recede.
+     * A reader should be able to find the nearest explosion, or the most recent one, or
+     * the one that hit them, without reading a single word.
+     */
     private void report(CommandSender sender, Query q, ExplosionLog.Results found) {
         final List<ExplosionRecord> hits = found.shown();
 
         if (hits.isEmpty()) {
             sender.sendMessage(ChatColor.GRAY + "Nothing exploded within "
-                    + ChatColor.WHITE + q.radius + ChatColor.GRAY + " blocks of "
-                    + (q.here ? "you" : fmtCoords(q.x, q.y, q.z)) + ".");
+                    + ChatColor.AQUA + q.radius + " blocks" + ChatColor.GRAY + " of "
+                    + (q.here ? "you" : ChatColor.AQUA + fmtCoords(q.x, q.y, q.z)
+                            + ChatColor.GRAY) + ".");
             sender.sendMessage(ChatColor.DARK_GRAY + "Look wider with "
                     + ChatColor.GRAY + "/discordlogger lookup " + (q.radius * 4));
             return;
@@ -216,48 +225,59 @@ public final class Lookup implements Subcommand {
 
         // The header says what was searched, so no separate "searching..." line is
         // needed and the answer is the first thing on screen.
-        sender.sendMessage(ChatColor.AQUA + "Explosions within " + ChatColor.WHITE + q.radius
-                + ChatColor.AQUA + " blocks of "
-                + (q.here ? "you" : ChatColor.WHITE + fmtCoords(q.x, q.y, q.z) + ChatColor.AQUA)
-                + ChatColor.DARK_GRAY + "  (nearest first)");
+        sender.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + found.total()
+                + (found.total() == 1 ? " explosion" : " explosions")
+                + ChatColor.RESET + ChatColor.GRAY + " within "
+                + ChatColor.AQUA + q.radius + " blocks" + ChatColor.GRAY + " of "
+                + (q.here ? "you" : ChatColor.AQUA + fmtCoords(q.x, q.y, q.z) + ChatColor.GRAY)
+                + ChatColor.DARK_GRAY + "  ·  nearest first");
 
         for (int i = 0; i < hits.size(); i++) {
             final ExplosionRecord r = hits.get(i);
             final double distance = r.distanceTo(q.x, q.y, q.z);
             final boolean reached = distance <= r.radius();
 
-            // The headline is the answer: what it was, how far, how long ago. Red when
-            // the blast actually reached the spot asked about, which is the finding.
-            sender.sendMessage(" " + ChatColor.DARK_GRAY + (i + 1) + ". "
-                    + (reached ? ChatColor.RED : ChatColor.YELLOW) + r.source()
-                    + ChatColor.GRAY + " — " + ChatColor.WHITE
-                    + String.format(Locale.ROOT, "%.0f", distance) + " blocks away"
-                    + ChatColor.GRAY + ", " + ChatColor.WHITE + ago(r.at())
-                    + (reached ? ChatColor.RED + "  ← reached here" : ""));
+            // The headline is the answer: what it was, how far, how long ago. One colour
+            // per kind of fact, the same colour every time, so the eye can pick out the
+            // nearest or the newest without reading.
+            final ChatColor sourceTone = reached ? ChatColor.RED
+                    : distance <= r.radius() * 2 ? ChatColor.GOLD : ChatColor.WHITE;
 
-            // The evidence line: where, how big, who saw it, and the exact time. One
-            // line so a list of eight stays readable in a chat box.
-            final StringBuilder detail = new StringBuilder(96);
-            detail.append("    ").append(ChatColor.DARK_GRAY)
-                  .append("at ").append(fmtCoords(r.x(), r.y(), r.z()))
-                  .append(" · ").append(r.blocks())
+            sender.sendMessage(" " + ChatColor.DARK_GRAY + (i + 1) + ". "
+                    + sourceTone + ChatColor.BOLD + r.source()
+                    + ChatColor.DARK_GRAY + "  ·  "
+                    + ChatColor.AQUA + String.format(Locale.ROOT, "%.0f", distance) + " blocks away"
+                    + ChatColor.DARK_GRAY + "  ·  "
+                    + ChatColor.YELLOW + ago(r.at())
+                    + (reached ? ChatColor.DARK_GRAY + "  ·  " + ChatColor.RED
+                                 + ChatColor.BOLD + "reached here" : ""));
+
+            // The evidence line. Same colour language: aqua where, gold how big, green
+            // who, dark grey for the exact time, which is the least urgent thing on it.
+            final StringBuilder detail = new StringBuilder(128);
+            detail.append("    ").append(ChatColor.DARK_GRAY).append("at ")
+                  .append(ChatColor.AQUA).append(fmtCoords(r.x(), r.y(), r.z()))
+                  .append(ChatColor.DARK_GRAY).append("  ·  ")
+                  .append(ChatColor.GOLD).append(r.blocks())
                   .append(r.blocks() == 1 ? " block" : " blocks");
             final String who = names(r.nearby());
             if (!who.isEmpty()) {
-                detail.append(" · ").append(who);
+                detail.append(ChatColor.DARK_GRAY).append("  ·  ")
+                      .append(ChatColor.GREEN).append(who);
             }
-            detail.append(" · ").append(Log.formatTime(r.at()));
+            detail.append(ChatColor.DARK_GRAY).append("  ·  ").append(Log.formatTime(r.at()));
             sender.sendMessage(detail.toString());
         }
 
         if (found.total() > hits.size()) {
             // Results are sorted by distance, so a truncated list can hide the recent
             // one somebody is actually asking about behind older, closer ones.
-            sender.sendMessage(ChatColor.DARK_GRAY + "Showing " + hits.size() + " of "
-                    + found.total() + " — add " + ChatColor.GRAY + "limit:"
-                    + Math.min(found.total(), MAX_LIMIT) + ChatColor.DARK_GRAY
-                    + " for more, or " + ChatColor.GRAY + "t:1h" + ChatColor.DARK_GRAY
-                    + " for just the recent ones.");
+            sender.sendMessage(ChatColor.DARK_GRAY + "Showing the nearest "
+                    + ChatColor.AQUA + hits.size() + ChatColor.DARK_GRAY + " of "
+                    + ChatColor.AQUA + found.total() + ChatColor.DARK_GRAY + "  ·  add "
+                    + ChatColor.GRAY + "limit:" + Math.min(found.total(), MAX_LIMIT)
+                    + ChatColor.DARK_GRAY + " for more, or " + ChatColor.GRAY + "t:1h"
+                    + ChatColor.DARK_GRAY + " for just the recent ones");
         }
     }
 
