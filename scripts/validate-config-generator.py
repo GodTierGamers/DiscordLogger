@@ -433,10 +433,13 @@ def check_java_fallbacks_match_shipped_config() -> list[str]:
     if "\nlog:" in text:
         category = None
         event = None
+        sub = None
         for line in text.split("\nlog:", 1)[1].split("\n"):
             cat_m = re.match(r"^  (\w+):\s*(?:#.*)?$", line)
             if cat_m:
                 category = cat_m.group(1)
+                event = None
+                sub = None
                 continue
             # Schema v9 shape: "    join: true"
             leaf_m = re.match(r"^    (\w+):\s*(true|false)\b", line)
@@ -450,10 +453,25 @@ def check_java_fallbacks_match_shipped_config() -> list[str]:
             event_m = re.match(r"^    (\w+):\s*(?:#.*)?$", line)
             if event_m and category:
                 event = event_m.group(1)
+                sub = None
                 continue
             child_m = re.match(r"^      (\w+):\s*(true|false)\b", line)
             if child_m and category and event:
                 shipped[f"log.{category}.{event}.{child_m.group(1)}"] = child_m.group(2)
+                sub = None
+                continue
+            # Schema v12 shape: an event may hold a nested sub-section, so a toggle can
+            # sit a level deeper -- "history:" and then "enabled: true". Without this the
+            # checker has no opinion on those keys at all, which is worse than failing:
+            # the whole fallback-matching guarantee quietly stops covering them.
+            sub_m = re.match(r"^      (\w+):\s*(?:#.*)?$", line)
+            if sub_m and category and event:
+                sub = sub_m.group(1)
+                continue
+            grandchild_m = re.match(r"^        (\w+):\s*(true|false)\b", line)
+            if grandchild_m and category and event and sub:
+                shipped[f"log.{category}.{event}.{sub}.{grandchild_m.group(1)}"] = \
+                    grandchild_m.group(2)
 
     if not shipped:
         return [f"{SHIPPED_CONFIG}: could not parse any log.* toggles -- has the structure changed?"]

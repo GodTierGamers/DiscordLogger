@@ -40,6 +40,12 @@ public final class SchemaDetector {
     public static int infer(Map<String, Object> flat) {
         if (flat == null || flat.isEmpty()) return UNKNOWN;
 
+        // v12 added the explosion history section. Any of its keys is decisive, so
+        // deleting one of them does not drop the file a version.
+        if (flat.containsKey("log.server.explosion.history.enabled")
+                || flat.containsKey("log.server.explosion.history.expiry_time")
+                || flat.containsKey("log.server.explosion.history.show_tip")) return 12;
+
         // v11 added exactly one key, so that key is the whole marker.
         if (flat.containsKey("filters.respect_vanish")) return 11;
 

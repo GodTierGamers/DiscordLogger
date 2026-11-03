@@ -128,6 +128,11 @@ src/main/java/com/discordlogger/
   command/Status.java                  /discordlogger status — queue, webhook and build health
   command/Test.java                    /discordlogger test [event] — sends through the real path
   command/Doctor.java                  /discordlogger doctor — config contradictions a schema cannot catch
+  command/Lookup.java                  /discordlogger lookup — explosions near a place, from explosions.csv
+  explosion/ExplosionLog.java          explosions.csv: one writer thread, batched appends, prefix prune
+  explosion/ExplosionRecord.java       One row; lenient parsing, quoted only where a comma would break it
+  explosion/Blast.java                 Stored reach (measured, type-floored) and the search default
+  explosion/Expiry.java                expiry_time: minutes to years, calendar months and years
   command/CommandVisibility.java       Strips Bukkit's plugin:command tab-complete duplicates
   metrics/PluginMetrics.java           33 bStats charts; carries the privacy contract in its Javadoc
   metrics/Counters.java                Runtime tallies; reads are destructive (see Metrics)
@@ -384,6 +389,21 @@ Every event takes an optional `log.<group>.<event>.webhook`. Empty means the mai
 
 `Log.plain` and the update notices deliberately stay on the main webhook: they belong to no event.
 
+### The explosion log (`explosion/`, schema v12)
+
+**Discord answers "what happened"; it cannot answer "was anything blown up *here*".** That is the question somebody standing in a fresh hole has, and scrolling a channel comparing coordinates by eye is not an answer. So every explosion is also appended to `explosions.csv`, and `/discordlogger lookup` searches it by place.
+
+- **One file, one writer thread.** Nothing else touches it, which is what makes the append and the prune safe without a lock — they are two kinds of task on the same queue. Explosions fire on the main thread and the main thread never waits on a disk, for the same reason `WebhookQueue` exists. Rows are written in batches, since a TNT chain is dozens of records in one tick.
+- **The stored radius is measured, not guessed.** The distance from the centre to the furthest block the explosion actually destroyed, so a charged creeper, a blast stopped dead by obsidian and one in open air each record what they really did. `Blast.floorFor` supplies a per-type floor (Minecraft's explosion power doubled) for the case that matters: a creeper that killed someone in a stone corridor may break nothing at all, and a row with radius 0 could never be found from the spot it happened — which is the whole feature.
+- **The search radius and the stored radius are different numbers.** Lookups default to 50 blocks against a TNT blast of 8, because the edge of a crater is not inside the blast that made it. The stored reach is what turns the list into an answer: a result within it `(reached here)`, one outside it merely nearby.
+- **Pruning is a prefix scan.** Rows are appended in time order, so the expired ones are a contiguous block at the start. The prune skips while expired, copies the remainder to a temp file and moves it over — reading only the text before the first comma, and costing one line when the first row is current. Temp-file-then-move, so a crash leaves the original rather than half a log.
+- **The cadence follows the window**: half the retention, clamped between 5 minutes and 6 hours, decided by a task that wakes every 5 minutes so an `expiry_time` change needs no rescheduling. A fixed 6 hours was fine until `expiry_time` accepted minutes; then a short window became a promise the file did not keep.
+- **A lookup applies the expiry cutoff itself**, so it can never return a row the config says is gone — which it could between prunes. That makes `expiry_time` true the moment it changes and leaves pruning as purely a disk-space concern.
+- **A row that cannot be parsed is kept, by every path.** Deleting what cannot be read would delete exactly the rows a bug wrote.
+- `expiry_time` takes minutes through years. **`m` is minutes and `mo` is months**, which is why the unit is looked up as a whole key rather than by its last letter — suffix matching reads `6mo` as six minutes and empties the log. Months and years go through `java.time` and follow the calendar; the cutoff is computed once per prune, so correctness costs nothing per row. `ExpiryTest` pins both.
+- **`Log.formatTime(long)`** exists for the lookup's output: `ts()` can only stamp now. Shared so a lookup and a plain-text line cannot disagree about what time something happened.
+- **The v12 bundle has the generator's first typed sub-option.** `extras` were boolean-only (`!!extra.default` → a checkbox), and `expiry_time` is a duration, so the copied-forward bundle learned `type: "text"` in three places: seeding, rendering and token substitution. `validate-config-generator.py` needed one more level of nesting too — it parsed `log.<cat>.<event>.<leaf>` and stopped, so it had no opinion at all on the new keys, which is worse than failing.
+
 ### `WebhookQueue` (batching and rate limiting)
 - **One worker per destination**, which is also the ordering guarantee — logs are a narrative, so out-of-order delivery is its own bug.
 - **Up to 10 embeds per request, which is the throughput ceiling.** A webhook sustains roughly 30 requests a minute; one event per request wastes nine tenths of that. `takeBatch` sends whatever is *already* waiting as one message — **it never holds a message back to fill a batch**, so a lone event leaves as fast as it did before and only a backlog is ever consumed. That matters because nearly every server is quiet: `send_rate` reported `None` on 55 of 78. The number that forced this: **3,466,845 messages dropped past the queue cap**, 1.1M of them in 30 days, with a rate-limit wait on all 126 polls that had drops and *no* failed send on the three biggest — the ceiling, not an outage.
@@ -414,7 +434,8 @@ Every event takes an optional `log.<group>.<event>.webhook`. Empty means the mai
 
 ### Commands
 - Root `/discordlogger` (aliases `/dlogger`, `/dlog`). The **command itself is deliberately ungated** — it used to require `discordlogger.reload`, which would have locked a `regen`-only admin out of the whole command once a second subcommand existed. `Commands` routes `Subcommand` implementations (LinkedHashMap) and filters both help and tab-complete by each subcommand's own permission, so an unprivileged sender sees nothing and can run nothing.
-- Subcommands, all default op: `reload`, `webhook <url>`, `regen confirm`, `status`, `test [event]`, `doctor` — each gated by `discordlogger.<name>`.
+- Subcommands, all default op: `reload`, `webhook <url>`, `regen confirm`, `status`, `test [event]`, `doctor`, `lookup` — each gated by `discordlogger.<name>`.
+- **`lookup` reads `explosions.csv`, not Discord.** It takes `[x y z]` (or your own position), `r:` (50 default, 500 cap), `t:` (any `expiry_time` unit), `type:`, `world:` and `limit:`. The file read runs async and the reply goes out on the main thread — a `Player`'s location is not safe to ask for off-thread, so the position is captured before the hop.
 - **Tab-completion is filtered twice, in two different places.** `Commands.onTabComplete` filters *arguments* by permission. `CommandVisibility` filters the *command list itself* via `PlayerCommandSendEvent` — that is the only hook that can remove Bukkit's automatic `plugin:command` duplicates, because command-name completion never consults the plugin. It also hides the command from players holding none of the subcommand permissions. It touches only this plugin's entries: editing another plugin's makes that plugin's behaviour unexplainable from its own source. `regen` requires the literal `confirm` — it is destructive and one keystroke from `reload`.
 - **`webhook` never echoes the URL.** It is a bearer credential, so confirmation names the channel id only, tab-complete returns nothing, and `Log.redactWebhooks` masks the token in command logging — without which running the command would publish the new URL to the channel currently configured, i.e. the old webhook. Redacting rather than suppressing keeps the audit trail: you still see that someone changed it.
 - **Never write config with `saveConfig()`.** Bukkit's YAML writer re-serialises the whole file and drops every comment, including the `CONFIG VERSION V<n>` trailer `ConfigMigrator` reads — a config saved that way looks like it has no schema at all. Use `ConfigMigrator.setScalar(file, path, value)`, which rewrites exactly one line (verified: one line changed, comment and line counts unchanged, trailer intact).
@@ -524,7 +545,7 @@ docs/assets/configs/
   v10/lang.yml                     reference copy of what shipped
 ```
 
-Live schemas: **v9** (`since: 2.1.5`, frozen) and **v10** (`since: 2.2.0`, current).
+Live schemas: **v9** (`since: 2.1.5`), **v10** (`since: 2.2.0`), **v11** (`since: 2.3.1`) — all frozen — and **v12** (`since: 2.6.0`, current).
 
 **The generator emits every key in both files, and nothing is hardcoded in a template that the wizard cannot reach.** A setting the generator silently bakes in is one the user does not know they have — which is exactly what the filters were until they were wired up. Concretely: `options.json` carries `filters` (one entry per `filters.*` key, typed `list` / `choices` / `text` / `number` / `bool`) and `lang` (all messages, grouped, each with its shipped default). Adding a sixteenth filter or an eightieth message is a **data** change — one entry plus one `{{TOKEN}}` — never a code change to the bundle.
 
@@ -700,6 +721,7 @@ Schema history, recovered from the shipped config's git history — **update thi
 | **v6→v7** | colours flat → nested (`embeds.colors.player_join` → `embeds.colors.player.join`); moderation colours gained their group; `embeds.colors.server` (a scalar fallback) became a section and has no successor |
 | v7→v8, v8→v9 | nothing; pure additions |
 | **v9→v10** | colours moved to `log.<group>.<event>.color`; toggles became `log.<group>.<event>.enabled` |
+| v10→v11, v11→v12 | nothing; pure additions. v12 added the `log.server.explosion.history.*` section |
 
 **A step that only adds keys needs no entry** — existing paths carry over untouched, which is why `step()` defaults to identity. **A step that moves or renames a key MUST get a `case` in `step()`**, or every upgrade from before it silently loses those settings. That is the single easiest way to break this quietly.
 

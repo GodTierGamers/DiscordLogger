@@ -111,6 +111,7 @@ Two commands answer most of this without reading logs:
 |---|---|
 | `/discordlogger status` | whether Discord is reachable, how deep the send queue is, and whether you are rate limited |
 | `/discordlogger doctor` | contradictions in your config that are valid YAML but not what you meant |
+| `/discordlogger lookup` | what exploded near where you are standing, nearest first — add `x y z` for somewhere else, `r:` for a wider radius, `t:7d` for a time window |
 
 DiscordLogger also checks your webhooks on startup and warns staff **in game** if one
 stops working, so a webhook deleted months later doesn't go unnoticed.

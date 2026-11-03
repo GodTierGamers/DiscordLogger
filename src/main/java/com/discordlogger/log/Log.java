@@ -5,8 +5,10 @@ import com.discordlogger.webhook.DiscordWebhook;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -320,6 +322,25 @@ public final class Log {
     }
 
     private static String ts() { return LocalDateTime.now().format(timeFmt); }
+
+    /**
+     * An arbitrary instant written in the server's own {@code format.time}.
+     *
+     * <p>{@link #ts()} can only stamp now, and {@code /discordlogger lookup} reports
+     * when something happened. Shared rather than reimplemented so the pattern, the
+     * bracket fix and the invalid-pattern fallback stay in one place — and so a lookup
+     * and a plain-text log line never disagree about what time it was, which they would
+     * the moment one of them chose its own zone.
+     *
+     * <p>Falls back to the raw millis if called before {@link #init}, which is better
+     * than a blank where a timestamp should be.
+     */
+    public static String formatTime(long epochMillis) {
+        final DateTimeFormatter fmt = timeFmt;
+        if (fmt == null) return String.valueOf(epochMillis);
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault())
+                .format(fmt);
+    }
 
     /**
      * Makes {@code [} and {@code ]} in a time pattern mean themselves.
