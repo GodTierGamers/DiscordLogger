@@ -41,7 +41,7 @@ description: Post Minecraft server events to Discord — joins, chat, deaths and
   </div>
   <div class="dl-card">
     <h3>Server</h3>
-    <p>Start, stop, console commands, and explosions with the source and blocks destroyed.</p>
+    <p>Start, stop, console commands, and explosions with the source and blocks destroyed — searchable in game with <code>/discordlogger lookup</code>.</p>
   </div>
 </div>
 

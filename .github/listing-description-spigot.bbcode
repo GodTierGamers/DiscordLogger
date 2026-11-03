@@ -8,7 +8,7 @@ Posts what happens on your server to a Discord channel, as clean embeds or plain
 
 [LIST]
 [*][B]Players[/B] — join, quit, chat, commands, deaths, advancements, teleports, gamemode changes
-[*][B]Server[/B] — console commands, start, stop, explosions
+[*][B]Server[/B] — console commands, start, stop, explosions, all kept in a searchable log you can query in game
 [*][B]Moderation[/B] — bans, unbans, kicks, op, deop, whitelist changes
 [*][B]Anything else[/B] — build your own events from any command on the server. Essentials homes, LuckPerms rank changes, shop purchases: if a command triggers it, you can log it, with its own title, colour and webhook
 [/LIST]
@@ -22,6 +22,8 @@ Rich embeds with per-event colours, player heads and a configurable author line 
 Events with detail get their own fields. A death carries the cause, built from server-side damage context so it reads the same for Java and Bedrock players, and optionally where it happened. A ban carries who issued it, why, and for how long.
 
 [SIZE=5][B]Why you might pick this one[/B][/SIZE]
+
+[B]You can ask what blew up a spot.[/B] Every explosion is also recorded to a plain explosions.csv, and /discordlogger lookup searches it by place rather than by time — stand in the hole, run the command, and get the nearest explosions with what caused them, when, how big, and who was within twenty blocks. Records are kept for however long you choose, from minutes to years.
 
 [B]It checks that things actually happened.[/B] A ban is logged after the ban list changes, not when someone types /ban. A command that failed, or was cancelled by another plugin, does not produce a message claiming it worked.
 
