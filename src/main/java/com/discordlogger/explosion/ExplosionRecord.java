@@ -1,5 +1,9 @@
 package com.discordlogger.explosion;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 /**
@@ -18,7 +22,31 @@ import java.util.Locale;
 public final class ExplosionRecord {
 
     /** CSV header, also the field order. Written once when the file is created. */
-    static final String HEADER = "at,world,x,y,z,radius,source,blocks,yield,nearby";
+    static final String HEADER = "at,at_readable,world,x,y,z,radius,source,blocks,yield,nearby";
+
+    /**
+     * The second column: the same instant a person can read.
+     *
+     * <p>{@code at} stays first and stays epoch millis, because every hot path reads it
+     * — the prune takes the text before the first comma and parses one {@code long},
+     * and the lookup's window check does the same per row. A readable column beside it
+     * costs about twenty bytes and makes the file worth opening.
+     *
+     * <p><b>Deliberately not {@code format.time}.</b> That setting is the admin's to
+     * change, and a file whose own format changes halfway down is a file nothing can
+     * parse — including the prune. ISO-8601 with an offset is fixed, sorts correctly and
+     * says which timezone it meant.
+     *
+     * <p>Nothing ever reads this column back. It is written for people, so a hand-edit
+     * to it cannot break a lookup.
+     */
+    private static final DateTimeFormatter READABLE = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+    static String readable(long epochMillis) {
+        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault())
+                .withNano(0)
+                .format(READABLE);
+    }
 
     private final long at;
     private final String world;
@@ -55,7 +83,18 @@ public final class ExplosionRecord {
     public String source()  { return source; }
     public int blocks()     { return blocks; }
     public float yield()    { return yield; }
-    /** Who was within 20 blocks when it went off, already rendered. May be empty. */
+    /**
+     * Who was within 20 blocks, as {@code <uuid>@<blocks>} pairs separated by spaces.
+     *
+     * <p><b>UUIDs, not names.</b> A name is a label somebody can change, and this file
+     * is read weeks later — a row naming "Steve" is worthless once Steve has renamed,
+     * and actively misleading once somebody else takes the name. The lookup resolves
+     * them back to current names when it prints, so what you read is who it is now
+     * rather than who they were called then.
+     *
+     * <p>Space-separated so the field never needs quoting, which keeps the file
+     * grep-able by UUID.
+     */
     public String nearby()  { return nearby; }
 
     /**
@@ -87,6 +126,7 @@ public final class ExplosionRecord {
     public String toCsv() {
         final StringBuilder sb = new StringBuilder(96);
         sb.append(at).append(',')
+          .append(readable(at)).append(',')
           .append(escape(world)).append(',')
           .append(x).append(',').append(y).append(',').append(z).append(',')
           .append(radius).append(',')
@@ -110,19 +150,21 @@ public final class ExplosionRecord {
         if (trimmed.isEmpty() || trimmed.startsWith("at,")) return null;
 
         final String[] f = split(trimmed);
-        if (f.length < 10) return null;
+        if (f.length < 11) return null;
         try {
+            // f[1] is the readable stamp and is skipped on purpose: it is derived from
+            // f[0], so trusting it would mean two sources of truth for one fact.
             return new ExplosionRecord(
                     Long.parseLong(f[0].trim()),
-                    f[1],
-                    Integer.parseInt(f[2].trim()),
+                    f[2],
                     Integer.parseInt(f[3].trim()),
                     Integer.parseInt(f[4].trim()),
                     Integer.parseInt(f[5].trim()),
-                    f[6],
-                    Integer.parseInt(f[7].trim()),
-                    Float.parseFloat(f[8].trim()),
-                    f[9]);
+                    Integer.parseInt(f[6].trim()),
+                    f[7],
+                    Integer.parseInt(f[8].trim()),
+                    Float.parseFloat(f[9].trim()),
+                    f[10]);
         } catch (NumberFormatException notARow) {
             return null;
         }

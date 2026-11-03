@@ -33,8 +33,10 @@ class ExplosionLogPruneTest {
         return f.toFile();
     }
 
+    /** A real row, in the shipped column order -- not a shape only this test believes in. */
     private static String row(long at, int x) {
-        return at + ",world," + x + ",71,-344,8,Primed Tnt,37,0.30,";
+        return at + "," + ExplosionRecord.readable(at) + ",world," + x
+                + ",71,-344,8,Primed Tnt,37,0.30,";
     }
 
     @Test

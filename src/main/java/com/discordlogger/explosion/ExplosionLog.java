@@ -126,6 +126,16 @@ public final class ExplosionLog {
 
     // ------------------------------------------------------------------ reading
 
+    /** What a lookup found: the rows to show, and how many matched in total. */
+    public static final class Results {
+        private final List<ExplosionRecord> shown;
+        private final int total;
+        Results(List<ExplosionRecord> shown, int total) { this.shown = shown; this.total = total; }
+        public List<ExplosionRecord> shown() { return shown; }
+        /** Every match, not just the ones returned — so a truncated list can say so. */
+        public int total() { return total; }
+    }
+
     /**
      * Explosions near a point, nearest first.
      *
@@ -137,18 +147,8 @@ public final class ExplosionLog {
      * @param radius how far to look, in blocks
      * @param since  epoch millis; rows older than this are skipped, 0 for no limit
      * @param type   a case-insensitive substring of the source, or null for any
-     * @param limit  how many results to return at most
+     * @param limit  how many rows to return; {@link Results#total()} still counts them all
      */
-    /** What a lookup found: the rows to show, and how many matched in total. */
-    public static final class Results {
-        private final List<ExplosionRecord> shown;
-        private final int total;
-        Results(List<ExplosionRecord> shown, int total) { this.shown = shown; this.total = total; }
-        public List<ExplosionRecord> shown() { return shown; }
-        /** Every match, not just the ones returned — so a truncated list can say so. */
-        public int total() { return total; }
-    }
-
     public static Results near(String world, int x, int y, int z,
                                int radius, long since, String type, int limit) {
         final File f = file;

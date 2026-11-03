@@ -61,7 +61,7 @@ public final class BlockExplosion implements Listener {
         final String nearby = Explosion.playersNearbyString(plugin, w, loc);
 
         Explosion.record(plugin, loc, world, mat == null ? null : mat.name(), source,
-                e.blockList(), affected, e.getYield(), nearby);
+                e.blockList(), affected, e.getYield());
 
         List<Log.Field> fields = new ArrayList<>();
         fields.add(new Log.Field("Source:", source));

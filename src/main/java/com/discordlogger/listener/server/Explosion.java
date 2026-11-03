@@ -86,7 +86,7 @@ public final class Explosion implements Listener {
         final String nearby = playersNearbyString(w, loc);
 
         record(plugin, loc, world, type == null ? null : type.name(), source,
-                e.blockList(), affected, e.getYield(), nearby);
+                e.blockList(), affected, e.getYield());
 
         List<Log.Field> fields = new ArrayList<>();
         fields.add(// Source and World pair up on one row. World used to be the only inline
@@ -125,15 +125,15 @@ public final class Explosion implements Listener {
      * same row is two places for it to drift.
      */
     static int record(JavaPlugin plugin, Location loc, String world, String sourceName,
-                      String sourceLabel, List<Block> blocks, int affected,
-                      float yield, String nearby) {
+                      String sourceLabel, List<Block> blocks, int affected, float yield) {
         if (loc == null) return 0;
         if (!historyEnabled(plugin)) return 0;
         final int radius = Blast.radiusFor(measuredRadius(loc, blocks), sourceName);
         ExplosionLog.append(new ExplosionRecord(
                 System.currentTimeMillis(), world,
                 loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(),
-                radius, sourceLabel, affected, yield, nearby));
+                radius, sourceLabel, affected, yield,
+                playersNearbyIds(loc.getWorld(), loc)));
         return radius;
     }
 
@@ -212,6 +212,45 @@ public final class Explosion implements Listener {
 
     String playersNearbyString(World world, Location center) {
         return playersNearbyString(plugin, world, center);
+    }
+
+    /**
+     * The same players as {@link #playersNearbyString}, as {@code <uuid>@<blocks>}.
+     *
+     * <p>The embed shows names, because a person is reading it now. The file stores
+     * UUIDs, because a person is reading it in six weeks and a name is a label that
+     * can move to somebody else in between.
+     *
+     * <p>Space-separated and unquoted, so the column stays grep-able by UUID.
+     */
+    static String playersNearbyIds(World world, Location center) {
+        if (world == null || center == null) return "";
+        final double r2 = (double) NEARBY_RADIUS_BLOCKS * (double) NEARBY_RADIUS_BLOCKS;
+        final List<Player> near = new ArrayList<>();
+        for (Player p : world.getPlayers()) {
+            final Location pl = p.getLocation();
+            if (pl == null || pl.getWorld() == null || !world.equals(pl.getWorld())) continue;
+            if (pl.distanceSquared(center) <= r2) near.add(p);
+        }
+        near.sort(Comparator.comparingDouble(p -> {
+            final Location pl = p.getLocation();
+            return (pl == null) ? Double.MAX_VALUE : pl.distanceSquared(center);
+        }));
+
+        final StringBuilder sb = new StringBuilder(64);
+        // No limit here, unlike the embed: the embed is a message with a width, this is
+        // a record, and the one name trimmed off the end is the one somebody needed.
+        for (Player p : near) {
+            double d = 0.0;
+            try {
+                d = p.getLocation().distance(center);
+            } catch (IllegalArgumentException differentWorlds) {
+                continue;
+            }
+            if (sb.length() > 0) sb.append(' ');
+            sb.append(p.getUniqueId()).append('@').append(String.format(Locale.ROOT, "%.1f", d));
+        }
+        return sb.toString();
     }
 
     /** Package-private so the gated block-explosion listener shares one answer. */

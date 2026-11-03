@@ -609,6 +609,26 @@ else is for when that is not what you want.
 | `world:` | yours | Which world to search. |
 | `limit:` | `8` | How many results, capped at 50. |
 
+#### What `explosions.csv` holds
+
+| Column | Example | Notes |
+|---|---|---|
+| `at` | `1762128000000` | Epoch milliseconds. Everything that reads the file reads this. |
+| `at_readable` | `2026-11-03T14:32:06+11:00` | The same instant for a person. ISO-8601, **not** `format.time` — that setting is yours to change, and a file whose format changes halfway down cannot be parsed. Nothing reads this column back. |
+| `world`, `x`, `y`, `z` | `world`, `128`, `71`, `-344` | Where it went off. |
+| `radius` | `8` | How far it actually reached, measured from the blocks it destroyed. |
+| `source` | `Primed Tnt` | What exploded. |
+| `blocks` | `37` | How many blocks it destroyed. |
+| `yield` | `0.30` | The event's yield. |
+| `nearby` | `069a79f4-…@4.2 853c80ef-…@11.8` | **UUIDs**, with distance in blocks. |
+
+> **The nearby list stores UUIDs, not names.** A name is a label somebody can change,
+> and this file gets read weeks later — a row naming "Steve" is worthless once Steve has
+> renamed, and misleading once somebody else takes the name. `/discordlogger lookup`
+> resolves them when it prints, so you read who they are *now*. An unresolvable UUID
+> shows its first eight characters rather than vanishing, because dropping it would read
+> as "nobody was there".
+
 Results are **nearest first**, and one that actually reached the spot you asked about is
 marked `(reached here)` in red — the rest are context, in gold or yellow by distance.
 Each line carries the source, the coordinates, the time in your `format.time` and how

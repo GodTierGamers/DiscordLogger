@@ -5,6 +5,7 @@ import com.discordlogger.explosion.Expiry;
 import com.discordlogger.explosion.ExplosionLog;
 import com.discordlogger.explosion.ExplosionRecord;
 import com.discordlogger.log.Log;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * {@code /discordlogger lookup} — what exploded around here.
@@ -240,8 +242,9 @@ public final class Lookup implements Subcommand {
                   .append("at ").append(fmtCoords(r.x(), r.y(), r.z()))
                   .append(" · ").append(r.blocks())
                   .append(r.blocks() == 1 ? " block" : " blocks");
-            if (!r.nearby().isEmpty()) {
-                detail.append(" · ").append(r.nearby());
+            final String who = names(r.nearby());
+            if (!who.isEmpty()) {
+                detail.append(" · ").append(who);
             }
             detail.append(" · ").append(Log.formatTime(r.at()));
             sender.sendMessage(detail.toString());
@@ -256,6 +259,47 @@ public final class Lookup implements Subcommand {
                     + " for more, or " + ChatColor.GRAY + "t:1h" + ChatColor.DARK_GRAY
                     + " for just the recent ones.");
         }
+    }
+
+    /**
+     * Turns the stored {@code <uuid>@<blocks>} list into current names.
+     *
+     * <p>The file stores UUIDs so a rename cannot rot the record; this is the other
+     * half of that trade — what gets printed is who they are called <em>now</em>,
+     * resolved at read time rather than frozen when the explosion happened.
+     *
+     * <p>An unresolvable UUID prints its first eight characters. That is still enough
+     * to match against another row or to look up by hand, and far better than dropping
+     * the entry, which would read as "nobody was there".
+     */
+    static String names(String stored) {
+        if (stored == null || stored.trim().isEmpty()) return "";
+        final StringBuilder out = new StringBuilder(64);
+        for (String entry : stored.trim().split("\\s+")) {
+            final int at = entry.lastIndexOf('@');
+            final String id = at < 0 ? entry : entry.substring(0, at);
+            final String distance = at < 0 ? null : entry.substring(at + 1);
+
+            String name = null;
+            try {
+                final UUID uuid = UUID.fromString(id);
+                final Player online = Bukkit.getPlayer(uuid);
+                name = (online != null) ? online.getName() : Bukkit.getOfflinePlayer(uuid).getName();
+            } catch (IllegalArgumentException notAUuid) {
+                // A hand-edited file, or a row from before this column held UUIDs.
+                name = id;
+            } catch (Throwable noServer) {
+                name = null;
+            }
+            if (name == null || name.isEmpty()) {
+                name = id.length() > 8 ? id.substring(0, 8) : id;
+            }
+
+            if (out.length() > 0) out.append(", ");
+            out.append(name);
+            if (distance != null && !distance.isEmpty()) out.append(" (").append(distance).append("m)");
+        }
+        return out.toString();
     }
 
     /** "3d ago", "2h ago", "just now" — relative, because that is how it gets asked. */

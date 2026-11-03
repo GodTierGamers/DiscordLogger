@@ -69,6 +69,28 @@ class ExplosionRecordTest {
     }
 
     @Test
+    @DisplayName("the readable column is written for people and never read back")
+    void readableColumnIsDerived() {
+        final ExplosionRecord r = sample("");
+        final String[] cols = ExplosionRecord.split(r.toCsv());
+
+        assertEquals(11, cols.length);
+        assertEquals(String.valueOf(r.at()), cols[0]);
+        assertEquals(ExplosionRecord.readable(r.at()), cols[1]);
+        // ISO-8601 with an offset: fixed, sortable, and explicit about its timezone --
+        // unlike format.time, which the admin can change under the file.
+        assertTrue(cols[1].matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}([+-]\\d{2}:\\d{2}|Z)"),
+                cols[1]);
+
+        // Nothing reads it, so a hand-edit to it cannot break a lookup.
+        final String vandalised = r.toCsv().replace(cols[1], "last tuesday");
+        final ExplosionRecord back = ExplosionRecord.fromCsv(vandalised);
+        assertEquals(r.at(), back.at());
+        assertEquals(r.x(), back.x());
+        assertEquals("Primed Tnt", back.source());
+    }
+
+    @Test
     @DisplayName("touches() answers whether the blast reached a place, in the right world")
     void touchesTheRightPlaces() {
         final ExplosionRecord r = sample("");   // radius 8 at 128,71,-344
