@@ -20,6 +20,53 @@ public final class ExplosionRecord {
     /** CSV header, also the field order. Written once when the file is created. */
     static final String HEADER = "at,world,x,y,z,radius,source,blocks,yield,nearby";
 
+    /**
+     * First line of the file: which schema's column layout these rows are in.
+     *
+     * <p>Versioned for the same reason {@code config.yml} and {@code lang.yml} are, and
+     * with the same number — the schema is global, so a column change travels with the
+     * config schema rather than inventing a second sequence nobody can cross-reference.
+     * The number is read from the JAR's own config trailer, never written here: a
+     * hardcoded schema number in Java is one more copy to forget.
+     *
+     * <p>It earns its place at the moment the columns change. Without it the plugin
+     * would read a v12 row as if it were v13 — same count, different meaning, no error,
+     * silently wrong answers from the lookup. With it, an unrecognised file is set aside
+     * and a fresh one started, because a format this build cannot read is not one it
+     * should guess at.
+     */
+    static String banner(int schema) {
+        return "# DISCORDLOGGER EXPLOSION LOG V" + schema
+                + " -- one row per explosion; see https://discordlogger.godtiergamers.xyz/config/v"
+                + schema + "/";
+    }
+
+    /** The schema a banner line declares, or null if that is not what the line is. */
+    static Integer versionOf(String line) {
+        if (!isComment(line)) return null;
+        final java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("EXPLOSION\\s+LOG\\s+V(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(line);
+        if (!m.find()) return null;
+        try {
+            return Integer.valueOf(m.group(1));
+        } catch (NumberFormatException notANumber) {
+            return null;
+        }
+    }
+
+    /**
+     * Whether a line is a comment rather than data.
+     *
+     * <p>Every path that walks the file has to agree about this, which is why it is one
+     * method. The prune in particular: it stops at the first row that has not expired,
+     * and a banner it mistook for a row would become that stopping point — so nothing
+     * would ever be deleted again, with no error to notice.
+     */
+    static boolean isComment(String line) {
+        return line != null && line.trim().startsWith("#");
+    }
+
     private final long at;
     private final String world;
     private final int x;

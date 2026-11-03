@@ -1,5 +1,6 @@
 package com.discordlogger.explosion;
 
+import com.discordlogger.config.ConfigMigrator;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.BufferedReader;
@@ -78,12 +79,20 @@ public final class ExplosionLog {
     private static volatile boolean warnedFull;
     private static volatile long lastPruneAt;
 
+    /** The schema this build writes, read from the JAR's own config trailer. */
+    private static volatile int schema;
+
     private ExplosionLog() {}
 
     /** Start the writer. Safe to call again on reload. */
     public static synchronized void start(JavaPlugin pl) {
         plugin = pl;
         file = new File(pl.getDataFolder(), FILE_NAME);
+        final Integer shipped = ConfigMigrator.shippedVersion(pl, "config.yml");
+        // Zero means "could not read it", and in that case the file is left alone: a
+        // trailer we cannot parse is no reason to set somebody's log aside.
+        schema = (shipped == null) ? 0 : shipped.intValue();
+        if (schema > 0) setAsideIfForeign();
         if (running) return;
         running = true;
         final Thread t = new Thread(ExplosionLog::runLoop, "DiscordLogger-ExplosionLog");
@@ -122,6 +131,57 @@ public final class ExplosionLog {
         }
         if (t.isAlive()) t.interrupt();
         writer = null;
+    }
+
+    /**
+     * Renames the log aside when it was written by a different schema.
+     *
+     * <p>The columns are part of the schema, so a file from another version cannot be
+     * read as this one — the counts may match while the meanings do not, which a lookup
+     * would report as fact. Setting it aside is the same move {@code ConfigMigrator}
+     * makes with {@code config.old.yml}: keep what was there, start something this build
+     * understands, and say so once.
+     *
+     * <p>A file with no banner at all is also foreign. It predates versioning, so its
+     * layout is whatever it was then and this build has no way to ask.
+     */
+    private static void setAsideIfForeign() {
+        final File f = file;
+        if (f == null || !f.isFile() || f.length() == 0L) return;
+
+        Integer found = null;
+        BufferedReader in = null;
+        try {
+            in = Files.newBufferedReader(f.toPath(), StandardCharsets.UTF_8);
+            String line;
+            while ((line = in.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                found = ExplosionRecord.versionOf(line);
+                break;                      // the banner is the first line or it is absent
+            }
+        } catch (IOException unreadable) {
+            log().warning("[ExplosionLog] Could not read " + FILE_NAME + ": " + unreadable);
+            return;
+        } finally {
+            closeQuietly(in);
+        }
+
+        if (found != null && found.intValue() == schema) return;
+
+        final String suffix = (found == null) ? "old" : ("v" + found);
+        final File aside = new File(f.getParentFile(), "explosions." + suffix + ".csv");
+        try {
+            Files.move(f.toPath(), aside.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            log().warning("[ExplosionLog] " + FILE_NAME + " was written by "
+                    + (found == null ? "a build before the log was versioned" : "schema v" + found)
+                    + " and this build writes v" + schema + ". Its columns may mean different"
+                    + " things, so it has been renamed to " + aside.getName()
+                    + " and a new log started. Nothing was deleted.");
+        } catch (IOException cannotMove) {
+            log().warning("[ExplosionLog] " + FILE_NAME + " is from another schema but could"
+                    + " not be renamed (" + cannotMove + "). Lookups may be wrong until it is"
+                    + " moved by hand.");
+        }
     }
 
     // ------------------------------------------------------------------ reading
@@ -294,6 +354,10 @@ public final class ExplosionLog {
             out = Files.newBufferedWriter(f.toPath(), StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND);
             if (fresh) {
+                if (schema > 0) {
+                    out.write(ExplosionRecord.banner(schema));
+                    out.newLine();
+                }
                 out.write(ExplosionRecord.HEADER);
                 out.newLine();
             }
@@ -396,7 +460,21 @@ public final class ExplosionLog {
             in = Files.newBufferedReader(path, StandardCharsets.UTF_8);
             String line;
             String firstKept = null;
+            // Carried through verbatim rather than regenerated: a prune must not be able
+            // to change what version the file claims to be. If they ever disagreed,
+            // start() has already set the file aside -- this path only ever sees a file
+            // this build wrote.
+            String bannerFound = null;
             while ((line = in.readLine()) != null) {
+                // The banner and the header are not rows. Treating either as one would
+                // make it the first thing "not expired", so the scan would stop there
+                // and nothing would ever be pruned again -- silently.
+                if (ExplosionRecord.isComment(line)) {
+                    if (bannerFound == null && ExplosionRecord.versionOf(line) != null) {
+                        bannerFound = line;
+                    }
+                    continue;
+                }
                 if (line.trim().isEmpty() || line.startsWith("at,")) continue;
                 final long at = timestampOf(line);
                 // Unreadable timestamps are kept: see the class comment.
@@ -411,6 +489,12 @@ public final class ExplosionLog {
 
             out = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            final String banner = (bannerFound != null) ? bannerFound
+                    : (schema > 0 ? ExplosionRecord.banner(schema) : null);
+            if (banner != null) {
+                out.write(banner);
+                out.newLine();
+            }
             out.write(ExplosionRecord.HEADER);
             out.newLine();
             if (firstKept != null) {
@@ -419,7 +503,7 @@ public final class ExplosionLog {
                 // Rows are appended in time order, so everything after the first kept
                 // row is newer than it and cannot have expired. No further checks.
                 while ((line = in.readLine()) != null) {
-                    if (line.trim().isEmpty()) continue;
+                    if (line.trim().isEmpty() || ExplosionRecord.isComment(line)) continue;
                     out.write(line);
                     out.newLine();
                 }

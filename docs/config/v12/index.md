@@ -609,7 +609,29 @@ else is for when that is not what you want.
 | `world:` | yours | Which world to search. |
 | `limit:` | `8` | How many results, capped at 50. |
 
-#### What `explosions.csv` holds
+#### The file
+
+`plugins/DiscordLogger/explosions.csv`. Plain text, one row per explosion, appended in
+the order things happened. Safe to open in a spreadsheet, `grep`, or delete — the plugin
+writes a fresh one on the next explosion.
+
+```
+# DISCORDLOGGER EXPLOSION LOG V12 -- one row per explosion; see https://discordlogger.godtiergamers.xyz/config/v12/
+at,world,x,y,z,radius,source,blocks,yield,nearby
+1762128000000,world,128,71,-344,8,Primed Tnt,37,0.30,069a79f4-44e9-4726-a5be-fca90e38aaf5@4.2
+```
+
+**The first line is a version marker, and it is the same schema number as
+`config.yml`.** The columns are part of the schema, so they move with it rather than
+having a sequence of their own — a v12 log and a v12 config always belong together.
+
+**If the file was written by a different schema, the plugin renames it aside** to
+`explosions.v<old>.csv` (or `explosions.old.csv` if it has no marker at all) and starts a
+new one, saying so in console. Nothing is deleted. That matters because column counts can
+match while the meanings do not: read as the wrong version, a lookup would answer
+confidently and be wrong, which is worse than answering nothing.
+
+#### What each column holds
 
 | Column | Example | Notes |
 |---|---|---|
@@ -620,6 +642,25 @@ else is for when that is not what you want.
 | `blocks` | `37` | How many blocks it destroyed. |
 | `yield` | `0.30` | The event's yield. |
 | `nearby` | `069a79f4-…@4.2 853c80ef-…@11.8` | **UUIDs**, with distance in blocks. |
+
+#### How it is written and trimmed
+
+- **Nothing happens on the explosion's own thread.** A blast queues a row and returns;
+  one writer thread owns the file. A TNT chain is dozens of records in a single tick, so
+  queued rows are written in batches rather than one open-write-close each.
+- **Rows are appended in time order**, which is what makes trimming cheap: everything
+  expired is a block at the start of the file. The prune skips past it, copies the rest to
+  a temporary file and moves that over the original — so a crash mid-prune leaves the
+  original intact, never half a log.
+- **When the oldest row is still current, pruning reads one line and stops.** That is the
+  ordinary case on almost every server.
+- **Pruning runs** a minute after startup, then at half your `expiry_time` (never more
+  often than every 5 minutes, never less than every 6 hours), and immediately on
+  `/discordlogger reload`.
+- **A row whose timestamp cannot be read is kept**, by every path. Deleting what cannot be
+  parsed would delete exactly the rows a bug wrote, which are the ones worth having.
+- **A lookup applies `expiry_time` itself**, so it never shows a row the setting says is
+  gone even if the pruner has not run yet.
 
 > **The nearby list stores UUIDs, not names.** A name is a label somebody can change,
 > and this file gets read weeks later — a row naming "Steve" is worthless once Steve has

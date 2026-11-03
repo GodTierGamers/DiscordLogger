@@ -13,6 +13,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -24,9 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ExplosionLogPruneTest {
 
+    /** A file shaped like the real one: banner, header, then rows. */
     private static File write(Path dir, String... lines) throws IOException {
         final Path f = dir.resolve("explosions.csv");
         final StringBuilder sb = new StringBuilder();
+        sb.append(ExplosionRecord.banner(12)).append('\n');
         sb.append(ExplosionRecord.HEADER).append('\n');
         for (String line : lines) sb.append(line).append('\n');
         Files.write(f, sb.toString().getBytes(StandardCharsets.UTF_8));
@@ -46,10 +49,13 @@ class ExplosionLogPruneTest {
         assertEquals(2, ExplosionLog.rewriteWithout(f, 300L));
 
         final List<String> left = Files.readAllLines(f.toPath(), StandardCharsets.UTF_8);
-        assertEquals(ExplosionRecord.HEADER, left.get(0), "the header is rewritten");
-        assertEquals(3, left.size());
-        assertTrue(left.get(1).startsWith("300,"));
-        assertTrue(left.get(2).startsWith("400,"));
+        assertEquals(12, ExplosionRecord.versionOf(left.get(0)).intValue(),
+                "the banner survives the rewrite -- a log that lost its version is a log "
+                + "the next build cannot trust");
+        assertEquals(ExplosionRecord.HEADER, left.get(1), "the header is rewritten");
+        assertEquals(4, left.size());
+        assertTrue(left.get(2).startsWith("300,"));
+        assertTrue(left.get(3).startsWith("400,"));
     }
 
     @Test
@@ -86,11 +92,46 @@ class ExplosionLogPruneTest {
         assertEquals(2, ExplosionLog.rewriteWithout(f, 1_000L));
 
         final List<String> left = Files.readAllLines(f.toPath(), StandardCharsets.UTF_8);
-        assertEquals(1, left.size(), "just the header");
-        assertEquals(ExplosionRecord.HEADER, left.get(0));
+        assertEquals(2, left.size(), "just the banner and the header");
+        assertEquals(12, ExplosionRecord.versionOf(left.get(0)).intValue());
+        assertEquals(ExplosionRecord.HEADER, left.get(1));
         // A missing file would read as "logging never worked" rather than "nothing is
         // old enough to still be here".
         assertTrue(f.isFile());
+    }
+
+    @Test
+    @DisplayName("the banner does not stop the prune")
+    void bannerIsNotARow(@TempDir Path dir) throws IOException {
+        // The trap that versioning the file opened. The prune walks until it finds a row
+        // that has not expired and stops there. A banner counted as a row would be that
+        // row every single time -- so nothing would ever be deleted again, with no error
+        // and no warning, and the file would grow past expiry_time forever.
+        final File f = write(dir, row(100, 1), row(200, 2), row(900, 3));
+
+        assertEquals(2, ExplosionLog.rewriteWithout(f, 500L),
+                "the two expired rows go, and the banner is not mistaken for one of them");
+
+        final List<String> left = Files.readAllLines(f.toPath(), StandardCharsets.UTF_8);
+        assertEquals(3, left.size());
+        assertEquals(12, ExplosionRecord.versionOf(left.get(0)).intValue());
+        assertTrue(left.get(2).startsWith("900,"));
+    }
+
+    @Test
+    @DisplayName("a banner is a comment, a row is not")
+    void commentsAreRecognised() {
+        assertTrue(ExplosionRecord.isComment(ExplosionRecord.banner(12)));
+        assertTrue(ExplosionRecord.isComment("   # indented"));
+        assertFalse(ExplosionRecord.isComment(row(100, 1)));
+        assertFalse(ExplosionRecord.isComment(ExplosionRecord.HEADER));
+        assertFalse(ExplosionRecord.isComment(null));
+
+        assertEquals(12, ExplosionRecord.versionOf(ExplosionRecord.banner(12)).intValue());
+        assertEquals(13, ExplosionRecord.versionOf("# DISCORDLOGGER EXPLOSION LOG V13").intValue());
+        // Not a banner: no version to read, so the file counts as foreign and is set aside.
+        assertNull(ExplosionRecord.versionOf("# just a note"));
+        assertNull(ExplosionRecord.versionOf(row(100, 1)));
     }
 
     @Test
