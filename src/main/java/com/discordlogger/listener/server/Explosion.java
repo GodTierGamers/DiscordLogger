@@ -175,8 +175,12 @@ public final class Explosion implements Listener {
         // worse than no tip, so turning the history off takes the field with it.
         if (!historyEnabled(plugin)) return;
         if (!plugin.getConfig().getBoolean("log.server.explosion.history.show_tip", true)) return;
+        // The full command name, not an alias. /dlogger and /dlog both work, but this
+        // field exists to be copied into a chat box by somebody who has never run the
+        // command before, and a tip that only works if you happen to have the aliases
+        // is worse than no tip.
         fields.add(new Log.Field("Look It Up:",
-                "`/dl lookup " + loc.getBlockX() + " " + loc.getBlockY() + " "
+                "`/discordlogger lookup " + loc.getBlockX() + " " + loc.getBlockY() + " "
                         + loc.getBlockZ() + " world:" + world + "`"));
     }
 

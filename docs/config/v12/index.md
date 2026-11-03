@@ -587,15 +587,22 @@ log:
         show_tip: true
 ```
 
+**Standing in the crater, `/dlog lookup` on its own is the whole command.** Everything
+else is for when that is not what you want.
+
 ```
-/discordlogger lookup                      # where you are standing
-/discordlogger lookup 128 71 -344          # a specific spot in your world
-/discordlogger lookup 128 71 -344 world:world_nether r:120 t:6mo type:creeper limit:20
+/dlog lookup                               # 50 blocks around you, nearest first
+/dlog lookup 200                           # same, but look further
+/dlog lookup 128 71 -344                   # a specific spot in your world
+/dlog lookup 128 71 -344 world:world_nether r:120 t:6mo type:creeper limit:20
 ```
+
+(`/discordlogger`, `/dlogger` and `/dlog` are the same command.)
 
 | Option | Default | Means |
 |---|---|---|
 | *(none)* | — | Search around where you are standing. Console must give coordinates and `world:`. |
+| *(one number)* | — | A radius, around where you are standing. |
 | `r:` | `50` | Radius in blocks, capped at 500. |
 | `t:` | everything kept | How far back to look: `30m`, `2h`, `7d`, `4w`, `6mo`, `1y`. |
 | `type:` | any | Case-insensitive substring of the source, e.g. `creeper`, `tnt`, `bed`. |

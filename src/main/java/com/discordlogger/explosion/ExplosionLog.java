@@ -139,10 +139,20 @@ public final class ExplosionLog {
      * @param type   a case-insensitive substring of the source, or null for any
      * @param limit  how many results to return at most
      */
-    public static List<ExplosionRecord> near(String world, int x, int y, int z,
-                                             int radius, long since, String type, int limit) {
+    /** What a lookup found: the rows to show, and how many matched in total. */
+    public static final class Results {
+        private final List<ExplosionRecord> shown;
+        private final int total;
+        Results(List<ExplosionRecord> shown, int total) { this.shown = shown; this.total = total; }
+        public List<ExplosionRecord> shown() { return shown; }
+        /** Every match, not just the ones returned — so a truncated list can say so. */
+        public int total() { return total; }
+    }
+
+    public static Results near(String world, int x, int y, int z,
+                               int radius, long since, String type, int limit) {
         final File f = file;
-        if (f == null || !f.isFile()) return Collections.emptyList();
+        if (f == null || !f.isFile()) return new Results(Collections.<ExplosionRecord>emptyList(), 0);
 
         // Never return a row the config says is already expired. Pruning is scheduled,
         // so between passes the file still holds rows past their window -- and a
@@ -176,7 +186,7 @@ public final class ExplosionLog {
             }
         } catch (IOException unreadable) {
             log().warning("[ExplosionLog] Could not read " + FILE_NAME + ": " + unreadable);
-            return Collections.emptyList();
+            return new Results(Collections.<ExplosionRecord>emptyList(), 0);
         } finally {
             closeQuietly(in);
         }
@@ -194,7 +204,10 @@ public final class ExplosionLog {
                 return byDistance != 0 ? byDistance : Long.compare(b.at(), a.at());
             }
         });
-        return hits.size() > limit ? new ArrayList<ExplosionRecord>(hits.subList(0, limit)) : hits;
+        final int total = hits.size();
+        final List<ExplosionRecord> shown = total > limit
+                ? new ArrayList<ExplosionRecord>(hits.subList(0, limit)) : hits;
+        return new Results(shown, total);
     }
 
     /** The oldest timestamp {@code expiry_time} still allows, or 0 when it is unset. */

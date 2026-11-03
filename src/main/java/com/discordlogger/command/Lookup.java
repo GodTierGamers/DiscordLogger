@@ -57,22 +57,24 @@ public final class Lookup implements Subcommand {
         final Query q = parse(sender, args);
         if (q.error != null) {
             sender.sendMessage(ChatColor.RED + q.error);
-            sender.sendMessage(ChatColor.GRAY + "Usage: " + ChatColor.WHITE
-                    + "/discordlogger lookup [x y z] [r:50] [t:7d] [type:tnt] [world:name] [limit:8]");
-            sender.sendMessage(ChatColor.DARK_GRAY + "t: takes minutes to years — 30m, 2h, 7d, 3w, 6mo, 1y.");
+            // Shortest useful form first. Someone who got this wrong wants to know
+            // what to type, not to read the whole grammar.
+            sender.sendMessage(ChatColor.GRAY + "Just " + ChatColor.WHITE
+                    + "/discordlogger lookup" + ChatColor.GRAY + " searches "
+                    + Blast.DEFAULT_SEARCH_RADIUS + " blocks around you.");
+            sender.sendMessage(ChatColor.DARK_GRAY + "Or: lookup <radius> · lookup <x y z> · "
+                    + "r:120 · t:2h · type:creeper · world:name · limit:20");
             return true;
         }
 
-        sender.sendMessage(ChatColor.AQUA + "Searching " + ChatColor.WHITE + q.radius
-                + ChatColor.AQUA + " blocks around " + ChatColor.WHITE + fmtCoords(q.x, q.y, q.z)
-                + ChatColor.GRAY + " in " + q.world + "…");
-
+        // No "searching…" line. The read takes milliseconds and the answer arrives on
+        // its own; announcing the question just pushes the answer up the chat box.
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
             @Override public void run() {
-                final List<ExplosionRecord> hits = ExplosionLog.near(
+                final ExplosionLog.Results found = ExplosionLog.near(
                         q.world, q.x, q.y, q.z, q.radius, q.since, q.type, q.limit);
                 plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
-                    @Override public void run() { report(sender, q, hits); }
+                    @Override public void run() { report(sender, q, found); }
                 });
             }
         });
@@ -90,6 +92,8 @@ public final class Lookup implements Subcommand {
         long since;
         String type;
         String error;
+        /** True when the search is centred on the sender, so messages can say "you". */
+        boolean here;
     }
 
     private Query parse(CommandSender sender, String[] args) {
@@ -116,8 +120,23 @@ public final class Lookup implements Subcommand {
                 return q;
             }
             if (sender instanceof Player) q.world = ((Player) sender).getWorld().getName();
+        } else if (bare.size() == 1 && sender instanceof Player) {
+            // "lookup 200" is someone widening the search, not someone mistyping
+            // coordinates. It is the second most likely thing to type after nothing.
+            final int r = parseInt(bare.get(0), -1);
+            if (r <= 0) {
+                q.error = "\"" + bare.get(0) + "\" is not a radius or a set of coordinates.";
+                return q;
+            }
+            q.radius = Math.min(r, Blast.MAX_SEARCH_RADIUS);
+            final Location at = ((Player) sender).getLocation();
+            q.world = at.getWorld() == null ? null : at.getWorld().getName();
+            q.x = at.getBlockX();
+            q.y = at.getBlockY();
+            q.z = at.getBlockZ();
+            q.here = true;
         } else if (!bare.isEmpty()) {
-            q.error = "Give three coordinates, or none to search where you are standing.";
+            q.error = "Give three coordinates, one radius, or nothing at all.";
             return q;
         } else if (sender instanceof Player) {
             final Location at = ((Player) sender).getLocation();
@@ -125,6 +144,7 @@ public final class Lookup implements Subcommand {
             q.x = at.getBlockX();
             q.y = at.getBlockY();
             q.z = at.getBlockZ();
+            q.here = true;
         } else {
             q.error = "From console, give coordinates and a world: lookup 128 71 -344 world:world";
             return q;
@@ -137,7 +157,7 @@ public final class Lookup implements Subcommand {
             final String value = opt.substring(split + 1);
             if (key.equals("r") || key.equals("radius")) {
                 final int r = parseInt(value, -1);
-                if (r <= 0) { q.error = "r: needs a positive number of blocks."; return q; }
+                if (r <= 0) { q.error = "r: needs a number of blocks, like r:120."; return q; }
                 // Capped rather than refused: a big number is someone asking for "all
                 // of it", and the cap is what keeps one command off the whole world.
                 q.radius = Math.min(r, Blast.MAX_SEARCH_RADIUS);
@@ -146,7 +166,7 @@ public final class Lookup implements Subcommand {
                 // six calendar months back, the same as expiry_time does.
                 final long from = Expiry.cutoff(value, System.currentTimeMillis());
                 if (from == Expiry.NEVER) {
-                    q.error = "t: needs a duration like 30m, 2h, 7d, 3w, 6mo or 1y.";
+                    q.error = "t: needs a length of time — 30m, 2h, 7d, 4w, 6mo, 1y.";
                     return q;
                 }
                 q.since = from;
@@ -156,10 +176,10 @@ public final class Lookup implements Subcommand {
                 q.world = value;
             } else if (key.equals("limit") || key.equals("n")) {
                 final int n = parseInt(value, -1);
-                if (n <= 0) { q.error = "limit: needs a positive number."; return q; }
+                if (n <= 0) { q.error = "limit: needs a number, like limit:20."; return q; }
                 q.limit = Math.min(n, MAX_LIMIT);
             } else {
-                q.error = "I do not know the option \"" + key + "\".";
+                q.error = "There is no \"" + key + ":\" option. Try r:, t:, type:, world: or limit:.";
                 return q;
             }
         }
@@ -180,51 +200,61 @@ public final class Lookup implements Subcommand {
 
     // --------------------------------------------------------------- reporting
 
-    private void report(CommandSender sender, Query q, List<ExplosionRecord> hits) {
+    private void report(CommandSender sender, Query q, ExplosionLog.Results found) {
+        final List<ExplosionRecord> hits = found.shown();
+
         if (hits.isEmpty()) {
-            sender.sendMessage(ChatColor.GRAY + "No explosions logged within " + q.radius
-                    + " blocks of there.");
-            final String configured = ExplosionLog.configuredExpiry(plugin);
-            sender.sendMessage(ChatColor.DARK_GRAY + "Records are " + Expiry.describe(configured)
-                    + ", and only explosions since this was enabled are in the log.");
+            sender.sendMessage(ChatColor.GRAY + "Nothing exploded within "
+                    + ChatColor.WHITE + q.radius + ChatColor.GRAY + " blocks of "
+                    + (q.here ? "you" : fmtCoords(q.x, q.y, q.z)) + ".");
+            sender.sendMessage(ChatColor.DARK_GRAY + "Look wider with "
+                    + ChatColor.GRAY + "/discordlogger lookup " + (q.radius * 4));
             return;
         }
 
-        sender.sendMessage(ChatColor.AQUA + "" + hits.size() + ChatColor.AQUA
-                + (hits.size() == 1 ? " explosion" : " explosions") + " near "
-                + ChatColor.WHITE + fmtCoords(q.x, q.y, q.z)
-                + ChatColor.DARK_GRAY + " (nearest first)");
+        // The header says what was searched, so no separate "searching..." line is
+        // needed and the answer is the first thing on screen.
+        sender.sendMessage(ChatColor.AQUA + "Explosions within " + ChatColor.WHITE + q.radius
+                + ChatColor.AQUA + " blocks of "
+                + (q.here ? "you" : ChatColor.WHITE + fmtCoords(q.x, q.y, q.z) + ChatColor.AQUA)
+                + ChatColor.DARK_GRAY + "  (nearest first)");
 
         for (int i = 0; i < hits.size(); i++) {
             final ExplosionRecord r = hits.get(i);
             final double distance = r.distanceTo(q.x, q.y, q.z);
             final boolean reached = distance <= r.radius();
 
-            // Red means this one reached the spot asked about, which is the finding.
-            // Gold is close enough to be related, grey is context.
-            final ChatColor tone = reached ? ChatColor.RED
-                    : distance <= r.radius() * 2 ? ChatColor.GOLD : ChatColor.YELLOW;
+            // The headline is the answer: what it was, how far, how long ago. Red when
+            // the blast actually reached the spot asked about, which is the finding.
+            sender.sendMessage(" " + ChatColor.DARK_GRAY + (i + 1) + ". "
+                    + (reached ? ChatColor.RED : ChatColor.YELLOW) + r.source()
+                    + ChatColor.GRAY + " — " + ChatColor.WHITE
+                    + String.format(Locale.ROOT, "%.0f", distance) + " blocks away"
+                    + ChatColor.GRAY + ", " + ChatColor.WHITE + ago(r.at())
+                    + (reached ? ChatColor.RED + "  ← reached here" : ""));
 
-            sender.sendMessage(ChatColor.DARK_GRAY + " " + (i + 1) + ". "
-                    + tone + String.format(Locale.ROOT, "%.1fm", distance)
-                    + (reached ? ChatColor.RED + " (reached here)" : "")
-                    + ChatColor.GRAY + " — " + ChatColor.WHITE + r.source()
-                    + ChatColor.GRAY + " at " + ChatColor.WHITE + fmtCoords(r.x(), r.y(), r.z())
-                    // Both, because they answer different questions: the relative form
-                    // is what gets asked, the absolute one is what gets written into a
-                    // ban note or lined up against another log.
-                    + ChatColor.DARK_GRAY + ", " + Log.formatTime(r.at())
-                    + " (" + ago(r.at()) + ")");
-
-            final StringBuilder detail = new StringBuilder(64);
-            detail.append(ChatColor.DARK_GRAY).append("      ")
-                  .append(r.blocks()).append(r.blocks() == 1 ? " block" : " blocks")
-                  .append(" destroyed, reach ").append(r.radius()).append('m');
+            // The evidence line: where, how big, who saw it, and the exact time. One
+            // line so a list of eight stays readable in a chat box.
+            final StringBuilder detail = new StringBuilder(96);
+            detail.append("    ").append(ChatColor.DARK_GRAY)
+                  .append("at ").append(fmtCoords(r.x(), r.y(), r.z()))
+                  .append(" · ").append(r.blocks())
+                  .append(r.blocks() == 1 ? " block" : " blocks");
             if (!r.nearby().isEmpty()) {
-                detail.append(ChatColor.GRAY).append(" — nearby: ")
-                      .append(ChatColor.WHITE).append(r.nearby());
+                detail.append(" · ").append(r.nearby());
             }
+            detail.append(" · ").append(Log.formatTime(r.at()));
             sender.sendMessage(detail.toString());
+        }
+
+        if (found.total() > hits.size()) {
+            // Results are sorted by distance, so a truncated list can hide the recent
+            // one somebody is actually asking about behind older, closer ones.
+            sender.sendMessage(ChatColor.DARK_GRAY + "Showing " + hits.size() + " of "
+                    + found.total() + " — add " + ChatColor.GRAY + "limit:"
+                    + Math.min(found.total(), MAX_LIMIT) + ChatColor.DARK_GRAY
+                    + " for more, or " + ChatColor.GRAY + "t:1h" + ChatColor.DARK_GRAY
+                    + " for just the recent ones.");
         }
     }
 
