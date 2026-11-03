@@ -54,12 +54,10 @@ public final class DiscordLogger extends JavaPlugin {
 
         new NightlyNotice(this).activate(this);
 
-        // Apply config (no hard-disable on missing webhook)
-        boolean ok = applyRuntimeConfig();
-        if (!ok) {
-            getLogger().warning("No valid Discord webhook URL in config.yml. Please add the webhook URL.");
-            getLogger().warning("Set it with /discordlogger webhook <url>, or edit config.yml and run /discordlogger reload.");
-        }
+        // Apply config (no hard-disable on missing webhook). A missing webhook is
+        // reported by the config check below, which says the same thing once instead
+        // of three times and says what to do about it.
+        applyRuntimeConfig();
 
         // Start the webhook sender before any listener can produce a message.
         WebhookQueue.start(this);
@@ -90,6 +88,13 @@ public final class DiscordLogger extends JavaPlugin {
             }
         }
 
+        // Say out loud what is wrong with the config. Every check is valid YAML
+        // holding a valid value, so nothing else finds them -- and they have been
+        // findable by /discordlogger doctor since it shipped, which across 80
+        // reporting servers was run by none of them. Printed after the command is
+        // registered, so the pointer to re-run it is true by the time it is read.
+        reportConfigProblems();
+
         // Anonymous usage metrics (bstats.org). Opt out via plugins/bStats/config.yml.
         // Started after the config is loaded so its charts can read live values.
         PluginMetrics.start(this);
@@ -117,6 +122,28 @@ public final class DiscordLogger extends JavaPlugin {
         ExplosionLog.shutdown();
         Chat.close();
         getLogger().info("Disabled.");
+    }
+
+    /**
+     * Prints {@link Doctor}'s findings, or nothing at all when there are none.
+     *
+     * <p>Silent on a clean config: a line on every boot saying all is well is a line
+     * people learn to skip, which is how the warnings beside it get skipped too.
+     */
+    private void reportConfigProblems() {
+        final java.util.List<String> findings;
+        try {
+            findings = Doctor.diagnose(this);
+        } catch (RuntimeException unreadable) {
+            // A diagnostic must never be the reason a server does not start.
+            getLogger().warning("Could not check the config for contradictions: " + unreadable);
+            return;
+        }
+        if (findings.isEmpty()) return;
+
+        getLogger().warning(Doctor.headline(findings.size()) + ":");
+        for (String finding : findings) getLogger().warning("  - " + finding);
+        getLogger().warning("Run /discordlogger doctor to check again after editing config.yml.");
     }
 
     public boolean applyRuntimeConfig() {

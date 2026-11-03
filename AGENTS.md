@@ -127,7 +127,7 @@ src/main/java/com/discordlogger/
   command/Regen.java                   /discordlogger regen confirm — destructive, hence the literal
   command/Status.java                  /discordlogger status — queue, webhook and build health
   command/Test.java                    /discordlogger test [event] — sends through the real path
-  command/Doctor.java                  /discordlogger doctor — config contradictions a schema cannot catch
+  command/Doctor.java                  /discordlogger doctor — config contradictions; also printed at startup
   command/Lookup.java                  /discordlogger lookup — explosions near a place, from explosions.csv
   explosion/ExplosionLog.java          explosions.csv: one writer thread, batched appends, prefix prune
   explosion/ExplosionRecord.java       One row; lenient parsing, quoted only where a comma would break it
@@ -326,7 +326,9 @@ Concurrency cancels superseded runs. Branch protection requires `build`, `valida
 4. `new NightlyNotice(this).activate(this)` — no-op unless nightly channel.
 5. `applyRuntimeConfig()` reads `webhook.url` + `format.time` and calls `Log.init(...)`. A missing/invalid webhook does **not** disable the plugin — it runs "degraded" (console-only) with a warning to set the URL and `/discordlogger reload`.
 6. `EventRegistry.registerAll()` registers every listener **unconditionally** — per-event enable checks happen inside each handler by reading config live (this is what makes reload work without re-registering).
-7. Commands wired up, `UpdateChecker.checkAsync(...)` fired, then `events.fireServerStart()`.
+7. Commands wired up, then **`reportConfigProblems()` prints `Doctor.diagnose(this)`** — the config lint. Then `UpdateChecker.checkAsync(...)` and `events.fireServerStart()`.
+
+**The lint is the same code `/discordlogger doctor` runs, and that is the whole change.** Those checks existed and found these problems; they were reachable only by typing a command that, across 80 reporting servers, exactly one ran — and it ran `reload`. A diagnostic nobody invokes does not exist, so the findings now go to the console on every start, silent when there are none (a line saying all is well on every boot is a line people learn to skip, and the warnings beside it get skipped with it). It is wrapped in a `catch (RuntimeException)`: a diagnostic must never be why a server fails to start. The two bespoke "no valid webhook" warnings `onEnable` used to print are gone — `Doctor`'s own finding carries the remedy now, so the message appears once rather than three times.
 
 ### `Log` (static facade — the only way anything sends to Discord)
 - All state is `static volatile`; `init()` runs on the main thread, senders on async scheduler threads. The color map is built locally then assigned in **one volatile write** so async readers never see a half-built map. Preserve this pattern.
@@ -437,6 +439,7 @@ Every event takes an optional `log.<group>.<event>.webhook`. Empty means the mai
 ### Commands
 - Root `/discordlogger` (aliases `/dlogger`, `/dlog`). The **command itself is deliberately ungated** — it used to require `discordlogger.reload`, which would have locked a `regen`-only admin out of the whole command once a second subcommand existed. `Commands` routes `Subcommand` implementations (LinkedHashMap) and filters both help and tab-complete by each subcommand's own permission, so an unprivileged sender sees nothing and can run nothing.
 - Subcommands, all default op: `reload`, `webhook <url>`, `regen confirm`, `status`, `test [event]`, `doctor`, `lookup` — each gated by `discordlogger.<name>`.
+- **`doctor`'s checks also run at startup** (see the startup flow). `Doctor.riskyCommandFindings` and `Doctor.headline` are pure and tested; the rest of `diagnose` needs a server. The risky-command check is silent when `only_log_commands` is set, because an allow-list wins outright and a command absent from it is not logged whatever the deny-list says — warning about it would be a warning about something that cannot happen.
 - **`lookup` reads `explosions.csv`, not Discord.** It takes `[x y z]` (or your own position), `r:` (50 default, 500 cap), `t:` (any `expiry_time` unit), `type:`, `world:` and `limit:`. The file read runs async and the reply goes out on the main thread — a `Player`'s location is not safe to ask for off-thread, so the position is captured before the hop.
 - **Tab-completion is filtered twice, in two different places.** `Commands.onTabComplete` filters *arguments* by permission. `CommandVisibility` filters the *command list itself* via `PlayerCommandSendEvent` — that is the only hook that can remove Bukkit's automatic `plugin:command` duplicates, because command-name completion never consults the plugin. It also hides the command from players holding none of the subcommand permissions. It touches only this plugin's entries: editing another plugin's makes that plugin's behaviour unexplainable from its own source. `regen` requires the literal `confirm` — it is destructive and one keystroke from `reload`.
 - **`webhook` never echoes the URL.** It is a bearer credential, so confirmation names the channel id only, tab-complete returns nothing, and `Log.redactWebhooks` masks the token in command logging — without which running the command would publish the new URL to the channel currently configured, i.e. the old webhook. Redacting rather than suppressing keeps the audit trail: you still see that someone changed it.

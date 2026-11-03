@@ -58,8 +58,6 @@ Nothing here adds a feature. All of it is the difference between an admin diagno
 
 - **Report unclean shutdowns.** If the previous run never logged a stop, say so on the next start. Cheap crash visibility, and nothing else in this category offers it.
 
-- **Lint the config on startup.** Catch the contradictions a schema cannot: `only_log_commands` set alongside `ignored_commands`, every event disabled, a filter that blocks everything it is meant to allow. Consistent with the plugin's existing habit of explaining a problem plainly rather than failing obscurely.
-
 ## Website & docs
 
 - **Discord OAuth webhook creation** — let the config generator create the webhook via Discord's own channel picker instead of making people copy a URL by hand. Design settled, not yet built:

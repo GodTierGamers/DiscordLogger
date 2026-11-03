@@ -6,7 +6,11 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * The shipped config must pass its own linter.
@@ -46,5 +50,42 @@ class DoctorTest {
     void defaultsEnableEvents() throws Exception {
         assertTrue(shipped().contains("enabled: true"),
                 "a config with everything off would trip the doctor on a fresh install");
+    }
+
+    @Test
+    @DisplayName("every password-carrying command removed is named, one finding each")
+    void removedRiskyCommandsAreNamed() {
+        assertEquals(List.of(), Doctor.riskyCommandFindings(
+                List.of("login", "register", "msg"), List.of()),
+                "the shipped list is clean, so there is nothing to say");
+
+        final List<String> one = Doctor.riskyCommandFindings(
+                List.of("register", "msg"), List.of());
+        assertEquals(1, one.size());
+        assertTrue(one.get(0).contains("\"login\""), one.get(0));
+        // Naming the command is the point: "your filter changed" tells an admin
+        // nothing, and the useful half is which one and what it now publishes.
+        assertTrue(one.get(0).contains("as typed"), one.get(0));
+
+        assertEquals(3, Doctor.riskyCommandFindings(List.of(), List.of()).size());
+        assertEquals(3, Doctor.riskyCommandFindings(null, null).size(),
+                "an absent list is an empty one, not a reason to say nothing");
+    }
+
+    @Test
+    @DisplayName("an allow-list silences the deny-list findings, because it wins outright")
+    void onlyLogCommandsSilencesThem() {
+        // only_log_commands wins: a command absent from it is not logged whatever
+        // ignored_commands says, so warning that /login would be published would be
+        // a warning about something that cannot happen.
+        assertEquals(Collections.emptyList(),
+                Doctor.riskyCommandFindings(List.of(), List.of("say", "me")));
+    }
+
+    @Test
+    @DisplayName("the headline counts and pluralises, and is shared with the startup report")
+    void headlineReads() {
+        assertEquals("Found 1 thing worth checking", Doctor.headline(1));
+        assertEquals("Found 3 things worth checking", Doctor.headline(3));
     }
 }

@@ -22,6 +22,12 @@ import java.util.List;
  * doing exactly what it was told.
  *
  * <p>Checks are pure and split out so each can be tested without a server.
+ *
+ * <p><b>These findings are also printed at startup.</b> Every one of them was already
+ * detected here and reachable only by typing the command — which, across 80 reporting
+ * servers, one server did, and the command it ran was {@code reload}. A diagnostic
+ * nobody invokes is a diagnostic that does not exist, so {@code onEnable} reports them
+ * and this command re-runs them after a change.
  */
 public final class Doctor implements Subcommand {
 
@@ -40,8 +46,7 @@ public final class Doctor implements Subcommand {
             sender.sendMessage(ChatColor.GREEN + "No problems found.");
             return true;
         }
-        sender.sendMessage(ChatColor.YELLOW + "Found " + findings.size()
-                + (findings.size() == 1 ? " thing" : " things") + " worth checking:");
+        sender.sendMessage(ChatColor.YELLOW + headline(findings.size()) + ":");
         for (String f : findings) sender.sendMessage(ChatColor.GRAY + "  • " + f);
         return true;
     }
@@ -57,8 +62,13 @@ public final class Doctor implements Subcommand {
         final List<String> out = new ArrayList<>();
 
         if (!Log.isReady()) {
+            // Carries the remedy as well as the symptom: onEnable used to print its own
+            // pair of lines about this, which said the same thing a third time after
+            // applyRuntimeConfig's. One message, and it is this one.
             out.add("webhook.url is not set or is not a valid Discord webhook, so nothing "
-                    + "reaches Discord. Everything still logs to console.");
+                    + "reaches Discord. Everything still logs to console. Set it with "
+                    + "/discordlogger webhook <url>, or edit config.yml and run "
+                    + "/discordlogger reload.");
         }
 
         final List<String> only = plugin.getConfig().getStringList("filters.only_log_commands");
@@ -69,14 +79,7 @@ public final class Doctor implements Subcommand {
                     + "If you meant to block just a few commands, clear only_log_commands.");
         }
 
-        // The security default, and the one worth naming individually.
-        for (String risky : new String[]{"login", "register", "msg"}) {
-            if (!ignored.contains(risky) && only.isEmpty()) {
-                out.add("filters.ignored_commands no longer contains \"" + risky + "\". Command "
-                        + "logging posts the line as typed, so that command's arguments will "
-                        + "be published to Discord.");
-            }
-        }
+        out.addAll(riskyCommandFindings(ignored, only));
 
         final int enabled = countEnabled(plugin);
         if (enabled == 0) {
@@ -96,6 +99,38 @@ public final class Doctor implements Subcommand {
         out.addAll(Compat.unavailableFeatures(plugin));
 
         return out;
+    }
+
+    /**
+     * One finding per password-carrying command that would now be published.
+     *
+     * <p>The commands named here ship in {@code filters.ignored_commands} because
+     * command logging posts the line exactly as typed: {@code /login hunter2} in a
+     * Discord channel is the whole reason that default is not empty. Nine of 78
+     * reporting servers have taken at least one of them out, which may well be
+     * deliberate — but nothing told them what it meant, and this is the one finding
+     * here where the cost of not knowing is somebody's password.
+     *
+     * <p>Silent when {@code only_log_commands} is set, because an allow-list wins
+     * outright: a command that is not on it is not logged whatever the deny-list says,
+     * so naming one would be a warning about something that cannot happen.
+     */
+    static List<String> riskyCommandFindings(List<String> ignored, List<String> only) {
+        if (only != null && !only.isEmpty()) return Collections.emptyList();
+        final List<String> out = new ArrayList<>();
+        for (String risky : new String[]{"login", "register", "msg"}) {
+            if (ignored == null || !ignored.contains(risky)) {
+                out.add("filters.ignored_commands no longer contains \"" + risky + "\". Command "
+                        + "logging posts the line as typed, so that command's arguments will "
+                        + "be published to Discord.");
+            }
+        }
+        return out;
+    }
+
+    /** The one-line summary, shared by the command and the startup report. */
+    public static String headline(int findings) {
+        return "Found " + findings + (findings == 1 ? " thing" : " things") + " worth checking";
     }
 
     /** How many events are switched on, across every group including custom rules. */
