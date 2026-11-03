@@ -14,7 +14,7 @@ softdepend: [floodgate, Geyser-Spigot]
 commands:
   discordlogger:
     description: DiscordLogger reload command
-    usage: "/discordlogger <reload|webhook|regen|status|test|doctor>"
+    usage: "/discordlogger <reload|webhook|regen|status|test|doctor|lookup>"
     aliases: [dlogger, dlog]
 
 permissions:
@@ -35,4 +35,7 @@ permissions:
     default: op
   discordlogger.doctor:
     description: Allows checking the config for contradictions
+    default: op
+  discordlogger.lookup:
+    description: Allows looking up explosions logged near a place
     default: op

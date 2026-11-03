@@ -1,5 +1,8 @@
 package com.discordlogger.listener.server;
 
+import com.discordlogger.explosion.Blast;
+import com.discordlogger.explosion.ExplosionLog;
+import com.discordlogger.explosion.ExplosionRecord;
 import com.discordlogger.filter.Filters;
 import com.discordlogger.log.Log;
 import com.discordlogger.util.Names;
@@ -80,6 +83,10 @@ public final class Explosion implements Listener {
         if (Filters.blocksExplosion(type == null ? null : type.name(), affected)) return;
 
         final String yield  = fmtYield(e.getYield());
+        final String nearby = playersNearbyString(w, loc);
+
+        record(plugin, loc, world, type == null ? null : type.name(), source,
+                e.blockList(), affected, e.getYield());
 
         List<Log.Field> fields = new ArrayList<>();
         fields.add(// Source and World pair up on one row. World used to be the only inline
@@ -90,7 +97,8 @@ public final class Explosion implements Listener {
         fields.add(new Log.Field("Location:", fmtLoc(loc)));
         fields.add(new Log.Field("Blocks Affected:", String.valueOf(affected), true));
         fields.add(new Log.Field("Yield:", yield, true));
-        fields.add(new Log.Field("Players Nearby:", playersNearbyString(w, loc)));
+        fields.add(new Log.Field("Players Nearby:", nearby));
+        addLookupField(plugin, fields, loc, world);
 
         Log.eventFieldsWithThumb(
                 "server_explosion",  // colour comes from log.server.explosion.color
@@ -101,6 +109,80 @@ public final class Explosion implements Listener {
         );
     }
 
+
+    // ---------- the explosion log ----------
+
+    /** Whether explosions are being written to {@code explosions.csv} at all. */
+    static boolean historyEnabled(JavaPlugin plugin) {
+        return plugin.getConfig().getBoolean("log.server.explosion.history.enabled", true);
+    }
+
+    /**
+     * Writes one row to {@code explosions.csv} and returns the radius it stored.
+     *
+     * <p>Shared with the gated block-explosion listener so the two record the same
+     * shape, for the same reason they share the embed helpers: two places building the
+     * same row is two places for it to drift.
+     */
+    static int record(JavaPlugin plugin, Location loc, String world, String sourceName,
+                      String sourceLabel, List<Block> blocks, int affected, float yield) {
+        if (loc == null) return 0;
+        if (!historyEnabled(plugin)) return 0;
+        final int radius = Blast.radiusFor(measuredRadius(loc, blocks), sourceName);
+        ExplosionLog.append(new ExplosionRecord(
+                System.currentTimeMillis(), world,
+                loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(),
+                radius, sourceLabel, affected, yield,
+                playersNearbyIds(loc.getWorld(), loc)));
+        return radius;
+    }
+
+    /**
+     * How far the blast actually reached: the centre to the furthest block it broke.
+     *
+     * <p>Measured rather than assumed, so a charged creeper, a blast stopped dead by
+     * obsidian and one that went off in open air each record what they really did.
+     * Zero when nothing broke, which is what {@link Blast#radiusFor} has a floor for.
+     */
+    static double measuredRadius(Location centre, List<Block> blocks) {
+        if (centre == null || blocks == null || blocks.isEmpty()) return 0.0;
+        final int cx = centre.getBlockX();
+        final int cy = centre.getBlockY();
+        final int cz = centre.getBlockZ();
+        long worst = 0L;
+        for (Block b : blocks) {
+            if (b == null) continue;
+            final long dx = b.getX() - cx;
+            final long dy = b.getY() - cy;
+            final long dz = b.getZ() - cz;
+            final long d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 > worst) worst = d2;
+        }
+        return Math.sqrt((double) worst);
+    }
+
+    /**
+     * Adds the field that tells a reader how to ask about this spot in game.
+     *
+     * <p>Controlled by {@code log.server.explosion.history.show_tip}, and it names the
+     * coordinates the embed is already showing one field above, so it leaks nothing
+     * the message did not already carry.
+     */
+    static void addLookupField(JavaPlugin plugin, List<Log.Field> fields,
+                               Location loc, String world) {
+        if (loc == null) return;
+        // Both gates, in this order: a tip pointing at a log nobody is writing is
+        // worse than no tip, so turning the history off takes the field with it.
+        if (!historyEnabled(plugin)) return;
+        if (!plugin.getConfig().getBoolean("log.server.explosion.history.show_tip", true)) return;
+        // The full command name, not an alias. /dlogger and /dlog both work, but this
+        // field exists to be copied into a chat box by somebody who has never run the
+        // command before, and a tip that only works if you happen to have the aliases
+        // is worse than no tip.
+        fields.add(new Log.Field("Look It Up:",
+                "`/discordlogger lookup " + loc.getBlockX() + " " + loc.getBlockY() + " "
+                        + loc.getBlockZ() + " world:" + world + "`"));
+    }
 
     // ---------- icon selection (version-safe; name matching) ----------
 
@@ -130,6 +212,45 @@ public final class Explosion implements Listener {
 
     String playersNearbyString(World world, Location center) {
         return playersNearbyString(plugin, world, center);
+    }
+
+    /**
+     * The same players as {@link #playersNearbyString}, as {@code <uuid>@<blocks>}.
+     *
+     * <p>The embed shows names, because a person is reading it now. The file stores
+     * UUIDs, because a person is reading it in six weeks and a name is a label that
+     * can move to somebody else in between.
+     *
+     * <p>Space-separated and unquoted, so the column stays grep-able by UUID.
+     */
+    static String playersNearbyIds(World world, Location center) {
+        if (world == null || center == null) return "";
+        final double r2 = (double) NEARBY_RADIUS_BLOCKS * (double) NEARBY_RADIUS_BLOCKS;
+        final List<Player> near = new ArrayList<>();
+        for (Player p : world.getPlayers()) {
+            final Location pl = p.getLocation();
+            if (pl == null || pl.getWorld() == null || !world.equals(pl.getWorld())) continue;
+            if (pl.distanceSquared(center) <= r2) near.add(p);
+        }
+        near.sort(Comparator.comparingDouble(p -> {
+            final Location pl = p.getLocation();
+            return (pl == null) ? Double.MAX_VALUE : pl.distanceSquared(center);
+        }));
+
+        final StringBuilder sb = new StringBuilder(64);
+        // No limit here, unlike the embed: the embed is a message with a width, this is
+        // a record, and the one name trimmed off the end is the one somebody needed.
+        for (Player p : near) {
+            double d = 0.0;
+            try {
+                d = p.getLocation().distance(center);
+            } catch (IllegalArgumentException differentWorlds) {
+                continue;
+            }
+            if (sb.length() > 0) sb.append(' ');
+            sb.append(p.getUniqueId()).append('@').append(String.format(Locale.ROOT, "%.1f", d));
+        }
+        return sb.toString();
     }
 
     /** Package-private so the gated block-explosion listener shares one answer. */

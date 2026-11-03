@@ -34,14 +34,14 @@
 # D O C U M E N T A T I O N #
 #############################
 
-# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v11/
+# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v12/
 
 #########################
 # D O   N O T   E D I T #
 #########################
 
 # Set automatically
-config-version: 11
+config-version: 12
 
 ###################
 # WEBHOOK OPTIONS #
@@ -254,6 +254,10 @@ log:
       enabled: true
       color: "#E74C3C" # red
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+      history: # Keeps every explosion in explosions.csv so /discordlogger lookup can find one by place. Off writes no file
+        enabled: true
+        expiry_time: "30d" # How long a row is kept: 30m, 2h, 7d, 4w, 6mo, 1y. A bare number means days, 0 keeps forever
+        show_tip: true # Adds the lookup command for that spot as a field on the embed
 
   moderation:
     ban: # Logs when a player has been banned
@@ -329,4 +333,4 @@ log:
   # wins, and the console says so on startup if a rule collides with it.
   custom:
 
-# CONFIG VERSION V11, SHIPPED WITH v2.5.0 (x-release-please-version)
+# CONFIG VERSION V12, SHIPPED WITH v2.5.0 (x-release-please-version)

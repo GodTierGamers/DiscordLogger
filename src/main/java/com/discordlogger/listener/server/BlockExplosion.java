@@ -58,6 +58,10 @@ public final class BlockExplosion implements Listener {
         if (Filters.blocksExplosion(mat == null ? null : mat.name(), affected)) return;
 
         final String yield  = Explosion.fmtYield(e.getYield());
+        final String nearby = Explosion.playersNearbyString(plugin, w, loc);
+
+        Explosion.record(plugin, loc, world, mat == null ? null : mat.name(), source,
+                e.blockList(), affected, e.getYield());
 
         List<Log.Field> fields = new ArrayList<>();
         fields.add(new Log.Field("Source:", source));
@@ -65,7 +69,8 @@ public final class BlockExplosion implements Listener {
         fields.add(new Log.Field("Location:", Explosion.fmtLoc(loc)));
         fields.add(new Log.Field("Blocks Affected:", String.valueOf(affected), true));
         fields.add(new Log.Field("Yield:", yield, true));
-        fields.add(new Log.Field("Players Nearby:", Explosion.playersNearbyString(plugin, w, loc)));
+        fields.add(new Log.Field("Players Nearby:", nearby));
+        Explosion.addLookupField(plugin, fields, loc, world);
 
         Log.eventFieldsWithThumb(
                 "server_explosion",

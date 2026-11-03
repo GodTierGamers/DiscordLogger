@@ -6,6 +6,7 @@ import com.discordlogger.util.Chat;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import com.discordlogger.config.ConfigMigrator;
+import com.discordlogger.explosion.ExplosionLog;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +31,13 @@ public final class Reload implements Subcommand {
                 plugin, "config.yml", new java.io.File(plugin.getDataFolder(), "config.yml"));
         plugin.reloadConfig();
         boolean ok = plugin.applyRuntimeConfig();
+
+        // A reload is exactly when expiry_time has just been shortened, and waiting up
+        // to the next scheduled pass to honour it would read as the setting not working.
+        // Async because it rewrites a file and this is the main thread.
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+            @Override public void run() { ExplosionLog.pruneNow(); }
+        });
 
         // A reload is exactly when someone has just swapped a config in, so the
         // same schema check that runs at startup has to run here too.

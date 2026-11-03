@@ -4,6 +4,7 @@ import com.discordlogger.alert.OpAlert;
 import com.discordlogger.command.Status;
 import com.discordlogger.command.Test;
 import com.discordlogger.command.Doctor;
+import com.discordlogger.command.Lookup;
 import com.discordlogger.command.Commands;
 import com.discordlogger.command.Regen;
 import com.discordlogger.command.Reload;
@@ -11,6 +12,7 @@ import com.discordlogger.command.Webhook;
 import com.discordlogger.config.ConfigMigrator;
 import com.discordlogger.config.ConfigVersionNotice;
 import com.discordlogger.event.EventRegistry;
+import com.discordlogger.explosion.ExplosionLog;
 import com.discordlogger.custom.CustomLogs;
 import com.discordlogger.filter.Filters;
 import com.discordlogger.util.Placeholders;
@@ -62,13 +64,18 @@ public final class DiscordLogger extends JavaPlugin {
         // Start the webhook sender before any listener can produce a message.
         WebhookQueue.start(this);
 
+        // Same reasoning for the explosion log: a listener must never find it absent,
+        // and nothing it does happens on the main thread.
+        ExplosionLog.start(this);
+
         // Register events/commands regardless, so reload works
         events = new EventRegistry(this);
         events.registerAll();
 
         if (getCommand("discordlogger") != null) {
             Commands router = new Commands(new Reload(this), new Webhook(this),
-                    new Regen(this), new Status(this), new Test(this), new Doctor(this));
+                    new Regen(this), new Status(this), new Test(this), new Doctor(this),
+                    new Lookup(this));
             getCommand("discordlogger").setExecutor(router);
             getCommand("discordlogger").setTabCompleter(router);
             // Strips Bukkit's plugin:command duplicates from tab-completion, and
@@ -105,6 +112,9 @@ public final class DiscordLogger extends JavaPlugin {
         // pending, so anything queued after it would be lost.
         if (events != null) events.fireServerStop();
         WebhookQueue.shutdown();
+        // After the queue: the stop message matters more than the last explosion row,
+        // and this drain is bounded separately so one cannot eat the other's budget.
+        ExplosionLog.shutdown();
         Chat.close();
         getLogger().info("Disabled.");
     }

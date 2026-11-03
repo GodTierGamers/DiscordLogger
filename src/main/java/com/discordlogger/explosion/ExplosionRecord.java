@@ -1,0 +1,235 @@
+package com.discordlogger.explosion;
+
+import java.util.Locale;
+
+/**
+ * One explosion, as written to and read back from {@code explosions.csv}.
+ *
+ * <p>A Discord channel answers "what happened", in order, as prose. It cannot answer
+ * "was anything blown up <em>here</em>", which is the question somebody standing in a
+ * new hole in their base actually has — scrolling a log for coordinates they have to
+ * compare by eye is not an answer. This record exists so that question can be asked
+ * of a place instead of a timeline.
+ *
+ * <p><b>Fields are read back from a file people may have edited.</b> Every parse is
+ * lenient: a malformed row is skipped rather than failing the lookup, because the
+ * alternative is one bad line making every other explosion unfindable.
+ */
+public final class ExplosionRecord {
+
+    /** CSV header, also the field order. Written once when the file is created. */
+    static final String HEADER = "at,world,x,y,z,radius,source,blocks,yield,nearby";
+
+    /**
+     * First line of the file: which schema's column layout these rows are in.
+     *
+     * <p>Versioned for the same reason {@code config.yml} and {@code lang.yml} are, and
+     * with the same number — the schema is global, so a column change travels with the
+     * config schema rather than inventing a second sequence nobody can cross-reference.
+     * The number is read from the JAR's own config trailer, never written here: a
+     * hardcoded schema number in Java is one more copy to forget.
+     *
+     * <p>It earns its place at the moment the columns change. Without it the plugin
+     * would read a v12 row as if it were v13 — same count, different meaning, no error,
+     * silently wrong answers from the lookup. With it, an unrecognised file is set aside
+     * and a fresh one started, because a format this build cannot read is not one it
+     * should guess at.
+     */
+    static String banner(int schema) {
+        return "# DISCORDLOGGER EXPLOSION LOG V" + schema
+                + " -- one row per explosion; see https://discordlogger.godtiergamers.xyz/config/v"
+                + schema + "/";
+    }
+
+    /** The schema a banner line declares, or null if that is not what the line is. */
+    static Integer versionOf(String line) {
+        if (!isComment(line)) return null;
+        final java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("EXPLOSION\\s+LOG\\s+V(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(line);
+        if (!m.find()) return null;
+        try {
+            return Integer.valueOf(m.group(1));
+        } catch (NumberFormatException notANumber) {
+            return null;
+        }
+    }
+
+    /**
+     * Whether a line is a comment rather than data.
+     *
+     * <p>Every path that walks the file has to agree about this, which is why it is one
+     * method. The prune in particular: it stops at the first row that has not expired,
+     * and a banner it mistook for a row would become that stopping point — so nothing
+     * would ever be deleted again, with no error to notice.
+     */
+    static boolean isComment(String line) {
+        return line != null && line.trim().startsWith("#");
+    }
+
+    private final long at;
+    private final String world;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int radius;
+    private final String source;
+    private final int blocks;
+    private final float yield;
+    private final String nearby;
+
+    public ExplosionRecord(long at, String world, int x, int y, int z, int radius,
+                           String source, int blocks, float yield, String nearby) {
+        this.at = at;
+        this.world = world == null ? "unknown" : world;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.radius = radius;
+        this.source = source == null ? "Unknown" : source;
+        this.blocks = blocks;
+        this.yield = yield;
+        this.nearby = nearby == null ? "" : nearby;
+    }
+
+    public long at()        { return at; }
+    public String world()   { return world; }
+    public int x()          { return x; }
+    public int y()          { return y; }
+    public int z()          { return z; }
+    /** How far this explosion reached, in blocks — see {@link Blast}. */
+    public int radius()     { return radius; }
+    public String source()  { return source; }
+    public int blocks()     { return blocks; }
+    public float yield()    { return yield; }
+    /**
+     * Who was within 20 blocks, as {@code <uuid>@<blocks>} pairs separated by spaces.
+     *
+     * <p><b>UUIDs, not names.</b> A name is a label somebody can change, and this file
+     * is read weeks later — a row naming "Steve" is worthless once Steve has renamed,
+     * and actively misleading once somebody else takes the name. The lookup resolves
+     * them back to current names when it prints, so what you read is who it is now
+     * rather than who they were called then.
+     *
+     * <p>Space-separated so the field never needs quoting, which keeps the file
+     * grep-able by UUID.
+     */
+    public String nearby()  { return nearby; }
+
+    /**
+     * Whether a point falls inside this explosion's reach, extended by {@code extra}.
+     *
+     * <p>Compared in squared distance, so a lookup over thousands of rows does no
+     * square roots, and on block coordinates rather than exact positions — the
+     * question is "did this explosion touch where I am standing", and a fractional
+     * offset within one block is not a different answer.
+     */
+    public boolean touches(String otherWorld, int px, int py, int pz, int extra) {
+        if (!world.equalsIgnoreCase(otherWorld == null ? "" : otherWorld)) return false;
+        final long reach = (long) radius + Math.max(0, extra);
+        final long dx = px - x;
+        final long dy = py - y;
+        final long dz = pz - z;
+        return dx * dx + dy * dy + dz * dz <= reach * reach;
+    }
+
+    /** Distance from this explosion's centre to a point, in blocks. */
+    public double distanceTo(int px, int py, int pz) {
+        final double dx = px - x;
+        final double dy = py - y;
+        final double dz = pz - z;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    /** One CSV row, no trailing newline. */
+    public String toCsv() {
+        final StringBuilder sb = new StringBuilder(96);
+        sb.append(at).append(',')
+          .append(escape(world)).append(',')
+          .append(x).append(',').append(y).append(',').append(z).append(',')
+          .append(radius).append(',')
+          .append(escape(source)).append(',')
+          .append(blocks).append(',')
+          .append(String.format(Locale.ROOT, "%.2f", yield)).append(',')
+          .append(escape(nearby));
+        return sb.toString();
+    }
+
+    /**
+     * Parses one row, or {@code null} if it is not one.
+     *
+     * <p>Null rather than an exception: this reads a file on disk that an admin may
+     * have opened, truncated or edited, and a lookup that throws on the first odd line
+     * is a lookup that stops working the moment anyone touches the file.
+     */
+    public static ExplosionRecord fromCsv(String line) {
+        if (line == null) return null;
+        final String trimmed = line.trim();
+        if (trimmed.isEmpty() || trimmed.startsWith("at,")) return null;
+
+        final String[] f = split(trimmed);
+        if (f.length < 10) return null;
+        try {
+            // Epoch millis only. A second, human-readable stamp was tried and dropped:
+            // the lookup prints the time in format.time anyway, so the column was two
+            // sources of truth for one fact and twenty bytes a row for nobody.
+            return new ExplosionRecord(
+                    Long.parseLong(f[0].trim()),
+                    f[1],
+                    Integer.parseInt(f[2].trim()),
+                    Integer.parseInt(f[3].trim()),
+                    Integer.parseInt(f[4].trim()),
+                    Integer.parseInt(f[5].trim()),
+                    f[6],
+                    Integer.parseInt(f[7].trim()),
+                    Float.parseFloat(f[8].trim()),
+                    f[9]);
+        } catch (NumberFormatException notARow) {
+            return null;
+        }
+    }
+
+    /**
+     * Quotes a value only when it would otherwise break the row.
+     *
+     * <p>World names allow a wide character set and the nearby-player list is built
+     * from display names, so both can contain a comma or a quote. Unquoted values stay
+     * unquoted, because the file is meant to be readable in a terminal.
+     */
+    static String escape(String value) {
+        final String v = value == null ? "" : value;
+        if (v.indexOf(',') < 0 && v.indexOf('"') < 0 && v.indexOf('\n') < 0) return v;
+        return '"' + v.replace("\"", "\"\"") + '"';
+    }
+
+    /** Splits a row, honouring the quoting {@link #escape} applies. */
+    static String[] split(String line) {
+        final java.util.List<String> out = new java.util.ArrayList<String>(10);
+        final StringBuilder cur = new StringBuilder();
+        boolean quoted = false;
+        for (int i = 0; i < line.length(); i++) {
+            final char c = line.charAt(i);
+            if (quoted) {
+                if (c == '"') {
+                    if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                        cur.append('"');
+                        i++;
+                    } else {
+                        quoted = false;
+                    }
+                } else {
+                    cur.append(c);
+                }
+            } else if (c == '"') {
+                quoted = true;
+            } else if (c == ',') {
+                out.add(cur.toString());
+                cur.setLength(0);
+            } else {
+                cur.append(c);
+            }
+        }
+        out.add(cur.toString());
+        return out.toArray(new String[0]);
+    }
+}
