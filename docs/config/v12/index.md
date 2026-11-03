@@ -975,7 +975,7 @@ pasted into a watched command is never published.
 #########################
 
 # Set automatically
-config-version: 11
+config-version: 12
 
 ###################
 # WEBHOOK OPTIONS #

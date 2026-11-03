@@ -47,6 +47,7 @@ import sys
 
 JAVA_SRC = "src/main/java"
 SHIPPED_CONFIG = "src/main/resources/config.yml"
+SHIPPED_LANG = "src/main/resources/lang.yml"
 DOC_PAGE_GLOB = "docs/config/v*/index.md"
 VERSION_RE = re.compile(r"CONFIG\s+VERSION\s+V(\d+)", re.IGNORECASE)
 FULL_CONFIG_HEADING_RE = re.compile(r"^#+\s*Full config\.yml", re.IGNORECASE | re.MULTILINE)
@@ -613,6 +614,47 @@ def check_doc_links_match_their_schema() -> list[str]:
     return errors
 
 
+def check_declared_version_matches_trailer() -> list[str]:
+    """The `config-version` key must agree with the `CONFIG VERSION V<n>` trailer.
+
+    Two declarations of the same fact in the same file, and nothing compared them
+    until now. ConfigMigrator.declaredVersion prefers the KEY over the trailer, and
+    SchemaDetector infers from the keys and overrules both -- so a file whose key
+    says 11 while its shape and trailer say 12 still works, and logs a disagreement
+    about the shipped config on every start of a fresh install. It also tells the
+    user a number that is wrong, in a file that says "do not change it".
+
+    Caught by review on the v12 launch: the trailer, the Java marker, the mirrors
+    and the doc embed were all moved and this one key was not, because nothing was
+    looking at it. Every other copy of the schema number has a check; now this does.
+    """
+    errors = []
+    paths = [SHIPPED_CONFIG, SHIPPED_LANG]
+    live = shipped_schema()
+    if live:
+        paths += sorted(glob.glob(f"docs/assets/configs/{live}/*.yml"))
+        paths += sorted(glob.glob(f"docs/config/{live}/lang.yml.txt"))
+
+    for path in paths:
+        if not os.path.exists(path):
+            continue
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+
+        key = re.search(r"^config-version:\s*\"?(\d+)\"?", text, re.MULTILINE)
+        trailer = re.search(r"CONFIG\s+VERSION\s+V(\d+)", text, re.IGNORECASE)
+        if not key or not trailer:
+            # A template may legitimately lack one; only disagreement is an error.
+            continue
+        if key.group(1) != trailer.group(1):
+            errors.append(
+                f"{path}: declares config-version: {key.group(1)} but its trailer says "
+                f"V{trailer.group(1)} -- the same fact written twice, and they disagree. "
+                f"ConfigMigrator reads the key first, so this is the number that wins."
+            )
+    return errors
+
+
 def check_registry_matches_shipped_schema() -> list[str]:
     """The newest registry entry must be the schema the plugin actually ships.
 
@@ -669,6 +711,7 @@ def main() -> int:
     all_errors.extend(check_lang_doc_copy())
     all_errors.extend(check_website_copies_are_labelled())
     all_errors.extend(check_registry_matches_shipped_schema())
+    all_errors.extend(check_declared_version_matches_trailer())
     all_errors.extend(check_doc_links_match_their_schema())
 
     if all_errors:
