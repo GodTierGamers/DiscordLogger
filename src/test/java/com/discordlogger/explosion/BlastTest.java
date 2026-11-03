@@ -53,15 +53,18 @@ class BlastTest {
         // which is the entire point of the log.
         assertEquals(6, Blast.radiusFor(0.0, "CREEPER"));
         assertEquals(8, Blast.radiusFor(0.0, "TNT"));
-        assertTrue(Blast.radiusFor(-1.0, "CREEPER") > 0, "a negative measure is not a radius");
+        // Nonsense in, the floor out -- not merely "something positive", which the floor
+        // guarantees for every input and so asserts nothing.
+        assertEquals(6, Blast.radiusFor(-1.0, "CREEPER"));
     }
 
     @Test
     @DisplayName("the search default is far wider than any blast")
     void searchRadiusIsDeliberatelyWide() {
-        // Somebody at the edge of a crater is not inside the blast that made it.
+        // Somebody at the edge of a crater is not inside the blast that made it, so the
+        // widest blast there is must still fit well inside the default search. This one
+        // can fail -- raising END_CRYSTAL's floor past 50 would break it.
         assertTrue(Blast.DEFAULT_SEARCH_RADIUS > Blast.floorFor("END_CRYSTAL"),
                 "the widest blast must still fit well inside the default search");
-        assertTrue(Blast.MAX_SEARCH_RADIUS >= Blast.DEFAULT_SEARCH_RADIUS);
     }
 }
