@@ -64,6 +64,7 @@ Server start and stop.
   - **Player**: Join, Quit, Chat, Command, Death, Advancement, Teleport, Gamemode
   - **Server**: Start, Stop, Console Command, Explosion
   - **Moderation**: Ban, Unban, Kick, Op, Deop, Whitelist Toggle, Whitelist Add/Remove
+- **Explosion log with in-game lookup**: every explosion is also written to a plain `explosions.csv`, and `/discordlogger lookup` searches it **by place** rather than by time — stand in the crater, run the command, and see the nearest explosions with their cause, age, size and who was within twenty blocks. Kept for as long as you choose, from minutes to years, and pruned automatically.
 - **Per-event channel routing**: give any single event its own webhook — moderation to a private staff channel, chat to a public one. Everything else keeps using the main webhook.
 - **Fifteen filters**: ignore commands, players, worlds, chat content, advancements, teleport causes, death causes and explosion sources, with minimum-length and minimum-distance thresholds, plus staying silent about vanished players. `/login`, `/register` and `/msg` are filtered **by default** — command logging posts the line exactly as typed, which would otherwise publish passwords and private messages to your channel.
 - **Every message is yours**: `lang.yml` holds all of them — in-game text with [MiniMessage](https://docs.advntr.dev/minimessage/format.html) formatting, and the Discord-facing wording separately. Reword or translate anything without touching code.
@@ -78,7 +79,7 @@ Server start and stop.
 - **Bedrock/Java indicator**: joins from Bedrock are flagged when the server runs Geyser with Floodgate.
 - **Geyser-friendly death messages**: built from server-side damage context rather than client-localized text, with the cause of death as its own embed field and coordinates optionally alongside it.
 - **Automatic config updater**: migrates `config.yml` and `lang.yml` forward one schema version at a time, preserving your settings and comments, and keeping the previous file. A config from a *newer* build is never silently downgraded — you're told, and nothing is overwritten.
-- **Paced sends**: messages are queued and paced against Discord's per-webhook rate limits, so a busy chat channel never delays your moderation log.
+- **Paced, batched sends**: messages are queued and paced against Discord's per-webhook rate limits, and up to ten events share a single request — so a busy server stops losing logs to the rate limit, and a quiet one sees no added delay.
 - **Channel-aware update notifications**: stable servers are notified of new stable releases; nightly builds also warn when they fall behind.
 - **Nickname support**: nicknames are recognized in server logs as `Nickname (RealName)`.
 - **[Config generator](https://discordlogger.godtiergamers.xyz/generator/)**: build `config.yml` *and* `lang.yml` in your browser — every event, colour, filter and message, no hand-editing needed.

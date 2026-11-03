@@ -37,7 +37,8 @@ optionally where it happened. A ban carries who issued it, why, and for how long
 
 **Players** — join, quit, chat, commands, deaths, advancements, teleports, gamemode changes.
 
-**Server** — console commands, start, stop, explosions.
+**Server** — console commands, start, stop, explosions — and every explosion is kept
+in a searchable log you can query in game.
 
 **Moderation** — bans, unbans, kicks, op, deop, whitelist changes.
 
@@ -52,6 +53,12 @@ public one.
 ---
 
 ## Why you might pick this one
+
+**You can ask what blew up a spot.** Every explosion is also recorded to a plain
+`explosions.csv`, and `/discordlogger lookup` searches it by place rather than by
+time — stand in the hole, run the command, and get the nearest explosions with what
+caused them, when, how big, and who was within twenty blocks. Records are kept for
+however long you choose, from minutes to years.
 
 **It checks that things actually happened.** A ban is logged after the ban list
 changes, not when someone types `/ban`. A command that failed, or was cancelled by
