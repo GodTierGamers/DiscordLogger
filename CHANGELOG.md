@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.6.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.5.0...v2.6.0) (2026-11-03)
+
+
+### ✨ Features
+
+* **config:** print the config check on every start ([#255](https://github.com/GodTierGamers/DiscordLogger/issues/255)) ([3f85839](https://github.com/GodTierGamers/DiscordLogger/commit/3f85839bff5529581c0eeb15f4ba06a217c40c53))
+* **explosion:** record every explosion and look one up by place ([#256](https://github.com/GodTierGamers/DiscordLogger/issues/256)) ([ca4ab05](https://github.com/GodTierGamers/DiscordLogger/commit/ca4ab054cf1d7f9f3e7b3b203ad5998a4728c259))
+
+
+### 🐛 Fixes
+
+* **webhook:** stop dropping messages by sending up to ten embeds per request ([#254](https://github.com/GodTierGamers/DiscordLogger/issues/254)) ([7cd968f](https://github.com/GodTierGamers/DiscordLogger/commit/7cd968f6b35768cef67744a7655f4c871a725123))
+
+
+### 📝 Docs
+
+* **agents:** correct the distribution table and the versioning strategy ([#251](https://github.com/GodTierGamers/DiscordLogger/issues/251)) ([593eef5](https://github.com/GodTierGamers/DiscordLogger/commit/593eef536eeea1b5ae9ce21699567387c2cf2401))
+* put the explosion log and batched sends in the listings ([#257](https://github.com/GodTierGamers/DiscordLogger/issues/257)) ([afb20a3](https://github.com/GodTierGamers/DiscordLogger/commit/afb20a329af60b77a6e37076156c6d75c550382e))
+
+
+### 🧰 Maintenance
+
+* **metrics:** keep 30 days in both data stores ([#253](https://github.com/GodTierGamers/DiscordLogger/issues/253)) ([7651c6e](https://github.com/GodTierGamers/DiscordLogger/commit/7651c6e09ae1b07f2628246c9803db35edec7a19))
+
 ## [2.5.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.4.1...v2.5.0) (2026-10-29)
 
 
