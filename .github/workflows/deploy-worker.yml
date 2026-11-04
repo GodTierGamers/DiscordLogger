@@ -1,0 +1,65 @@
+# Deploys the OAuth Worker, and only ever from a tag.
+#
+# Tag-only on purpose: /version reports the commit it is serving, and that is only a
+# meaningful claim if the running code corresponds to something immutable and public.
+# Deploying from a branch would let the SHA point at a commit that has since moved.
+name: Deploy OAuth Worker
+
+on:
+  push:
+    tags:
+      - 'worker-v*'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag to deploy (e.g. worker-v1). Must already exist."
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Skipped entirely without credentials, rather than failing: the Worker is
+    # optional infrastructure and a repo without the secrets set is a valid state.
+    if: ${{ github.repository == 'GodTierGamers/DiscordLogger' }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Check the worker still has nowhere to store anything
+        run: python3 scripts/check-worker-stateless.py
+
+      - name: Say so and stop if the credentials are not set
+        id: creds
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CF_TOKEN" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN is not set — nothing deployed."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy
+        if: steps.creds.outputs.ready == 'true'
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          # The deployed SHA is stamped in as a var so /version can report it. The
+          # client id is public and lives in the repo; the secret is set once with
+          # `wrangler secret put DISCORD_CLIENT_SECRET` and is never passed here.
+          npx --yes wrangler@4 deploy \
+            --var VERSION_SHA:"${GITHUB_SHA}" \
+            --var DISCORD_CLIENT_ID:"${{ vars.DISCORD_CLIENT_ID }}"
