@@ -140,3 +140,8 @@ before 2.4.0 did need Paper, for its chat API; this one does not.
 - **[GitHub](https://github.com/GodTierGamers/DiscordLogger)** — source, issues, releases
 - **[Modrinth](https://modrinth.com/plugin/discordlogger)** · **[Hangar](https://hangar.papermc.io/LVCHLANN/DiscordLogger)** · **[CurseForge](https://www.curseforge.com/minecraft/bukkit-plugins/discordlogger)** · **[SpigotMC](https://www.spigotmc.org/resources/discordlogger.138443/)**
 - **[Report a bug](https://github.com/GodTierGamers/DiscordLogger/issues/new/choose)**
+
+## Legal
+
+- **[Privacy Policy](/privacy/)** — what the site, the webhook creator and the plugin do with data
+- **[Terms of Use](/terms/)** — MIT licence, no warranty, and what you're responsible for as a server operator

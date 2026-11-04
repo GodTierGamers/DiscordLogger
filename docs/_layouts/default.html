@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="{{ site.lang | default: 'en' | replace: '_', '-' }}" data-theme="">
+<html lang="{{ site.lang | default: 'en' | replace: '_', '-' }}" data-theme=""
+      data-ga="{{ site.google_analytics }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -89,7 +90,7 @@
 
     <!-- Stylesheet. The favicons are declared together further down; there is no
          /assets/favicon.png and a link to one 404'd on every page. -->
-    <link rel="stylesheet" href="{{ '/assets/theme.css?v=9' | relative_url }}">
+    <link rel="stylesheet" href="{{ '/assets/theme.css?v=10' | relative_url }}">
     <meta name="color-scheme" content="light dark">
 
     <!-- Site-wide version awareness: fills version numbers and applies BETA badges to
@@ -165,6 +166,10 @@
             <a class="dl-download-btn" href="{{ '/downloads/' | relative_url }}">
                 ⬇ Download DiscordLogger
             </a>
+            <p class="dl-sidebar__legal">
+                <a href="{{ '/privacy/' | relative_url }}">Privacy</a> ·
+                <a href="{{ '/terms/' | relative_url }}">Terms</a>
+            </p>
         </div>
     </aside>
 
@@ -181,6 +186,9 @@
 <script src="{{ '/assets/js/sidebar.js?v=3' | relative_url }}"></script>
 <script defer src="{{ '/assets/js/theme-toggle.js?v=3' | relative_url }}"></script>
 <script defer src="{{ '/assets/js/scrollbar-overlay.js?v=1' | relative_url }}"></script>
+<!-- Reads data-ga above. With no measurement id it does nothing at all: no
+     banner, no Google script, no cookies. -->
+<script defer src="{{ '/assets/js/analytics.js?v=1' | relative_url }}"></script>
 
 </body>
 </html>
