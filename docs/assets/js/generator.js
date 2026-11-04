@@ -434,7 +434,13 @@
 
         mount.appendChild(h('div', { class: 'cfg-wrap' }, [h('section', { class: 'cfg-panel' }, panelBody)]));
         sync();
-        if (V) V.apply(mount);   // renders the beta toggle if we just injected one
+        // There used to be a `V.apply(mount)` here to activate a beta toggle this picker
+        // injected. The toggle was replaced by the nightly footnote above and `V` was
+        // removed with it -- but the call stayed, referencing an identifier that is
+        // declared nowhere. `if (V)` on an undeclared name is a ReferenceError, not
+        // false, so every generator page load has thrown here and aborted render() at
+        // its last statement. Nothing visible broke, which is exactly why it survived:
+        // the picker had already been appended by the line above.
     }
 
     // minimal styles for the picker; each bundle ships its own full stylesheet
