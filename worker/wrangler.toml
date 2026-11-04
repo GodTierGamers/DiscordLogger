@@ -1,0 +1,64 @@
+# Cloudflare Worker for the config generator's "Connect to Discord" button.
+#
+# It exists for one reason: Discord's OAuth code exchange needs the application's
+# client SECRET, and a secret cannot live in a page the browser downloads. So the
+# browser sends the one-time code here, this exchanges it, and the webhook URL comes
+# back in the response body. Nothing else happens.
+#
+# ---------------------------------------------------------------------------------
+# NOTE THE ABSENCE OF BINDINGS. There is no [[kv_namespaces]], no [[d1_databases]],
+# no [[r2_buckets]], no [[durable_objects]]. That is the whole design: a Worker with
+# no storage attached is *structurally* unable to keep a webhook URL, rather than
+# merely promising not to. Adding a binding here would break that promise even if
+# the handler never wrote to it, so don't -- and if a future feature seems to need
+# one, that feature belongs somewhere else.
+# ---------------------------------------------------------------------------------
+
+name = "discordlogger-oauth"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# Both of these default to true, and wrangler warns that it is defaulting them. Stated
+# explicitly so the behaviour is a decision rather than a default that could change.
+# OFF. The custom domain below is the only way in. Leaving the workers.dev address
+# live would mean two public addresses for an endpoint that handles an OAuth client
+# secret, and the second one is the address nobody audits -- same reasoning as
+# preview_urls. Verified answering on the custom domain before this was flipped.
+workers_dev = false
+
+# A hostname on your own domain instead of a workers.dev address nobody wants to read.
+# Cloudflare creates the DNS record and provisions the certificate itself, because the
+# zone is already on Cloudflare -- nothing to add by hand.
+#
+# A dedicated subdomain rather than a path under discordlogger.godtiergamers.xyz: that
+# hostname's DNS points straight at GitHub Pages, so a Worker route on it would be
+# competing with Pages for the same requests.
+routes = [
+  { pattern = "oauth.godtiergamers.xyz", custom_domain = true }
+]
+
+# OFF, deliberately. Preview URLs give every *version* of a Worker its own permanent
+# public address. This Worker holds the OAuth client secret, so a version with a bug --
+# a looser origin allowlist, say -- would stay callable at its own URL long after it
+# was replaced. The origin check still applies to a preview URL, so this is defence in
+# depth rather than a hole being closed, but there is no reason to keep old versions of
+# a credential-handling endpoint reachable.
+preview_urls = false
+
+[vars]
+# Public. The client id is in every authorize URL the browser builds anyway, and this
+# is its ONLY home -- the deploy workflow used to pass it as --var from a repo variable
+# as well, which is two sources for one value and exactly the drift this project keeps
+# getting caught by. A bare `wrangler deploy` now behaves identically to CI.
+DISCORD_CLIENT_ID = "1384088628010942554"
+
+# Only these origins may ask for an exchange. Comma-separated, exact matches.
+ALLOWED_ORIGINS = "https://discordlogger.godtiergamers.xyz"
+
+# Overwritten at deploy time with the commit being deployed, so /version can say
+# which public commit is actually running. Open source proves the code; this is
+# what ties the code to the deployment.
+VERSION_SHA = "dev"
+
+# DISCORD_CLIENT_SECRET is a secret, not a var: `wrangler secret put` or the
+# dashboard. It must never appear in this file.

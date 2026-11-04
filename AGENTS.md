@@ -520,6 +520,30 @@ Use the declarative hooks rather than writing per-page JS or literal versions:
 
 Beta content is **opt-in and remembered** (`localStorage`), so visitors never trip over unreleased features. After injecting markup dynamically, call `DLVersions.apply(root)`; to react to the toggle, listen for the `dl-beta-change` event. `DLVersions.ready()` resolves once release data is in. **A beta toggle must render in both its on and off states whenever beta content exists** — gating its own visibility on `!showBeta` removes the only control that could turn it back off (this shipped once, was reported, and was fixed — don't reintroduce it).
 
+### Discord OAuth webhook creation (`worker/`, and the loader — never a bundle)
+
+**"Connect to Discord" lives in `docs/assets/js/generator.js`, not in a version bundle, and that placement is what makes it possible at all.** Bundles freeze when their schema ships, so v9, v10 and v11 can never be edited again — a feature added inside one would reach only new installs, and adding it to all four would mean editing three frozen folders. Driving the field from the loader gives **every live schema** the feature while touching nothing frozen.
+
+**It works by being indistinguishable from typing.** The loader finds the webhook input, sets `.value`, and dispatches `input`. The bundle's own listener does the rest — including resetting its `webhookConfirmed` flag, so the test-message step still has to be passed. That is correct: OAuth proves the channel exists, not that the server can reach it.
+
+- **The field is matched on its placeholder**, `https://discord.com/api/webhooks/…`, because the per-event routing inputs share the class *and* the type and would otherwise match. Verified identical in v9, v10, v11 and v12; the routing ones say "Leave empty for the main webhook". If a future bundle changes it, the button simply does not appear.
+- **A `MutationObserver` on `#cfg-gen`** attaches it, because the bundle renders its steps when it likes and guessing at timing would be a race.
+- **Empty `OAUTH.clientId` or `OAUTH.worker` disables the whole thing** — no button, no observer, generator exactly as before. That is the state until the Discord application exists, and it is what makes the code safe to merge ahead of the credentials.
+
+**The exchange needs a backend, and that is the only reason `worker/` exists.** `webhook.incoming` is an authorization-code grant; turning the code into a URL needs the client secret, which cannot ship to a browser. The flow is **popup, not redirect**: the wizard keeps everything in memory, so a full-page redirect would throw away a half-filled config.
+
+**`docs/generator/connected/` relays, and deliberately does not verify.** It posts `{code, state}` to `window.opener` and closes. The state was minted in the opener and only the opener can check it — a popup cannot read the opener's `sessionStorage`, and passing the expected value through the URL would defeat having it. `postMessage` is addressed to the exact origin, never `*`, because the message carries an authorization code. The page carries `layout: null`: loading the site chrome for a window that closes in milliseconds is waste.
+
+**The Worker is stateless by construction, and that is enforced.** `wrangler.toml` declares no KV, D1, R2, Durable Object, queue or service binding, so there is nowhere to write a webhook URL even by accident — and `scripts/check-worker-stateless.py` fails CI if anyone adds one, because the generator page makes that promise in public. The check strips TOML comments first: the file *names* the forbidden bindings in a comment explaining their absence, so a plain substring search fails on the documentation instead of on a binding.
+
+**Only `webhook.url` is read out of Discord's response, by name.** The `access_token` and `refresh_token` arrive in the same payload and are never touched — picking one field out, rather than forwarding and trimming, is what makes that true by construction. Discord's error text is not forwarded either: it can echo parts of the request, and a code is single-use but still a credential while it lives. The origin allowlist is checked **before the body is parsed**, and `redirect_uri` is checked against the same list so the Worker cannot be used to complete a flow aimed elsewhere.
+
+**It answers on `oauth.godtiergamers.xyz`** — a Workers custom domain, so Cloudflare owns the DNS record and the certificate. A dedicated subdomain rather than a path under `discordlogger.godtiergamers.xyz`, whose DNS points at GitHub Pages and would be competing with Pages for the same requests. `workers_dev = false` and `preview_urls = false`: one public address for an endpoint holding a client secret, not three.
+
+**Deploys only from a tag** (`worker-v*`), because `/version` reporting a commit is only meaningful if that commit is immutable and public. Without `CLOUDFLARE_API_TOKEN` the job says so and skips rather than failing — a repo with no Worker credentials is a valid state.
+
+**The privacy copy is part of this feature, not documentation of it.** The generator used to say the webhook URL "is never sent anywhere except Discord"; under OAuth it necessarily transits the Worker, so that line is now explicit about transit being unavoidable and storage being avoidable. It does **not** claim "we log nothing" — Cloudflare records request metadata regardless of what the handler does. If the flow changes, that copy changes with it.
+
 ### Config generator — per-version frozen bundles
 
 **Users pick their plugin version; the config schema is resolved for them.** Nobody knows offhand which schema their build uses, but everyone knows what they downloaded — so the picker lists plugin builds and shows the detected schema as a confirmation note.

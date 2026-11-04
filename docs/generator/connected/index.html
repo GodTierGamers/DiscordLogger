@@ -1,0 +1,57 @@
+---
+layout: null
+sitemap: false
+robots: noindex, nofollow
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<title>Connecting…</title>
+</head>
+<body>
+<p id="msg">Finishing up — you can close this window.</p>
+<script>
+/*
+ * Discord sends the browser here after an authorization, with ?code=…&state=….
+ *
+ * This page does one thing: hand both values back to the window that opened it. It
+ * does NOT exchange the code — that needs the client secret, which lives in the
+ * Worker — and it does NOT verify the state, because the state was generated in the
+ * opener and the opener is the only thing that can say whether it matches. A popup
+ * cannot read the opener's sessionStorage, so checking it here would mean passing it
+ * through the URL, which defeats the point of having it.
+ *
+ * `layout: null` above is deliberate: the site's default layout would load the whole
+ * page chrome for a window that closes in a few hundred milliseconds.
+ */
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var payload = {
+    type: 'discordlogger-oauth',
+    code: params.get('code') || '',
+    state: params.get('state') || '',
+    error: params.get('error') || params.get('error_description') || '',
+  };
+
+  var target = window.location.origin;
+  try {
+    if (window.opener) {
+      /* Addressed to this exact origin, never '*': the message carries an
+         authorization code, and '*' would hand it to whatever happened to be
+         listening if the opener were ever cross-origin. */
+      window.opener.postMessage(payload, target);
+      window.close();
+      return;
+    }
+  } catch (e) { /* fall through to the message below */ }
+
+  /* No opener — someone opened this URL directly, or the popup was detached. There is
+     nothing useful to do with a code here, so say so rather than appearing stuck. */
+  document.getElementById('msg').textContent =
+    'Nothing to finish here. Start again from the config generator.';
+})();
+</script>
+</body>
+</html>

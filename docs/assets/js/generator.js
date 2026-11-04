@@ -152,6 +152,161 @@
         return [...byVersion.values()].sort((a, b) => cmpVer(parseVer(b.version), parseVer(a.version)));
     }
 
+    /* ---------------------------------------------------------------- Discord OAuth --
+
+       "Connect to Discord" fills the webhook field for people instead of making them
+       copy a URL out of Discord's settings by hand.
+
+       It lives in the LOADER, not in a version bundle, and that is the whole reason it
+       can exist at all: bundles freeze when their schema ships, so v9, v10 and v11 can
+       never be edited again. Driving the field from out here gives every live schema
+       the feature without touching a frozen file -- and it works because the webhook
+       input has had the same shape in every bundle to date, and because setting .value
+       and dispatching 'input' is exactly what a person typing does, so the bundle's own
+       listener updates its state and re-runs its own validation.
+
+       Empty config disables it completely: no button, and the generator behaves exactly
+       as it did before. That is the state until the Discord application exists.
+    */
+    const OAUTH = {
+        clientId: '1384088628010942554',     // public; appears in every authorize URL
+        worker: 'https://oauth.godtiergamers.xyz',
+        redirect: `${location.origin}/generator/connected/`,
+    };
+
+    /* The one input the button belongs next to. Matched on its placeholder because the
+       per-event routing fields share the class and the type -- they carry "Leave empty
+       for the main webhook" instead, which is how the two are told apart in every
+       bundle from v9 onward. */
+    const WEBHOOK_FIELD = 'input.cfg-input[type=url][placeholder^="https://discord.com/api/webhooks/"]';
+
+    const oauthConfigured = () => Boolean(OAUTH.clientId && OAUTH.worker);
+
+    function randomState() {
+        const a = new Uint8Array(16);
+        crypto.getRandomValues(a);
+        return Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    /** Runs the whole popup round trip and resolves to a webhook URL, or throws. */
+    function connectToDiscord() {
+        return new Promise((resolve, reject) => {
+            const state = randomState();
+            const authorize = 'https://discord.com/oauth2/authorize'
+                + `?client_id=${encodeURIComponent(OAUTH.clientId)}`
+                + '&response_type=code'
+                + '&scope=webhook.incoming'
+                + `&redirect_uri=${encodeURIComponent(OAUTH.redirect)}`
+                + `&state=${state}`;
+
+            const popup = window.open(authorize, 'dl-discord-oauth', 'width=520,height=760');
+            if (!popup) {
+                reject(new Error('Your browser blocked the popup.'));
+                return;
+            }
+
+            let done = false;
+            const finish = (fn, arg) => {
+                if (done) return;
+                done = true;
+                window.removeEventListener('message', onMessage);
+                clearInterval(watchClosed);
+                fn(arg);
+            };
+
+            async function onMessage(ev) {
+                // Only this origin, only our message, only the state we just minted.
+                // Without the state check, any page could hand us a code it obtained
+                // for a different channel and have it written into the field.
+                if (ev.origin !== location.origin) return;
+                const d = ev.data;
+                if (!d || d.type !== 'discordlogger-oauth') return;
+                if (d.state !== state) {
+                    finish(reject, new Error('That response did not match this request.'));
+                    return;
+                }
+                if (d.error) {
+                    finish(reject, new Error('Discord refused the authorization.'));
+                    return;
+                }
+                if (!d.code) {
+                    finish(reject, new Error('Discord did not return a code.'));
+                    return;
+                }
+                try {
+                    const res = await fetch(`${OAUTH.worker}/exchange`, {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({ code: d.code, redirect_uri: OAUTH.redirect }),
+                    });
+                    const body = await res.json().catch(() => null);
+                    if (!res.ok || !body || !body.url) {
+                        finish(reject, new Error('Could not finish the exchange.'));
+                        return;
+                    }
+                    finish(resolve, body.url);
+                } catch (e) {
+                    finish(reject, new Error('Could not reach the exchange service.'));
+                }
+            }
+
+            window.addEventListener('message', onMessage);
+
+            // Someone closing the popup without authorizing should not leave the button
+            // spinning forever.
+            const watchClosed = setInterval(() => {
+                if (popup.closed) finish(reject, new Error('Window closed before finishing.'));
+            }, 500);
+        });
+    }
+
+    /** Puts the button above the webhook field, once, whenever that field appears. */
+    function attachOauth(root) {
+        if (!oauthConfigured()) return;
+        const field = root.querySelector(WEBHOOK_FIELD);
+        if (!field || field.dataset.dlOauth === 'on') return;
+        field.dataset.dlOauth = 'on';
+
+        const note = h('p', { class: 'cfg-note', style: 'margin:.3rem 0 0' });
+        const btn = h('button', { class: 'cfg-btn', type: 'button' }, 'Connect to Discord');
+
+        btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            note.textContent = 'Waiting for Discord…';
+            try {
+                const url = await connectToDiscord();
+                field.value = url;
+                // What a person typing does. The bundle listens for 'input', so this is
+                // what makes it notice -- and it also resets its own "confirmed" flag,
+                // so the test-message step still has to be passed. Deliberate: OAuth
+                // proves the channel exists, not that the server can reach it.
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+                note.textContent = 'Webhook created. Send the test message to confirm it.';
+            } catch (e) {
+                note.textContent = e && e.message ? e.message : 'Could not connect.';
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        const wrap = h('div', { style: 'margin-bottom:.6rem' }, [
+            btn,
+            h('p', { class: 'cfg-note', style: 'margin:.3rem 0 0' },
+                'Creates a new webhook in a channel you pick. Discord makes a new one each '
+                + 'time you do this, so running it twice leaves two.'),
+            note,
+        ]);
+        field.parentNode.insertBefore(wrap, field);
+    }
+
+    /* The bundle renders its steps when it likes, so rather than guessing at timing,
+       watch the mount and attach whenever the field turns up. */
+    if (oauthConfigured()) {
+        new MutationObserver(() => attachOauth(mount)).observe(mount, {
+            childList: true, subtree: true,
+        });
+    }
+
     function launchBundle(ctx) {
         window.DL_GENERATORS = window.DL_GENERATORS || {};
         const ready = window.DL_GENERATORS[ctx.configVersion];
@@ -279,7 +434,13 @@
 
         mount.appendChild(h('div', { class: 'cfg-wrap' }, [h('section', { class: 'cfg-panel' }, panelBody)]));
         sync();
-        if (V) V.apply(mount);   // renders the beta toggle if we just injected one
+        // There used to be a `V.apply(mount)` here to activate a beta toggle this picker
+        // injected. The toggle was replaced by the nightly footnote above and `V` was
+        // removed with it -- but the call stayed, referencing an identifier that is
+        // declared nowhere. `if (V)` on an undeclared name is a ReferenceError, not
+        // false, so every generator page load has thrown here and aborted render() at
+        // its last statement. Nothing visible broke, which is exactly why it survived:
+        // the picker had already been appended by the line above.
     }
 
     // minimal styles for the picker; each bundle ships its own full stylesheet

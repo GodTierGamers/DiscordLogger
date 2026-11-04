@@ -20,6 +20,7 @@ jobs:
     outputs:
       java: ${{ steps.filter.outputs.java }}
       docs: ${{ steps.filter.outputs.docs }}
+      worker: ${{ steps.filter.outputs.worker }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -32,6 +33,9 @@ jobs:
             docs:
               - 'docs/assets/configs/**'
               - 'scripts/validate-config-generator.py'
+            worker:
+              - 'worker/**'
+              - 'scripts/check-worker-stateless.py'
 
   build:
     needs: changes
@@ -145,3 +149,19 @@ jobs:
 
       - name: Validate config generator data
         run: python3 scripts/validate-config-generator.py
+
+  # The generator tells users the OAuth Worker cannot keep their webhook URL, and the
+  # reason that is true is that it has no storage bindings to keep one in. A published
+  # privacy claim resting on a convention is a claim waiting to become false, so the
+  # convention is checked.
+  worker-stateless:
+    needs: changes
+    if: needs.changes.outputs.worker == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check the OAuth worker has nowhere to store anything
+        run: python3 scripts/check-worker-stateless.py
