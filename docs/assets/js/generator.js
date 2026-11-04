@@ -303,28 +303,124 @@
         });
     }
 
-    /** Puts the button above the webhook field, once, whenever that field appears. */
+    /* The webhook OAuth produced, remembered across re-renders of the step. The
+       bundle has no idea a URL came from Discord, so on its own it keeps asking for
+       a test message before it will let anyone past -- see attachOauth(). */
+    let oauthUrl = '';
+
+    /* The step's primary action is its Next button; the bundle builds the row the
+       same way in every version. */
+    const nextButton = (panel) => {
+        const row = panel.querySelector('.cfg-actions');
+        return row ? row.querySelector('.cfg-btn--primary') : null;
+    };
+
+    /* Discord's own mark, unmodified, white on Blurple -- the pairing their brand
+       guidelines approve. Drawn in the SVG namespace because createElement('svg')
+       makes an HTML element of that name, which renders nothing. */
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const DISCORD_MARK = 'M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z';
+
+    function discordMark() {
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('width', '20');
+        svg.setAttribute('height', '20');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        const path = document.createElementNS(SVG_NS, 'path');
+        path.setAttribute('fill', 'currentColor');
+        path.setAttribute('d', DISCORD_MARK);
+        svg.appendChild(path);
+        return svg;
+    }
+
+    const OAUTH_STYLE_ID = 'dl-oauth-styles';
+    function injectOauthStyles() {
+        if (document.getElementById(OAUTH_STYLE_ID)) return;
+        document.head.appendChild(h('style', { id: OAUTH_STYLE_ID }, `
+    #cfg-gen .dl-connect { margin: .2rem 0 1rem; }
+    #cfg-gen .dl-discord-btn { display: inline-flex; align-items: center; gap: .55rem; background: #5865F2; color: #fff; border: 0; border-radius: 8px; padding: .62rem 1.1rem; font: inherit; font-weight: 600; line-height: 1.2; cursor: pointer; }
+    #cfg-gen .dl-discord-btn:hover:not(:disabled) { background: #4752C4; }
+    #cfg-gen .dl-discord-btn:active:not(:disabled) { background: #3C45A5; }
+    #cfg-gen .dl-discord-btn:disabled { opacity: .6; cursor: default; }
+    #cfg-gen .dl-discord-btn:focus-visible { outline: 2px solid #5865F2; outline-offset: 2px; }
+    #cfg-gen .dl-discord-btn > svg { flex: none; }
+    #cfg-gen .dl-manual { border: 1px solid var(--border); border-radius: 10px; padding: .5rem .7rem; margin-bottom: 1rem; }
+    #cfg-gen .dl-manual > summary { cursor: pointer; color: var(--muted); }
+    #cfg-gen .dl-manual[open] > summary { margin-bottom: .7rem; }
+    `));
+    }
+
+    /** Rebuilds the webhook step around the button, whenever that step appears. */
     function attachOauth(root) {
         if (!oauthConfigured()) return;
         const field = root.querySelector(WEBHOOK_FIELD);
-        if (!field || field.dataset.dlOauth === 'on') return;
-        field.dataset.dlOauth = 'on';
+        if (!field) return;
+        const panel = field.closest('.cfg-panel');
+        if (!panel) return;
 
-        const note = h('p', { class: 'cfg-note', style: 'margin:.3rem 0 0' });
-        const btn = h('button', { class: 'cfg-btn', type: 'button' }, 'Connect to Discord');
+        /* Coming Back here re-renders the step, and the bundle re-disables Next
+           because its own "confirmed" flag starts false. A URL Discord minted a
+           moment ago does not need confirming twice, so put it back. */
+        if (oauthUrl && field.value.trim() === oauthUrl) {
+            const b = nextButton(panel);
+            if (b) b.disabled = false;
+        }
+
+        if (field.dataset.dlOauth === 'on') return;
+
+        const actionsRow = panel.querySelector('.cfg-actions');
+        const intro = panel.querySelector('p.cfg-note');
+        /* Not the shape we know. Leave the step exactly as the bundle built it
+           rather than half-rearranging someone's only way to enter a webhook. */
+        if (!actionsRow || !intro) return;
+
+        field.dataset.dlOauth = 'on';
+        injectOauthStyles();
+
+        /* Everything the bundle put between the intro and the Back/Next row is the
+           manual flow: the label, the field, the test button, and the test's status
+           and confirm prompt. That shape is identical in every bundle from v9 on,
+           which is what makes collecting it by position safe here. */
+        const manual = [];
+        for (let n = intro.nextElementSibling; n && n !== actionsRow; n = n.nextElementSibling) {
+            manual.push(n);
+        }
+
+        const details = h('details', { class: 'dl-manual' }, [
+            h('summary', {}, 'Insert Webhook URL (Manual)'),
+        ]);
+        manual.forEach(n => details.appendChild(n));
+        /* Someone who already has one in the field should not have to go hunting
+           for it behind a collapsed summary. */
+        if (field.value.trim() && field.value.trim() !== oauthUrl) details.open = true;
+
+        const note = h('p', { class: 'cfg-note', style: 'margin:.45rem 0 0' });
+        /* Blurple is a fixed brand colour, so it is written out rather than taken
+           from the site's palette, and it carries both themes unchanged. */
+        const btn = h('button', { class: 'dl-discord-btn', type: 'button' });
+        btn.appendChild(discordMark());
+        btn.appendChild(h('span', {}, 'Connect to Discord'));
 
         btn.addEventListener('click', async () => {
             btn.disabled = true;
             note.textContent = 'Waiting for Discord…';
             try {
                 const url = await connectToDiscord();
+                oauthUrl = url;
                 field.value = url;
-                // What a person typing does. The bundle listens for 'input', so this is
-                // what makes it notice -- and it also resets its own "confirmed" flag,
-                // so the test-message step still has to be passed. Deliberate: OAuth
-                // proves the channel exists, not that the server can reach it.
+                /* What a person typing does. The bundle listens for 'input', so this
+                   is what makes it take the value. */
                 field.dispatchEvent(new Event('input', { bubbles: true }));
-                note.textContent = 'Webhook created. Send the test message to confirm it.';
+                note.textContent = 'Webhook created.';
+                /* The bundle gates Next on its test message, which is there to catch a
+                   URL that was mistyped or has since been deleted. Discord just made
+                   this one, against a channel the user picked in Discord's own UI, so
+                   there is nothing left for a test to establish -- move them on rather
+                   than asking them to prove it. */
+                const b = nextButton(panel);
+                if (b) { b.disabled = false; b.click(); }
             } catch (e) {
                 note.textContent = e && e.message ? e.message : 'Could not connect.';
             } finally {
@@ -332,14 +428,18 @@
             }
         });
 
-        const wrap = h('div', { style: 'margin-bottom:.6rem' }, [
+        panel.insertBefore(h('div', { class: 'dl-connect' }, [
             btn,
-            h('p', { class: 'cfg-note', style: 'margin:.3rem 0 0' },
+            h('p', { class: 'cfg-note', style: 'margin:.45rem 0 0' },
                 'Creates a new webhook in a channel you pick. Discord makes a new one each '
                 + 'time you do this, so running it twice leaves two.'),
             note,
-        ]);
-        field.parentNode.insertBefore(wrap, field);
+        ]), actionsRow);
+        panel.insertBefore(details, actionsRow);
+
+        /* The bundle's intro describes pasting, which is no longer the main path. */
+        intro.textContent = 'Connect your Discord account and the webhook is made for you. '
+            + 'If you already have one, you can paste it instead.';
     }
 
     /* The bundle renders its steps when it likes, so rather than guessing at timing,
