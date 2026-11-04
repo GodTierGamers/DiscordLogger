@@ -41,7 +41,17 @@ public final class Log {
     private static volatile String embedFooterText = EMBED_FOOTER_BASE;
 
     private static final String PLAYER_THUMB_TEMPLATE =
-            "https://mc-heads.net/avatar/{uuid}/256";
+            "https://mc-heads.net/avatar/{uuid}/256?c={bucket}";
+
+    /**
+     * How long an avatar URL stays the same, in millis.
+     *
+     * <p>Six hours, because that is exactly what mc-heads.net puts on its own
+     * responses ({@code cache-control: public, max-age=21600}). Picking the origin's
+     * number rather than one of our own means Discord is never asked to hold an image
+     * for longer than mc-heads itself considers it fresh.
+     */
+    private static final long AVATAR_CACHE_WINDOW_MS = 21_600_000L;
 
     // colorMap is replaced atomically: a fully-built map is assigned in one
     // volatile write, so async threads never see a half-populated map.
@@ -619,10 +629,47 @@ public final class Log {
         return arr;
     }
 
-    /** Build the player avatar URL from UUID (mc-heads.net). */
+    /**
+     * The player's head, from mc-heads.net, with a cache-busting window.
+     *
+     * <h2>Why the {@code ?c=} parameter is load-bearing, and must not be "tidied" away</h2>
+     *
+     * <p>Discord does not load an embed thumbnail from mc-heads: it re-hosts the image
+     * through its own proxy, keyed on the URL. The URL used to be permanent for a given
+     * player while the thing behind it — their skin — is not, so whichever head Discord
+     * cached first was the head it kept serving. A player who changes skin saw the old
+     * one indefinitely, and a player whose skin had not yet been resolved when Discord
+     * first fetched saw the default head and kept it.
+     *
+     * <p>Reported twice, eleven months apart (#71 and #258), diagnosed correctly the
+     * first time and fixed neither time. The parameter is the fix: the URL now changes
+     * every {@link #AVATAR_CACHE_WINDOW_MS}, so Discord re-fetches on that cadence
+     * instead of never.
+     *
+     * <p>mc-heads ignores the parameter — verified: no parameter, {@code ?c=12345} and
+     * {@code ?c=99999} return byte-identical images with HTTP 200. It exists purely to
+     * make the URL differ, so deleting it as "a query string that does nothing" is
+     * exactly the change that reintroduces the bug.
+     *
+     * <p>What this does not fix: mc-heads caches upstream for the same six hours, so a
+     * skin change can still take that long to appear. That part is not ours.
+     */
     public static String playerAvatarUrl(UUID uuid) {
         if (uuid == null) return null;
-        return PLAYER_THUMB_TEMPLATE.replace("{uuid}", uuid.toString().replace("-", ""));
+        return PLAYER_THUMB_TEMPLATE
+                .replace("{uuid}", uuid.toString().replace("-", ""))
+                .replace("{bucket}", Long.toString(cacheBucket(System.currentTimeMillis())));
+    }
+
+    /**
+     * Which six-hour window an instant falls in.
+     *
+     * <p>A window rather than the raw clock on purpose: a value that changed every call
+     * would defeat Discord's caching entirely and re-fetch every head on every message.
+     * The point is to let the cache work and then expire, not to stop it working.
+     */
+    static long cacheBucket(long epochMillis) {
+        return epochMillis / AVATAR_CACHE_WINDOW_MS;
     }
 
     /** Send the "Plugin Updates" embed with fields (used by UpdateChecker). */
