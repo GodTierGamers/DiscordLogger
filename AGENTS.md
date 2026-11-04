@@ -25,17 +25,7 @@ Everything below was verified against the actual source at the time of writing; 
 6. **Never hand-edit** `.release-please-manifest.json`, `CHANGELOG.md`, or `pom.xml`'s `<version>` — those belong to release-please.
 7. Keep this file current: workflow or architecture changes update AGENTS.md in the same PR. Update [ARCHITECTURE.md](ARCHITECTURE.md) too if the change is the kind a human contributor would want to know about narratively, not just as a reference fact.
 8. **AI attribution policy**: the README's *AI Disclosure* section is the single, project-level statement of AI involvement. Do **not** add per-commit or per-PR attribution — no `Co-Authored-By: Claude/AI` trailers, no "Generated with …" footers in commits or PR descriptions, no AI credits in code comments.
-9. **TODO.md is maintainer-owned** — see the protocol immediately below. Never write to it uninvited.
-
-### TODO.md protocol
-
-[TODO.md](TODO.md) is a reminder list owned by the maintainer, not a general backlog, not a scratchpad, and not a place to park your own observations.
-
-**Adding:** only when the maintainer *explicitly* asks — "remind me to X", "add X to TODO.md", or clearly equivalent. Noticing something worth doing is **not** grounds to add it; mention it in conversation instead and let them decide. If they don't say to write it down, it doesn't go in the file.
-
-**Removing:** the moment an item is genuinely done, **delete the line entirely**. No strikethrough, no "Completed" section, no dated archive — the file must only ever show what is still outstanding. Do this in the same PR that completes the work, so the file can't drift out of sync with reality.
-
-**Consequence to respect:** because entries are added only on request and deleted on completion, an empty TODO.md means "nothing outstanding" and can be trusted as such. Self-populating it — even with genuinely good ideas — destroys that guarantee and makes the file worthless. Don't.
+9. **There is no TODO file, and don't create one.** Planned work lives in [issues](https://github.com/GodTierGamers/DiscordLogger/issues) and in discussion, not in a tracked file. A backlog in the repo reads as a defect list to anything that scrapes it — an external review did exactly that and came back recommending work that had already shipped. Noticing something worth doing is still worth saying; say it in conversation and let the maintainer decide where it goes.
 
 ## Version values — pom.xml is the single source of truth
 
