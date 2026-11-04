@@ -169,7 +169,7 @@
        as it did before. That is the state until the Discord application exists.
     */
     const OAUTH = {
-        clientId: '',                       // public; empty turns the feature off
+        clientId: '1384088628010942554',     // public; appears in every authorize URL
         worker: '',                         // the /exchange endpoint's origin
         redirect: `${location.origin}/generator/connected/`,
     };

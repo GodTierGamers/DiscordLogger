@@ -19,8 +19,11 @@ main = "src/index.js"
 compatibility_date = "2026-11-01"
 
 [vars]
-# Public. The client id is in every authorize URL the browser builds anyway.
-DISCORD_CLIENT_ID = ""
+# Public. The client id is in every authorize URL the browser builds anyway, and this
+# is its ONLY home -- the deploy workflow used to pass it as --var from a repo variable
+# as well, which is two sources for one value and exactly the drift this project keeps
+# getting caught by. A bare `wrangler deploy` now behaves identically to CI.
+DISCORD_CLIENT_ID = "1384088628010942554"
 
 # Only these origins may ask for an exchange. Comma-separated, exact matches.
 ALLOWED_ORIGINS = "https://discordlogger.godtiergamers.xyz"

@@ -58,8 +58,8 @@ jobs:
         run: |
           set -euo pipefail
           # The deployed SHA is stamped in as a var so /version can report it. The
-          # client id is public and lives in the repo; the secret is set once with
-          # `wrangler secret put DISCORD_CLIENT_SECRET` and is never passed here.
-          npx --yes wrangler@4 deploy \
-            --var VERSION_SHA:"${GITHUB_SHA}" \
-            --var DISCORD_CLIENT_ID:"${{ vars.DISCORD_CLIENT_ID }}"
+          # secret is set once with `wrangler secret put DISCORD_CLIENT_SECRET` and is
+          # never passed through CI at all.
+          # Only VERSION_SHA is passed here. DISCORD_CLIENT_ID lives in wrangler.toml
+          # and nowhere else, so there is no second copy to forget to update.
+          npx --yes wrangler@4 deploy --var VERSION_SHA:"${GITHUB_SHA}"
