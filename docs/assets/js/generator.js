@@ -303,28 +303,97 @@
         });
     }
 
-    /** Puts the button above the webhook field, once, whenever that field appears. */
+    /* The webhook OAuth produced, remembered across re-renders of the step. The
+       bundle has no idea a URL came from Discord, so on its own it keeps asking for
+       a test message before it will let anyone past -- see attachOauth(). */
+    let oauthUrl = '';
+
+    /* The step's primary action is its Next button; the bundle builds the row the
+       same way in every version. */
+    const nextButton = (panel) => {
+        const row = panel.querySelector('.cfg-actions');
+        return row ? row.querySelector('.cfg-btn--primary') : null;
+    };
+
+    const OAUTH_STYLE_ID = 'dl-oauth-styles';
+    function injectOauthStyles() {
+        if (document.getElementById(OAUTH_STYLE_ID)) return;
+        document.head.appendChild(h('style', { id: OAUTH_STYLE_ID }, `
+    #cfg-gen .dl-connect { margin: .2rem 0 1rem; }
+    #cfg-gen .dl-connect__btn { font-size: 1.02em; padding: .62rem 1.05rem; }
+    #cfg-gen .dl-manual { border: 1px solid var(--border); border-radius: 10px; padding: .5rem .7rem; margin-bottom: 1rem; }
+    #cfg-gen .dl-manual > summary { cursor: pointer; color: var(--muted); }
+    #cfg-gen .dl-manual[open] > summary { margin-bottom: .7rem; }
+    `));
+    }
+
+    /** Rebuilds the webhook step around the button, whenever that step appears. */
     function attachOauth(root) {
         if (!oauthConfigured()) return;
         const field = root.querySelector(WEBHOOK_FIELD);
-        if (!field || field.dataset.dlOauth === 'on') return;
-        field.dataset.dlOauth = 'on';
+        if (!field) return;
+        const panel = field.closest('.cfg-panel');
+        if (!panel) return;
 
-        const note = h('p', { class: 'cfg-note', style: 'margin:.3rem 0 0' });
-        const btn = h('button', { class: 'cfg-btn', type: 'button' }, 'Connect to Discord');
+        /* Coming Back here re-renders the step, and the bundle re-disables Next
+           because its own "confirmed" flag starts false. A URL Discord minted a
+           moment ago does not need confirming twice, so put it back. */
+        if (oauthUrl && field.value.trim() === oauthUrl) {
+            const b = nextButton(panel);
+            if (b) b.disabled = false;
+        }
+
+        if (field.dataset.dlOauth === 'on') return;
+
+        const actionsRow = panel.querySelector('.cfg-actions');
+        const intro = panel.querySelector('p.cfg-note');
+        /* Not the shape we know. Leave the step exactly as the bundle built it
+           rather than half-rearranging someone's only way to enter a webhook. */
+        if (!actionsRow || !intro) return;
+
+        field.dataset.dlOauth = 'on';
+        injectOauthStyles();
+
+        /* Everything the bundle put between the intro and the Back/Next row is the
+           manual flow: the label, the field, the test button, and the test's status
+           and confirm prompt. That shape is identical in every bundle from v9 on,
+           which is what makes collecting it by position safe here. */
+        const manual = [];
+        for (let n = intro.nextElementSibling; n && n !== actionsRow; n = n.nextElementSibling) {
+            manual.push(n);
+        }
+
+        const details = h('details', { class: 'dl-manual' }, [
+            h('summary', {}, 'Insert Webhook URL (Manual)'),
+        ]);
+        manual.forEach(n => details.appendChild(n));
+        /* Someone who already has one in the field should not have to go hunting
+           for it behind a collapsed summary. */
+        if (field.value.trim() && field.value.trim() !== oauthUrl) details.open = true;
+
+        const note = h('p', { class: 'cfg-note', style: 'margin:.45rem 0 0' });
+        const btn = h('button', {
+            class: 'cfg-btn cfg-btn--primary dl-connect__btn', type: 'button',
+        }, 'Connect to Discord');
 
         btn.addEventListener('click', async () => {
             btn.disabled = true;
             note.textContent = 'Waiting for Discord…';
             try {
                 const url = await connectToDiscord();
+                oauthUrl = url;
                 field.value = url;
-                // What a person typing does. The bundle listens for 'input', so this is
-                // what makes it notice -- and it also resets its own "confirmed" flag,
-                // so the test-message step still has to be passed. Deliberate: OAuth
-                // proves the channel exists, not that the server can reach it.
+                /* What a person typing does. The bundle listens for 'input', so this
+                   is what makes it take the value. */
                 field.dispatchEvent(new Event('input', { bubbles: true }));
-                note.textContent = 'Webhook created. Send the test message to confirm it.';
+                note.textContent = 'Webhook created.';
+                /* The bundle gates Next on its test message, which is there to catch a
+                   URL that was mistyped or has since been deleted. Discord just made
+                   this one, against a channel the user picked in Discord's own UI, so
+                   there is nothing left for a test to establish -- move them on rather
+                   than asking them to prove it. */
+                const b = nextButton(panel);
+                if (b) { b.disabled = false; b.click(); }
             } catch (e) {
                 note.textContent = e && e.message ? e.message : 'Could not connect.';
             } finally {
@@ -332,14 +401,18 @@
             }
         });
 
-        const wrap = h('div', { style: 'margin-bottom:.6rem' }, [
+        panel.insertBefore(h('div', { class: 'dl-connect' }, [
             btn,
-            h('p', { class: 'cfg-note', style: 'margin:.3rem 0 0' },
+            h('p', { class: 'cfg-note', style: 'margin:.45rem 0 0' },
                 'Creates a new webhook in a channel you pick. Discord makes a new one each '
                 + 'time you do this, so running it twice leaves two.'),
             note,
-        ]);
-        field.parentNode.insertBefore(wrap, field);
+        ]), actionsRow);
+        panel.insertBefore(details, actionsRow);
+
+        /* The bundle's intro describes pasting, which is no longer the main path. */
+        intro.textContent = 'Connect your Discord account and the webhook is made for you. '
+            + 'If you already have one, you can paste it instead.';
     }
 
     /* The bundle renders its steps when it likes, so rather than guessing at timing,
