@@ -315,12 +315,37 @@
         return row ? row.querySelector('.cfg-btn--primary') : null;
     };
 
+    /* Discord's own mark, unmodified, white on Blurple -- the pairing their brand
+       guidelines approve. Drawn in the SVG namespace because createElement('svg')
+       makes an HTML element of that name, which renders nothing. */
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const DISCORD_MARK = 'M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z';
+
+    function discordMark() {
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('width', '20');
+        svg.setAttribute('height', '20');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        const path = document.createElementNS(SVG_NS, 'path');
+        path.setAttribute('fill', 'currentColor');
+        path.setAttribute('d', DISCORD_MARK);
+        svg.appendChild(path);
+        return svg;
+    }
+
     const OAUTH_STYLE_ID = 'dl-oauth-styles';
     function injectOauthStyles() {
         if (document.getElementById(OAUTH_STYLE_ID)) return;
         document.head.appendChild(h('style', { id: OAUTH_STYLE_ID }, `
     #cfg-gen .dl-connect { margin: .2rem 0 1rem; }
-    #cfg-gen .dl-connect__btn { font-size: 1.02em; padding: .62rem 1.05rem; }
+    #cfg-gen .dl-discord-btn { display: inline-flex; align-items: center; gap: .55rem; background: #5865F2; color: #fff; border: 0; border-radius: 8px; padding: .62rem 1.1rem; font: inherit; font-weight: 600; line-height: 1.2; cursor: pointer; }
+    #cfg-gen .dl-discord-btn:hover:not(:disabled) { background: #4752C4; }
+    #cfg-gen .dl-discord-btn:active:not(:disabled) { background: #3C45A5; }
+    #cfg-gen .dl-discord-btn:disabled { opacity: .6; cursor: default; }
+    #cfg-gen .dl-discord-btn:focus-visible { outline: 2px solid #5865F2; outline-offset: 2px; }
+    #cfg-gen .dl-discord-btn > svg { flex: none; }
     #cfg-gen .dl-manual { border: 1px solid var(--border); border-radius: 10px; padding: .5rem .7rem; margin-bottom: 1rem; }
     #cfg-gen .dl-manual > summary { cursor: pointer; color: var(--muted); }
     #cfg-gen .dl-manual[open] > summary { margin-bottom: .7rem; }
@@ -372,9 +397,11 @@
         if (field.value.trim() && field.value.trim() !== oauthUrl) details.open = true;
 
         const note = h('p', { class: 'cfg-note', style: 'margin:.45rem 0 0' });
-        const btn = h('button', {
-            class: 'cfg-btn cfg-btn--primary dl-connect__btn', type: 'button',
-        }, 'Connect to Discord');
+        /* Blurple is a fixed brand colour, so it is written out rather than taken
+           from the site's palette, and it carries both themes unchanged. */
+        const btn = h('button', { class: 'dl-discord-btn', type: 'button' });
+        btn.appendChild(discordMark());
+        btn.appendChild(h('span', {}, 'Connect to Discord'));
 
         btn.addEventListener('click', async () => {
             btn.disabled = true;
