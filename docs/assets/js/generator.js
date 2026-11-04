@@ -170,7 +170,7 @@
     */
     const OAUTH = {
         clientId: '1384088628010942554',     // public; appears in every authorize URL
-        worker: '',                         // the /exchange endpoint's origin
+        worker: 'https://discordlogger-oauth.lachie-d37.workers.dev',
         redirect: `${location.origin}/generator/connected/`,
     };
 

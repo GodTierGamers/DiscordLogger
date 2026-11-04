@@ -18,6 +18,18 @@ name = "discordlogger-oauth"
 main = "src/index.js"
 compatibility_date = "2026-11-01"
 
+# Both of these default to true, and wrangler warns that it is defaulting them. Stated
+# explicitly so the behaviour is a decision rather than a default that could change.
+workers_dev = true
+
+# OFF, deliberately. Preview URLs give every *version* of a Worker its own permanent
+# public address. This Worker holds the OAuth client secret, so a version with a bug --
+# a looser origin allowlist, say -- would stay callable at its own URL long after it
+# was replaced. The origin check still applies to a preview URL, so this is defence in
+# depth rather than a hole being closed, but there is no reason to keep old versions of
+# a credential-handling endpoint reachable.
+preview_urls = false
+
 [vars]
 # Public. The client id is in every authorize URL the browser builds anyway, and this
 # is its ONLY home -- the deploy workflow used to pass it as --var from a repo variable
