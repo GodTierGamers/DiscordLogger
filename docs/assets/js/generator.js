@@ -214,6 +214,7 @@
 
             let done = false;
             let answered = false;   // something came back, so a closed window is not the story
+            let spending = false;   // a code is single-use; see handle()
             const finish = (fn, arg) => {
                 if (done) return;
                 done = true;
@@ -242,6 +243,14 @@
                     finish(reject, new Error('Discord did not return a code.'));
                     return;
                 }
+                // The relay answers on both routes because it cannot tell which one
+                // works, so when the opener survives the SAME code arrives twice. It is
+                // single-use: exchanging it a second time fails, and the loser of that
+                // race is as likely as the winner to be the one reporting back. Set
+                // before the first await, which is what makes this a lock -- nothing can
+                // interleave ahead of it.
+                if (spending) return;
+                spending = true;
                 try {
                     const res = await fetch(`${OAUTH.worker}/exchange`, {
                         method: 'POST',
@@ -250,7 +259,13 @@
                     });
                     const body = await res.json().catch(() => null);
                     if (!res.ok || !body || !body.url) {
-                        finish(reject, new Error('Could not finish the exchange.'));
+                        // The Worker passes Discord's status through; naming it here is
+                        // the difference between "something went wrong" and knowing
+                        // whether the code was stale (400) or the app is misconfigured
+                        // (401). It never carries Discord's error text, which can echo
+                        // the request back.
+                        const said = body && body.status ? ` (Discord said ${body.status})` : '';
+                        finish(reject, new Error(`Could not finish the exchange${said}.`));
                         return;
                     }
                     finish(resolve, body.url);
