@@ -2,6 +2,7 @@ package com.discordlogger.log;
 
 import com.discordlogger.util.Strings;
 import com.discordlogger.webhook.DiscordWebhook;
+import com.discordlogger.webhook.WebhookQueue;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -13,8 +14,10 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public final class Log {
@@ -183,6 +186,12 @@ public final class Log {
         colorMap = cm;
         webhookMap = wm;
 
+        // A reload is the only moment the set of destinations can shrink, and the queue
+        // has no way to know the config -- so it is told. Without this a changed
+        // webhook.url left its old worker thread running for the rest of the server's
+        // life, holding a URL nothing routes to any more.
+        WebhookQueue.retainOnly(liveWebhookUrls());
+
         if (!wm.isEmpty()) {
             plugin.getLogger().info("Per-event webhook routing active for "
                     + wm.size() + " categor" + (wm.size() == 1 ? "y" : "ies") + ".");
@@ -340,6 +349,23 @@ public final class Log {
         if (fmt == null) return String.valueOf(epochMillis);
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault())
                 .format(fmt);
+    }
+
+    /**
+     * Every webhook URL the current config routes to: the main one, plus per-event.
+     *
+     * <p>Read through {@link #webhookFor} rather than the {@code webhookUrl} field, like
+     * every other site — {@code LogRoutingTest} enforces that, and the guard cannot tell
+     * an enumeration from a send, so a rule with exceptions would stop being one.
+     */
+    static Set<String> liveWebhookUrls() {
+        final Set<String> urls = new LinkedHashSet<>();
+        final String main = webhookFor(null);
+        if (main != null && !Strings.isBlank(main)) urls.add(main);
+        for (String routed : webhookMap.values()) {
+            if (routed != null && !Strings.isBlank(routed)) urls.add(routed);
+        }
+        return urls;
     }
 
     /**

@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.BlockingQueue;
@@ -134,6 +135,14 @@ public final class WebhookQueue {
         /** Warn once per outage rather than once per dropped message. */
         volatile boolean warnedFull = false;
 
+        /**
+         * Set when the config no longer routes anything here.
+         *
+         * <p>Not a stop signal: the worker finishes what is already queued and then
+         * exits. A destination that vanished mid-flight still delivers its backlog.
+         */
+        volatile boolean retired = false;
+
         Destination(String url) {
             this.url = url;
             this.worker = new Thread(() -> runLoop(this), "DiscordLogger-Webhook-" + shortId(url));
@@ -186,11 +195,42 @@ public final class WebhookQueue {
         final long now = System.currentTimeMillis();
         final List<Health> out = new ArrayList<>();
         for (Destination d : DESTINATIONS.values()) {
+            // A retired destination is finishing its backlog and then going away.
+            // Listing it would show an admin a webhook the config no longer mentions.
+            if (d.retired) continue;
             out.add(new Health(shortId(d.url), d.queue.size(), CAPACITY,
                     Math.max(0L, d.nextSendAt - now)));
         }
         out.sort(Comparator.comparing(Health::id));
         return out;
+    }
+
+    /**
+     * Retire every destination the config no longer routes to.
+     *
+     * <p>Called on each reload. Destinations are created on first use and were never
+     * removed until the plugin disabled, so changing {@code webhook.url} left the old
+     * one with a live worker parked in {@code poll(250ms)} and its URL — a credential —
+     * held in memory for the rest of the run. Switch URLs a few times and you
+     * accumulate idle threads. It also meant {@code /discordlogger status} listed
+     * webhooks that no longer existed, which is the part an admin actually sees.
+     *
+     * <p><b>Retiring is not stopping.</b> The flag lets the worker drain what it holds
+     * before it exits, so a message queued a moment before a reload is still delivered.
+     *
+     * <p>A null set means "could not work it out", and nothing is retired. Keeping an
+     * idle thread is a small cost; silently stopping delivery to a live webhook is not.
+     */
+    public static void retainOnly(Set<String> live) {
+        if (live == null) return;
+        for (Map.Entry<String, Destination> e : DESTINATIONS.entrySet()) {
+            if (!shouldKeep(e.getKey(), live)) e.getValue().retired = true;
+        }
+    }
+
+    /** Whether a destination is still routed to. Split out so it can be tested. */
+    static boolean shouldKeep(String url, Set<String> live) {
+        return live == null || live.contains(url);
     }
 
     /** Whether the queue is accepting work at all. */
@@ -290,9 +330,20 @@ public final class WebhookQueue {
 
     private static void runLoop(Destination dest) {
         while (true) {
+            // Unpublish before draining, and do it here rather than in retainOnly, so
+            // the order is: nothing new can be queued, THEN what is queued goes out.
+            // Removing after the drain would lose anything offered in between; removing
+            // from retainOnly would strand a backlog with no worker to send it.
+            // computeIfAbsent means a URL used again simply gets a fresh destination.
+            if (dest.retired) DESTINATIONS.remove(dest.url, dest);
+
+            // A retired destination behaves exactly like a shutting-down one: deliver
+            // the backlog, then stop.
+            final boolean draining = !running || dest.retired;
+
             final Payload first;
             try {
-                if (running) {
+                if (!draining) {
                     // Poll rather than take() so a stopped queue can notice and exit.
                     first = dest.queue.poll(250, TimeUnit.MILLISECONDS);
                     if (first == null) continue;
