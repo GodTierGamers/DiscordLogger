@@ -20,10 +20,11 @@ compatibility_date = "2026-11-01"
 
 # Both of these default to true, and wrangler warns that it is defaulting them. Stated
 # explicitly so the behaviour is a decision rather than a default that could change.
-# Still true for now. It goes false in a second pass, once the custom domain below has
-# a certificate and has been shown to answer -- flipping both at once would leave a
-# window where the button points at a host that does not resolve yet.
-workers_dev = true
+# OFF. The custom domain below is the only way in. Leaving the workers.dev address
+# live would mean two public addresses for an endpoint that handles an OAuth client
+# secret, and the second one is the address nobody audits -- same reasoning as
+# preview_urls. Verified answering on the custom domain before this was flipped.
+workers_dev = false
 
 # A hostname on your own domain instead of a workers.dev address nobody wants to read.
 # Cloudflare creates the DNS record and provisions the certificate itself, because the
