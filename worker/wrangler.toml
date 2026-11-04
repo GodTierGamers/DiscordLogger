@@ -1,0 +1,34 @@
+# Cloudflare Worker for the config generator's "Connect to Discord" button.
+#
+# It exists for one reason: Discord's OAuth code exchange needs the application's
+# client SECRET, and a secret cannot live in a page the browser downloads. So the
+# browser sends the one-time code here, this exchanges it, and the webhook URL comes
+# back in the response body. Nothing else happens.
+#
+# ---------------------------------------------------------------------------------
+# NOTE THE ABSENCE OF BINDINGS. There is no [[kv_namespaces]], no [[d1_databases]],
+# no [[r2_buckets]], no [[durable_objects]]. That is the whole design: a Worker with
+# no storage attached is *structurally* unable to keep a webhook URL, rather than
+# merely promising not to. Adding a binding here would break that promise even if
+# the handler never wrote to it, so don't -- and if a future feature seems to need
+# one, that feature belongs somewhere else.
+# ---------------------------------------------------------------------------------
+
+name = "discordlogger-oauth"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+# Public. The client id is in every authorize URL the browser builds anyway.
+DISCORD_CLIENT_ID = ""
+
+# Only these origins may ask for an exchange. Comma-separated, exact matches.
+ALLOWED_ORIGINS = "https://discordlogger.godtiergamers.xyz"
+
+# Overwritten at deploy time with the commit being deployed, so /version can say
+# which public commit is actually running. Open source proves the code; this is
+# what ties the code to the deployment.
+VERSION_SHA = "dev"
+
+# DISCORD_CLIENT_SECRET is a secret, not a var: `wrangler secret put` or the
+# dashboard. It must never appear in this file.
