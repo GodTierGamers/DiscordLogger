@@ -163,6 +163,16 @@ coordinates, or world names. Counts are reported as ranges rather than exact num
 
 Turn it off in `plugins/bStats/config.yml`, which covers every bStats plugin at once.
 
+**The config generator keeps your webhook URL in the page** — pasting it in, it goes
+nowhere but Discord when you send the test message. The optional **Connect to Discord**
+button is the exception: Discord hands the browser a one-time code, and only a server
+holding the application's secret can turn that into a webhook URL, so the code goes to a
+[small Cloudflare Worker](https://github.com/GodTierGamers/DiscordLogger/tree/main/worker)
+which exchanges it and hands the URL back. It has nowhere to store it — no database, no
+bucket, no queue, and a CI check that fails the build if one is ever added — and the
+tokens Discord returns alongside the webhook are never read. Pasting the URL yourself
+avoids the round trip entirely.
+
 ---
 
 ## 6. Updating later

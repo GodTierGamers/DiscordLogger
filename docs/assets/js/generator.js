@@ -205,26 +205,35 @@
                 return;
             }
 
+            /* The relay page answers two ways and we listen for both. postMessage is the
+               direct route; the channel is what works when the trip through Discord has
+               severed the opener link, which leaves postMessage with nowhere to go and
+               used to look exactly like the user closing the window. */
+            let channel = null;
+            try { channel = new BroadcastChannel('discordlogger-oauth'); } catch (e) { /* older Safari */ }
+
             let done = false;
+            let answered = false;   // something came back, so a closed window is not the story
             const finish = (fn, arg) => {
                 if (done) return;
                 done = true;
                 window.removeEventListener('message', onMessage);
+                if (channel) { try { channel.close(); } catch (e) { /* already gone */ } }
                 clearInterval(watchClosed);
+                clearTimeout(giveUp);
                 fn(arg);
             };
 
-            async function onMessage(ev) {
-                // Only this origin, only our message, only the state we just minted.
-                // Without the state check, any page could hand us a code it obtained
-                // for a different channel and have it written into the field.
-                if (ev.origin !== location.origin) return;
-                const d = ev.data;
+            async function handle(d) {
+                // Only our message, and only the state we just minted. Without the state
+                // check, any page could hand us a code it obtained for a different
+                // channel and have it written into the field.
                 if (!d || d.type !== 'discordlogger-oauth') return;
                 if (d.state !== state) {
                     finish(reject, new Error('That response did not match this request.'));
                     return;
                 }
+                answered = true;
                 if (d.error) {
                     finish(reject, new Error('Discord refused the authorization.'));
                     return;
@@ -250,13 +259,32 @@
                 }
             }
 
+            function onMessage(ev) {
+                if (ev.origin !== location.origin) return;
+                handle(ev.data);
+            }
             window.addEventListener('message', onMessage);
+            // A BroadcastChannel is scoped to this origin by the platform, so there is
+            // no origin to check here -- there is no way for another one to reach it.
+            if (channel) channel.onmessage = (ev) => handle(ev.data);
 
             // Someone closing the popup without authorizing should not leave the button
-            // spinning forever.
+            // spinning forever. The grace period matters: the relay posts and then
+            // closes itself, so a bare `closed` check can win the race against the
+            // message it just sent and report a failure that did not happen.
             const watchClosed = setInterval(() => {
-                if (popup.closed) finish(reject, new Error('Window closed before finishing.'));
+                if (!popup.closed || answered) return;
+                clearInterval(watchClosed);
+                setTimeout(() => {
+                    finish(reject, new Error('Window closed before finishing.'));
+                }, 800);
             }, 500);
+
+            // Nothing at all came back: the window is still open and idle, or the relay
+            // could not reach us by either route.
+            const giveUp = setTimeout(() => {
+                finish(reject, new Error('Discord did not send anything back. You can paste the URL instead.'));
+            }, 300000);
         });
     }
 

@@ -16,12 +16,24 @@ robots: noindex, nofollow
 /*
  * Discord sends the browser here after an authorization, with ?code=…&state=….
  *
- * This page does one thing: hand both values back to the window that opened it. It
- * does NOT exchange the code — that needs the client secret, which lives in the
- * Worker — and it does NOT verify the state, because the state was generated in the
- * opener and the opener is the only thing that can say whether it matches. A popup
- * cannot read the opener's sessionStorage, so checking it here would mean passing it
- * through the URL, which defeats the point of having it.
+ * This page does one thing: hand both values back to the generator tab. It does NOT
+ * exchange the code — that needs the client secret, which lives in the Worker — and it
+ * does NOT verify the state, because the state was generated in the opener and the
+ * opener is the only thing that can say whether it matches. A popup cannot read the
+ * opener's sessionStorage, so checking it here would mean passing it through the URL,
+ * which defeats the point of having it.
+ *
+ * It hands the values over TWO ways, and the second one is not redundant:
+ *
+ *   1. window.opener.postMessage — the direct route, when the opener link survives.
+ *   2. BroadcastChannel — same-origin by definition, and it does not care whether this
+ *      window has an opener at all.
+ *
+ * (2) exists because the opener link is not guaranteed to survive the round trip
+ * through Discord. A cross-origin navigation can sever it (a Cross-Origin-Opener-Policy
+ * header anywhere in that chain is enough), and when it does, window.opener is null
+ * here and the first route silently has nowhere to go. The symptom is this window
+ * sitting there having apparently worked while the generator says nothing came back.
  *
  * `layout: null` above is deliberate: the site's default layout would load the whole
  * page chrome for a window that closes in a few hundred milliseconds.
@@ -35,22 +47,46 @@ robots: noindex, nofollow
     error: params.get('error') || params.get('error_description') || '',
   };
 
-  var target = window.location.origin;
+  var delivered = false;
+
+  /* Addressed to this exact origin, never '*': the message carries an authorization
+     code, and '*' would hand it to whatever happened to be listening if the opener
+     were ever cross-origin. */
   try {
     if (window.opener) {
-      /* Addressed to this exact origin, never '*': the message carries an
-         authorization code, and '*' would hand it to whatever happened to be
-         listening if the opener were ever cross-origin. */
-      window.opener.postMessage(payload, target);
-      window.close();
-      return;
+      window.opener.postMessage(payload, window.location.origin);
+      delivered = true;
     }
-  } catch (e) { /* fall through to the message below */ }
+  } catch (e) { /* severed or blocked — the channel below is the fallback */ }
 
-  /* No opener — someone opened this URL directly, or the popup was detached. There is
-     nothing useful to do with a code here, so say so rather than appearing stuck. */
-  document.getElementById('msg').textContent =
-    'Nothing to finish here. Start again from the config generator.';
+  /* A BroadcastChannel reaches every same-origin page in this browser profile, which
+     is exactly the generator tab, and nothing else: the channel is scoped to the
+     origin by the platform, so there is no wider audience to address. */
+  try {
+    var channel = new BroadcastChannel('discordlogger-oauth');
+    channel.postMessage(payload);
+    delivered = true;
+  } catch (e) { /* BroadcastChannel missing (Safari < 15.4) — opener only */ }
+
+  if (!delivered) {
+    /* Nothing to hand it to: someone opened this URL directly, or both routes are
+       unavailable. There is nothing useful to do with a code here. */
+    document.getElementById('msg').textContent =
+      'Nothing to finish here. Start again from the config generator.';
+    return;
+  }
+
+  /* Closing in the same tick as the postMessage can lose it — the message is queued on
+     the other window and this one is gone before it is read. A short pause costs the
+     user nothing and removes the race. */
+  setTimeout(function () {
+    window.close();
+    /* window.close() is refused for a window the user opened themselves, so say
+       something rather than appearing frozen if we are still here. */
+    setTimeout(function () {
+      document.getElementById('msg').textContent = 'All done — you can close this window.';
+    }, 400);
+  }, 250);
 })();
 </script>
 </body>
