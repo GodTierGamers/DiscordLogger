@@ -20,7 +20,21 @@ compatibility_date = "2026-11-01"
 
 # Both of these default to true, and wrangler warns that it is defaulting them. Stated
 # explicitly so the behaviour is a decision rather than a default that could change.
+# Still true for now. It goes false in a second pass, once the custom domain below has
+# a certificate and has been shown to answer -- flipping both at once would leave a
+# window where the button points at a host that does not resolve yet.
 workers_dev = true
+
+# A hostname on your own domain instead of a workers.dev address nobody wants to read.
+# Cloudflare creates the DNS record and provisions the certificate itself, because the
+# zone is already on Cloudflare -- nothing to add by hand.
+#
+# A dedicated subdomain rather than a path under discordlogger.godtiergamers.xyz: that
+# hostname's DNS points straight at GitHub Pages, so a Worker route on it would be
+# competing with Pages for the same requests.
+routes = [
+  { pattern = "oauth.godtiergamers.xyz", custom_domain = true }
+]
 
 # OFF, deliberately. Preview URLs give every *version* of a Worker its own permanent
 # public address. This Worker holds the OAuth client secret, so a version with a bug --
