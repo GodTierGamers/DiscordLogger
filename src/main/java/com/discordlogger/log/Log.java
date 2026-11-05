@@ -123,12 +123,19 @@ public final class Log {
         cm.put("player_advancement", hex("#2ECC71", baseDefaultColor)); // green
         cm.put("player_teleport",    hex("#3498DB", baseDefaultColor)); // blue
         cm.put("player_gamemode",    hex("#9B59B6", baseDefaultColor)); // purple
+        cm.put("player_first_join",  hex("#1ABC9C", baseDefaultColor)); // teal
+        cm.put("player_sign",        hex("#F1C40F", baseDefaultColor)); // yellow
+        cm.put("player_book",        hex("#E67E22", baseDefaultColor)); // orange
+        cm.put("player_bucket",      hex("#3498DB", baseDefaultColor)); // blue
+        cm.put("player_item_frame",  hex("#E74C3C", baseDefaultColor)); // red
 
         // Server
         cm.put("server_start",     hex("#43B581", baseDefaultColor)); // green
         cm.put("server_stop",      hex("#ED4245", baseDefaultColor)); // red
         cm.put("server_command",   hex("#EB459E", baseDefaultColor)); // pink
         cm.put("server_explosion", hex("#E74C3C", baseDefaultColor)); // red
+        cm.put("server_plugin",    hex("#95A5A6", baseDefaultColor)); // grey
+        cm.put("server_lag",       hex("#D35400", baseDefaultColor)); // dark orange
 
         // Moderation
         cm.put("ban",              hex("#FF0000", baseDefaultColor)); // red

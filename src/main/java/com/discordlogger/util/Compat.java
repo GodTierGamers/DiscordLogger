@@ -85,7 +85,7 @@ public final class Compat {
         final List<String> out = new ArrayList<>();
         if (plugin == null) return out;
 
-        if (plugin.getConfig().getBoolean("log.server.explosion.enabled", true)
+        if (plugin.getConfig().getBoolean("log.server.explosion.enabled", false)
                 && !hasClass(BLOCK_EXPLODE_EVENT)) {
             out.add("Block explosions (beds, respawn anchors) need Minecraft 1.8.3, so they "
                     + "are not logged here. Explosions with an entity behind them -- creepers, "

@@ -13,7 +13,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class EventRegistry {
     private final JavaPlugin plugin;
 
-    public EventRegistry(JavaPlugin plugin) { this.plugin = plugin; }
+    /** Owned here because this is what starts and stops it. */
+    private final ServerLag lag;
+
+    public EventRegistry(JavaPlugin plugin) {
+        this.plugin = plugin;
+        this.lag = new ServerLag(plugin);
+    }
 
     public void registerAll() {
         PluginManager pm = plugin.getServer().getPluginManager();
@@ -49,6 +55,11 @@ public final class EventRegistry {
         }
         pm.registerEvents(new PlayerTeleport(plugin), plugin);
         pm.registerEvents(new PlayerGamemode(plugin), plugin);
+        pm.registerEvents(new PlayerFirstJoin(plugin), plugin);
+        pm.registerEvents(new PlayerSign(plugin), plugin);
+        pm.registerEvents(new PlayerBook(plugin), plugin);
+        pm.registerEvents(new PlayerBucket(plugin), plugin);
+        pm.registerEvents(new PlayerItemFrame(plugin), plugin);
 
         // Admin-defined command rules (log.custom.*)
         pm.registerEvents(new CustomCommandLog(plugin), plugin);
@@ -56,6 +67,7 @@ public final class EventRegistry {
         // Server events
         pm.registerEvents(new ServerCommand(plugin), plugin);
         pm.registerEvents(new Explosion(plugin), plugin);
+        pm.registerEvents(new ServerPlugin(plugin), plugin);
 
         // BlockExplodeEvent arrived in 1.8.3. Entity explosions above work on 1.8.0,
         // which is why the two are separate classes rather than one.
@@ -73,12 +85,18 @@ public final class EventRegistry {
     }
 
     public void fireServerStart() {
+        // Past this point a plugin changing state is somebody doing it, not boot.
+        ServerPlugin.serverIsUp();
+        lag.start();
         if (plugin.getConfig().getBoolean("log.server.start.enabled", true)) {
             ServerStart.handle(plugin);
         }
     }
 
     public void fireServerStop() {
+        // Shutdown disables every plugin in turn; none of that is worth posting.
+        ServerPlugin.serverIsStopping();
+        lag.stop();
         if (plugin.getConfig().getBoolean("log.server.stop.enabled", true)) {
             ServerStop.handle(plugin);
         }

@@ -1,0 +1,362 @@
+####################################################################################################################################
+#                                                                                                                                  #
+#    /$$$$$$$  /$$                                               /$$ /$$                                                           #
+#   | $$__  $$|__/                                              | $$| $$                                                           #
+#   | $$  \ $$ /$$  /$$$$$$$  /$$$$$$$  /$$$$$$   /$$$$$$   /$$$$$$$| $$        /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$    #
+#   | $$  | $$| $$ /$$_____/ /$$_____/ /$$__  $$ /$$__  $$ /$$__  $$| $$       /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$   #
+#   | $$  | $$| $$|  $$$$$$ | $$      | $$  \ $$| $$  \__/| $$  | $$| $$      | $$  \ $$| $$  \ $$| $$  \ $$| $$$$$$$$| $$  \__/   #
+#   | $$  | $$| $$ \____  $$| $$      | $$  | $$| $$      | $$  | $$| $$      | $$  | $$| $$  | $$| $$  | $$| $$_____/| $$         #
+#   | $$$$$$$/| $$ /$$$$$$$/|  $$$$$$$|  $$$$$$/| $$      |  $$$$$$$| $$$$$$$$|  $$$$$$/|  $$$$$$$|  $$$$$$$|  $$$$$$$| $$         #
+#   |_______/ |__/|_______/  \_______/ \______/ |__/       \_______/|________/ \______/  \____  $$ \____  $$ \_______/|__/         #
+#                                                                                     /$$  \ $$ /$$  \ $$                          #
+#                                                                                    |  $$$$$$/|  $$$$$$/                          #
+#                                                                                     \______/  \______/                           #
+#                                                                                                                                  #
+####################################################################################################################################
+
+#######################################################################################
+#                                                                                     #
+#    _____              __ _         _____                           _                #
+#   /  __ \            / _(_)       |  __ \                         | |               #
+#   | /  \/ ___  _ __ | |_ _  __ _  | |  \/ ___ _ __   ___ _ __ __ _| |_ ___  _ __    #
+#   | |    / _ \| '_ \|  _| |/ _` | | | __ / _ \ '_ \ / _ \ '__/ _` | __/ _ \| '__|   #
+#   | \__/\ (_) | | | | | | | (_| | | |_\ \  __/ | | |  __/ | | (_| | || (_) | |      #
+#    \____/\___/|_| |_|_| |_|\__, |  \____/\___|_| |_|\___|_|  \__,_|\__\___/|_|      #
+#                             __/ |                                                   #
+#                            |___/                                                    #
+#                                                                                     #
+#######################################################################################
+
+# If you don't feel like configuring yourself, try out our config generator, simply select your plugin version and configure easily
+# https://discordlogger.godtiergamers.xyz/generator/
+
+#############################
+# D O C U M E N T A T I O N #
+#############################
+
+# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v13/
+
+#########################
+# D O   N O T   E D I T #
+#########################
+
+# Set automatically
+config-version: 13
+
+###################
+# WEBHOOK OPTIONS #
+###################
+
+webhook:
+  url: "{{WEBHOOK_URL}}" # Discord webhook URL goes here, plugin will not function until present
+
+##################
+# FORMAT OPTIONS #
+##################
+
+format:
+  # ONLY USED FOR PLAIN TEXT MESSAGES (EMBEDS DISABLED)
+  # Usage (case-sensitive): HH=hours, mm=minutes, ss=seconds, dd=day, MM=month, yyyy=year
+  time: "{{TIME_FORMAT}}"
+  # Only used for plain text, for embeds edit author name
+  name: "{{PLAIN_NAME}}"
+  # Show nicknames (if set) as "Nickname (RealName)" in all player-related logs
+  nicknames: {{NICKNAMES}}
+
+  # Expand PlaceholderAPI placeholders in lang.yml, e.g. %vault_prefix% or
+  # %luckperms_primary_group%, so ranks and prefixes appear in your Discord messages.
+  # Ignored when PlaceholderAPI is not installed, so it is safe to leave on.
+  # Only placeholders YOU write into lang.yml are expanded -- a player typing
+  # %player_name% into chat has it logged exactly as they typed it.
+  placeholders: {{PLACEHOLDERS}}
+
+#################
+# EMBED OPTIONS #
+#################
+
+embeds:
+  enabled: {{EMBEDS_ENABLED}}
+  author: "{{EMBEDS_AUTHOR}}" # Can be modified for proxy servers (e.g. Survival, Creative)
+
+###################################################
+#  ______ _____ _   _______ ______ _____   _____  #
+# |  ____|_   _| | |__   __|  ____|  __ \ / ____| #
+# | |__    | | | |    | |  | |__  | |__) | (___   #
+# |  __|   | | | |    | |  |  __| |  _  / \___ \  #
+# | |     _| |_| |____| |  | |____| | \ \ ____) | #
+# |_|    |_____|______|_|  |______|_|  \_\_____/  #
+#                                                 #
+###################################################
+
+# Filters apply on top of the toggles below: an event that is enabled can still be
+# skipped if it matches something here.
+
+filters:
+  # Never log these commands, whoever runs them. Matched on the command word, so
+  # arguments and a plugin prefix are ignored -- "/essentials:msg hi" matches "msg".
+  # The defaults exist because these leak: login commands carry passwords in plain
+  # text, and private messages are private.
+{{FILTER_ignored_commands}}
+
+  # An ALLOW-list. When this has anything in it, ONLY these commands are logged and
+  # everything else is skipped -- useful if you only care about moderation commands.
+  # Leave empty to log everything except ignored_commands above.
+{{FILTER_only_log_commands}}
+
+  # Never log anything from these players. Accepts names or UUIDs, mixed freely.
+{{FILTER_ignored_players}}
+
+  # Players with this permission are never logged -- useful for staff alts, or a bot
+  # account whose activity would drown everything else. Empty disables the check.
+{{FILTER_exempt_permission}}
+
+  # Never log events that happen in these worlds.
+{{FILTER_ignored_worlds}}
+
+  # Skip chat messages containing any of these (case-insensitive).
+{{FILTER_ignored_chat_containing}}
+
+  # Skip chat shorter than this many characters. 0 disables it.
+  # Useful against "hi", "?", "." spam. Counts characters, not words.
+{{FILTER_minimum_chat_length}}
+
+  # Advancements never logged. Matched on the full key, and a trailing * matches a
+  # whole tab -- "minecraft:husbandry/*" is every farming advancement.
+{{FILTER_ignored_advancements}}
+
+  # Recipe unlocks and tab roots fire constantly and mean nothing to a reader, so
+  # they are skipped. Set true only if you genuinely want them.
+  # Supports 1.12 or newer
+{{FILTER_log_recipe_advancements}}
+
+  # Teleport causes never logged. Teleports are the noisiest event on most servers.
+  # The defaults are the ones that are not really teleports at all -- Minecraft moves
+  # the player a block or two and reports it as one. Nobody wants a Discord message
+  # because someone got out of bed.
+  # Values: PLUGIN, COMMAND, ENDER_PEARL, CHORUS_FRUIT, NETHER_PORTAL, END_PORTAL,
+  #         END_GATEWAY, SPECTATE, DISMOUNT, EXIT_BED, CONSUMABLE_EFFECT, UNKNOWN
+  # Add PLUGIN if you use Essentials or similar -- /home, /warp and /spawn all
+  # arrive as PLUGIN and are usually the bulk of what is left.
+{{FILTER_ignored_teleport_causes}}
+
+  # Skip teleports shorter than this many blocks. 0 disables it.
+  # Never applies across worlds -- a nether portal is not a short hop.
+{{FILTER_minimum_teleport_distance}}
+
+  # Deaths with these causes are never logged. Same names as the death causes in
+  # lang.yml, upper case: VOID, FALL, LAVA, KILL, ENTITY_ATTACK, and so on.
+  # A void world or a parkour course can produce a lot of VOID and FALL deaths.
+{{FILTER_ignored_death_causes}}
+
+  # Explosions from these sources are never logged. Use the entity name for mob and
+  # TNT explosions (CREEPER, PRIMED_TNT, END_CRYSTAL, FIREBALL, WITHER_SKULL) or the
+  # block name for block ones (BED, RESPAWN_ANCHOR).
+  # BED and RESPAWN_ANCHOR support 1.8.3 or newer (RESPAWN_ANCHOR 1.16)
+{{FILTER_ignored_explosion_sources}}
+
+  # Skip explosions that destroyed fewer than this many blocks. 0 disables it.
+  # A creeper going off in the air breaks nothing and is rarely worth a message.
+{{FILTER_minimum_explosion_blocks}}
+
+  # Stay silent about players a vanish plugin is currently hiding. Works with
+  # EssentialsX, SuperVanish, PremiumVanish and CMI -- no setup, nothing to install.
+  # Without this, a staff member joining vanished is announced to Discord anyway,
+  # which is the one thing vanishing was meant to prevent.
+  # Moderation is never affected: a ban is a record of staff action, and hiding it
+  # because the person was vanished would gut the audit trail exactly when it matters.
+{{FILTER_respect_vanish}}
+
+####################################################################################
+#                                                                                  #
+#     _                      _                ___         _    _                   #
+#    | |    ___  __ _  __ _ (_) _ _   __ _   / _ \  _ __ | |_ (_) ___  _ _   ___   #
+#    | |__ / _ \/ _` |/ _` || || ' \ / _` | | (_) || '_ \|  _|| |/ _ \| ' \ (_-<   #
+#    |____|\___/\__, |\__, ||_||_||_|\__, |  \___/ | .__/ \__||_|\___/|_||_|/__/   #
+#               |___/ |___/          |___/         |_|                             #
+#                                                                                  #
+####################################################################################
+
+log:
+  player:
+    join: # Player Join
+      enabled: {{LOG_player.join.enabled}}
+      color: "{{COLOR_player.join}}" # green
+      webhook: "{{HOOK_player.join}}" # Send just this event elsewhere. Empty = use webhook.url above
+      show_platform: {{EXTRA_player.join.show_platform}} # Flags players who joined from Bedrock (needs Geyser + Floodgate)
+
+    quit: # Player Quit
+      enabled: {{LOG_player.quit.enabled}}
+      color: "{{COLOR_player.quit}}" # red
+      webhook: "{{HOOK_player.quit}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    chat: # Player Chat
+      enabled: {{LOG_player.chat.enabled}}
+      color: "{{COLOR_player.chat}}" # blurple
+      webhook: "{{HOOK_player.chat}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    command: # Commands executed by a player in-game
+      enabled: {{LOG_player.command.enabled}}
+      color: "{{COLOR_player.command}}" # yellow
+      webhook: "{{HOOK_player.command}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    death: # Player Death (with death message)
+      enabled: {{LOG_player.death.enabled}}
+      color: "{{COLOR_player.death}}" # red
+      webhook: "{{HOOK_player.death}}" # Send just this event elsewhere. Empty = use webhook.url above
+      show_coords: {{EXTRA_player.death.show_coords}} # Adds where the player died. Anyone who can see the channel can find the body
+
+    advancement: # Logs when a player gets an advancement
+      enabled: {{LOG_player.advancement.enabled}}
+      color: "{{COLOR_player.advancement}}" # green
+      webhook: "{{HOOK_player.advancement}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    teleport: # Logs when a player teleports
+      enabled: {{LOG_player.teleport.enabled}}
+      color: "{{COLOR_player.teleport}}" # blue
+      webhook: "{{HOOK_player.teleport}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    gamemode: # Logs when a players gamemode changes
+      enabled: {{LOG_player.gamemode.enabled}}
+      color: "{{COLOR_player.gamemode}}" # purple
+      webhook: "{{HOOK_player.gamemode}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    first_join: # Logs the first time a player ever joins, as well as the normal join message
+      enabled: {{LOG_player.first_join.enabled}}
+      color: "{{COLOR_player.first_join}}" # teal
+      webhook: "{{HOOK_player.first_join}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    sign: # Logs the text written on a sign, when it is written
+      enabled: {{LOG_player.sign.enabled}}
+      color: "{{COLOR_player.sign}}" # yellow
+      webhook: "{{HOOK_player.sign}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    book: # Logs the title and author when a book is signed
+      enabled: {{LOG_player.book.enabled}}
+      color: "{{COLOR_player.book}}" # orange
+      webhook: "{{HOOK_player.book}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    bucket: # Logs lava and water being placed from a bucket
+      enabled: {{LOG_player.bucket.enabled}}
+      color: "{{COLOR_player.bucket}}" # blue
+      webhook: "{{HOOK_player.bucket}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    item_frame: # Logs item frames and paintings being broken
+      enabled: {{LOG_player.item_frame.enabled}}
+      color: "{{COLOR_player.item_frame}}" # red
+      webhook: "{{HOOK_player.item_frame}}" # Send just this event elsewhere. Empty = use webhook.url above
+      players_only: {{EXTRA_player.item_frame.players_only}} # Ignore frames broken by mobs, arrows and explosions
+
+  server:
+    command: # Commands executed via the server console/terminal
+      enabled: {{LOG_server.command.enabled}}
+      color: "{{COLOR_server.command}}" # pink
+      webhook: "{{HOOK_server.command}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    start: # Logged when the plugin/server starts
+      enabled: {{LOG_server.start.enabled}}
+      color: "{{COLOR_server.start}}" # green
+      webhook: "{{HOOK_server.start}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    stop: # Logged on /stop / clean shutdown
+      enabled: {{LOG_server.stop.enabled}}
+      color: "{{COLOR_server.stop}}" # red
+      webhook: "{{HOOK_server.stop}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    explosion: # Log when an explosion occurs
+      # Block explosions (beds, respawn anchors) support 1.8.3 or newer
+      # Off by default: this is the noisiest event here, and history below still
+      # records every explosion for /discordlogger lookup even while this is false
+      enabled: {{LOG_server.explosion.enabled}}
+      color: "{{COLOR_server.explosion}}" # red
+      webhook: "{{HOOK_server.explosion}}" # Send just this event elsewhere. Empty = use webhook.url above
+      history: # Keeps every explosion in explosions.csv so /discordlogger lookup can find one by place. Off writes no file
+        enabled: {{EXTRA_server.explosion.history.enabled}}
+        expiry_time: "{{EXTRA_server.explosion.history.expiry_time}}" # How long a row is kept: 30m, 2h, 7d, 4w, 6mo, 1y. A bare number means days, 0 keeps forever
+        show_tip: {{EXTRA_server.explosion.history.show_tip}} # Adds the lookup command for that spot as a field on the embed
+
+    plugin: # Logs plugins being enabled or disabled while the server is running
+      enabled: {{LOG_server.plugin.enabled}}
+      color: "{{COLOR_server.plugin}}" # grey
+      webhook: "{{HOOK_server.plugin}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    lag: # Warns when the server's tick rate drops
+      enabled: {{LOG_server.lag.enabled}}
+      color: "{{COLOR_server.lag}}" # dark orange
+      webhook: "{{HOOK_server.lag}}" # Send just this event elsewhere. Empty = use webhook.url above
+      threshold_tps: "{{EXTRA_server.lag.threshold_tps}}" # Warn when TPS falls below this. 20 is a healthy server
+      cooldown_minutes: "{{EXTRA_server.lag.cooldown_minutes}}" # Wait at least this long before warning again
+
+  moderation:
+    ban: # Logs when a player has been banned
+      enabled: {{LOG_moderation.ban.enabled}}
+      color: "{{COLOR_moderation.ban}}" # red
+      webhook: "{{HOOK_moderation.ban}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    unban: # Logs when a player has been unbanned
+      enabled: {{LOG_moderation.unban.enabled}}
+      color: "{{COLOR_moderation.unban}}" # red
+      webhook: "{{HOOK_moderation.unban}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    kick: # Logs when a player has been kicked
+      enabled: {{LOG_moderation.kick.enabled}}
+      color: "{{COLOR_moderation.kick}}" # red
+      webhook: "{{HOOK_moderation.kick}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    op: # Logs when a player is granted op premissions
+      enabled: {{LOG_moderation.op.enabled}}
+      color: "{{COLOR_moderation.op}}" # red
+      webhook: "{{HOOK_moderation.op}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    deop: # Logs when a players op permissions are revoked
+      enabled: {{LOG_moderation.deop.enabled}}
+      color: "{{COLOR_moderation.deop}}" # red
+      webhook: "{{HOOK_moderation.deop}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    whitelist_toggle: # Logs when the whitelist is enabled/disabled
+      enabled: {{LOG_moderation.whitelist_toggle.enabled}}
+      color: "{{COLOR_moderation.whitelist_toggle}}" # teal
+      webhook: "{{HOOK_moderation.whitelist_toggle}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+    whitelist_edit: # Logs when players are added/removed from the whitelist
+      enabled: {{LOG_moderation.whitelist_edit.enabled}}
+      color: "{{COLOR_moderation.whitelist_edit}}" # dark teal
+      webhook: "{{HOOK_moderation.whitelist_edit}}" # Send just this event elsewhere. Empty = use webhook.url above
+
+  # ----------------------------------------------------------------------------------
+  # Your own events, built from any command on the server.
+  #
+  # This is how you log plugins DiscordLogger has never heard of -- Essentials homes,
+  # LuckPerms rank changes, shop purchases, anything with a command behind it. Each
+  # entry becomes a real event with its own colour and its own webhook, exactly like
+  # the built-in ones.
+  #
+  # It watches the command being RUN, not the action succeeding. That is the honest
+  # limit: for a ban, DiscordLogger checks afterwards that the ban list actually
+  # changed, and a custom rule cannot do that. If it matters that the command worked,
+  # this is the wrong tool.
+  #
+  # Placeholders: {player} {command} {args} {world} and {arg1}...{arg9}
+  #
+  # Example -- delete the leading '#' on each line to use it:
+  #
+  #   sethome:
+  #     enabled: true
+  #     match: "sethome"            # Command to watch. Multiple words match a subcommand.
+  #     title: "Home Set"
+  #     message: "{player} set a home called {arg1}"
+  #     color: "#5865F2" # blurple
+  #     webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+  #
+  #   rank_change:
+  #     enabled: true
+  #     match: "lp user"            # Fires on /lp user <name> ...
+  #     title: "Rank Changed"
+  #     message: "{player} ran {command} on {arg2}: {arg3} {arg4}"
+  #     color: "#E67E22" # orange
+  #     webhook: ""
+  #
+  # Commands in filters.ignored_commands are never logged here either -- the deny-list
+  # wins, and the console says so on startup if a rule collides with it.
+  custom:
+
+# CONFIG VERSION V13, GENERATED ON WEBSITE ON {{GENERATED_AT}}

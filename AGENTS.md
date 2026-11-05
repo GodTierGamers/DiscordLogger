@@ -9,7 +9,7 @@ Everything below was verified against the actual source at the time of writing; 
 **DiscordLogger** is a Minecraft **Bukkit** server plugin (Java 8 bytecode, running on CraftBukkit, Spigot, Paper or a fork from 1.8 up) that posts server events to a Discord channel via **webhooks** — either as rich embeds (per-event colors, player-head thumbnails, timestamps) or as plain Markdown text. It ships two versioned files, `config.yml` and `lang.yml`, both of which auto-migrate between schema versions, plus a channel-aware update checker and a companion **Jekyll website** (in `docs/`) hosted on GitHub Pages at `https://discordlogger.godtiergamers.xyz` that includes an interactive config generator.
 
 - **Current plugin version:** tracked by `pom.xml` / `.release-please-manifest.json` — never hand-edit either, see **Releases** below.
-- **Current config schema:** **v12**, published and frozen (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V12, SHIPPED WITH v2.6.0 (x-release-please-version)`). v9, v10, v11 and v12 are all published and frozen; **the next change to the config's keys opens v13** — see the lifecycle rules below for what counts.
+- **Current config schema:** **v13**, open and unpublished (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V13, SHIPPED WITH v2.6.0 (x-release-please-version)`). v9 through v12 are published and frozen; **v13 freezes the moment a release ships it**, and until then it is a normal editable folder that further changes accumulate into.
 - **Paper API:** three deliberately different numbers, all in `pom.xml` — see *Three floors* under Metrics. The short version: **compile against the oldest supported API, never the newest**, since compiling against the newest and declaring an older `api-version` is how a plugin loads and then dies on `NoSuchMethodError`.
 - **GitHub:** `GodTierGamers/DiscordLogger`
 
@@ -59,7 +59,7 @@ To add a new synced location: wrap the value in `<!-- dl:sync:KEY -->` markers (
 
 ## Build & test
 
-**Tests exist and gate CI** (JUnit 5 + surefire; `ci.yml` runs `mvn clean package` with tests on). `mvn test` runs them in ~6s — currently 46 classes, 359 tests.
+**Tests exist and gate CI** (JUnit 5 + surefire; `ci.yml` runs `mvn clean package` with tests on). `mvn test` runs them in ~6s — currently 48 classes, 373 tests.
 
 They are concentrated where a silent failure is most expensive rather than spread for coverage: five classes on `ConfigMigrator` alone (decision table, step chain, path resolution, list splicing, single-line rewrites), the rest on filters, lang loading, death causes, routing, webhook redaction, metrics bucketing and Bedrock detection. Several exist because the bug they describe actually shipped.
 
@@ -142,7 +142,7 @@ src/main/java/com/discordlogger/
   listener/moderation/                 Ban, Unban, Kick, Op, Deop, Whitelist,
                                         PunishmentPlugins (LiteBans et al. bypass the ban list)
   listener/custom/CustomCommandLog.java Fires the log.custom.* rules; same filters as every event
-src/test/java/com/discordlogger/       JUnit 5; 46 classes, 359 tests — see Build & test
+src/test/java/com/discordlogger/       JUnit 5; 48 classes, 373 tests — see Build & test
 docs/                                  Jekyll website (GitHub Pages, deploys from main)
   config/v12/index.md                   Config docs page — embeds file 4 of 4, see dictionary
   config/v12/lang.yml.txt               The lang.yml the page embeds and serves for download
@@ -450,10 +450,10 @@ Every event takes an optional `log.<group>.<event>.webhook`. Empty means the mai
 - Async on startup; skips for `dev` channel. Fetches the **releases list** (`/releases?per_page=50`) — not `/releases/latest` — because nightly builds need to see pre-releases. Parses `tag_name`/`prerelease` pairs by regex (no JSON library, intentional; see `parseReleases` for why it's safe) and ranks with a `SemVer` record where stable > any `-BETA.N` of the same version, higher N > lower.
 - Stable channel: notify on any newer stable, pre-releases invisible. Nightly channel: notify on **every** newer stable, and on nightlies only when **more than 2** behind (`NIGHTLY_LAG_THRESHOLD`). Notifications = console banner + Discord webhook notice (embed or plain per config).
 
-## Config reference (schema v12)
+## Config reference (schema v13)
 
 ```yaml
-config-version         12            # declared schema; SchemaDetector still overrules it
+config-version         13            # declared schema; SchemaDetector still overrules it
 webhook.url            ""            # plugin is console-only until valid
 format.time            "[HH:mm:ss, dd:MM:yyyy]"  # Java DateTimeFormatter; plain-text mode only
 format.name            ""            # plain-text server-name prefix (proxy setups)
@@ -589,7 +589,7 @@ docs/assets/configs/
   v10/lang.yml                     reference copy of what shipped
 ```
 
-Live schemas: **v9** (`since: 2.1.5`), **v10** (`since: 2.2.0`), **v11** (`since: 2.3.1`) and **v12** (`since: 2.6.0`) — all published, so all frozen. There is no open schema right now; the next key change opens v13.
+Live schemas: **v9** (`since: 2.1.5`), **v10** (`since: 2.2.0`), **v11** (`since: 2.3.1`) and **v12** (`since: 2.6.0`) — all published and frozen — plus **v13**, open and unpublished. Its `since` in `registry.json` must name the release that actually ships it.
 
 **The generator emits every key in both files, and nothing is hardcoded in a template that the wizard cannot reach.** A setting the generator silently bakes in is one the user does not know they have — which is exactly what the filters were until they were wired up. Concretely: `options.json` carries `filters` (one entry per `filters.*` key, typed `list` / `choices` / `text` / `number` / `bool`) and `lang` (all messages, grouped, each with its shipped default). Adding a sixteenth filter or an eightieth message is a **data** change — one entry plus one `{{TOKEN}}` — never a code change to the bundle.
 
@@ -614,11 +614,18 @@ Live schemas: **v9** (`since: 2.1.5`), **v10** (`since: 2.2.0`), **v11** (`since
 
 **The release that ships it freezes it, permanently.** From then on the isolation rule above applies and the next key change opens vN+1.
 
-**Versions are never skipped.** v9 → v10 → v11 → v12. Don't jump numbers to "reserve" one.
+**A new schema needs a new KEY, not just a new number.** `SchemaDetector` infers a
+file's schema from its keys, so a version that only changes default *values* is
+shape-identical to the one before it: the detector reports the older number, disagrees
+with the `config-version` the shipped file declares, and logs that disagreement on every
+start for every user. If a release only rebalances defaults, leave the schema where it
+is. `SchemaV13Test` asserts each v13 marker key is decisive.
+
+**Versions are never skipped.** v9 → v10 → v11 → v12 → v13. Don't jump numbers to "reserve" one.
 
 `registry.json` entries take `{ "config", "since", "generatorReady"? }`. **`since` is the first build shipping that schema and may itself be a nightly** (e.g. `"1.2.3-BETA.1"`) when a schema debuts in one — version comparison is BETA-aware, so `1.2.3-BETA.1 < 1.2.3-BETA.2 < 1.2.3`. Setting `"generatorReady": false` lists a schema *before* its bundle exists: the picker names it, explains it isn't available yet, and disables Continue rather than failing to load a missing script.
 
-**Adding a new config schema (`v<N>` = the new one, `v<N-1>` = the frozen one).** The plugin ships exactly **one** config — the current one — so the shipped file is *replaced*, while every website artifact for the old schema is *kept forever*. This has happened three times so far — v9 → v10 in 2.2.0, v10 → v11, and v11 → v12 in 2.6.0; the next one is v12 → v13.
+**Adding a new config schema (`v<N>` = the new one, `v<N-1>` = the frozen one).** The plugin ships exactly **one** config — the current one — so the shipped file is *replaced*, while every website artifact for the old schema is *kept forever*. This has happened four times so far — v9 → v10 in 2.2.0, v10 → v11, v11 → v12 in 2.6.0, and v12 → v13; the next one is v13 → v14.
 
 | Path | Action | Why |
 |---|---|---|
@@ -766,7 +773,7 @@ Schema history, recovered from the shipped config's git history — **update thi
 | **v6→v7** | colours flat → nested (`embeds.colors.player_join` → `embeds.colors.player.join`); moderation colours gained their group; `embeds.colors.server` (a scalar fallback) became a section and has no successor |
 | v7→v8, v8→v9 | nothing; pure additions |
 | **v9→v10** | colours moved to `log.<group>.<event>.color`; toggles became `log.<group>.<event>.enabled` |
-| v10→v11, v11→v12 | nothing; pure additions. v12 added the `log.server.explosion.history.*` section |
+| v10→v11, v11→v12, v12→v13 | nothing; pure additions. v12 added `log.server.explosion.history.*`; v13 added five player events and two server ones |
 
 **A step that only adds keys needs no entry** — existing paths carry over untouched, which is why `step()` defaults to identity. **A step that moves or renames a key MUST get a `case` in `step()`**, or every upgrade from before it silently loses those settings. That is the single easiest way to break this quietly.
 

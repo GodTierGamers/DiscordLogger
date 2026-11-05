@@ -40,6 +40,16 @@ public final class SchemaDetector {
     public static int infer(Map<String, Object> flat) {
         if (flat == null || flat.isEmpty()) return UNKNOWN;
 
+        // v13 added five player events and two server ones. Any of their keys is
+        // decisive, so deleting one option does not drop the file a version.
+        if (flat.containsKey("log.player.first_join.enabled")
+                || flat.containsKey("log.player.sign.enabled")
+                || flat.containsKey("log.player.book.enabled")
+                || flat.containsKey("log.player.bucket.enabled")
+                || flat.containsKey("log.player.item_frame.enabled")
+                || flat.containsKey("log.server.plugin.enabled")
+                || flat.containsKey("log.server.lag.enabled")) return 13;
+
         // v12 added the explosion history section. Any of its keys is decisive, so
         // deleting one of them does not drop the file a version.
         if (flat.containsKey("log.server.explosion.history.enabled")

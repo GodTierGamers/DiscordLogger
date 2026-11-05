@@ -52,7 +52,7 @@ public final class Explosion implements Listener {
 
     /** Package-private so the gated block-explosion listener shares one answer. */
     static boolean enabled(JavaPlugin plugin) {
-        return plugin.getConfig().getBoolean("log.server.explosion.enabled", true);
+        return plugin.getConfig().getBoolean("log.server.explosion.enabled", false);
     }
 
     /**
