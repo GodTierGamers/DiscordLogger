@@ -684,3 +684,81 @@ a:hover { text-decoration: underline; }
     .dl-sidebar, #theme-toggle { display: none; }
     .dl-shell { grid-template-columns: 1fr; }
 }
+
+/* ---------------------------------------------------------------------------
+   Analytics consent banner and the control on the privacy page.
+
+   The banner only ever appears when a measurement id is configured AND the
+   visitor has not answered yet, so on a site with analytics switched off none
+   of this renders at all.
+   --------------------------------------------------------------------------- */
+
+.dl-consent {
+    position: fixed;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 60;
+    margin-inline: auto;
+    max-width: 44rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .75rem 1rem;
+    padding: .85rem 1rem;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+}
+
+.dl-consent__text {
+    flex: 1 1 18rem;
+    margin: 0;
+    font-size: .92rem;
+    line-height: 1.45;
+    color: var(--fg-muted);
+}
+
+.dl-consent__actions { display: flex; gap: .5rem; flex: 0 0 auto; }
+
+.dl-consent__btn {
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--fg);
+    border-radius: var(--radius);
+    padding: .45rem .9rem;
+    font: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.dl-consent__btn:hover { background: var(--bg-subtle); }
+
+.dl-consent__btn--yes {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-fg);
+}
+
+.dl-consent__btn--yes:hover { background: var(--accent-hover); }
+
+.dl-consent-ctl__state { margin: 0 0 .6rem; color: var(--fg-muted); }
+
+/* The theme toggle floats in the same corner, so on a narrow screen the banner
+   is given the full width and the toggle sits above it rather than under it. */
+@media (max-width: 640px) {
+    .dl-consent { left: .6rem; right: .6rem; bottom: .6rem; }
+    .dl-consent__actions { width: 100%; }
+    .dl-consent__btn { flex: 1; }
+}
+
+.dl-sidebar__legal {
+    margin: .7rem 0 0;
+    text-align: center;
+    font-size: .82rem;
+    color: var(--fg-faint);
+}
+
+.dl-sidebar__legal a { color: var(--fg-faint); text-decoration: none; }
+.dl-sidebar__legal a:hover { color: var(--fg-muted); text-decoration: underline; }

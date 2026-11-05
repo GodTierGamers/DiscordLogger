@@ -28,6 +28,15 @@ twitter:
 github:
   repository_url: https://github.com/GodTierGamers/DiscordLogger
 
+# Google Analytics 4 measurement id (G-XXXXXXXXXX).
+#
+# EMPTY MEANS OFF, completely: no consent banner, no Google script, no cookies.
+# That is deliberate -- it is what let the consent plumbing ship before the
+# property existed, and it makes switching analytics back off a one-line edit
+# rather than a revert. assets/js/analytics.js reads it via data-ga on <html>,
+# and never loads anything until a visitor has agreed.
+google_analytics: ""
+
 markdown: kramdown
 
 # Both ship with the github-pages gem, so they run on GitHub Pages unmodified.
