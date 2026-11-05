@@ -58,8 +58,8 @@ same colours, the same avatars — Discord renders a webhook message identically
 
 ## What this looks like in practice
 
-[DiscordLogger](/) is a Paper plugin that does exactly this. One webhook URL and
-you're done:
+[DiscordLogger](/) does exactly this, on Bukkit, Spigot, Paper or a fork such as
+Purpur. One webhook URL and you're done:
 
 ```
 /discordlogger webhook https://discord.com/api/webhooks/…

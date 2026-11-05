@@ -6,8 +6,9 @@ description: Step-by-step guide to installing DiscordLogger on a Bukkit, Spigot 
 
 # Setup
 
-Getting logs into Discord takes about five minutes. You need a Paper server and a
-Discord channel you can create a webhook in.
+Getting logs into Discord takes about five minutes. You need a Bukkit, Spigot or
+Paper server — or a fork such as Purpur — and a Discord channel you can create a
+webhook in.
 
 > **Latest version:** v<span data-dl-latest>…</span> · **Config schema:** {{ site.data.versions.schema }}
 

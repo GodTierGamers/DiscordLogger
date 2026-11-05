@@ -10,7 +10,8 @@ description: Post Minecraft server events to Discord — joins, chat, deaths and
   <h1>Minecraft server logging to&nbsp;Discord</h1>
 
   <p class="dl-hero__sub">
-    A Paper plugin that posts what happens on your server to a Discord channel —
+    A Bukkit, Spigot and Paper plugin that posts what happens on your server to a
+    Discord channel —
     joins, chat, deaths, and every moderation action — as rich embeds or plain text.
     Configure each event individually, or send them to different channels entirely.
   </p>
