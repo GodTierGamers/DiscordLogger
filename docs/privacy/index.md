@@ -43,6 +43,13 @@ across pages and visits, and receives your IP address, pages viewed, approximate
 location, and browser and device details. Google is the controller of that data;
 their [privacy policy](https://policies.google.com/privacy) governs it.
 
+**How long Google keeps it.** Event-level records — individual page views — are
+deleted **14 months** after they are collected. The identifier that ties a browser's
+visits together is kept for 14 months too, but that clock restarts every time the
+same browser comes back: for someone who reads these docs regularly it is 14 months
+from their *last* visit, not their first. Fourteen months is the longest Google
+offers without a paid contract.
+
 You can change your mind at any time using the control above. Turning it off
 deletes the analytics cookies this site can reach and stops the tag loading on
 future visits. It cannot reach back and delete what Google already received — no
