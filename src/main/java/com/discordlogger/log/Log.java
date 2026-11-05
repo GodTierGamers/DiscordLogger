@@ -289,13 +289,35 @@ public final class Log {
 
     // ---- Internal utilities ----
 
+    /**
+     * Whether this is a webhook URL the plugin can actually post to.
+     *
+     * <p>This used to be four {@code startsWith} checks, which accepted anything at
+     * all after the prefix: a bare {@code .../api/webhooks/} with no id and no token,
+     * an id made of letters, a copy-paste truncated before the token. All three were
+     * reported as a valid webhook, so the plugin logged that it was ready and then
+     * 404'd on every single send.
+     *
+     * <p>The worse half was that {@link #redactWebhooks(String)} had always required
+     * a numeric id, so a URL this method accepted but that pattern did not recognise
+     * went through command logging <em>unredacted</em> — publishing the token to the
+     * channel, which is the exact disclosure redaction exists to prevent.
+     *
+     * <p>So the two are now deliberately asymmetric in the correct direction: this is
+     * strict about what it accepts, and redaction is permissive about what it hides.
+     * A trailing slash and a query string are allowed because a pasted URL may carry
+     * them and they do no harm.
+     */
     public static boolean isValidWebhookUrl(String url) {
         if (url == null || Strings.isBlank(url)) return false;
-        return url.startsWith("https://discord.com/api/webhooks/")
-                || url.startsWith("https://discordapp.com/api/webhooks/")
-                || url.startsWith("https://ptb.discord.com/api/webhooks/")
-                || url.startsWith("https://canary.discord.com/api/webhooks/");
+        return WEBHOOK_URL_STRICT.matcher(url.trim()).matches();
     }
+
+    private static final java.util.regex.Pattern WEBHOOK_URL_STRICT =
+            java.util.regex.Pattern.compile(
+                    "https://(?:ptb\\.|canary\\.)?discord(?:app)?\\.com"
+                            + "/api/webhooks/\\d+/[A-Za-z0-9_-]+/?(?:\\?.*)?",
+                    java.util.regex.Pattern.CASE_INSENSITIVE);
 
     private static int hex(String s, int fallback) {
         if (s == null) return fallback;
@@ -427,7 +449,11 @@ public final class Log {
 
     private static final java.util.regex.Pattern WEBHOOK_URL_RE =
             java.util.regex.Pattern.compile(
-                    "(https://(?:ptb\\.|canary\\.)?discord(?:app)?\\.com/api/webhooks/\\d+)/\\S+");
+                    // The id is matched loosely on purpose. This is the last line of
+                    // defence before a token reaches a channel, so it must recognise a
+                    // malformed URL too -- a pattern that only hides well-formed ones
+                    // hides exactly the cases nobody needed hidden.
+                    "(https://(?:ptb\\.|canary\\.)?discord(?:app)?\\.com/api/webhooks/[^/\\s]+)/\\S+");
 
     public static String mdEscape(String s) {
         if (s == null) return "";
