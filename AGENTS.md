@@ -9,7 +9,7 @@ Everything below was verified against the actual source at the time of writing; 
 **DiscordLogger** is a Minecraft **Bukkit** server plugin (Java 8 bytecode, running on CraftBukkit, Spigot, Paper or a fork from 1.8 up) that posts server events to a Discord channel via **webhooks** — either as rich embeds (per-event colors, player-head thumbnails, timestamps) or as plain Markdown text. It ships two versioned files, `config.yml` and `lang.yml`, both of which auto-migrate between schema versions, plus a channel-aware update checker and a companion **Jekyll website** (in `docs/`) hosted on GitHub Pages at `https://discordlogger.godtiergamers.xyz` that includes an interactive config generator.
 
 - **Current plugin version:** tracked by `pom.xml` / `.release-please-manifest.json` — never hand-edit either, see **Releases** below.
-- **Current config schema:** **v11**, open and unpublished (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V11, SHIPPED WITH v2.3.0 (x-release-please-version)`). v9 and v10 are published and frozen; v11 freezes when 2.3.1 ships.
+- **Current config schema:** **v12**, published and frozen (trailer comment in `src/main/resources/config.yml`, e.g. `# CONFIG VERSION V12, SHIPPED WITH v2.6.0 (x-release-please-version)`). v9, v10, v11 and v12 are all published and frozen; **the next change to the config's keys opens v13** — see the lifecycle rules below for what counts.
 - **Paper API:** three deliberately different numbers, all in `pom.xml` — see *Three floors* under Metrics. The short version: **compile against the oldest supported API, never the newest**, since compiling against the newest and declaring an older `api-version` is how a plugin loads and then dies on `NoSuchMethodError`.
 - **GitHub:** `GodTierGamers/DiscordLogger`
 
@@ -59,7 +59,7 @@ To add a new synced location: wrap the value in `<!-- dl:sync:KEY -->` markers (
 
 ## Build & test
 
-**Tests exist and gate CI** (JUnit 5 + surefire; `ci.yml` runs `mvn clean package` with tests on). `mvn test` runs them in ~10s — currently 29 classes, 264 tests.
+**Tests exist and gate CI** (JUnit 5 + surefire; `ci.yml` runs `mvn clean package` with tests on). `mvn test` runs them in ~6s — currently 46 classes, 359 tests.
 
 They are concentrated where a silent failure is most expensive rather than spread for coverage: five classes on `ConfigMigrator` alone (decision table, step chain, path resolution, list splicing, single-line rewrites), the rest on filters, lang loading, death causes, routing, webhook redaction, metrics bucketing and Bedrock detection. Several exist because the bug they describe actually shipped.
 
@@ -92,7 +92,7 @@ scripts/export-metrics.py              Pulls the bStats charts to CSV; --check-c
 src/main/resources/
   plugin.yml                           Plugin descriptor (Maven-filtered)
   build-info.properties                Build channel/version/date, baked in at package time
-  config.yml                           Default config, schema v10 (NOT filtered) — file 1 of 4, see dictionary
+  config.yml                           Default config, schema v12 (NOT filtered) — file 1 of 4, see dictionary
   lang.yml                             Every player/Discord-facing string, same schema version
 src/main/java/com/discordlogger/
   DiscordLogger.java                   Plugin entry point (onEnable/onDisable)
@@ -142,15 +142,23 @@ src/main/java/com/discordlogger/
   listener/moderation/                 Ban, Unban, Kick, Op, Deop, Whitelist,
                                         PunishmentPlugins (LiteBans et al. bypass the ban list)
   listener/custom/CustomCommandLog.java Fires the log.custom.* rules; same filters as every event
-src/test/java/com/discordlogger/       JUnit 5; 29 classes, 264 tests — see Build & test
+src/test/java/com/discordlogger/       JUnit 5; 46 classes, 359 tests — see Build & test
 docs/                                  Jekyll website (GitHub Pages, deploys from main)
-  config/v10/index.md                   Config docs page — embeds file 4 of 4, see dictionary
-  config/v10/lang.yml.txt               The lang.yml the page embeds and serves for download
+  config/v12/index.md                   Config docs page — embeds file 4 of 4, see dictionary
+  config/v12/lang.yml.txt               The lang.yml the page embeds and serves for download
+  commands/index.md                     Every subcommand and the permission node gating it
+  privacy/index.md                      Privacy policy — the Worker, bStats, and what the plugin writes
+  terms/index.md                        Terms of use; MIT governs the software and wins on conflict
+  generator/connected/index.html        OAuth relay — hands the code back, two routes, see below
   assets/js/versions.js                 Site-wide version awareness + BETA badges/gating
-  assets/js/generator.js                Config generator loader (schema picker)
+  assets/js/generator.js                Config generator loader (schema picker + Connect to Discord)
+  assets/js/analytics.js                Consent-gated GA4; empty id in _config.yml = off entirely
   assets/configs/registry.json          One entry per config schema
   assets/configs/v9/                    v9 generator bundle + data — PUBLISHED AND FROZEN, never edit
-  assets/configs/v10/                   v10 bundle: generator.js, options.json, both templates, both mirrors
+  assets/configs/v12/                   v12 bundle: generator.js, options.json, both templates, both mirrors
+                                        (v10 and v11 sit alongside, equally frozen)
+worker/                                Cloudflare Worker: exchanges the OAuth code for a webhook URL
+  README.md                            What it does with the URL, and why it cannot store one
 .github/workflows/
   ci.yml                               build + compat-floor + validate-generator-data (path-filtered)
   lint-pr.yml                          Enforces Conventional Commit PR titles
@@ -351,7 +359,7 @@ That required un-hardcoding the rotation names: they were `config.new.yml` / `co
 | `docs/assets/configs/v<N>/lang.yml` | The download button. Carries the `DOWNLOADED FROM WEBSITE` trailer, not the release-please marker — the same convention as `config.yml`'s mirror. |
 | `LangTest` | Walks every `Lang.*("key")` in the source. |
 
-The drift check follows the **live schema** rather than naming a version, so it keeps working at v11 instead of silently checking a frozen page. `lang.yml` is documented **inside the config docs page**, not on its own — it is part of the same reference, under the same version.
+The drift check follows the **live schema** rather than naming a version, so it keeps working as the schema advances instead of silently checking a frozen page. `lang.yml` is documented **inside the config docs page**, not on its own — it is part of the same reference, under the same version.
 
 
 Every message players and Discord readers see. `Lang.chat(key, ...)` renders MiniMessage for in game; `Lang.text(key, ...)` returns plain text for Discord, which renders Markdown and would post a `<green>` tag literally. Two methods rather than one so mixing them up is hard.
@@ -441,10 +449,10 @@ Every event takes an optional `log.<group>.<event>.webhook`. Empty means the mai
 - Async on startup; skips for `dev` channel. Fetches the **releases list** (`/releases?per_page=50`) — not `/releases/latest` — because nightly builds need to see pre-releases. Parses `tag_name`/`prerelease` pairs by regex (no JSON library, intentional; see `parseReleases` for why it's safe) and ranks with a `SemVer` record where stable > any `-BETA.N` of the same version, higher N > lower.
 - Stable channel: notify on any newer stable, pre-releases invisible. Nightly channel: notify on **every** newer stable, and on nightlies only when **more than 2** behind (`NIGHTLY_LAG_THRESHOLD`). Notifications = console banner + Discord webhook notice (embed or plain per config).
 
-## Config reference (schema v10)
+## Config reference (schema v12)
 
 ```yaml
-config-version         10            # declared schema; SchemaDetector still overrules it
+config-version         12            # declared schema; SchemaDetector still overrules it
 webhook.url            ""            # plugin is console-only until valid
 format.time            "[HH:mm:ss, dd:MM:yyyy]"  # Java DateTimeFormatter; plain-text mode only
 format.name            ""            # plain-text server-name prefix (proxy setups)
@@ -452,7 +460,7 @@ format.nicknames       true          # "Nick (Real)" in player logs
 embeds.enabled         true          # false → plain Markdown messages
 embeds.author          "Server Logs"
 
-# v10 shape: every event is a SECTION, not a boolean. Colour lives beside its
+# Since v10 every event is a SECTION, not a boolean. Colour lives beside its
 # toggle rather than in embeds.colors.*, which is what v9→v10 migrated.
 log.<group>.<event>.enabled   true
 log.<group>.<event>.color     "#RRGGBB"
@@ -461,8 +469,9 @@ log.<group>.<event>.<extra>           # per-event sub-options, see `extras`
 
 log.player.{join,quit,chat,command,death,advancement,teleport,gamemode}
 log.server.{command,start,stop,explosion}
+log.server.explosion.history.{enabled,expiry_time,show_tip}   # added in v12
 log.moderation.{ban,unban,kick,op,deop,whitelist_toggle,whitelist_edit}
-filters.<14 keys>                     # see Log filtering
+filters.<15 keys>                     # see Log filtering
 ```
 
 All `log.*.enabled` toggles ship as `true`. Sub-options currently shipped: `log.player.join.show_platform` (`true`) and `log.player.death.show_coords` (**`false`** — it reveals where the body and its drops are, so it is the one thing here that ships off).
@@ -501,6 +510,14 @@ Jekyll site (GitHub Pages gem stack) at `discordlogger.godtiergamers.xyz` (CNAME
 - **Local dev:** `cd docs && bundle install && bundle exec jekyll serve --livereload --watch` (`docs/test.sh` does the same). `docs/_site/` is gitignored build output — never edit, never trust.
 - The plugin hot-links icons from the site (`/assets/icons/…`) — the site being up is a runtime dependency of embeds. The banner is self-hosted at `/assets/DiscordLogger-Banner.webp` (compressed; no external image host).
 
+### Analytics and the legal pages
+
+**`docs/assets/js/analytics.js` loads Google Analytics only after someone agrees, and an empty `google_analytics` in `_config.yml` disables all of it** — no banner, no Google script, no cookies. That is what let the consent plumbing ship before the property existed, and it makes switching analytics off a one-line edit rather than a revert. The id reaches the script as `data-ga` on `<html>`, so no inline script is needed.
+
+Consent lives in `localStorage` under `dl-analytics-consent`, and `/privacy/` carries a `[data-dl-consent]` element the script fills with a working on/off control — withdrawal has to be as easy as granting, or the banner is theatre. Withdrawing deletes the `_ga*` cookies the site can reach; the policy says plainly that it cannot reach back into what Google already received.
+
+**`/privacy/` and `/terms/` describe mechanisms, not intentions**, which is the only reason they can stay true. If the Worker, bStats, the update check, the player-head URLs or `explosions.csv` change what they touch, those pages change in the same PR. The browser-storage table names real keys; check them against the source rather than writing plausible ones.
+
 ### Version awareness — never hardcode a version number
 
 **Never write "and newer" about schema coverage.** A schema is only known to be shipped by the releases that have actually shipped it — the next release may open a new one, so promising future coverage eventually becomes a lie on a page nobody revisits. `<span data-dl-schema-versions="v10">` fills itself from the releases API plus `registry.json`, listing only real releases, and says so plainly when none exists yet. Naming the schema's own `since` when nothing has shipped it is not the same thing and is fine — that is one declared build, not an open-ended promise.
@@ -522,7 +539,7 @@ Beta content is **opt-in and remembered** (`localStorage`), so visitors never tr
 
 ### Discord OAuth webhook creation (`worker/`, and the loader — never a bundle)
 
-**"Connect to Discord" lives in `docs/assets/js/generator.js`, not in a version bundle, and that placement is what makes it possible at all.** Bundles freeze when their schema ships, so v9, v10 and v11 can never be edited again — a feature added inside one would reach only new installs, and adding it to all four would mean editing three frozen folders. Driving the field from the loader gives **every live schema** the feature while touching nothing frozen.
+**"Connect to Discord" lives in `docs/assets/js/generator.js`, not in a version bundle, and that placement is what makes it possible at all.** Bundles freeze when their schema ships, so v9, v10, v11 and v12 can never be edited again — a feature added inside one would reach only new installs, and adding it to all four would mean editing four frozen folders. Driving the field from the loader gives **every live schema** the feature while touching nothing frozen.
 
 **It works by being indistinguishable from typing.** The loader finds the webhook input, sets `.value`, and dispatches `input`. The bundle's own listener does the rest — including resetting its `webhookConfirmed` flag, so the test-message step still has to be passed. That is correct: OAuth proves the channel exists, not that the server can reach it.
 
@@ -532,7 +549,13 @@ Beta content is **opt-in and remembered** (`localStorage`), so visitors never tr
 
 **The exchange needs a backend, and that is the only reason `worker/` exists.** `webhook.incoming` is an authorization-code grant; turning the code into a URL needs the client secret, which cannot ship to a browser. The flow is **popup, not redirect**: the wizard keeps everything in memory, so a full-page redirect would throw away a half-filled config.
 
-**`docs/generator/connected/` relays, and deliberately does not verify.** It posts `{code, state}` to `window.opener` and closes. The state was minted in the opener and only the opener can check it — a popup cannot read the opener's `sessionStorage`, and passing the expected value through the URL would defeat having it. `postMessage` is addressed to the exact origin, never `*`, because the message carries an authorization code. The page carries `layout: null`: loading the site chrome for a window that closes in milliseconds is waste.
+**`docs/generator/connected/` relays, and deliberately does not verify.** It hands `{code, state}` back to the generator tab and closes. The state was minted in the opener and only the opener can check it — a popup cannot read the opener's `sessionStorage`, and passing the expected value through the URL would defeat having it. `postMessage` is addressed to the exact origin, never `*`, because the message carries an authorization code. The page carries `layout: null`: loading the site chrome for a window that closes in milliseconds is waste.
+
+**It answers on two routes, and the second one is why the feature works at all.** `window.opener.postMessage` is the direct path; a `BroadcastChannel` is the fallback. The opener link is *not* guaranteed to survive the round trip through Discord — a cross-origin navigation can sever it, and when it does `window.opener` is null in the relay and the message has nowhere to go. The popup then closes having apparently worked, and the generator, whose only observable fact is a closed window, reported "Window closed before finishing": a message describing something the user did not do. A `BroadcastChannel` is scoped to the origin by the platform, so there is no wider audience to address and no origin to check, and it does not care whether the window has an opener.
+
+**Two races went with it, and both are load-bearing.** The relay used to call `window.close()` in the same tick as the `postMessage`, which can lose the message outright; it now pauses first. The opener's `popup.closed` poll could beat the message it had just been sent; it now waits out a grace period and stands down entirely once something has arrived.
+
+**An authorization code is single-use, so the handler is a lock.** When the opener *does* survive, both routes deliver and the handler runs twice — and the second exchange of the same code fails, with the loser of that race as likely as the winner to report back. A `spending` flag set **before the first `await`** is what prevents it: the handler runs synchronously up to the fetch, so a second copy cannot interleave ahead of it. That placement is the whole mechanism; moving the flag after the `await` silently restores the bug. The failure message also names the status the Worker passed through from Discord, which is the difference between a stale code (400) and a misconfigured application (401).
 
 **The Worker is stateless by construction, and that is enforced.** `wrangler.toml` declares no KV, D1, R2, Durable Object, queue or service binding, so there is nowhere to write a webhook URL even by accident — and `scripts/check-worker-stateless.py` fails CI if anyone adds one, because the generator page makes that promise in public. The check strips TOML comments first: the file *names* the forbidden bindings in a comment explaining their absence, so a plain substring search fails on the documentation instead of on a binding.
 
@@ -565,7 +588,7 @@ docs/assets/configs/
   v10/lang.yml                     reference copy of what shipped
 ```
 
-Live schemas: **v9** (`since: 2.1.5`), **v10** (`since: 2.2.0`), **v11** (`since: 2.3.1`) — all frozen — and **v12** (`since: 2.6.0`, current).
+Live schemas: **v9** (`since: 2.1.5`), **v10** (`since: 2.2.0`), **v11** (`since: 2.3.1`) and **v12** (`since: 2.6.0`) — all published, so all frozen. There is no open schema right now; the next key change opens v13.
 
 **The generator emits every key in both files, and nothing is hardcoded in a template that the wizard cannot reach.** A setting the generator silently bakes in is one the user does not know they have — which is exactly what the filters were until they were wired up. Concretely: `options.json` carries `filters` (one entry per `filters.*` key, typed `list` / `choices` / `text` / `number` / `bool`) and `lang` (all messages, grouped, each with its shipped default). Adding a sixteenth filter or an eightieth message is a **data** change — one entry plus one `{{TOKEN}}` — never a code change to the bundle.
 
@@ -590,11 +613,11 @@ Live schemas: **v9** (`since: 2.1.5`), **v10** (`since: 2.2.0`), **v11** (`since
 
 **The release that ships it freezes it, permanently.** From then on the isolation rule above applies and the next key change opens vN+1.
 
-**Versions are never skipped.** v9 → v10 → v11. Don't jump numbers to "reserve" one.
+**Versions are never skipped.** v9 → v10 → v11 → v12. Don't jump numbers to "reserve" one.
 
 `registry.json` entries take `{ "config", "since", "generatorReady"? }`. **`since` is the first build shipping that schema and may itself be a nightly** (e.g. `"1.2.3-BETA.1"`) when a schema debuts in one — version comparison is BETA-aware, so `1.2.3-BETA.1 < 1.2.3-BETA.2 < 1.2.3`. Setting `"generatorReady": false` lists a schema *before* its bundle exists: the picker names it, explains it isn't available yet, and disables Continue rather than failing to load a missing script.
 
-**Adding a new config schema (`v<N>` = the new one, `v<N-1>` = the frozen one).** The plugin ships exactly **one** config — the current one — so the shipped file is *replaced*, while every website artifact for the old schema is *kept forever*. This has happened once so far, v9 → v10 in 2.2.0; the next one is v10 → v11.
+**Adding a new config schema (`v<N>` = the new one, `v<N-1>` = the frozen one).** The plugin ships exactly **one** config — the current one — so the shipped file is *replaced*, while every website artifact for the old schema is *kept forever*. This has happened three times so far — v9 → v10 in 2.2.0, v10 → v11, and v11 → v12 in 2.6.0; the next one is v12 → v13.
 
 | Path | Action | Why |
 |---|---|---|
