@@ -527,7 +527,7 @@ Jekyll site (GitHub Pages gem stack) at `discordlogger.godtiergamers.xyz` (CNAME
 
 Thumbnails are hot-linked from `/assets/icons/`, grouped by what varies: `explosions/<source>`, `buckets/<liquid>`, `fire/<cause>`, with `server.png` for the events that have no variant and the player's head for the ones about a person. **A file is named after the enum constant, lowercased**, so the Java is a path join rather than a switch and a cause with no file of its own falls back rather than breaking.
 
-**An animated GIF works as an embed thumbnail, and Discord animates it** — verified against a real webhook on 2026-11-06 with the 64-frame clock now used for `server.lag`. Use one only where the game's own texture animates (fire, lava, the clock); everything else is a still PNG. **The first frame has to read on its own**: a viewer with "Automatically play GIFs when Discord is focused" turned off, or Reduced Motion on, sees only that frame.
+**An animated GIF works as an embed thumbnail, and Discord animates it** — verified against a real webhook on 2026-11-06 with the 64-frame clock now used for `server.lag`. Use one only where the thing itself animates in game — the clock, fire, lava, a command block's lights; everything else is a still PNG. **The first frame has to read on its own**: a viewer with "Automatically play GIFs when Discord is focused" turned off, or Reduced Motion on, sees only that frame.
 
 **Don't resize a wiki texture to "match" the others.** They are already exact nearest-neighbour multiples of 16 — the clock is 160, others are 240, 256 and 360 — and rescaling to a non-multiple smears the pixel grid. There is no uniform size to match and never has been.
 

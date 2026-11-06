@@ -25,6 +25,13 @@ import java.util.List;
  * for and bury the server-start message in them.
  */
 public final class ServerPlugin implements Listener {
+    /**
+     * A command block, animated, because nothing in Minecraft means "plugin" and a
+     * command block is the closest thing that reads as server machinery.
+     */
+    private static final String THUMB_PLUGIN =
+            "https://discordlogger.godtiergamers.xyz/assets/icons/plugin.gif";
+
     private final JavaPlugin plugin;
 
     /**
@@ -60,6 +67,7 @@ public final class ServerPlugin implements Listener {
         fields.add(new Log.Field(Lang.text("discord.plugin.version-field"),
                 Log.mdEscape(changed.getDescription().getVersion()), true));
 
-        Log.eventFields("server_plugin", Lang.text(titleKey), fields);
+        Log.eventFieldsWithThumb(
+                "server_plugin", Lang.text(titleKey), null, fields, THUMB_PLUGIN);
     }
 }
