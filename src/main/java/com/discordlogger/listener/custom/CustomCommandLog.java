@@ -1,5 +1,7 @@
 package com.discordlogger.listener.custom;
 
+import com.discordlogger.util.Icons;
+
 import com.discordlogger.custom.CustomLogs;
 import com.discordlogger.custom.CustomTemplate;
 import com.discordlogger.filter.Filters;
@@ -27,8 +29,6 @@ import java.util.List;
  */
 public final class CustomCommandLog implements Listener {
 
-    private static final String THUMB_SERVER =
-            "https://discordlogger.godtiergamers.xyz/assets/icons/server.png";
 
     private final JavaPlugin plugin;
 
@@ -47,7 +47,7 @@ public final class CustomCommandLog implements Listener {
     public void onServerCommand(ServerCommandEvent e) {
         // Console has no player and no world, so only the command filter can apply.
         if (Filters.blocksCommand(e.getCommand())) return;
-        fire("/" + e.getCommand(), e.getSender().getName(), "", THUMB_SERVER);
+        fire("/" + e.getCommand(), e.getSender().getName(), "", Icons.SERVER);
     }
 
     private void fire(String raw, String who, String world, String thumb) {
