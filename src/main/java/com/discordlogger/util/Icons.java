@@ -13,7 +13,20 @@ package com.discordlogger.util;
 public final class Icons {
     private Icons() {}
 
-    /** Everything the site serves, so the host appears once. */
+    /**
+     * Everything the site serves, so the host appears once.
+     *
+     * <p>Under it, a folder per group: {@code events/} for the events with one icon,
+     * {@code explosions/}, {@code fire/} and {@code buckets/} for the ones whose icon
+     * depends on what happened, and {@code site/} for the favicons, which are the
+     * browser's business rather than Discord's.
+     *
+     * <p>Two files sit loose at the root and must stay there: {@code server.png} and
+     * {@code DiscordLogger-Logo-removebg.png}, the old server thumbnail and the embed
+     * footer icon. Every release already installed links them at those paths, and the
+     * site serves every version at once. {@code explosions/} is frozen for the same
+     * reason, which is why the groups are siblings rather than under one folder.
+     */
     private static final String BASE = "https://discordlogger.godtiergamers.xyz/assets/icons/";
 
     /**
@@ -27,5 +40,5 @@ public final class Icons {
      * It is what this used to be, and every release already installed on a server
      * hot-links it. Deleting it would blank the thumbnail on all of them.
      */
-    public static final String SERVER = BASE + "server.gif";
+    public static final String SERVER = BASE + "events/server.gif";
 }

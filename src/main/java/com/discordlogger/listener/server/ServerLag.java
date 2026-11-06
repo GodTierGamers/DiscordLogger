@@ -35,7 +35,7 @@ public final class ServerLag {
      * only the first frame.
      */
     private static final String THUMB_LAG =
-            "https://discordlogger.godtiergamers.xyz/assets/icons/lag.gif";
+            "https://discordlogger.godtiergamers.xyz/assets/icons/events/lag.gif";
 
     private static final long PERIOD_TICKS = 20L;
     private static final double NOMINAL_TPS = 20.0;
