@@ -42,7 +42,7 @@ class WebhookBatchTest {
         // The point: batching consumes a backlog that already exists. It never delays
         // a message to see whether another turns up, which would tax every quiet
         // server to help the few busy ones.
-        assertEquals("{\"content\":null,\"embeds\":[{\"a\":1}],\"attachments\":[]}",
+        assertEquals("{\"content\":null,\"embeds\":[{\"a\":1}],\"attachments\":[]," + WebhookQueue.NO_MENTIONS + "}",
                 WebhookQueue.envelope(batch));
     }
 
@@ -113,7 +113,7 @@ class WebhookBatchTest {
         assertEquals(3, batch.size());
         // Two characters, not a real newline: the bodies are already escaped, so the
         // separator has to be escaped too or the JSON string ends mid-message.
-        assertEquals("{\"content\":\"first\\nsecond\\nthird\"}", WebhookQueue.envelope(batch));
+        assertEquals("{\"content\":\"first\\nsecond\\nthird\"," + WebhookQueue.NO_MENTIONS + "}", WebhookQueue.envelope(batch));
     }
 
     @Test
@@ -157,7 +157,7 @@ class WebhookBatchTest {
                 WebhookQueue.takeBatch(embed(nasty), queueOf(embed("{\"n\":2}")));
 
         assertEquals(2, batch.size());
-        assertEquals("{\"content\":null,\"embeds\":[" + nasty + ",{\"n\":2}],\"attachments\":[]}",
+        assertEquals("{\"content\":null,\"embeds\":[" + nasty + ",{\"n\":2}],\"attachments\":[]," + WebhookQueue.NO_MENTIONS + "}",
                 WebhookQueue.envelope(batch));
     }
 }

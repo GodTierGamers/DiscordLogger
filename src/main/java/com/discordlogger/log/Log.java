@@ -123,12 +123,20 @@ public final class Log {
         cm.put("player_advancement", hex("#2ECC71", baseDefaultColor)); // green
         cm.put("player_teleport",    hex("#3498DB", baseDefaultColor)); // blue
         cm.put("player_gamemode",    hex("#9B59B6", baseDefaultColor)); // purple
+        cm.put("player_first_join",  hex("#1ABC9C", baseDefaultColor)); // teal
+        cm.put("player_sign",        hex("#F1C40F", baseDefaultColor)); // yellow
+        cm.put("player_book",        hex("#E67E22", baseDefaultColor)); // orange
+        cm.put("player_bucket",      hex("#3498DB", baseDefaultColor)); // blue
+        cm.put("player_item_frame",  hex("#E74C3C", baseDefaultColor)); // red
 
         // Server
         cm.put("server_start",     hex("#43B581", baseDefaultColor)); // green
         cm.put("server_stop",      hex("#ED4245", baseDefaultColor)); // red
         cm.put("server_command",   hex("#EB459E", baseDefaultColor)); // pink
         cm.put("server_explosion", hex("#E74C3C", baseDefaultColor)); // red
+        cm.put("server_fire",      hex("#F39C12", baseDefaultColor)); // orange
+        cm.put("server_plugin",    hex("#95A5A6", baseDefaultColor)); // grey
+        cm.put("server_lag",       hex("#D35400", baseDefaultColor)); // dark orange
 
         // Moderation
         cm.put("ban",              hex("#FF0000", baseDefaultColor)); // red
@@ -455,13 +463,29 @@ public final class Log {
                     // hides exactly the cases nobody needed hidden.
                     "(https://(?:ptb\\.|canary\\.)?discord(?:app)?\\.com/api/webhooks/[^/\\s]+)/\\S+");
 
+    /**
+     * Markdown-escapes player-controlled text.
+     *
+     * <p>The brackets and the pipe are not cosmetic. {@code [text](url)} renders as a
+     * clickable link inside an embed, so without them a sign or a chat line could put
+     * a link reading "Click here" into the staff channel pointing anywhere at all, and
+     * {@code ||text||} could hide its own content behind a spoiler in the very log
+     * written to make it visible. Both are escaped on the way out.
+     *
+     * <p>{@code >}, {@code #} and {@code -} are deliberately left alone: they only
+     * affect layout, they are common in ordinary chat, and escaping them would put
+     * backslashes through the console lines for nothing.
+     */
     public static String mdEscape(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\")
                 .replace("`", "\\`")
                 .replace("*", "\\*")
                 .replace("_", "\\_")
-                .replace("~", "\\~");
+                .replace("~", "\\~")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+                .replace("|", "\\|");
     }
 
     // ---- Public logging API ----

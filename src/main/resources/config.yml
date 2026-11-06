@@ -34,14 +34,14 @@
 # D O C U M E N T A T I O N #
 #############################
 
-# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v12/
+# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v13/
 
 #########################
 # D O   N O T   E D I T #
 #########################
 
 # Set automatically
-config-version: 12
+config-version: 13
 
 ###################
 # WEBHOOK OPTIONS #
@@ -151,6 +151,7 @@ filters:
     - EXIT_BED      # standing up from a bed
     - DISMOUNT      # getting off a horse, boat or minecart
     - SPECTATE      # a spectator jumping to a player
+    - PLUGIN        # another plugin moved them — /home, /warp, /spawn
 
   # Skip teleports shorter than this many blocks. 0 disables it.
   # Never applies across worlds -- a nether portal is not a short hop.
@@ -170,6 +171,16 @@ filters:
   # Skip explosions that destroyed fewer than this many blocks. 0 disables it.
   # A creeper going off in the air breaks nothing and is rarely worth a message.
   minimum_explosion_blocks: 0
+
+  # Fire lit by these causes is never logged. Values: FLINT_AND_STEEL, FIREBALL,
+  # LAVA, LIGHTNING, SPREAD, EXPLOSION, ENDER_CRYSTAL, ARROW.
+  # ARROW supports 1.15 or newer; on anything older a flaming arrow reports as
+  # FLINT_AND_STEEL, because the server has no separate cause for it.
+  # The defaults are the two that multiply -- one lit block spreading through a
+  # forest is hundreds of events describing a single act of griefing.
+  ignored_ignite_causes:
+    - SPREAD        # fire spreading from a block already burning
+    - LAVA          # lava setting something alight on its own
 
   # Stay silent about players a vanish plugin is currently hiding. Works with
   # EssentialsX, SuperVanish, PremiumVanish and CMI -- no setup, nothing to install.
@@ -233,6 +244,36 @@ log:
       color: "#9B59B6" # purple
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
 
+    first_join: # Logs the first time a player ever joins, as well as the normal join message
+      enabled: true
+      color: "#1ABC9C" # teal
+      webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+
+    sign: # Logs the text written on a sign, when it is written
+      enabled: true
+      color: "#F1C40F" # yellow
+      webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+
+    book: # Logs the title and author when a book is signed
+      enabled: true
+      color: "#E67E22" # orange
+      webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+
+    bucket: # Logs lava and water being placed from a bucket
+      # Off by default: an MLG water bucket is an ordinary survival move, and on a
+      # busy server it is most of what this would post
+      enabled: false
+      color: "#3498DB" # blue
+      webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+      lava: true # Log lava being placed
+      water: true # Log water being placed. The MLG noise -- turn this off first
+
+    item_frame: # Logs item frames and paintings being broken
+      enabled: true
+      color: "#E74C3C" # red
+      webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+      players_only: true # Ignore frames broken by mobs, arrows and explosions
+
   server:
     command: # Commands executed via the server console/terminal
       enabled: true
@@ -251,13 +292,34 @@ log:
 
     explosion: # Log when an explosion occurs
       # Block explosions (beds, respawn anchors) support 1.8.3 or newer
-      enabled: true
+      # Off by default: this is the noisiest event here, and history below still
+      # records every explosion for /discordlogger lookup even while this is false
+      enabled: false
       color: "#E74C3C" # red
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
       history: # Keeps every explosion in explosions.csv so /discordlogger lookup can find one by place. Off writes no file
         enabled: true
         expiry_time: "30d" # How long a row is kept: 30m, 2h, 7d, 4w, 6mo, 1y. A bare number means days, 0 keeps forever
         show_tip: true # Adds the lookup command for that spot as a field on the embed
+
+    fire: # Logs fire being lit
+      # Off by default: fire spreads, and one lit block becomes hundreds of events.
+      # filters.ignored_ignite_causes already drops the two causes that multiply
+      enabled: false
+      color: "#F39C12" # orange
+      webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+
+    plugin: # Logs plugins being enabled or disabled while the server is running
+      enabled: true
+      color: "#95A5A6" # grey
+      webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+
+    lag: # Warns when the server's tick rate drops
+      enabled: true
+      color: "#D35400" # dark orange
+      webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+      threshold_tps: "15.0" # Warn when TPS falls below this. 20 is a healthy server
+      cooldown_minutes: "10" # Wait at least this long before warning again
 
   moderation:
     ban: # Logs when a player has been banned
@@ -333,4 +395,4 @@ log:
   # wins, and the console says so on startup if a rule collides with it.
   custom:
 
-# CONFIG VERSION V12, SHIPPED WITH v2.6.0 (x-release-please-version)
+# CONFIG VERSION V13, SHIPPED WITH v2.6.0 (x-release-please-version)

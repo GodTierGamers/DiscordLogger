@@ -1,5 +1,7 @@
 package com.discordlogger.listener.server;
 
+import com.discordlogger.util.Icons;
+
 import com.discordlogger.filter.Filters;
 import com.discordlogger.lang.Lang;
 import com.discordlogger.log.Log;
@@ -12,7 +14,6 @@ import org.bukkit.plugin.Plugin;
 public final class ServerCommand implements Listener {
     private final Plugin plugin;
 
-    private static final String THUMB_SERVER = "https://discordlogger.godtiergamers.xyz/assets/icons/server.png";
 
     public ServerCommand(Plugin plugin) { this.plugin = plugin; }
 
@@ -24,6 +25,6 @@ public final class ServerCommand implements Listener {
         final String who = Log.mdEscape(e.getSender().getName()); // "Server" for console
         final String cmd = Log.mdEscape(Log.redactWebhooks("/" + e.getCommand()));
         Log.eventWithThumb("Server Command",
-                Lang.text("discord.server-command", "sender", who, "command", cmd), THUMB_SERVER);
+                Lang.text("discord.server-command", "sender", who, "command", cmd), Icons.SERVER);
     }
 }

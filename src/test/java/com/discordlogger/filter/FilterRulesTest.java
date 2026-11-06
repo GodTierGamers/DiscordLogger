@@ -39,6 +39,19 @@ class FilterRulesTest {
             List<String> advancements, boolean recipes,
             Set<String> teleportCauses, double minTeleport,
             Set<String> deathCauses, Set<String> explosionSources, int minBlocks) throws Exception {
+        install(ignoredCommands, onlyCommands, chatPatterns, minChatLength, advancements,
+                recipes, teleportCauses, minTeleport, deathCauses, explosionSources,
+                minBlocks, Set.of());
+    }
+
+    /** The same, for the rules that also need an ignite-cause list. */
+    private static void install(
+            Set<String> ignoredCommands, Set<String> onlyCommands,
+            List<String> chatPatterns, int minChatLength,
+            List<String> advancements, boolean recipes,
+            Set<String> teleportCauses, double minTeleport,
+            Set<String> deathCauses, Set<String> explosionSources, int minBlocks,
+            Set<String> igniteCauses) throws Exception {
 
         Class<?> snapshot = Class.forName("com.discordlogger.filter.Filters$Snapshot");
         Constructor<?> ctor = snapshot.getDeclaredConstructors()[0];
@@ -46,7 +59,8 @@ class FilterRulesTest {
         Object snap = ctor.newInstance(
                 Set.of(), Set.of(), ignoredCommands, onlyCommands, Set.of(),
                 chatPatterns, minChatLength, advancements, recipes,
-                teleportCauses, minTeleport, deathCauses, explosionSources, minBlocks, "",
+                teleportCauses, minTeleport, deathCauses, explosionSources, minBlocks,
+                igniteCauses, "",
                 // respectVanish: these rules are about config, and vanish is live state
                 // no unit test can produce -- false keeps it out of the way entirely.
                 false);
@@ -75,6 +89,20 @@ class FilterRulesTest {
         assertTrue(Filters.blocksCommand("/msg hi"),
                 "allow-listed but also denied — the deny-list has to win, or it would be "
                         + "impossible to allow a set and exclude one from it");
+    }
+
+    @Test
+    @DisplayName("fire is filtered by its cause, whatever case the name arrives in")
+    void igniteByCause() throws Exception {
+        install(Set.of(), Set.of(), List.of(), 0, List.of(), false,
+                Set.of(), 0d, Set.of(), Set.of(), 0, Set.of("SPREAD", "LAVA"));
+
+        assertTrue(Filters.blocksIgnite("SPREAD"));
+        assertTrue(Filters.blocksIgnite("lava"), "the name is normalised before matching");
+        assertFalse(Filters.blocksIgnite("FLINT_AND_STEEL"));
+        // ARROW does not exist before 1.15, so the filter only ever sees a string.
+        assertFalse(Filters.blocksIgnite("ARROW"));
+        assertFalse(Filters.blocksIgnite(null));
     }
 
     // ------------------------------------------------------------ advancements --

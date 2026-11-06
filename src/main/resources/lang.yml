@@ -34,14 +34,14 @@
 # D O C U M E N T A T I O N #
 #############################
 
-# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v12/
+# Documentation for this config can be found at https://discordlogger.godtiergamers.xyz/config/v13/
 
 #########################
 # D O   N O T   E D I T #
 #########################
 
 # Set automatically.
-config-version: 12
+config-version: 13
 
 #####################################################
 #                                                   #
@@ -233,6 +233,69 @@ discord:
   #               {command}
   server-command: "{sender} ran: {command}"
 
+  # ---- events added in schema v13 ----------------------------------------
+  # Each section is one event. "title" is the embed heading; anything ending
+  # -field is a field LABEL, not its value.
+
+  first-join:
+    title: "First Join"
+    player-field: "Player"
+    online-field: "Players Online"
+
+  sign:
+    title: "Sign Written"
+    player-field: "Player"
+    where-field: "Where"
+    text-field: "Text"
+
+  book:
+    title: "Book Signed"
+    player-field: "Player"
+    title-field: "Title"
+    pages-field: "Pages"
+    # Shown in place of the title when a book is signed without one.
+    untitled: "(untitled)"
+
+  bucket:
+    title: "Bucket Emptied"
+    player-field: "Player"
+    placed-field: "Placed"
+    where-field: "Where"
+    # What the bucket held. Only these two are logged -- milk, a fish or powder
+    # snow places nothing worth a record.
+    lava: "Lava"
+    water: "Water"
+
+  item-frame:
+    title: "Item Frame Broken"
+    broken-by-field: "Broken by"
+    what-field: "What"
+    where-field: "Where"
+
+  plugin:
+    enabled-title: "Plugin Enabled"
+    disabled-title: "Plugin Disabled"
+    plugin-field: "Plugin"
+    version-field: "Version"
+
+  fire:
+    title: "Fire Lit"
+    cause-field: "Cause"
+    where-field: "Where"
+    lit-by-field: "Lit by"
+    # Shown when nothing lit it: lightning, or lava on its own.
+    the-world: "The world"
+
+  lag:
+    title: "Server Lag"
+    tps-field: "TPS"
+    threshold-field: "Threshold"
+    players-field: "Players Online"
+
+  # Shared by every event above that reports a place.
+  # Placeholders: {world}, {x}, {y}, {z}
+  where-value: "{world} {x}, {y}, {z}"
+
   death:
 
     # The line under the embed title. Placeholders: {player}
@@ -347,4 +410,4 @@ discord:
   platform-field: "Platform"
   platform-bedrock: "Bedrock"
 
-# CONFIG VERSION V12, SHIPPED WITH v2.6.0 (x-release-please-version)
+# CONFIG VERSION V13, SHIPPED WITH v2.6.0 (x-release-please-version)
