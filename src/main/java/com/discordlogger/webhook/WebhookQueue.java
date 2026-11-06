@@ -56,6 +56,17 @@ public final class WebhookQueue {
     /** Enough to absorb a long burst; small enough that a dead webhook can't exhaust memory. */
     private static final int CAPACITY = 1000;
 
+    /**
+     * Suppresses every mention in every message this plugin sends.
+     *
+     * <p>Embeds do not notify anyone, but plain-text mode posts the same player text
+     * as message content, where {@code @everyone} on a sign or in chat pings the whole
+     * Discord server. Escaping cannot fix that — an {@code @} is an ordinary character
+     * and Markdown has no escape for it — so the payload says outright that nothing in
+     * it may resolve to a mention. Discord honours this field for webhooks.
+     */
+    static final String NO_MENTIONS = "\"allowed_mentions\":{\"parse\":[]}";
+
     /** Discord's limit on embeds in one message. */
     static final int MAX_EMBEDS_PER_MESSAGE = 10;
 
@@ -421,7 +432,7 @@ public final class WebhookQueue {
                 if (i > 0) sb.append(',');
                 sb.append(batch.get(i).body);
             }
-            sb.append("],\"attachments\":[]}");
+            sb.append("],\"attachments\":[],").append(NO_MENTIONS).append("}");
         } else {
             // The bodies are already escaped, so the separator is the two characters
             // that mean a newline inside a JSON string, not an actual newline.
@@ -430,7 +441,7 @@ public final class WebhookQueue {
                 if (i > 0) sb.append("\\n");
                 sb.append(batch.get(i).body);
             }
-            sb.append("\"}");
+            sb.append("\",").append(NO_MENTIONS).append("}");
         }
         return sb.toString();
     }

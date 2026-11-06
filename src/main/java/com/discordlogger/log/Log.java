@@ -462,13 +462,29 @@ public final class Log {
                     // hides exactly the cases nobody needed hidden.
                     "(https://(?:ptb\\.|canary\\.)?discord(?:app)?\\.com/api/webhooks/[^/\\s]+)/\\S+");
 
+    /**
+     * Markdown-escapes player-controlled text.
+     *
+     * <p>The brackets and the pipe are not cosmetic. {@code [text](url)} renders as a
+     * clickable link inside an embed, so without them a sign or a chat line could put
+     * a link reading "Click here" into the staff channel pointing anywhere at all, and
+     * {@code ||text||} could hide its own content behind a spoiler in the very log
+     * written to make it visible. Both are escaped on the way out.
+     *
+     * <p>{@code >}, {@code #} and {@code -} are deliberately left alone: they only
+     * affect layout, they are common in ordinary chat, and escaping them would put
+     * backslashes through the console lines for nothing.
+     */
     public static String mdEscape(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\")
                 .replace("`", "\\`")
                 .replace("*", "\\*")
                 .replace("_", "\\_")
-                .replace("~", "\\~");
+                .replace("~", "\\~")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+                .replace("|", "\\|");
     }
 
     // ---- Public logging API ----
