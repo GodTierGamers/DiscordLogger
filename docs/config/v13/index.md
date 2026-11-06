@@ -432,6 +432,27 @@ filters:
 A creeper going off in the air, or against bedrock, breaks nothing and is rarely worth
 a message. This keeps the ones that actually damaged a build.
 
+#### `filters.ignored_ignite_causes`
+Fire lit by these causes is never logged.
+
+```yaml
+filters:
+  ignored_ignite_causes:
+    - SPREAD        # fire spreading from a block already burning
+    - LAVA          # lava setting something alight on its own
+```
+
+Values: `FLINT_AND_STEEL`, `FIREBALL`, `LAVA`, `LIGHTNING`, `SPREAD`, `EXPLOSION`,
+`ENDER_CRYSTAL`, `ARROW`.
+
+The two defaults are the ones that multiply. One lit block spreading through a forest
+is hundreds of events describing a single act of griefing, and with them unticked the
+event answers the question people actually have: *who struck a flint and steel, and
+where*.
+
+`ARROW` needs **1.15 or newer**. On anything older a flaming arrow arrives as
+`FLINT_AND_STEEL`, because the server has no separate cause for it.
+
 ---
 
 #### `filters.respect_vanish`
@@ -543,6 +564,11 @@ A few events carry an extra key beside `enabled`, `color` and `webhook`:
 | `log.server.explosion.history.enabled` | `true` | Records every explosion to `explosions.csv` so `/discordlogger lookup` can find one by place. |
 | `log.server.explosion.history.expiry_time` | `"30d"` | How long a row is kept. See **Explosion history** below. |
 | `log.server.explosion.history.show_tip` | `true` | Adds the lookup command for that spot as a field on the embed. |
+| `log.player.bucket.lava` | `true` | Log lava being placed. The griefing half. |
+| `log.player.bucket.water` | `true` | Log water being placed. An MLG bucket is an ordinary survival move, so untick this first if the channel is noisy. |
+| `log.player.item_frame.players_only` | `true` | Ignore frames broken by mobs, arrows and explosions. |
+| `log.server.lag.threshold_tps` | `"15.0"` | Warn when the tick rate falls below this. `20` is a healthy server. |
+| `log.server.lag.cooldown_minutes` | `"10"` | Wait at least this long before warning again. |
 
 ```yaml
 log:
@@ -719,16 +745,24 @@ line under it carries the coordinates, the size, who was there and the exact tim
 
 ### Player events
 - **Join / Quit** — Includes player name; color-coded (green/red).
-- **Chat** — Player chat messages; uses the player color set under `embeds.colors.player.chat`.
+- **Chat** — Player chat messages; uses the colour set under `log.player.chat.color`.
 - **Command** — Player-initiated commands (excludes commands blocked by other plugins if cancelled).
 - **Death** — Player death message.
 - **Teleport** — Logs teleporter & cause when available (e.g., plugin/command/end gateway).
 - **Gamemode** — Logs previous → new mode, who changed it (self/other/console).
+- **First join** — A player's first time on the server, separate from the ordinary join line.
+- **Sign** — The text written on a sign, at the moment it is written.
+- **Book** — A book being **signed**. Never an unsigned draft, which fires on every page change.
+- **Bucket** — Lava or water placed from a bucket, each with its own toggle. **Off by default.**
+- **Item frame** — Item frames and paintings being broken.
 
 ### Server events
 - **Start / Stop** — Separated events with their own colors.
 - **Command** — Console commands (with actor `CONSOLE`).
-- **Explosion** — Logs cause (TNT, creeper, bed, respawn anchor, etc.) and a short list of **nearby players**.
+- **Explosion** — Logs cause (TNT, creeper, bed, respawn anchor, etc.) and a short list of **nearby players**. **Off by default**, while the searchable history stays on.
+- **Fire** — Fire being lit, with what lit it. **Off by default**, and `filters.ignored_ignite_causes` drops spreading fire and lava before anything else.
+- **Plugin** — A plugin enabled or disabled while the server is running. Silent during startup and shutdown, where every plugin fires one.
+- **Lag** — The tick rate dropping below `threshold_tps`. Measured rather than read from `Bukkit.getTPS()`, which is Spigot-only.
 
 ### Moderation events
 All moderation logs require the **action to succeed**:
@@ -744,8 +778,8 @@ All moderation logs require the **action to succeed**:
 
 The defaults shipped with v13. Each is set under its own event's `color` key:
 
-- **Player** — `join` `#57F287` • `quit` `#ED4245` • `chat` `#5865F2` • `command` `#FEE75C` • `death` `#ED4245` • `advancement` `#2ECC71` • `teleport` `#3498DB` • `gamemode` `#9B59B6`
-- **Server** — `command` `#EB459E` • `start` `#43B581` • `stop` `#ED4245` • `explosion` `#E74C3C`
+- **Player** — `join` `#57F287` • `quit` `#ED4245` • `chat` `#5865F2` • `command` `#FEE75C` • `death` `#ED4245` • `advancement` `#2ECC71` • `teleport` `#3498DB` • `gamemode` `#9B59B6` • `first_join` `#1ABC9C` • `sign` `#F1C40F` • `book` `#E67E22` • `bucket` `#3498DB` • `item_frame` `#E74C3C`
+- **Server** — `command` `#EB459E` • `start` `#43B581` • `stop` `#ED4245` • `explosion` `#E74C3C` • `fire` `#F39C12` • `plugin` `#95A5A6` • `lag` `#D35400`
 - **Moderation** — `ban`/`unban`/`kick`/`op`/`deop` `#FF0000` • `whitelist_toggle` `#1ABC9C` • `whitelist_edit` `#16A085`
 
 ---
@@ -1185,6 +1219,16 @@ filters:
   # A creeper going off in the air breaks nothing and is rarely worth a message.
   minimum_explosion_blocks: 0
 
+  # Fire lit by these causes is never logged. Values: FLINT_AND_STEEL, FIREBALL,
+  # LAVA, LIGHTNING, SPREAD, EXPLOSION, ENDER_CRYSTAL, ARROW.
+  # ARROW supports 1.15 or newer; on anything older a flaming arrow reports as
+  # FLINT_AND_STEEL, because the server has no separate cause for it.
+  # The defaults are the two that multiply -- one lit block spreading through a
+  # forest is hundreds of events describing a single act of griefing.
+  ignored_ignite_causes:
+    - SPREAD        # fire spreading from a block already burning
+    - LAVA          # lava setting something alight on its own
+
   # Stay silent about players a vanish plugin is currently hiding. Works with
   # EssentialsX, SuperVanish, PremiumVanish and CMI -- no setup, nothing to install.
   # Without this, a staff member joining vanished is announced to Discord anyway,
@@ -1263,9 +1307,13 @@ log:
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
 
     bucket: # Logs lava and water being placed from a bucket
-      enabled: true
+      # Off by default: an MLG water bucket is an ordinary survival move, and on a
+      # busy server it is most of what this would post
+      enabled: false
       color: "#3498DB" # blue
       webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
+      lava: true # Log lava being placed
+      water: true # Log water being placed. The MLG noise -- turn this off first
 
     item_frame: # Logs item frames and paintings being broken
       enabled: true
@@ -1300,6 +1348,13 @@ log:
         enabled: true
         expiry_time: "30d" # How long a row is kept: 30m, 2h, 7d, 4w, 6mo, 1y. A bare number means days, 0 keeps forever
         show_tip: true # Adds the lookup command for that spot as a field on the embed
+
+    fire: # Logs fire being lit
+      # Off by default: fire spreads, and one lit block becomes hundreds of events.
+      # filters.ignored_ignite_causes already drops the two causes that multiply
+      enabled: false
+      color: "#F39C12" # orange
+      webhook: "" # Send just this event elsewhere. Empty = use webhook.url above
 
     plugin: # Logs plugins being enabled or disabled while the server is running
       enabled: true

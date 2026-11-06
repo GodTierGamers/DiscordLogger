@@ -261,11 +261,10 @@ discord:
     player-field: "{{LANG_discord.bucket.player-field}}"
     placed-field: "{{LANG_discord.bucket.placed-field}}"
     where-field: "{{LANG_discord.bucket.where-field}}"
-    # What the bucket held. Anything not listed falls back to the material name.
+    # What the bucket held. Only these two are logged -- milk, a fish or powder
+    # snow places nothing worth a record.
     lava: "{{LANG_discord.bucket.lava}}"
     water: "{{LANG_discord.bucket.water}}"
-    powder-snow: "{{LANG_discord.bucket.powder-snow}}"
-    milk: "{{LANG_discord.bucket.milk}}"
 
   item-frame:
     title: "{{LANG_discord.item-frame.title}}"
@@ -278,6 +277,14 @@ discord:
     disabled-title: "{{LANG_discord.plugin.disabled-title}}"
     plugin-field: "{{LANG_discord.plugin.plugin-field}}"
     version-field: "{{LANG_discord.plugin.version-field}}"
+
+  fire:
+    title: "{{LANG_discord.fire.title}}"
+    cause-field: "{{LANG_discord.fire.cause-field}}"
+    where-field: "{{LANG_discord.fire.where-field}}"
+    lit-by-field: "{{LANG_discord.fire.lit-by-field}}"
+    # Shown when nothing lit it: lightning, or lava on its own.
+    the-world: "{{LANG_discord.fire.the-world}}"
 
   lag:
     title: "{{LANG_discord.lag.title}}"

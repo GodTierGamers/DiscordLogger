@@ -408,6 +408,18 @@ Every event takes an optional `log.<group>.<event>.webhook`. Empty means the mai
 - **`Log.formatTime(long)`** exists for the lookup's output: `ts()` can only stamp now. Shared so a lookup and a plain-text line cannot disagree about what time something happened.
 - **The v12 bundle has the generator's first typed sub-option.** `extras` were boolean-only (`!!extra.default` → a checkbox), and `expiry_time` is a duration, so the copied-forward bundle learned `type: "text"` in three places: seeding, rendering and token substitution. `validate-config-generator.py` needed one more level of nesting too — it parsed `log.<cat>.<event>.<leaf>` and stopped, so it had no opinion at all on the new keys, which is worse than failing.
 
+### `Limits` and `allowed_mentions` — what keeps player text from breaking a message
+
+**Every embed string has a Discord maximum, and going over it is a 400 for the whole message.** The queue cannot rescue that: a rejected batch is re-split and re-sent one at a time, so an over-long field costs only its own message — but it costs that message every single time, silently, and the event is gone. `webhook/Limits` enforces the maximums once, inside the payload builders, so it covers every event rather than the ones a listener remembered.
+
+**Clamping runs before JSON escaping**, because Discord counts the characters a reader sees, not the bytes on the wire. Two details a plain `substring` gets wrong, both pinned by `PayloadSafetyTest`: a cut between the halves of a surrogate pair leaves a lone surrogate, which is not a character and which Discord rejects; and a cut after an odd number of backslashes leaves a dangling Markdown escape that eats the ellipsis.
+
+The events that forced this are the ones whose content is typed by the person being logged. The Bukkit API puts no ceiling on a sign line — vanilla clients do, a plugin calling `setLine` does not — and four full-length lines is over the 1024-character field limit on its own. `PlayerBook` deliberately logs only the title and the page count, never the pages, so the 25,000-character case never arises.
+
+**Every payload carries `"allowed_mentions":{"parse":[]}`.** Embeds never notify anyone, but plain-text mode posts the same player text as message `content`, where `@everyone` on a sign or in chat pings the whole Discord server. Escaping cannot fix it: `@` is an ordinary character and Markdown has no escape for it.
+
+**`Log.mdEscape` escapes `[`, `]` and `|` as well as the obvious four.** `[text](url)` renders as a clickable link inside an embed, so without the brackets a sign could put a link reading "Click here" into the staff channel pointing anywhere at all; `||text||` could hide its own content behind a spoiler in the log written to make it visible. `>`, `#` and `-` are left alone on purpose — they only affect layout, they are common in ordinary chat, and escaping them would put backslashes through the console lines for nothing.
+
 ### `WebhookQueue` (batching and rate limiting)
 - **One worker per destination**, which is also the ordering guarantee — logs are a narrative, so out-of-order delivery is its own bug.
 - **Up to 10 embeds per request, which is the throughput ceiling.** A webhook sustains roughly 30 requests a minute; one event per request wastes nine tenths of that. `takeBatch` sends whatever is *already* waiting as one message — **it never holds a message back to fill a batch**, so a lone event leaves as fast as it did before and only a backlog is ever consumed. That matters because nearly every server is quiet: `send_rate` reported `None` on 55 of 78. The number that forced this: **3,466,845 messages dropped past the queue cap**, 1.1M of them in 30 days, with a rate-limit wait on all 126 polls that had drops and *no* failed send on the three biggest — the ceiling, not an outage.
@@ -510,6 +522,16 @@ Jekyll site (GitHub Pages gem stack) at `discordlogger.godtiergamers.xyz` (CNAME
 
 - **Local dev:** `cd docs && bundle install && bundle exec jekyll serve --livereload --watch` (`docs/test.sh` does the same). `docs/_site/` is gitignored build output — never edit, never trust.
 - The plugin hot-links icons from the site (`/assets/icons/…`) — the site being up is a runtime dependency of embeds. The banner is self-hosted at `/assets/DiscordLogger-Banner.webp` (compressed; no external image host).
+
+### Embed icons
+
+Thumbnails are hot-linked from `/assets/icons/`, grouped by what varies: `explosions/<source>`, `buckets/<liquid>`, `fire/<cause>`, with `server.png` for the events that have no variant and the player's head for the ones about a person. **A file is named after the enum constant, lowercased**, so the Java is a path join rather than a switch and a cause with no file of its own falls back rather than breaking.
+
+**An animated GIF works as an embed thumbnail, and Discord animates it** — verified against a real webhook on 2026-11-06 with the 64-frame clock now used for `server.lag`. Use one only where the game's own texture animates (fire, lava, the clock); everything else is a still PNG. **The first frame has to read on its own**: a viewer with "Automatically play GIFs when Discord is focused" turned off, or Reduced Motion on, sees only that frame.
+
+**Don't resize a wiki texture to "match" the others.** They are already exact nearest-neighbour multiples of 16 — the clock is 160, others are 240, 256 and 360 — and rescaling to a non-multiple smears the pixel grid. There is no uniform size to match and never has been.
+
+A missing icon is not a crash: Discord simply shows no thumbnail. That makes it the kind of mistake nobody reports, so check the file is actually committed (see the `Icon?` trap under Gotchas).
 
 ### Analytics and the legal pages
 
@@ -814,6 +836,7 @@ Renders straight from the releases API. Nightly builds (tag matches `-BETA.N`) g
 - **`squash_merge_commit_title` must be `PR_TITLE`, not the GitHub default `COMMIT_OR_PR_TITLE`.** Otherwise a single-commit PR's original (unvetted) commit message silently wins over the lint-checked PR title when squashed onto `main` — quietly defeating the whole point of `lint-pr.yml`.
 - **Bot-authored PRs (release-please's Release PR) will show no CI checks at all**, and that's expected, not broken — `pull_request_target` workflows don't execute against them the normal way. Merge with the admin/override option.
 - **`schedule`-triggered workflows only run using the copy of the workflow file on the repo's default branch.** If you edit `nightly.yml` on a feature branch, the cron won't pick up the change until that branch merges — use `workflow_dispatch` to test it in the meantime.
+- **`.gitignore`'s `Icon?` line used to swallow `docs/assets/icons/`, and a new image vanished on `git add` without a word.** The pattern is there for Finder's custom-folder file, which is `Icon` plus a carriage return and cannot be written in a `.gitignore` — hence the wildcard, which on a case-insensitive filesystem also matches a directory called `icons`. Already-tracked files stay tracked, so the repo looked fine for as long as nobody added an image. There is now an explicit `!docs/assets/icons/` beside it. Check `git check-ignore -v <path>` before concluding a file "didn't get added".
 - **A nightly's channel is a compiled-in fact (`BuildInfo`), never parsed from its own version string.** A version string is trivially renameable; don't add any logic anywhere that infers `stable`/`nightly`/`dev` by pattern-matching a version number instead of reading `BuildInfo`.
 
 ## Conventions

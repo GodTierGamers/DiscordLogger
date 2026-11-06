@@ -128,7 +128,24 @@
           "configKey": "log.player.bucket.enabled",
           "colorKey": "player.bucket",
           "defaultColor": "#3498DB",
-          "default": true,
+          "default": false,
+          "extras": [
+            {
+              "key": "player.bucket.lava",
+              "configKey": "log.player.bucket.lava",
+              "label": "Log lava being placed",
+              "note": "The griefing half. Lava placed indoors is almost never an accident.",
+              "default": true
+            },
+            {
+              "key": "player.bucket.water",
+              "configKey": "log.player.bucket.water",
+              "label": "Log water being placed",
+              "note": "An MLG water bucket is an ordinary survival move, so on a busy server this is most of what the event posts. Untick it first if the channel is noisy.",
+              "default": true
+            }
+          ],
+          "note": "Off by default. Milk, a fish and powder snow are never logged -- they place nothing worth a record.",
           "webhookKey": "player.bucket"
         },
         {
@@ -217,6 +234,16 @@
             }
           ],
           "note": "Off by default: the noisiest event here. The history option below still records every explosion for /discordlogger lookup while this is off."
+        },
+        {
+          "id": "fire",
+          "label": "Fire Lit",
+          "configKey": "log.server.fire.enabled",
+          "colorKey": "server.fire",
+          "defaultColor": "#F39C12",
+          "default": false,
+          "note": "Off by default: fire spreads, so one lit block becomes hundreds of events. The ignite-cause filter already drops the two causes that multiply.",
+          "webhookKey": "server.fire"
         },
         {
           "id": "plugin",
@@ -636,6 +663,50 @@
       "min": 0,
       "label": "Minimum blocks destroyed",
       "note": "A creeper going off in the air breaks nothing and is rarely worth a message. 0 disables it."
+    },
+    {
+      "key": "ignored_ignite_causes",
+      "type": "choices",
+      "default": [
+        "SPREAD",
+        "LAVA"
+      ],
+      "choices": [
+        {
+          "value": "FLINT_AND_STEEL",
+          "note": "someone struck a flint and steel"
+        },
+        {
+          "value": "FIREBALL",
+          "note": "a ghast or a blaze"
+        },
+        {
+          "value": "LAVA",
+          "note": "lava setting something alight on its own"
+        },
+        {
+          "value": "LIGHTNING",
+          "note": ""
+        },
+        {
+          "value": "SPREAD",
+          "note": "fire spreading from a block already burning"
+        },
+        {
+          "value": "EXPLOSION",
+          "note": ""
+        },
+        {
+          "value": "ENDER_CRYSTAL",
+          "note": ""
+        },
+        {
+          "value": "ARROW",
+          "note": "a flaming arrow \u2014 1.15 and newer"
+        }
+      ],
+      "label": "Never log fire lit this way",
+      "note": "The two defaults are the ones that multiply: one lit block spreading through a forest is hundreds of events describing a single act of griefing. On servers older than 1.15 a flaming arrow reports as FLINT_AND_STEEL, because the server has no separate cause for it."
     },
     {
       "key": "respect_vanish",
@@ -1181,14 +1252,6 @@
             "default": "Water"
           },
           {
-            "key": "discord.bucket.powder-snow",
-            "default": "Powder snow"
-          },
-          {
-            "key": "discord.bucket.milk",
-            "default": "Milk"
-          },
-          {
             "key": "discord.item-frame.title",
             "default": "Item Frame Broken"
           },
@@ -1219,6 +1282,26 @@
           {
             "key": "discord.plugin.version-field",
             "default": "Version"
+          },
+          {
+            "key": "discord.fire.title",
+            "default": "Fire Lit"
+          },
+          {
+            "key": "discord.fire.cause-field",
+            "default": "Cause"
+          },
+          {
+            "key": "discord.fire.where-field",
+            "default": "Where"
+          },
+          {
+            "key": "discord.fire.lit-by-field",
+            "default": "Lit by"
+          },
+          {
+            "key": "discord.fire.the-world",
+            "default": "The world"
           },
           {
             "key": "discord.lag.title",

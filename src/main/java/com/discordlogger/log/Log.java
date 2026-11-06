@@ -134,6 +134,7 @@ public final class Log {
         cm.put("server_stop",      hex("#ED4245", baseDefaultColor)); // red
         cm.put("server_command",   hex("#EB459E", baseDefaultColor)); // pink
         cm.put("server_explosion", hex("#E74C3C", baseDefaultColor)); // red
+        cm.put("server_fire",      hex("#F39C12", baseDefaultColor)); // orange
         cm.put("server_plugin",    hex("#95A5A6", baseDefaultColor)); // grey
         cm.put("server_lag",       hex("#D35400", baseDefaultColor)); // dark orange
 

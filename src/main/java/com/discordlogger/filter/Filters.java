@@ -71,6 +71,7 @@ public final class Filters {
         private final Set<String> ignoredDeathCauses;
         private final Set<String> ignoredExplosionSources;
         private final int minExplosionBlocks;
+        private final Set<String> ignoredIgniteCauses;
         private final String exemptPermission;
         private final boolean respectVanish;
 
@@ -88,6 +89,7 @@ public final class Filters {
                  Set<String> ignoredDeathCauses,
                  Set<String> ignoredExplosionSources,
                  int minExplosionBlocks,
+                 Set<String> ignoredIgniteCauses,
                  String exemptPermission,
                  boolean respectVanish) {
             this.ignoredNames = ignoredNames;
@@ -104,6 +106,7 @@ public final class Filters {
             this.ignoredDeathCauses = ignoredDeathCauses;
             this.ignoredExplosionSources = ignoredExplosionSources;
             this.minExplosionBlocks = minExplosionBlocks;
+            this.ignoredIgniteCauses = ignoredIgniteCauses;
             this.exemptPermission = exemptPermission;
             this.respectVanish = respectVanish;
         }
@@ -122,6 +125,7 @@ public final class Filters {
         Set<String> ignoredDeathCauses() { return ignoredDeathCauses; }
         Set<String> ignoredExplosionSources() { return ignoredExplosionSources; }
         int minExplosionBlocks() { return minExplosionBlocks; }
+        Set<String> ignoredIgniteCauses() { return ignoredIgniteCauses; }
         String exemptPermission() { return exemptPermission; }
         boolean respectVanish() { return respectVanish; }
 
@@ -130,7 +134,8 @@ public final class Filters {
                     Collections.<String>emptySet(), Collections.<String>emptySet(),
                     Collections.<String>emptySet(), Collections.<String>emptyList(), 0,
                     Collections.<String>emptyList(), false, Collections.<String>emptySet(), 0d,
-                    Collections.<String>emptySet(), Collections.<String>emptySet(), 0, "", true);
+                    Collections.<String>emptySet(), Collections.<String>emptySet(), 0,
+                    Collections.<String>emptySet(), "", true);
         }
     }
 
@@ -203,6 +208,7 @@ public final class Filters {
                 constantSet(plugin, "filters.ignored_death_causes"),
                 constantSet(plugin, "filters.ignored_explosion_sources"),
                 Math.max(0, plugin.getConfig().getInt("filters.minimum_explosion_blocks", 0)),
+                constantSet(plugin, "filters.ignored_ignite_causes"),
                 perm,
                 plugin.getConfig().getBoolean("filters.respect_vanish", true));
 
@@ -211,7 +217,8 @@ public final class Filters {
                 + snap.ignoredCommands().size() + snap.onlyCommands().size()
                 + snap.ignoredWorlds().size() + snap.chatPatterns().size()
                 + snap.ignoredAdvancements().size() + snap.ignoredTeleportCauses().size()
-                + snap.ignoredDeathCauses().size() + snap.ignoredExplosionSources().size();
+                + snap.ignoredDeathCauses().size() + snap.ignoredExplosionSources().size()
+                + snap.ignoredIgniteCauses().size();
         if (rules > 0 || !perm.isEmpty()) {
             plugin.getLogger().info("Log filters active: " + rules + " rule(s)"
                     + (snap.onlyCommands().isEmpty() ? ""
@@ -332,6 +339,18 @@ public final class Filters {
         if (source != null && snap.ignoredExplosionSources()
                 .contains(source.toUpperCase(Locale.ROOT))) return true;
         return snap.minExplosionBlocks() > 0 && affectedBlocks < snap.minExplosionBlocks();
+    }
+
+    /**
+     * True when fire lit by this cause should not be logged.
+     *
+     * <p>Matched on the cause's name rather than the enum constant, because
+     * {@code IgniteCause.ARROW} did not exist until 1.15 and naming it would stop
+     * this compiling at the 1.8 floor.
+     */
+    public static boolean blocksIgnite(String cause) {
+        return cause != null
+                && current.ignoredIgniteCauses().contains(cause.toUpperCase(Locale.ROOT));
     }
 
     /** True when a chat line contains any configured pattern, or is too short to be worth logging. */

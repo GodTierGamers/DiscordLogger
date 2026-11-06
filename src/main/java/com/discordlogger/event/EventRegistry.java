@@ -67,6 +67,7 @@ public final class EventRegistry {
         // Server events
         pm.registerEvents(new ServerCommand(plugin), plugin);
         pm.registerEvents(new Explosion(plugin), plugin);
+        pm.registerEvents(new ServerFire(plugin), plugin);
         pm.registerEvents(new ServerPlugin(plugin), plugin);
 
         // BlockExplodeEvent arrived in 1.8.3. Entity explosions above work on 1.8.0,

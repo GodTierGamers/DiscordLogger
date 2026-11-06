@@ -158,6 +158,14 @@ filters:
   # A creeper going off in the air breaks nothing and is rarely worth a message.
 {{FILTER_minimum_explosion_blocks}}
 
+  # Fire lit by these causes is never logged. Values: FLINT_AND_STEEL, FIREBALL,
+  # LAVA, LIGHTNING, SPREAD, EXPLOSION, ENDER_CRYSTAL, ARROW.
+  # ARROW supports 1.15 or newer; on anything older a flaming arrow reports as
+  # FLINT_AND_STEEL, because the server has no separate cause for it.
+  # The defaults are the two that multiply -- one lit block spreading through a
+  # forest is hundreds of events describing a single act of griefing.
+{{FILTER_ignored_ignite_causes}}
+
   # Stay silent about players a vanish plugin is currently hiding. Works with
   # EssentialsX, SuperVanish, PremiumVanish and CMI -- no setup, nothing to install.
   # Without this, a staff member joining vanished is announced to Discord anyway,
@@ -236,9 +244,13 @@ log:
       webhook: "{{HOOK_player.book}}" # Send just this event elsewhere. Empty = use webhook.url above
 
     bucket: # Logs lava and water being placed from a bucket
+      # Off by default: an MLG water bucket is an ordinary survival move, and on a
+      # busy server it is most of what this would post
       enabled: {{LOG_player.bucket.enabled}}
       color: "{{COLOR_player.bucket}}" # blue
       webhook: "{{HOOK_player.bucket}}" # Send just this event elsewhere. Empty = use webhook.url above
+      lava: {{EXTRA_player.bucket.lava}} # Log lava being placed
+      water: {{EXTRA_player.bucket.water}} # Log water being placed. The MLG noise -- turn this off first
 
     item_frame: # Logs item frames and paintings being broken
       enabled: {{LOG_player.item_frame.enabled}}
@@ -273,6 +285,13 @@ log:
         enabled: {{EXTRA_server.explosion.history.enabled}}
         expiry_time: "{{EXTRA_server.explosion.history.expiry_time}}" # How long a row is kept: 30m, 2h, 7d, 4w, 6mo, 1y. A bare number means days, 0 keeps forever
         show_tip: {{EXTRA_server.explosion.history.show_tip}} # Adds the lookup command for that spot as a field on the embed
+
+    fire: # Logs fire being lit
+      # Off by default: fire spreads, and one lit block becomes hundreds of events.
+      # filters.ignored_ignite_causes already drops the two causes that multiply
+      enabled: {{LOG_server.fire.enabled}}
+      color: "{{COLOR_server.fire}}" # orange
+      webhook: "{{HOOK_server.fire}}" # Send just this event elsewhere. Empty = use webhook.url above
 
     plugin: # Logs plugins being enabled or disabled while the server is running
       enabled: {{LOG_server.plugin.enabled}}
