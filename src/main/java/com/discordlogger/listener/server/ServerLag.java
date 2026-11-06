@@ -26,6 +26,17 @@ import java.util.List;
  * muted within a minute.
  */
 public final class ServerLag {
+    /**
+     * The clock, animated, served from the site like every other icon.
+     *
+     * <p>A GIF rather than a still because Discord animates one in a thumbnail,
+     * and because every frame of this one still reads as a clock -- which matters
+     * for the readers whose autoplay is off or who run Reduced Motion, and who see
+     * only the first frame.
+     */
+    private static final String THUMB_LAG =
+            "https://discordlogger.godtiergamers.xyz/assets/icons/lag.gif";
+
     private static final long PERIOD_TICKS = 20L;
     private static final double NOMINAL_TPS = 20.0;
 
@@ -78,7 +89,8 @@ public final class ServerLag {
         fields.add(new Log.Field(Lang.text("discord.lag.players-field"),
                 String.valueOf(Bukkit.getOnlinePlayers().size()), true));
 
-        Log.eventFields("server_lag", Lang.text("discord.lag.title"), fields);
+        Log.eventFieldsWithThumb(
+                "server_lag", Lang.text("discord.lag.title"), null, fields, THUMB_LAG);
     }
 
     /**
