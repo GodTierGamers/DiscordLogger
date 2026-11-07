@@ -48,7 +48,12 @@ config-version: 12
 ###################
 
 webhook:
-  url: "" # Discord webhook URL goes here, plugin will not function until present
+  url: "" # Full webhook URL
+
+  # Additional self-hosted webhook domains allowed by DiscordLogger.
+  # Enter hostnames only: no https://, port, or path.
+  # Official Discord and Fluxer domains are allowed automatically.
+  allowed_hosts: []
 
 ##################
 # FORMAT OPTIONS #
