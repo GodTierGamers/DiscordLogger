@@ -20,6 +20,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Locale;
+
 public final class Log {
     // All fields volatile: init() runs on the main thread; logging methods are
     // called from async scheduler threads. Without volatile, the JVM is free to
@@ -28,6 +34,9 @@ public final class Log {
     private static volatile String webhookUrl;
     private static volatile DateTimeFormatter timeFmt;
     private static volatile String plainServerName;
+
+    // The set of allowed webhook hosts, as configured in config.yml.
+    private static volatile Set<String> allowedWebhookHosts = Collections.emptySet();
 
     // Only send to Discord when true (valid webhook)
     private static volatile boolean ready;
@@ -40,15 +49,17 @@ public final class Log {
     private static final String EMBED_FOOTER_BASE = "DiscordLogger";
     private static volatile String embedFooterText = EMBED_FOOTER_BASE;
 
-    private static final String PLAYER_THUMB_TEMPLATE =
-            "https://mc-heads.net/avatar/{uuid}/256?c={bucket}";
+    private static final String PLAYER_THUMB_TEMPLATE = "https://mc-heads.net/avatar/{uuid}/256?c={bucket}";
 
     /**
      * How long an avatar URL stays the same, in millis.
      *
-     * <p>Six hours, because that is exactly what mc-heads.net puts on its own
-     * responses ({@code cache-control: public, max-age=21600}). Picking the origin's
-     * number rather than one of our own means Discord is never asked to hold an image
+     * <p>
+     * Six hours, because that is exactly what mc-heads.net puts on its own
+     * responses ({@code cache-control: public, max-age=21600}). Picking the
+     * origin's
+     * number rather than one of our own means Discord is never asked to hold an
+     * image
      * for longer than mc-heads itself considers it fresh.
      */
     private static final long AVATAR_CACHE_WINDOW_MS = 21_600_000L;
@@ -65,13 +76,28 @@ public final class Log {
     private static volatile Map<String, String> webhookMap = new HashMap<>();
     private static volatile int defaultColor = 0x5865F2;
 
-    private Log() {}
+    private Log() {
+    }
 
-    /** Initialize runtime config. Safe to call even if url is invalid; we'll run degraded. */
+    /**
+     * Initialize runtime config. Safe to call even if url is invalid; we'll run
+     * degraded.
+     */
     public static void init(JavaPlugin pl, String url, String timePattern) {
         plugin = pl;
 
-        // determine readiness & store webhook (store null when not ready)
+        // Load additional trusted webhook hosts from config.yml.
+        Set<String> hosts = new HashSet<>();
+
+        for (String host : pl.getConfig().getStringList("webhook.allowed_hosts")) {
+            if (host != null && !Strings.isBlank(host)) {
+                hosts.add(host.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+
+        allowedWebhookHosts = Collections.unmodifiableSet(hosts);
+
+        // Determine readiness & store webhook.
         ready = isValidWebhookUrl(url);
         webhookUrl = ready ? url : null;
 
@@ -101,13 +127,14 @@ public final class Log {
         try {
             timeFmt = DateTimeFormatter.ofPattern(literalBrackets(timePattern));
         } catch (IllegalArgumentException ex) {
-            plugin.getLogger().warning("Invalid time format in config: " + timePattern + " — using [HH:mm:ss dd:MM:yyyy]");
+            plugin.getLogger()
+                    .warning("Invalid time format in config: " + timePattern + " — using [HH:mm:ss dd:MM:yyyy]");
             timeFmt = DateTimeFormatter.ofPattern("[HH:mm:ss dd:MM:yyyy]");
         }
 
         // Embeds (author configurable; footer/thumbnail hard-coded)
         embedsEnabledFlag = plugin.getConfig().getBoolean("embeds.enabled", false);
-        embedAuthorName   = plugin.getConfig().getString("embeds.author", "Server Logs");
+        embedAuthorName = plugin.getConfig().getString("embeds.author", "Server Logs");
 
         // Build the color map into a local variable first, then assign atomically.
         // This ensures async threads never observe a partially-populated map.
@@ -115,35 +142,35 @@ public final class Log {
         Map<String, Integer> cm = new HashMap<>();
 
         // Player
-        cm.put("player_join",        hex("#57F287", baseDefaultColor)); // green
-        cm.put("player_quit",        hex("#ED4245", baseDefaultColor)); // red
-        cm.put("player_chat",        hex("#5865F2", baseDefaultColor)); // blurple
-        cm.put("player_command",     hex("#FEE75C", baseDefaultColor)); // yellow
-        cm.put("player_death",       hex("#ED4245", baseDefaultColor)); // red
+        cm.put("player_join", hex("#57F287", baseDefaultColor)); // green
+        cm.put("player_quit", hex("#ED4245", baseDefaultColor)); // red
+        cm.put("player_chat", hex("#5865F2", baseDefaultColor)); // blurple
+        cm.put("player_command", hex("#FEE75C", baseDefaultColor)); // yellow
+        cm.put("player_death", hex("#ED4245", baseDefaultColor)); // red
         cm.put("player_advancement", hex("#2ECC71", baseDefaultColor)); // green
-        cm.put("player_teleport",    hex("#3498DB", baseDefaultColor)); // blue
-        cm.put("player_gamemode",    hex("#9B59B6", baseDefaultColor)); // purple
+        cm.put("player_teleport", hex("#3498DB", baseDefaultColor)); // blue
+        cm.put("player_gamemode", hex("#9B59B6", baseDefaultColor)); // purple
 
         // Server
-        cm.put("server_start",     hex("#43B581", baseDefaultColor)); // green
-        cm.put("server_stop",      hex("#ED4245", baseDefaultColor)); // red
-        cm.put("server_command",   hex("#EB459E", baseDefaultColor)); // pink
+        cm.put("server_start", hex("#43B581", baseDefaultColor)); // green
+        cm.put("server_stop", hex("#ED4245", baseDefaultColor)); // red
+        cm.put("server_command", hex("#EB459E", baseDefaultColor)); // pink
         cm.put("server_explosion", hex("#E74C3C", baseDefaultColor)); // red
 
         // Moderation
-        cm.put("ban",              hex("#FF0000", baseDefaultColor)); // red
-        cm.put("unban",            hex("#FF0000", baseDefaultColor)); // red
-        cm.put("kick",             hex("#FF0000", baseDefaultColor)); // red
-        cm.put("op",               hex("#FF0000", baseDefaultColor)); // red
-        cm.put("deop",             hex("#FF0000", baseDefaultColor)); // red
+        cm.put("ban", hex("#FF0000", baseDefaultColor)); // red
+        cm.put("unban", hex("#FF0000", baseDefaultColor)); // red
+        cm.put("kick", hex("#FF0000", baseDefaultColor)); // red
+        cm.put("op", hex("#FF0000", baseDefaultColor)); // red
+        cm.put("deop", hex("#FF0000", baseDefaultColor)); // red
         cm.put("whitelist_toggle", hex("#1ABC9C", baseDefaultColor)); // teal
-        cm.put("whitelist",        hex("#16A085", baseDefaultColor)); // dark teal
+        cm.put("whitelist", hex("#16A085", baseDefaultColor)); // dark teal
 
         // Fallback base category
         cm.put("server", hex("#43B581", baseDefaultColor));
 
         // Overrides now live beside the toggle they belong to, as
-        //     log.<group>.<event>.color
+        // log.<group>.<event>.color
         // rather than the separate embeds.colors tree v9 used (schema v10).
         // A v9-shaped config reaches here only if migration failed, in which case
         // the event is a plain boolean with no section, and the built-in default
@@ -154,12 +181,15 @@ public final class Log {
         if (logSec != null) {
             for (String group : logSec.getKeys(false)) {
                 ConfigurationSection groupSec = logSec.getConfigurationSection(group);
-                if (groupSec == null) continue;
+                if (groupSec == null)
+                    continue;
                 for (String event : groupSec.getKeys(false)) {
                     ConfigurationSection eventSec = groupSec.getConfigurationSection(event);
-                    if (eventSec == null) continue;   // v9-shaped boolean
+                    if (eventSec == null)
+                        continue; // v9-shaped boolean
                     String v = eventSec.getString("color");
-                    if (v == null || Strings.isBlank(v)) continue;
+                    if (v == null || Strings.isBlank(v))
+                        continue;
                     int c = hex(v, currentDefault);
 
                     cm.put(normalizeKey(group + "_" + event), c);
@@ -169,7 +199,8 @@ public final class Log {
                         wm.put(normalizeKey(group + "_" + event), hook.trim());
                         if ("moderation".equals(group)) {
                             wm.put(normalizeKey(event), hook.trim());
-                            if ("whitelist_edit".equals(event)) wm.put("whitelist", hook.trim());
+                            if ("whitelist_edit".equals(event))
+                                wm.put("whitelist", hook.trim());
                         }
                     } else if (hook != null && !Strings.isBlank(hook)) {
                         plugin.getLogger().warning("log." + group + "." + event
@@ -184,7 +215,8 @@ public final class Log {
                     if ("moderation".equals(group)) {
                         cm.put(normalizeKey(event), c);
                         // The whitelist-edit listener's category is "whitelist".
-                        if ("whitelist_edit".equals(event)) cm.put("whitelist", c);
+                        if ("whitelist_edit".equals(event))
+                            cm.put("whitelist", c);
                     }
                 }
             }
@@ -211,23 +243,30 @@ public final class Log {
     /**
      * Confirms every configured webhook still exists, once, at startup.
      *
-     * <p>Without this, a webhook deleted in Discord is discovered by the first event
-     * that 404s — which can be hours later, looks like the plugin breaking, and loses
-     * everything in between. It happened: 345 events went into a dead webhook across
+     * <p>
+     * Without this, a webhook deleted in Discord is discovered by the first event
+     * that 404s — which can be hours later, looks like the plugin breaking, and
+     * loses
+     * everything in between. It happened: 345 events went into a dead webhook
+     * across
      * three and a half hours before anything surfaced, and the only warning went to
      * console, where nobody was watching.
      *
-     * <p><b>Never logs a URL.</b> A webhook URL is a bearer credential, so failures
-     * name the config path that holds it and nothing else — enough to fix it, useless
+     * <p>
+     * <b>Never logs a URL.</b> A webhook URL is a bearer credential, so failures
+     * name the config path that holds it and nothing else — enough to fix it,
+     * useless
      * to anyone reading the log.
      *
-     * <p>Deduplicated by URL: routing many categories to one channel is the common
+     * <p>
+     * Deduplicated by URL: routing many categories to one channel is the common
      * case, and probing per category would fire a burst of identical requests at
      * Discord on every boot for no extra information.
      */
     public static void validateWebhooksAsync() {
         final JavaPlugin pl = plugin;
-        if (!ready || pl == null) return;
+        if (!ready || pl == null)
+            return;
 
         // webhookFor(null) rather than webhookUrl: the field is only ever read through
         // that accessor, and LogRoutingTest enforces it. Reaching past it here would
@@ -235,11 +274,13 @@ public final class Log {
         // guard cannot tell the two apart, and a rule with exceptions stops being one.
         final Map<String, String> byUrl = new LinkedHashMap<>();
         final String main = webhookFor(null);
-        if (main != null && !Strings.isBlank(main)) byUrl.put(main, "webhook.url");
+        if (main != null && !Strings.isBlank(main))
+            byUrl.put(main, "webhook.url");
         for (Map.Entry<String, String> e : webhookMap.entrySet()) {
             byUrl.putIfAbsent(e.getValue(), "log." + e.getKey() + ".webhook");
         }
-        if (byUrl.isEmpty()) return;
+        if (byUrl.isEmpty())
+            return;
 
         pl.getServer().getScheduler().runTaskAsynchronously(pl, () -> {
             for (Map.Entry<String, String> e : byUrl.entrySet()) {
@@ -251,16 +292,22 @@ public final class Log {
     /**
      * Turns a probe status into console output, or into nothing.
      *
-     * <p>Split out so the wording is testable without a server. The distinction that
+     * <p>
+     * Split out so the wording is testable without a server. The distinction that
      * matters: 404 is the admin's problem and must be loud, while an unreachable
-     * Discord proves nothing about the webhook and must not cry wolf — a plugin that
-     * warns about a working webhook during a network blip teaches people to ignore it.
+     * Discord proves nothing about the webhook and must not cry wolf — a plugin
+     * that
+     * warns about a working webhook during a network blip teaches people to ignore
+     * it.
      */
     static void describeProbe(JavaPlugin pl, String where, int status) {
         final String msg = probeMessage(where, status);
-        if (msg == null) return;
-        if (status == 404 || status == 401 || status == 403) pl.getLogger().warning(msg);
-        else pl.getLogger().fine(msg);
+        if (msg == null)
+            return;
+        if (status == 404 || status == 401 || status == 403)
+            pl.getLogger().warning(msg);
+        else
+            pl.getLogger().fine(msg);
     }
 
     /** The message for a probe result, or null when the result is unremarkable. */
@@ -283,48 +330,106 @@ public final class Log {
     }
 
     // ---- Public helpers (used by other components like UpdateChecker) ----
-    public static boolean isReady()        { return ready; }
-    public static boolean embedsEnabled()  { return embedsEnabledFlag; }
-    public static String embedAuthor()     { return embedAuthorName; }
+    public static boolean isReady() {
+        return ready;
+    }
+
+    public static boolean embedsEnabled() {
+        return embedsEnabledFlag;
+    }
+
+    public static String embedAuthor() {
+        return embedAuthorName;
+    }
 
     // ---- Internal utilities ----
 
     /**
      * Whether this is a webhook URL the plugin can actually post to.
      *
-     * <p>This used to be four {@code startsWith} checks, which accepted anything at
-     * all after the prefix: a bare {@code .../api/webhooks/} with no id and no token,
-     * an id made of letters, a copy-paste truncated before the token. All three were
+     * <p>
+     * This used to be four {@code startsWith} checks, which accepted anything at
+     * all after the prefix: a bare {@code .../api/webhooks/} with no id and no
+     * token,
+     * an id made of letters, a copy-paste truncated before the token. All three
+     * were
      * reported as a valid webhook, so the plugin logged that it was ready and then
      * 404'd on every single send.
      *
-     * <p>The worse half was that {@link #redactWebhooks(String)} had always required
-     * a numeric id, so a URL this method accepted but that pattern did not recognise
-     * went through command logging <em>unredacted</em> — publishing the token to the
+     * <p>
+     * The worse half was that {@link #redactWebhooks(String)} had always required
+     * a numeric id, so a URL this method accepted but that pattern did not
+     * recognise
+     * went through command logging <em>unredacted</em> — publishing the token to
+     * the
      * channel, which is the exact disclosure redaction exists to prevent.
      *
-     * <p>So the two are now deliberately asymmetric in the correct direction: this is
-     * strict about what it accepts, and redaction is permissive about what it hides.
-     * A trailing slash and a query string are allowed because a pasted URL may carry
+     * <p>
+     * So the two are now deliberately asymmetric in the correct direction: this is
+     * strict about what it accepts, and redaction is permissive about what it
+     * hides.
+     * A trailing slash and a query string are allowed because a pasted URL may
+     * carry
      * them and they do no harm.
      */
     public static boolean isValidWebhookUrl(String url) {
-        if (url == null || Strings.isBlank(url)) return false;
-        return WEBHOOK_URL_STRICT.matcher(url.trim()).matches();
+        return isValidWebhookUrl(url, allowedWebhookHosts);
     }
 
-    private static final java.util.regex.Pattern WEBHOOK_URL_STRICT =
-            java.util.regex.Pattern.compile(
-                    "https://(?:ptb\\.|canary\\.)?discord(?:app)?\\.com"
-                            + "/api/webhooks/\\d+/[A-Za-z0-9_-]+/?(?:\\?.*)?",
-                    java.util.regex.Pattern.CASE_INSENSITIVE);
+    static boolean isValidWebhookUrl(String url, Set<String> allowedHosts) {
+        if (url == null || Strings.isBlank(url))
+            return false;
+
+        String trimmed = url.trim();
+
+        if (WEBHOOK_URL_DISCORD.matcher(trimmed).matches()) {
+            return true;
+        }
+
+        try {
+            URI uri = new URI(trimmed);
+
+            String host = uri.getHost();
+            String path = uri.getRawPath();
+
+            if (!"https".equalsIgnoreCase(uri.getScheme()))
+                return false;
+            if (host == null || path == null)
+                return false;
+            if (uri.getUserInfo() != null || uri.getFragment() != null)
+                return false;
+
+            if (allowedHosts == null ||
+                    !allowedHosts.contains(host.toLowerCase(Locale.ROOT))) {
+                return false;
+            }
+
+            return WEBHOOK_URL_PATH.matcher(path).matches();
+
+        } catch (URISyntaxException e) {
+            return false;
+        }
+    }
+
+    private static final java.util.regex.Pattern WEBHOOK_URL_DISCORD = java.util.regex.Pattern.compile(
+            "https://(?:ptb\\.|canary\\.)?discord(?:app)?\\.com"
+                    + "/api/webhooks/\\d+/[A-Za-z0-9_-]+/?(?:\\?.*)?",
+            java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    private static final java.util.regex.Pattern WEBHOOK_URL_PATH = java.util.regex.Pattern.compile(
+            "/(?:api/)?(?:v\\d+/)?webhooks/\\d+/[A-Za-z0-9_-]+/?");
 
     private static int hex(String s, int fallback) {
-        if (s == null) return fallback;
+        if (s == null)
+            return fallback;
         s = s.trim();
-        if (s.startsWith("#")) s = s.substring(1);
-        try { return (int) Long.parseLong(s, 16); }
-        catch (NumberFormatException e) { return fallback; }
+        if (s.startsWith("#"))
+            s = s.substring(1);
+        try {
+            return (int) Long.parseLong(s, 16);
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 
     // Overload used during color-map construction before defaultColor is finalised
@@ -333,7 +438,8 @@ public final class Log {
     }
 
     private static String normalizeKey(String k) {
-        if (k == null) return "";
+        if (k == null)
+            return "";
         return k.trim()
                 .toLowerCase()
                 .replace(' ', '_')
@@ -362,23 +468,30 @@ public final class Log {
         return colorMap.getOrDefault(normalizeKey(categoryKey), defaultColor);
     }
 
-    private static String ts() { return LocalDateTime.now().format(timeFmt); }
+    private static String ts() {
+        return LocalDateTime.now().format(timeFmt);
+    }
 
     /**
      * An arbitrary instant written in the server's own {@code format.time}.
      *
-     * <p>{@link #ts()} can only stamp now, and {@code /discordlogger lookup} reports
+     * <p>
+     * {@link #ts()} can only stamp now, and {@code /discordlogger lookup} reports
      * when something happened. Shared rather than reimplemented so the pattern, the
-     * bracket fix and the invalid-pattern fallback stay in one place — and so a lookup
-     * and a plain-text log line never disagree about what time it was, which they would
+     * bracket fix and the invalid-pattern fallback stay in one place — and so a
+     * lookup
+     * and a plain-text log line never disagree about what time it was, which they
+     * would
      * the moment one of them chose its own zone.
      *
-     * <p>Falls back to the raw millis if called before {@link #init}, which is better
+     * <p>
+     * Falls back to the raw millis if called before {@link #init}, which is better
      * than a blank where a timestamp should be.
      */
     public static String formatTime(long epochMillis) {
         final DateTimeFormatter fmt = timeFmt;
-        if (fmt == null) return String.valueOf(epochMillis);
+        if (fmt == null)
+            return String.valueOf(epochMillis);
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault())
                 .format(fmt);
     }
@@ -386,16 +499,21 @@ public final class Log {
     /**
      * Every webhook URL the current config routes to: the main one, plus per-event.
      *
-     * <p>Read through {@link #webhookFor} rather than the {@code webhookUrl} field, like
-     * every other site — {@code LogRoutingTest} enforces that, and the guard cannot tell
+     * <p>
+     * Read through {@link #webhookFor} rather than the {@code webhookUrl} field,
+     * like
+     * every other site — {@code LogRoutingTest} enforces that, and the guard cannot
+     * tell
      * an enumeration from a send, so a rule with exceptions would stop being one.
      */
     static Set<String> liveWebhookUrls() {
         final Set<String> urls = new LinkedHashSet<>();
         final String main = webhookFor(null);
-        if (main != null && !Strings.isBlank(main)) urls.add(main);
+        if (main != null && !Strings.isBlank(main))
+            urls.add(main);
         for (String routed : webhookMap.values()) {
-            if (routed != null && !Strings.isBlank(routed)) urls.add(routed);
+            if (routed != null && !Strings.isBlank(routed))
+                urls.add(routed);
         }
         return urls;
     }
@@ -403,31 +521,42 @@ public final class Log {
     /**
      * Makes {@code [} and {@code ]} in a time pattern mean themselves.
      *
-     * <p>{@code format.time} ships as {@code "[HH:mm:ss, dd:MM:yyyy]"} and the brackets
-     * never reached Discord. DateTimeFormatter reads them as an optional section, not as
-     * text, so it printed the time and dropped them -- for every plain-text message the
-     * plugin has ever sent. The console looked right only because it wraps the timestamp
+     * <p>
+     * {@code format.time} ships as {@code "[HH:mm:ss, dd:MM:yyyy]"} and the
+     * brackets
+     * never reached Discord. DateTimeFormatter reads them as an optional section,
+     * not as
+     * text, so it printed the time and dropped them -- for every plain-text message
+     * the
+     * plugin has ever sent. The console looked right only because it wraps the
+     * timestamp
      * in brackets of its own.
      *
-     * <p>Nobody writes an optional section into a clock format, so quoting them is what
-     * the setting has always claimed to do, and it fixes every config already written
+     * <p>
+     * Nobody writes an optional section into a clock format, so quoting them is
+     * what
+     * the setting has always claimed to do, and it fixes every config already
+     * written
      * without a migration.
      */
     private static String literalBrackets(String pattern) {
-        if (pattern == null) return null;
+        if (pattern == null)
+            return null;
         return pattern.replace("[", "'['").replace("]", "']'");
     }
 
     /** A field name ending in a colon, whether or not the caller wrote one. */
     private static String labelled(String name) {
-        if (name == null || Strings.isBlank(name)) return "";
+        if (name == null || Strings.isBlank(name))
+            return "";
         final String trimmed = name.trim();
         return trimmed.endsWith(":") ? trimmed : trimmed + ":";
     }
 
     /** Server name segment for plain-text messages. */
     private static String nameSegment() {
-        if (plainServerName == null || Strings.isBlank(plainServerName)) return "";
+        if (plainServerName == null || Strings.isBlank(plainServerName))
+            return "";
         return " [" + mdEscape(plainServerName) + "]";
     }
 
@@ -435,7 +564,8 @@ public final class Log {
     /**
      * Masks the secret half of any Discord webhook URL in text bound for Discord.
      *
-     * <p>A webhook URL is a bearer credential: anyone holding it can post to that
+     * <p>
+     * A webhook URL is a bearer credential: anyone holding it can post to that
      * channel. Command logging echoes whatever was typed, so without this,
      * {@code /discordlogger webhook <url>} would publish the new URL to the
      * channel — quite possibly the OLD webhook, i.e. the one being moved away
@@ -443,20 +573,18 @@ public final class Log {
      * audit trail: you still see that someone changed it, just not to what.
      */
     public static String redactWebhooks(String s) {
-        if (s == null || s.isEmpty()) return s;
+        if (s == null || s.isEmpty())
+            return s;
         return WEBHOOK_URL_RE.matcher(s).replaceAll("$1/***");
     }
 
-    private static final java.util.regex.Pattern WEBHOOK_URL_RE =
-            java.util.regex.Pattern.compile(
-                    // The id is matched loosely on purpose. This is the last line of
-                    // defence before a token reaches a channel, so it must recognise a
-                    // malformed URL too -- a pattern that only hides well-formed ones
-                    // hides exactly the cases nobody needed hidden.
-                    "(https://(?:ptb\\.|canary\\.)?discord(?:app)?\\.com/api/webhooks/[^/\\s]+)/\\S+");
+    private static final java.util.regex.Pattern WEBHOOK_URL_RE = java.util.regex.Pattern.compile(
+            "(https://[^/\\s]+/(?:api/)?(?:v\\d+/)?webhooks/[^/\\s]+)/\\S+",
+            java.util.regex.Pattern.CASE_INSENSITIVE);
 
     public static String mdEscape(String s) {
-        if (s == null) return "";
+        if (s == null)
+            return "";
         return s.replace("\\", "\\\\")
                 .replace("`", "\\`")
                 .replace("*", "\\*")
@@ -486,19 +614,19 @@ public final class Log {
             if (ready) {
                 DiscordWebhook.sendEmbed(
                         plugin, webhookFor(category),
-                        /*title*/        category,
-                        /*description*/  message,
-                        /*color*/        colorFor(category),
-                        /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                        /*author*/       embedAuthorName,
-                        /*footer*/       embedFooterText,
-                        /*thumbnailUrl*/ null
-                );
+                        /* title */ category,
+                        /* description */ message,
+                        /* color */ colorFor(category),
+                        /* timestampIso */ OffsetDateTime.now(ZoneOffset.UTC).toString(),
+                        /* author */ embedAuthorName,
+                        /* footer */ embedFooterText,
+                        /* thumbnailUrl */ null);
             }
         } else {
             String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
             plugin.getLogger().info(line);
-            if (ready) DiscordWebhook.sendAsync(plugin, webhookFor(category), line);
+            if (ready)
+                DiscordWebhook.sendAsync(plugin, webhookFor(category), line);
         }
     }
 
@@ -510,19 +638,19 @@ public final class Log {
             if (ready) {
                 DiscordWebhook.sendEmbed(
                         plugin, webhookFor(category),
-                        /*title*/        category,
-                        /*description*/  message,
-                        /*color*/        colorFor(category),
-                        /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                        /*author*/       embedAuthorName,
-                        /*footer*/       embedFooterText,
-                        /*thumbnailUrl*/ thumbnailUrl
-                );
+                        /* title */ category,
+                        /* description */ message,
+                        /* color */ colorFor(category),
+                        /* timestampIso */ OffsetDateTime.now(ZoneOffset.UTC).toString(),
+                        /* author */ embedAuthorName,
+                        /* footer */ embedFooterText,
+                        /* thumbnailUrl */ thumbnailUrl);
             }
         } else {
             String line = "`" + now + "`" + nameSegment() + " - **" + category + "**: " + message;
             plugin.getLogger().info(line);
-            if (ready) DiscordWebhook.sendAsync(plugin, webhookFor(category), line);
+            if (ready)
+                DiscordWebhook.sendAsync(plugin, webhookFor(category), line);
         }
     }
 
@@ -535,6 +663,7 @@ public final class Log {
         public Field(String name, String value) {
             this(name, value, false);
         }
+
         public Field(String name, String value, boolean inline) {
             this.name = name;
             this.value = value;
@@ -551,26 +680,27 @@ public final class Log {
      * - thumbnailUrl: optional image (e.g. player head)
      */
     public static void eventFieldsWithThumb(String category,
-                                            String title,
-                                            String author,
-                                            List<Field> fields,
-                                            String thumbnailUrl) {
+            String title,
+            String author,
+            List<Field> fields,
+            String thumbnailUrl) {
         eventFieldsWithThumb(category, title, "", author, fields, thumbnailUrl);
     }
 
     /**
      * As above, with a description line between the title and the fields.
      *
-     * <p>Overload rather than a sixth parameter on the original: every existing
+     * <p>
+     * Overload rather than a sixth parameter on the original: every existing
      * caller wants an empty description, and threading a null through thirteen
      * call sites to say "unchanged" is noise.
      */
     public static void eventFieldsWithThumb(String category,
-                                            String title,
-                                            String description,
-                                            String author,
-                                            List<Field> fields,
-                                            String thumbnailUrl) {
+            String title,
+            String description,
+            String author,
+            List<Field> fields,
+            String thumbnailUrl) {
         final String now = ts();
 
         // Console echo
@@ -579,12 +709,14 @@ public final class Log {
                 .append(title == null || Strings.isBlank(title) ? category : title).append(": ");
         if (description != null && !Strings.isBlank(description)) {
             console.append(description);
-            if (fields != null && !fields.isEmpty()) console.append(" | ");
+            if (fields != null && !fields.isEmpty())
+                console.append(" | ");
         }
         if (fields != null && !fields.isEmpty()) {
             boolean first = true;
             for (Field f : fields) {
-                if (!first) console.append(" | ");
+                if (!first)
+                    console.append(" | ");
                 console.append(f.name).append(" ")
                         .append(f.value == null || Strings.isBlank(f.value) ? "N/A" : mdEscape(f.value));
                 first = false;
@@ -592,21 +724,21 @@ public final class Log {
         }
         plugin.getLogger().info(console.toString());
 
-        if (!ready) return;
+        if (!ready)
+            return;
 
         if (embedsEnabledFlag) {
             DiscordWebhook.sendEmbedWithFields(
                     plugin,
                     webhookFor(category),
-                    /*title*/        (title == null || Strings.isBlank(title)) ? category : title,
-                    /*description*/  description == null ? "" : description,
-                    /*color*/        colorFor(category),
-                    /*timestampIso*/ OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                    /*author*/       (author == null || Strings.isBlank(author)) ? embedAuthorName : author,
-                    /*footer*/       embedFooterText,
-                    /*thumbnailUrl*/ thumbnailUrl,
-                    /*fields*/       toFieldsArray(fields)
-            );
+                    /* title */ (title == null || Strings.isBlank(title)) ? category : title,
+                    /* description */ description == null ? "" : description,
+                    /* color */ colorFor(category),
+                    /* timestampIso */ OffsetDateTime.now(ZoneOffset.UTC).toString(),
+                    /* author */ (author == null || Strings.isBlank(author)) ? embedAuthorName : author,
+                    /* footer */ embedFooterText,
+                    /* thumbnailUrl */ thumbnailUrl,
+                    /* fields */ toFieldsArray(fields));
         } else {
             // The title, not the category -- the same string the embed puts in its
             // heading. Callers pass both: a machine key for colour and routing
@@ -614,7 +746,8 @@ public final class Log {
             // the key, so a reader saw "**player_teleport**: Player Teleport" -- the
             // config key leaked into the channel, and the title was printed twice.
             final String heading = (title == null || Strings.isBlank(title))
-                    ? category : title;
+                    ? category
+                    : title;
             StringBuilder sb = new StringBuilder();
             sb.append("`").append(now).append("`").append(nameSegment())
                     .append(" - **").append(heading).append("**");
@@ -644,7 +777,8 @@ public final class Log {
     }
 
     private static String[][] toFieldsArray(List<Field> fields) {
-        if (fields == null || fields.isEmpty()) return new String[0][0];
+        if (fields == null || fields.isEmpty())
+            return new String[0][0];
         String[][] arr = new String[fields.size()][3];
         for (int i = 0; i < fields.size(); i++) {
             Field f = fields.get(i);
@@ -658,30 +792,42 @@ public final class Log {
     /**
      * The player's head, from mc-heads.net, with a cache-busting window.
      *
-     * <h2>Why the {@code ?c=} parameter is load-bearing, and must not be "tidied" away</h2>
+     * <h2>Why the {@code ?c=} parameter is load-bearing, and must not be "tidied"
+     * away</h2>
      *
-     * <p>Discord does not load an embed thumbnail from mc-heads: it re-hosts the image
-     * through its own proxy, keyed on the URL. The URL used to be permanent for a given
-     * player while the thing behind it — their skin — is not, so whichever head Discord
-     * cached first was the head it kept serving. A player who changes skin saw the old
-     * one indefinitely, and a player whose skin had not yet been resolved when Discord
+     * <p>
+     * Discord does not load an embed thumbnail from mc-heads: it re-hosts the image
+     * through its own proxy, keyed on the URL. The URL used to be permanent for a
+     * given
+     * player while the thing behind it — their skin — is not, so whichever head
+     * Discord
+     * cached first was the head it kept serving. A player who changes skin saw the
+     * old
+     * one indefinitely, and a player whose skin had not yet been resolved when
+     * Discord
      * first fetched saw the default head and kept it.
      *
-     * <p>Reported twice, eleven months apart (#71 and #258), diagnosed correctly the
-     * first time and fixed neither time. The parameter is the fix: the URL now changes
+     * <p>
+     * Reported twice, eleven months apart (#71 and #258), diagnosed correctly the
+     * first time and fixed neither time. The parameter is the fix: the URL now
+     * changes
      * every {@link #AVATAR_CACHE_WINDOW_MS}, so Discord re-fetches on that cadence
      * instead of never.
      *
-     * <p>mc-heads ignores the parameter — verified: no parameter, {@code ?c=12345} and
-     * {@code ?c=99999} return byte-identical images with HTTP 200. It exists purely to
+     * <p>
+     * mc-heads ignores the parameter — verified: no parameter, {@code ?c=12345} and
+     * {@code ?c=99999} return byte-identical images with HTTP 200. It exists purely
+     * to
      * make the URL differ, so deleting it as "a query string that does nothing" is
      * exactly the change that reintroduces the bug.
      *
-     * <p>What this does not fix: mc-heads caches upstream for the same six hours, so a
+     * <p>
+     * What this does not fix: mc-heads caches upstream for the same six hours, so a
      * skin change can still take that long to appear. That part is not ours.
      */
     public static String playerAvatarUrl(UUID uuid) {
-        if (uuid == null) return null;
+        if (uuid == null)
+            return null;
         return PLAYER_THUMB_TEMPLATE
                 .replace("{uuid}", uuid.toString().replace("-", ""))
                 .replace("{bucket}", Long.toString(cacheBucket(System.currentTimeMillis())));
@@ -690,8 +836,11 @@ public final class Log {
     /**
      * Which six-hour window an instant falls in.
      *
-     * <p>A window rather than the raw clock on purpose: a value that changed every call
-     * would defeat Discord's caching entirely and re-fetch every head on every message.
+     * <p>
+     * A window rather than the raw clock on purpose: a value that changed every
+     * call
+     * would defeat Discord's caching entirely and re-fetch every head on every
+     * message.
      * The point is to let the cache work and then expire, not to stop it working.
      */
     static long cacheBucket(long epochMillis) {
@@ -700,16 +849,17 @@ public final class Log {
 
     /** Send the "Plugin Updates" embed with fields (used by UpdateChecker). */
     public static void sendUpdateEmbed(String title,
-                                       String description,
-                                       int color,
-                                       String timestampIso,
-                                       String author,
-                                       String footer,
-                                       String currentVersion,
-                                       String newVersion) {
+            String description,
+            int color,
+            String timestampIso,
+            String author,
+            String footer,
+            String currentVersion,
+            String newVersion) {
         plugin.getLogger().info("[" + ts() + "] " + title + ": " + mdEscape(description));
 
-        if (!ready) return;
+        if (!ready)
+            return;
 
         DiscordWebhook.sendEmbedWithFields(
                 plugin,
@@ -721,10 +871,9 @@ public final class Log {
                 author,
                 (footer == null || Strings.isBlank(footer)) ? embedFooterText : footer,
                 null,
-                new String[][]{
-                        {"Current Version", currentVersion, "false"},
-                        {"New Version",     newVersion,     "false"}
-                }
-        );
+                new String[][] {
+                        { "Current Version", currentVersion, "false" },
+                        { "New Version", newVersion, "false" }
+                });
     }
 }
