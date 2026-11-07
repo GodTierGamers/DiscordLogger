@@ -65,8 +65,8 @@ public final class Doctor implements Subcommand {
             // Carries the remedy as well as the symptom: onEnable used to print its own
             // pair of lines about this, which said the same thing a third time after
             // applyRuntimeConfig's. One message, and it is this one.
-            out.add("webhook.url is not set or is not a valid Discord webhook, so nothing "
-                    + "reaches Discord. Everything still logs to console. Set it with "
+            out.add("webhook.url is not set or is not a valid Discord or Fluxer webhook, so nothing "
+                    + "reaches Discord or Fluxer. Everything still logs to console. Set it with "
                     + "/discordlogger webhook <url>, or edit config.yml and run "
                     + "/discordlogger reload.");
         }

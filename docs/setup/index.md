@@ -47,13 +47,15 @@ missing. Nothing breaks while you finish setting up.
 
 ---
 
-## 2. Create a Discord webhook
+## 2. Create a Discord or Fluxer webhook
 
-In Discord:
+In Discord (or your Fluxer instance):
 
 1. Right-click the channel you want logs in → **Edit Channel**
 2. **Integrations** → **Webhooks** → **New Webhook**
 3. Give it a name and icon if you like → **Copy Webhook URL**
+
+If you are using a self-hosted Fluxer webhook, add its hostname to `webhook.allowed_hosts` in `config.yml` and then paste the URL in the same way.
 
 > **Treat that URL like a password.** Anyone who has it can post to that channel as
 > your server. Don't paste it into a screenshot, a public issue, or a stream.
@@ -69,6 +71,8 @@ Either way works.
 ```
 /discordlogger webhook https://discord.com/api/webhooks/…
 ```
+
+Fluxer-compatible webhook URLs are also accepted when the host is trusted, so the same command works for a Discord URL or a Fluxer URL.
 
 The URL is never echoed back, and command logging redacts it, so running this
 doesn't publish the URL to the channel you're setting up.

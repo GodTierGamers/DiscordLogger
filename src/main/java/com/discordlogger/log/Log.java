@@ -204,7 +204,7 @@ public final class Log {
                         }
                     } else if (hook != null && !Strings.isBlank(hook)) {
                         plugin.getLogger().warning("log." + group + "." + event
-                                + ".webhook is not a valid Discord webhook URL — that event will "
+                                + ".webhook is not a valid Discord or Fluxer webhook URL — that event will "
                                 + "use the main webhook instead.");
                     }
 

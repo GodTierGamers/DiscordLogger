@@ -13,7 +13,7 @@
 <!-- /dl:sync-block -->
 ![Discord Webhooks](https://img.shields.io/badge/Discord-Webhooks-5865F2)
 
-A minimal, reliable Minecraft server **logging plugin** that posts clean messages to a **Discord webhook** — in Markdown **or rich embeds**.
+A minimal, reliable Minecraft server **logging plugin** that posts clean messages to a **Discord or Fluxer-compatible webhook** — in Markdown **or rich embeds**.
 Built for **CraftBukkit, Spigot, Paper and forks like Purpur <!-- dl:sync:mc_display -->1.8 – 26.3<!-- /dl:sync -->** on **Java <!-- dl:sync:java -->8<!-- /dl:sync -->+**, tested with Geyser/Floodgate (Bedrock cross-play).
 
 ---
@@ -57,7 +57,7 @@ Server start and stop.
 
 ## ✨ Features
 
-- **Discord webhook logging** — no bot to invite, no token to manage, no third-party service.
+- **Discord / Fluxer-compatible webhook logging** — no bot to invite, no token to manage, no third-party service.
   - Plain text + Markdown format: `` `[HH:mm:ss, dd:MM:yyyy]` - **<Category>**: <message> ``
   - **Embeds (optional)** with per-event colors, configurable author, player avatar thumbnails, server icon, and timestamps.
 - **Config-toggleable events** (all on by default):
@@ -103,7 +103,7 @@ Stable releases are also published to [Modrinth](https://modrinth.com/plugin/dis
 
 1. Download the latest [release](https://github.com/GodTierGamers/DiscordLogger/releases/latest) and place the JAR in your server's `plugins/` folder.
 2. Start the server once. It writes `plugins/DiscordLogger/config.yml` and `lang.yml`.
-3. Set your **Discord webhook**, either way:
+3. Set your **Discord or Fluxer-compatible webhook**, either way:
    - In game or from console: `/discordlogger webhook https://discord.com/api/webhooks/…`
    - Or set `webhook.url` in `config.yml` and run `/discordlogger reload`.
 4. (Optional) Adjust per-event toggles under `log.*`, embed colors, filters, and the timestamp format — or generate both files up front with the [config generator](https://discordlogger.godtiergamers.xyz/generator/).

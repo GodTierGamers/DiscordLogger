@@ -11,7 +11,7 @@ description: Post Minecraft server events to Discord — joins, chat, deaths and
 
   <p class="dl-hero__sub">
     A Bukkit, Spigot and Paper plugin that posts what happens on your server to a
-    Discord channel —
+    Discord or Fluxer-compatible webhook —
     joins, chat, deaths, and every moderation action — as rich embeds or plain text.
     Configure each event individually, or send them to different channels entirely.
   </p>
@@ -74,7 +74,7 @@ Discord channel.
   </div>
   <div class="dl-card">
     <h3>No account needed</h3>
-    <p>It posts over a plain Discord webhook. No bot to invite, no token to manage, no third-party service.</p>
+    <p>It posts over a plain Discord or Fluxer-compatible webhook. No bot to invite, no token to manage, no third-party service.</p>
   </div>
 </div>
 

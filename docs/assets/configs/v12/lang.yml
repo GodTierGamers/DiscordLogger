@@ -137,7 +137,7 @@ chat:
 
   # Shown when the config loaded but webhook.url is empty or malformed.
   reload-no-webhook: "<red>Config reloaded, but webhook.url is missing or invalid.</red>"
-  reload-no-webhook-hint: "<red>Set a valid Discord webhook URL and try again.</red>"
+  reload-no-webhook-hint: "<red>Set a valid Discord or Fluxer webhook URL and try again.</red>"
 
   # Shown when reloading detected a config from a NEWER plugin version.
   # Placeholders: {installed} -- the schema in config.yml
@@ -153,13 +153,13 @@ chat:
 
   # Shown when the command is run with no URL.
   webhook-usage: "<yellow>Usage: <white>/discordlogger webhook <url></white></yellow>"
-  webhook-where: "<gray>Create one in Discord under Channel Settings > Integrations > Webhooks.</gray>"
+  webhook-where: "<gray>Create one in Discord or Fluxer, then paste the URL here.</gray>"
   # Shown only to players, not from console -- a reminder that the URL is a secret.
   webhook-private: "<gray>Anyone who sees the URL can post to that channel, so avoid typing it on a shared screen. It is never shown back to you.</gray>"
 
-  # Shown when the URL is not a Discord webhook.
-  webhook-invalid: "<red>That does not look like a Discord webhook URL.</red>"
-  webhook-expected: "<gray>Expected: https://discord.com/api/webhooks/<id>/<token></gray>"
+  # Shown when the URL is not a Discord or Fluxer webhook.
+  webhook-invalid: "<red>That does not look like a Discord or Fluxer webhook URL.</red>"
+  webhook-expected: "<gray>Expected: a Discord webhook such as https://discord.com/api/webhooks/<id>/<token>, or a Fluxer-compatible URL.</gray>"
 
   # Success. Placeholders: {channel} -- the channel id from the URL.
   # The full URL is never shown back, on purpose: it is a credential, and this

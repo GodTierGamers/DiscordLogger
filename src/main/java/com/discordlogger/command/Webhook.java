@@ -41,7 +41,7 @@ public final class Webhook implements Subcommand {
     }
 
     @Override public String name() { return "webhook"; }
-    @Override public String description() { return "Sets the Discord webhook URL and reloads."; }
+    @Override public String description() { return "Sets the webhook URL and reloads."; }
     @Override public String permission() { return "discordlogger.webhook"; }
 
     @Override
