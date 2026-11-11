@@ -180,9 +180,15 @@ worker/                                Cloudflare Worker: exchanges the OAuth co
 3. **Merging the Release PR is the release.** The next `release-please.yml` run (triggered by that merge) tags `v<version>` and publishes the GitHub Release with the changelog as its body.
 4. The same workflow run's `build-artifact` job then checks out the tag, stamps `BUILT <DD-MM-YYYY>` onto the trailer, builds with `-Ddl.build.channel=stable`, and attaches `DiscordLogger-v<version>.jar` + `.sha256`. (The build lives in the same run rather than a `release: published` listener because events created with the built-in `GITHUB_TOKEN` don't trigger other workflows — a separate listener would never fire. See Gotchas.)
 5. **Config schema revisions (`v<N>` → `v<N+1>`) stay manual and deliberate** — bump the `V<n>` trailer, add `docs/assets/configs/v<n>/`, wire the generator config. Never inferred from commits. See the RUNBOOK below.
-6. **Force a specific version:** a commit whose message has a `Release-As: X.Y.Z` footer retargets the Release PR (and `nightly.yml`'s version computation, which honors the same footer) to that exact version regardless of what the versioning strategy would produce.
+6. **A release version can never go backwards.** `scripts/check-version-floor.py` runs inside `release-please.yml` whenever a Release PR exists and fails the run if the proposed number is below the floor: strictly above the released version in `.release-please-manifest.json`, and at or above the base version of every tag, **nightlies included**. A `v2.7.0-BETA.1` tag means 2.7.0 has been built and published, so 2.6.2 afterwards would renumber history.
 
-7. **The commit prefix moves the version, and the maintainer still states the number.** `release-please-config.json` carries no `versioning` key, so release-please's default applies: `feat:` bumps the minor, everything else bumps the patch, and a `!`/BREAKING change would bump the **major**.
+   This exists because it happened. Accumulated `feat:` commits had the Release PR at 2.7.0; a `fix:` carrying `Release-As: 2.6.1` merged and dragged it down, silently. **`Release-As:` is absolute, not a minimum** — it overrides whatever the prefixes produced, in either direction. A version that falls reads as "no update" to every server already running the higher one, so the update checker goes quiet rather than loud.
+
+   The guard refuses; it does not repair. The fix is a newer commit carrying a `Release-As:` at or above the floor.
+
+7. **Force a specific version:** a commit whose message has a `Release-As: X.Y.Z` footer retargets the Release PR (and `nightly.yml`'s version computation, which honors the same footer) to that exact version regardless of what the versioning strategy would produce.
+
+8. **The commit prefix moves the version, and the maintainer still states the number.** `release-please-config.json` carries no `versioning` key, so release-please's default applies: `feat:` bumps the minor, everything else bumps the patch, and a `!`/BREAKING change would bump the **major**.
 
    **The maintainer states patch vs minor every time. Never infer it, and never propose a bump that wasn't asked for.** The mechanism either way is a `Release-As: X.Y.Z` footer in a commit body (`squash_merge_commit_message` is `PR_BODY`, so it survives the squash), which overrides whatever the prefixes produced. Told nothing, the number is whatever the accumulated prefixes make it — so **read the Release PR's title before merging it** rather than assuming.
 
