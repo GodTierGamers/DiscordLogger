@@ -158,34 +158,8 @@ public final class Log {
                 for (String event : groupSec.getKeys(false)) {
                     ConfigurationSection eventSec = groupSec.getConfigurationSection(event);
                     if (eventSec == null) continue;   // v9-shaped boolean
-                    String v = eventSec.getString("color");
-                    if (v == null || Strings.isBlank(v)) continue;
-                    int c = hex(v, currentDefault);
-
-                    cm.put(normalizeKey(group + "_" + event), c);
-
-                    final String hook = eventSec.getString("webhook");
-                    if (hook != null && !Strings.isBlank(hook) && isValidWebhookUrl(hook.trim())) {
-                        wm.put(normalizeKey(group + "_" + event), hook.trim());
-                        if ("moderation".equals(group)) {
-                            wm.put(normalizeKey(event), hook.trim());
-                            if ("whitelist_edit".equals(event)) wm.put("whitelist", hook.trim());
-                        }
-                    } else if (hook != null && !Strings.isBlank(hook)) {
-                        plugin.getLogger().warning("log." + group + "." + event
-                                + ".webhook is not a valid Discord webhook URL — that event will "
-                                + "use the main webhook instead.");
-                    }
-
-                    // Moderation listeners pass bare categories ("ban", "kick"),
-                    // unlike player/server which pass "<group> <event>". Only
-                    // moderation gets the unqualified alias, so that player.command
-                    // and server.command cannot overwrite each other under "command".
-                    if ("moderation".equals(group)) {
-                        cm.put(normalizeKey(event), c);
-                        // The whitelist-edit listener's category is "whitelist".
-                        if ("whitelist_edit".equals(event)) cm.put("whitelist", c);
-                    }
+                    readEventSection(group, event, eventSec, currentDefault, cm, wm,
+                            msg -> plugin.getLogger().warning(msg));
                 }
             }
         }
@@ -205,6 +179,58 @@ public final class Log {
         if (!wm.isEmpty()) {
             plugin.getLogger().info("Per-event webhook routing active for "
                     + wm.size() + " categor" + (wm.size() == 1 ? "y" : "ies") + ".");
+        }
+    }
+
+    /**
+     * Reads one event's section into the colour and route maps.
+     *
+     * <p><strong>The webhook is read first, and on its own path.</strong> It used to
+     * sit after a {@code continue} that fired when {@code color} was missing or
+     * blank, so clearing an event's colour to fall back to the built-in one silently
+     * stopped routing that event anywhere but the main webhook. Two unrelated
+     * settings, one of them quietly switching the other off, with no warning.
+     *
+     * <p>Split out of {@link #init} because that method needs a live server and this
+     * does not — a {@code ConfigurationSection} can be built from a string in a test,
+     * so the interaction above is now something a test can see.
+     */
+    static void readEventSection(String group,
+                                 String event,
+                                 ConfigurationSection eventSec,
+                                 int currentDefault,
+                                 Map<String, Integer> cm,
+                                 Map<String, String> wm,
+                                 java.util.function.Consumer<String> warn) {
+        final String hook = eventSec.getString("webhook");
+        if (hook != null && !Strings.isBlank(hook)) {
+            final String trimmed = hook.trim();
+            if (isValidWebhookUrl(trimmed)) {
+                wm.put(normalizeKey(group + "_" + event), trimmed);
+                // Moderation listeners pass bare categories ("ban", "kick"), unlike
+                // player/server which pass "<group> <event>". Only moderation gets the
+                // unqualified alias, so that player.command and server.command cannot
+                // overwrite each other under "command".
+                if ("moderation".equals(group)) {
+                    wm.put(normalizeKey(event), trimmed);
+                    // The whitelist-edit listener's category is "whitelist".
+                    if ("whitelist_edit".equals(event)) wm.put("whitelist", trimmed);
+                }
+            } else {
+                warn.accept("log." + group + "." + event
+                        + ".webhook is not a valid Discord webhook URL — that event will "
+                        + "use the main webhook instead.");
+            }
+        }
+
+        final String v = eventSec.getString("color");
+        if (v == null || Strings.isBlank(v)) return;   // keep the built-in colour
+        final int c = hex(v, currentDefault);
+
+        cm.put(normalizeKey(group + "_" + event), c);
+        if ("moderation".equals(group)) {
+            cm.put(normalizeKey(event), c);
+            if ("whitelist_edit".equals(event)) cm.put("whitelist", c);
         }
     }
 
