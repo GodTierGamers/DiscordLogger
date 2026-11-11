@@ -170,6 +170,22 @@ class PayloadSafetyTest {
         assertEquals("> # - hi", Log.mdEscape("> # - hi"));
     }
 
+    @Test
+    @DisplayName("redaction and validation agree about case, so no token escapes")
+    void redactionIsCaseInsensitiveLikeValidation() {
+        // The pair has to stay symmetric. isValidWebhookUrl is case-insensitive, so a
+        // URL with a capitalised host is accepted and stored -- and if redaction did
+        // not recognise the same string, /discordlogger webhook would echo the command
+        // into the channel with the token intact.
+        for (String host : new String[] {"discord.com", "Discord.com", "DISCORD.COM",
+                                         "DiscordApp.com", "PTB.discord.com", "Canary.Discord.com"}) {
+            final String url = "https://" + host + "/api/webhooks/123456789/SuperSecretToken";
+            assertTrue(Log.isValidWebhookUrl(url), host + " should validate");
+            assertFalse(Log.redactWebhooks("/discordlogger webhook " + url).contains("SuperSecretToken"),
+                    host + " validated but its token was not redacted");
+        }
+    }
+
     private static String repeat(char c, int n) {
         final StringBuilder sb = new StringBuilder(n);
         for (int i = 0; i < n; i++) sb.append(c);

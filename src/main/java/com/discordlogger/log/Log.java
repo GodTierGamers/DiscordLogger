@@ -461,7 +461,13 @@ public final class Log {
                     // defence before a token reaches a channel, so it must recognise a
                     // malformed URL too -- a pattern that only hides well-formed ones
                     // hides exactly the cases nobody needed hidden.
-                    "(https://(?:ptb\\.|canary\\.)?discord(?:app)?\\.com/api/webhooks/[^/\\s]+)/\\S+");
+                    "(https://(?:ptb\\.|canary\\.)?discord(?:app)?\\.com/api/webhooks/[^/\\s]+)/\\S+",
+                    // Case-insensitive because isValidWebhookUrl is. Without the flag
+                    // the two disagreed about the same URL: "https://Discord.com/..."
+                    // validated, so the plugin accepted it, and then did not match here
+                    // -- so running /discordlogger webhook with it published the token
+                    // to the channel, which is the one thing this exists to stop.
+                    java.util.regex.Pattern.CASE_INSENSITIVE);
 
     /**
      * Markdown-escapes player-controlled text.
