@@ -44,6 +44,25 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+      # Release-As is absolute, not a minimum. A footer saying 2.6.1 wins even when
+      # the commits already justify 2.7.0 -- which happened: the Release PR sat at
+      # 2.7.0, a fix carrying "Release-As: 2.6.1" merged, and the number went
+      # backwards with nothing to say so. A version that goes down reads as "no
+      # update" to every server already on the higher one.
+      - name: Checkout (full history + tags)
+        if: ${{ steps.release.outputs.pr != '' }}
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Refuse a release version that goes backwards
+        if: ${{ steps.release.outputs.pr != '' }}
+        env:
+          RP_PR: ${{ steps.release.outputs.pr }}
+        run: |
+          python3 scripts/check-version-floor.py --selftest
+          python3 scripts/check-version-floor.py --from-pr-json
+
   build-artifact:
     needs: release-please
     if: ${{ needs.release-please.outputs.releases_created == 'true' }}
