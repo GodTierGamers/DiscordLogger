@@ -1,5 +1,49 @@
 # Changelog
 
+## [2.7.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.6.0...v2.7.0) (2026-11-11)
+
+
+### ✨ Features
+
+* **generator:** connect to Discord to create the webhook ([#263](https://github.com/GodTierGamers/DiscordLogger/issues/263)) ([967b107](https://github.com/GodTierGamers/DiscordLogger/commit/967b1078f04fb9c720ea8ce053dbfed436b48db4))
+* **logging:** seven new events, and quieter defaults, on schema v13 ([#276](https://github.com/GodTierGamers/DiscordLogger/issues/276)) ([624da5b](https://github.com/GodTierGamers/DiscordLogger/commit/624da5bf527f08f8359541ffacf290bcb871b0a3))
+
+
+### 🐛 Fixes
+
+* **config:** never replace config.yml once its backup has failed ([#279](https://github.com/GodTierGamers/DiscordLogger/issues/279)) ([8430011](https://github.com/GodTierGamers/DiscordLogger/commit/84300111607af36c40dcf5a75976daac3d4351c4))
+* **embeds:** refresh player heads instead of letting Discord cache them forever ([#262](https://github.com/GodTierGamers/DiscordLogger/issues/262)) ([941c3c9](https://github.com/GodTierGamers/DiscordLogger/commit/941c3c909029acf5511d37f51553416771edacd6))
+* **generator:** hand the OAuth code back over a channel, not just the opener ([#265](https://github.com/GodTierGamers/DiscordLogger/issues/265)) ([17557e7](https://github.com/GodTierGamers/DiscordLogger/commit/17557e79425271fc8b9d8bdfea6526597a999462))
+* **generator:** spend the OAuth code once, not once per delivery route ([#266](https://github.com/GodTierGamers/DiscordLogger/issues/266)) ([a419625](https://github.com/GodTierGamers/DiscordLogger/commit/a419625942e2d9cdda1adbf98bd0b400e7c788ca))
+* **moderation:** log unbans where a punishment plugin owns bans ([#280](https://github.com/GodTierGamers/DiscordLogger/issues/280)) ([bb145f3](https://github.com/GodTierGamers/DiscordLogger/commit/bb145f3947de6bfb563a09b943606c821b822157))
+* **webhook:** accept only well-formed webhook URLs, redact malformed ones ([#273](https://github.com/GodTierGamers/DiscordLogger/issues/273)) ([3971ade](https://github.com/GodTierGamers/DiscordLogger/commit/3971ade7d9ad14dd708b469d456ce65eab0df402))
+* **webhook:** keep an event's route when its colour is blank ([#281](https://github.com/GodTierGamers/DiscordLogger/issues/281)) ([7dbb252](https://github.com/GodTierGamers/DiscordLogger/commit/7dbb2523456a5417f5c858f7084fc514254266f9))
+* **webhook:** retire destinations the config no longer routes to ([#259](https://github.com/GodTierGamers/DiscordLogger/issues/259)) ([4db21d1](https://github.com/GodTierGamers/DiscordLogger/commit/4db21d13de6503a035946e34ed11b66a45210a10))
+
+
+### 📝 Docs
+
+* add a privacy policy and terms, and consent-gated analytics ([#268](https://github.com/GodTierGamers/DiscordLogger/issues/268)) ([ffaf52f](https://github.com/GodTierGamers/DiscordLogger/commit/ffaf52f5ec09615ca042758a20511d1eaf8ef2a1))
+* bring AGENTS.md back in step with what ships ([#272](https://github.com/GodTierGamers/DiscordLogger/issues/272)) ([3f357d7](https://github.com/GodTierGamers/DiscordLogger/commit/3f357d713ac84ccea2b77932997296c4c5f1b66a))
+* document commands and permissions on the site ([#271](https://github.com/GodTierGamers/DiscordLogger/issues/271)) ([a3b16b3](https://github.com/GodTierGamers/DiscordLogger/commit/a3b16b3c130217a1310a0bd4437088be6d68ea2d))
+* **generator:** move the webhook-URL explanation out of the intro ([#264](https://github.com/GodTierGamers/DiscordLogger/issues/264)) ([e835b88](https://github.com/GodTierGamers/DiscordLogger/commit/e835b883f9fa5ec4765c258ca0682e7b4d3aa6a7))
+* **privacy:** say how long Google keeps the analytics data ([#274](https://github.com/GodTierGamers/DiscordLogger/issues/274)) ([e01e66e](https://github.com/GodTierGamers/DiscordLogger/commit/e01e66e3a2fa5c825057e77563ba9ab95ad62f7c))
+* stop calling it a Paper plugin ([#270](https://github.com/GodTierGamers/DiscordLogger/issues/270)) ([8ea3603](https://github.com/GodTierGamers/DiscordLogger/commit/8ea3603f6c67102dc9d65e8ae3aa814afbc09628))
+
+
+### 🧰 Maintenance
+
+* bump github-pages from 232 to 233 in /docs ([#278](https://github.com/GodTierGamers/DiscordLogger/issues/278)) ([c3f64c7](https://github.com/GodTierGamers/DiscordLogger/commit/c3f64c76e0c1eafc54f66730613a153efbdc2ac8))
+* **generator:** lead with a branded Connect to Discord button, fold pasting into a dropdown ([#267](https://github.com/GodTierGamers/DiscordLogger/issues/267)) ([602f20f](https://github.com/GodTierGamers/DiscordLogger/commit/602f20f22588e00a0e8ada1623e9f0c35be5dc1d))
+* remove TODO.md ([#260](https://github.com/GodTierGamers/DiscordLogger/issues/260)) ([7692d2f](https://github.com/GodTierGamers/DiscordLogger/commit/7692d2f1c38cba8d9eecec9e0e9ad24c20dd4964))
+* **site:** switch on Google Analytics ([#269](https://github.com/GodTierGamers/DiscordLogger/issues/269)) ([2061089](https://github.com/GodTierGamers/DiscordLogger/commit/2061089ee2597343b3ac887682ef6599171f61d1))
+
+
+### ⚙️ CI/CD
+
+* refuse a release version that goes backwards ([#283](https://github.com/GodTierGamers/DiscordLogger/issues/283)) ([b91d837](https://github.com/GodTierGamers/DiscordLogger/commit/b91d837985d37c83807c16d362cee3366eac9829))
+* run the generator validator on everything it actually reads ([#282](https://github.com/GodTierGamers/DiscordLogger/issues/282)) ([2e9d3bd](https://github.com/GodTierGamers/DiscordLogger/commit/2e9d3bd49108411791708a8137b4926c20b2793b))
+
 ## [2.6.0](https://github.com/GodTierGamers/DiscordLogger/compare/v2.5.0...v2.6.0) (2026-11-03)
 
 
