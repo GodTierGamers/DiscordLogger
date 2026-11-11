@@ -30,8 +30,17 @@ jobs:
             java:
               - 'src/**'
               - 'pom.xml'
+            # Everything validate-config-generator.py reads, not just the bundles.
+            # It compares the SHIPPED config and lang against their mirrors and the
+            # doc-page embeds, and checks each Java fallback against the shipped
+            # default -- so a PR touching only src/ could break it and never run it.
+            # PR #277 was the live example: the shipped config drifted from its v12
+            # mirror and only the build job had anything to say.
             docs:
               - 'docs/assets/configs/**'
+              - 'docs/config/**'
+              - 'src/main/resources/*.yml'
+              - 'src/main/java/**'
               - 'scripts/validate-config-generator.py'
             worker:
               - 'worker/**'
