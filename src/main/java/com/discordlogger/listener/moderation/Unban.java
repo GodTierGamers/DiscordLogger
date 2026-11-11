@@ -35,6 +35,27 @@ public final class Unban implements Listener {
         handle(null, raw);
     }
 
+    /**
+     * Whether an unban command actually unbanned someone.
+     *
+     * <p>Normally that means watching Bukkit's ban list change from banned to not.
+     * <strong>Where a punishment plugin owns bans it cannot mean that</strong>:
+     * LiteBans, LibertyBans, AdvancedBan, BanManager and CMI keep their own databases
+     * and never write to Bukkit's list, so the "before" reading is {@code false} on
+     * those servers no matter who was banned — and a rule requiring it to be
+     * {@code true} can never fire. Unbans were silently never logged there.
+     *
+     * <p>{@link Ban} already handles this by taking the command at face value; this is
+     * the other half of the same fix, and the same trade: an occasional over-report
+     * instead of a whole event missing. The permission gate still applies either way.
+     */
+    static boolean unbanTookEffect(boolean punishmentPluginInstalled,
+                                   boolean bannedBefore,
+                                   boolean bannedAfter) {
+        if (punishmentPluginInstalled) return true;
+        return bannedBefore && !bannedAfter;
+    }
+
     private void handle(Player actorPlayer, String rawWithSlash) {
         final String raw = rawWithSlash.startsWith("/") ? rawWithSlash.substring(1) : rawWithSlash;
         if (Strings.isBlank(raw)) return;
@@ -54,15 +75,13 @@ public final class Unban implements Listener {
 
         final String targetName = parts.length > 1 ? parts[1] : "(unknown)";
 
+        final boolean punishmentPlugin = PunishmentPlugins.installed();
         final boolean wasBanned = PunishmentPlugins.isBanned(targetName);
 
         // Only log if it actually changed from banned -> not banned on next tick
         Bukkit.getScheduler().runTask(plugin, () -> {
-            // Mirror of Ban: with a punishment plugin the list never changes, so the
-            // unban is taken on the command rather than never logged at all.
-            final boolean nowBanned = !PunishmentPlugins.installed()
-                    && PunishmentPlugins.isBanned(targetName);
-            if (wasBanned && !nowBanned) {
+            final boolean nowBanned = PunishmentPlugins.isBanned(targetName);
+            if (unbanTookEffect(punishmentPlugin, wasBanned, nowBanned)) {
                 final String moderatorName = (actorPlayer != null)
                         ? Names.display(actorPlayer, plugin)
                         : "CONSOLE";
