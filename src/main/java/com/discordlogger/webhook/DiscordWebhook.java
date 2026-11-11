@@ -25,7 +25,7 @@ public final class DiscordWebhook {
         if (url == null || Strings.isBlank(url)) return;
         // The escaped text, not a finished payload: the queue joins consecutive lines
         // into one message, and it can only do that while they are still lines.
-        WebhookQueue.enqueueContent(url, escape(content));
+        WebhookQueue.enqueueContent(url, escape(Limits.clamp(content, Limits.CONTENT)));
     }
 
     /** Single-embed message (no fields). */
@@ -40,17 +40,21 @@ public final class DiscordWebhook {
         sb.append("{");
 
         if (title != null && !Strings.isBlank(title)) {
-            sb.append("\"title\":\"").append(escape(title)).append("\",");
+            sb.append("\"title\":\"").append(escape(Limits.clamp(title, Limits.TITLE))).append("\",");
         }
-        sb.append("\"description\":\"").append(escape(description == null ? "" : description)).append("\",");
+        sb.append("\"description\":\"")
+                .append(escape(Limits.clamp(description == null ? "" : description, Limits.DESCRIPTION)))
+                .append("\",");
         sb.append("\"color\":").append(color).append(",");
 
         if (authorName != null && !Strings.isBlank(authorName)) {
-            sb.append("\"author\":{\"name\":\"").append(escape(authorName)).append("\"},");
+            sb.append("\"author\":{\"name\":\"")
+                    .append(escape(Limits.clamp(authorName, Limits.AUTHOR_NAME)))
+                    .append("\"},");
         }
         if (footerText != null && !Strings.isBlank(footerText)) {
             sb.append("\"footer\":{")
-                    .append("\"text\":\"").append(escape(footerText)).append("\",")
+                    .append("\"text\":\"").append(escape(Limits.clamp(footerText, Limits.FOOTER_TEXT))).append("\",")
                     .append("\"icon_url\":\"").append(escape(FOOTER_ICON_URL)).append("\"")
                     .append("},");
         }
@@ -106,7 +110,7 @@ public final class DiscordWebhook {
         return "{\"content\":null,\"embeds\":["
                 + buildEmbedObject(title, description, color, timestampIso,
                                    author, footer, thumbnailUrl, fields)
-                + "],\"attachments\":[]}";
+                + "],\"attachments\":[]," + WebhookQueue.NO_MENTIONS + "}";
     }
 
     /**
@@ -130,18 +134,24 @@ public final class DiscordWebhook {
         StringBuilder sb = new StringBuilder(512);
         sb.append("{");
 
-        if (title != null)       sb.append("\"title\":\"").append(escape(title)).append("\",");
-        if (description != null) sb.append("\"description\":\"").append(escape(description)).append("\",");
+        if (title != null) {
+            sb.append("\"title\":\"").append(escape(Limits.clamp(title, Limits.TITLE))).append("\",");
+        }
+        if (description != null) {
+            sb.append("\"description\":\"")
+                    .append(escape(Limits.clamp(description, Limits.DESCRIPTION)))
+                    .append("\",");
+        }
         sb.append("\"color\":").append(color).append(",");
 
         if (author != null) {
             sb.append("\"author\":{")
-                    .append("\"name\":\"").append(escape(author)).append("\"")
+                    .append("\"name\":\"").append(escape(Limits.clamp(author, Limits.AUTHOR_NAME))).append("\"")
                     .append("},");
         }
         if (footer != null) {
             sb.append("\"footer\":{")
-                    .append("\"text\":\"").append(escape(footer)).append("\",")
+                    .append("\"text\":\"").append(escape(Limits.clamp(footer, Limits.FOOTER_TEXT))).append("\",")
                     .append("\"icon_url\":\"").append(escape(FOOTER_ICON_URL)).append("\"")
                     .append("},");
         }
@@ -157,14 +167,19 @@ public final class DiscordWebhook {
         if (fields != null && fields.length > 0) {
             sb.append("\"fields\":[");
             boolean first = true;
+            int written = 0;
             for (String[] f : fields) {
                 if (f == null || f.length < 3) continue;
+                // Discord rejects the whole message for a twenty-sixth field, so the
+                // tail is dropped rather than the embed being lost with it.
+                if (written >= Limits.FIELDS_PER_EMBED) break;
                 if (!first) sb.append(',');
                 first = false;
+                written++;
                 boolean inline = "true".equalsIgnoreCase(f[2]);
                 sb.append('{')
-                        .append("\"name\":\"").append(escape(f[0])).append("\",")
-                        .append("\"value\":\"").append(escape(f[1])).append("\",")
+                        .append("\"name\":\"").append(escape(Limits.clamp(f[0], Limits.FIELD_NAME))).append("\",")
+                        .append("\"value\":\"").append(escape(Limits.clamp(f[1], Limits.FIELD_VALUE))).append("\",")
                         .append("\"inline\":").append(inline)
                         .append('}');
             }

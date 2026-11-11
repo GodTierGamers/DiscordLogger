@@ -72,7 +72,14 @@ nbdist/
 ._*
 .Spotlight-V100
 .Trashes
+# Finder's custom-folder icon file is "Icon" plus a carriage return, which
+# cannot be written here -- hence the wildcard. On a case-insensitive
+# filesystem that same pattern also matches any directory called "icons",
+# which silently excluded every image the plugin's embeds link to: already
+# tracked ones stayed tracked, so nothing looked wrong until a new icon was
+# added and git add skipped it without a word.
 Icon?
+!docs/assets/icons/
 ehthumbs.db
 
 ### Windows ###

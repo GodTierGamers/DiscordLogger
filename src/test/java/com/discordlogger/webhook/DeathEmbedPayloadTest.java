@@ -68,7 +68,7 @@ class DeathEmbedPayloadTest {
     void envelopeShape() {
         String json = deathPayload(true);
         assertTrue(json.startsWith("{\"content\":null,\"embeds\":[{"), json);
-        assertTrue(json.endsWith("}],\"attachments\":[]}"), json);
+        assertTrue(json.endsWith("}],\"attachments\":[]," + WebhookQueue.NO_MENTIONS + "}"), json);
         assertTrue(json.contains("\"author\":{\"name\":\"Server Logs\"}"), json);
         assertTrue(json.contains("\"color\":" + RED), json);
         // No trailing comma before a closing brace — Discord rejects the whole payload.
@@ -93,7 +93,7 @@ class DeathEmbedPayloadTest {
         String json = DiscordWebhook.buildEmbedJson(
                 "Player Death", "Lachlan died", RED, null, null, null, null, new String[0][]);
         assertFalse(json.contains("\"fields\""));
-        assertTrue(json.endsWith("}],\"attachments\":[]}"), json);
+        assertTrue(json.endsWith("}],\"attachments\":[]," + WebhookQueue.NO_MENTIONS + "}"), json);
         assertFalse(json.contains(",}"), json);
     }
 }
