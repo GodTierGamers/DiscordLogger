@@ -8,6 +8,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.ArrayList;
@@ -38,7 +39,12 @@ public final class ConfigMigrator {
          */
         AHEAD,
         /** A version trailer was missing or unparseable at one end. */
-        UNKNOWN
+        UNKNOWN,
+        /**
+         * The upgraded file was built, but the original could not be backed up, so
+         * nothing was replaced. The server keeps running on the config it had.
+         */
+        BACKUP_FAILED
     }
 
     /** Outcome plus the two schema numbers, for messaging. Either may be null when UNKNOWN. */
@@ -263,6 +269,35 @@ public final class ConfigMigrator {
     }
 
     /**
+     * Puts the migrated file in place, keeping the original beside it as a backup.
+     *
+     * <p>Order matters and is the whole point: the backup is taken <em>first</em>, so
+     * a failure there leaves every file exactly as it was and the caller can abort
+     * with nothing lost. Only once the original is safely copied aside is it replaced.
+     *
+     * <p>If that second move fails the original is put back, because a folder with a
+     * backup and no {@code config.yml} would start the server on shipped defaults --
+     * recoverable, but only by someone who notices.
+     *
+     * <p>Static and plugin-free so it can be tested without a server. The bug it
+     * replaces survived because the rotation could only be reached through a method
+     * that needs a running Bukkit.
+     */
+    static void rotate(Path userFile, Path newFile, Path oldFile) throws IOException {
+        Files.move(userFile, oldFile, StandardCopyOption.REPLACE_EXISTING);
+        try {
+            Files.move(newFile, userFile, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ex) {
+            try {
+                Files.move(oldFile, userFile, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException putBackFailed) {
+                ex.addSuppressed(putBackFailed);
+            }
+            throw ex;
+        }
+    }
+
+    /**
      * Rewrites one scalar in config.yml in place, leaving every other byte alone.
      *
      * <p>Deliberately not {@code plugin.getConfig().set(...)} + {@code saveConfig()}:
@@ -368,12 +403,21 @@ public final class ConfigMigrator {
             // Rotate: <name>.yml -> <name>.old.yml, new -> <name>.yml
             File oldFile = new File(userFile.getParentFile(), base + ".old.yml");
             try {
-                Files.move(userFile.toPath(), oldFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                rotate(userFile.toPath(), newFile.toPath(), oldFile.toPath());
             } catch (Exception ex) {
-                plugin.getLogger().warning("Could not move " + userFile.getName()
+                // Abort rather than carry on. This used to warn and then replace the
+                // file anyway, so a backup that could not be taken -- a locked
+                // config.old.yml, a read-only folder -- destroyed the original and
+                // then logged "Previous file saved as config.old.yml", which was a
+                // lie about the one file nobody can get back.
+                plugin.getLogger().severe("Could not back up " + userFile.getName()
                         + " to " + oldFile.getName() + ": " + ex.getMessage());
+                plugin.getLogger().severe(userFile.getName() + " has NOT been changed, and the "
+                        + "plugin is running on it as it is. The upgraded file is waiting at "
+                        + newFile.getName() + " -- move it into place yourself once you have a "
+                        + "copy of the original.");
+                return new Result(Status.BACKUP_FAILED, oldVer, newVer);
             }
-            Files.move(newFile.toPath(), userFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
             plugin.getLogger().info(userFile.getName() + " updated automatically from version "
                     + oldVer + " to " + newVer);

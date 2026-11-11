@@ -58,6 +58,17 @@ public final class ConfigVersionNotice implements Listener {
                 break;
             }
 
+            case BACKUP_FAILED:
+                // Said again here because the migrator's own lines scroll past during
+                // startup, and this one means the server is running on an old schema.
+                plugin.getLogger().severe(
+                        "config.yml could NOT be upgraded from schema v" + result.installed()
+                                + " to v" + result.shipped() + " because the backup failed. Your "
+                                + "settings are untouched and the upgraded file is at "
+                                + "config.new.yml. Until you move it into place, any option added "
+                                + "since v" + result.installed() + " is using its built-in default.");
+                break;
+
             case UNKNOWN:
                 plugin.getLogger().warning(
                         "Could not determine the config schema version. If config.yml has been "
